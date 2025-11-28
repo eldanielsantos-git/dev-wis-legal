@@ -10,6 +10,7 @@ interface NotificationsPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToSettings?: () => void;
@@ -25,7 +26,7 @@ type FilterType = 'all' | 'unread' | 'success' | 'error';
 export function NotificationsPage({
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat,
+  onNavigateToChat, onNavigateToWorkspace,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToSettings,
@@ -125,6 +126,7 @@ export function NotificationsPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={onNavigateToSettings || onNavigateToAdmin}

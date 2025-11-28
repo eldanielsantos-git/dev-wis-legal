@@ -11,6 +11,7 @@ interface AdminIntegrityPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -18,7 +19,7 @@ interface AdminIntegrityPageProps {
   onNavigateToCookies?: () => void;
 }
 
-export function AdminIntegrityPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminIntegrityPageProps) {
+export function AdminIntegrityPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminIntegrityPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -105,6 +106,7 @@ export function AdminIntegrityPage({ onNavigateToApp, onNavigateToMyProcess, onN
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

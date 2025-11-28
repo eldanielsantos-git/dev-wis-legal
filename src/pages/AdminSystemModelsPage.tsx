@@ -13,6 +13,7 @@ interface AdminSystemModelsPageProps {
   onNavigateToApp?: () => void;
   onNavigateToMyProcess?: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -33,7 +34,7 @@ export function AdminSystemModelsPage({
   onBack,
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat,
+  onNavigateToChat, onNavigateToWorkspace,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToTerms,
@@ -265,6 +266,7 @@ export function AdminSystemModelsPage({
         onNavigateToApp={onNavigateToApp || (() => {})}
         onNavigateToMyProcess={onNavigateToMyProcess || (() => {})}
         onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

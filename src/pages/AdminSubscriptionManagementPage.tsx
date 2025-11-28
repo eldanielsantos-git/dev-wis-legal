@@ -11,6 +11,7 @@ interface AdminSubscriptionManagementPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToSettings?: () => void;
   onNavigateToProfile?: () => void;
@@ -63,6 +64,7 @@ export function AdminSubscriptionManagementPage({
   onNavigateToApp,
   onNavigateToMyProcess,
   onNavigateToChat,
+  onNavigateToWorkspace,
   onNavigateToAdmin,
   onNavigateToSettings,
   onNavigateToProfile,
@@ -320,6 +322,7 @@ export function AdminSubscriptionManagementPage({
           onNavigateToApp={onNavigateToApp}
           onNavigateToMyProcess={onNavigateToMyProcess}
           onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
           onNavigateToAdmin={onNavigateToAdmin}
           onNavigateToSettings={onNavigateToSettings}
           onNavigateToProfile={onNavigateToProfile}
@@ -352,6 +355,7 @@ export function AdminSubscriptionManagementPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}

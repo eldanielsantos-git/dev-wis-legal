@@ -10,6 +10,7 @@ interface SubscriptionPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -20,7 +21,7 @@ interface SubscriptionPageProps {
 export function SubscriptionPage({
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat,
+  onNavigateToChat, onNavigateToWorkspace,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToTerms,
@@ -38,6 +39,7 @@ export function SubscriptionPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={onNavigateToAdmin}

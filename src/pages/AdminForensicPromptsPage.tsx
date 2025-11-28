@@ -13,6 +13,7 @@ interface AdminForensicPromptsPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -22,7 +23,7 @@ interface AdminForensicPromptsPageProps {
 
 type TabType = 'analysis' | 'chat_intro' | 'chat_system';
 
-export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminForensicPromptsPageProps) {
+export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminForensicPromptsPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -487,6 +488,7 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

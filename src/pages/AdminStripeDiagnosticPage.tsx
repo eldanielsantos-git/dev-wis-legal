@@ -11,6 +11,7 @@ interface AdminStripeDiagnosticPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -52,7 +53,7 @@ interface DiagnosticResponse {
 export function AdminStripeDiagnosticPage({
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat,
+  onNavigateToChat, onNavigateToWorkspace,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToTerms,
@@ -279,6 +280,7 @@ export function AdminStripeDiagnosticPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

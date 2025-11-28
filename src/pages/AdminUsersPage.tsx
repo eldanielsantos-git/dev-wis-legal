@@ -28,6 +28,7 @@ interface AdminUsersPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToSettings?: () => void;
   onNavigateToProfile?: () => void;
@@ -36,7 +37,7 @@ interface AdminUsersPageProps {
   onNavigateToCookies?: () => void;
 }
 
-export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToAdmin, onNavigateToSettings, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminUsersPageProps) {
+export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToSettings, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminUsersPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -168,6 +169,7 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}

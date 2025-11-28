@@ -26,7 +26,7 @@ interface ChatProcessSelectionPageProps {
 export function ChatProcessSelectionPage({
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat,
+  onNavigateToChat, onNavigateToWorkspace,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToNotifications,

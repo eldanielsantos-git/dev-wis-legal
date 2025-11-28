@@ -7,6 +7,7 @@ interface AdminSettingsPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -14,7 +15,7 @@ interface AdminSettingsPageProps {
   onNavigateToCookies?: () => void;
 }
 
-export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminSettingsPageProps) {
+export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminSettingsPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
