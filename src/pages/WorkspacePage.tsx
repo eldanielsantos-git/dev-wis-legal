@@ -123,7 +123,7 @@ export function WorkspacePage({
               </h1>
             </div>
             <p className="text-sm sm:text-base font-body text-center" style={{ color: colors.textSecondary }}>
-              Processos compartilhados com você
+              Processos compartilhados
             </p>
             {!loading && shares.length > 0 && (
               <p className="text-sm sm:text-base font-body mt-2 text-center" style={{ color: colors.textTertiary }}>
