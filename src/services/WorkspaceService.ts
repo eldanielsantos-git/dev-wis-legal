@@ -416,21 +416,23 @@ export class WorkspaceService {
   /**
    * Subscribe to changes in workspace shares for the current user
    */
-  static subscribeToShares(callback: () => void) {
-    const { data: { user } } = supabase.auth.getUser();
+  static async subscribeToShares(callback: () => void) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
-    user.then((userData) => {
-      if (!userData.user) return;
+      if (!user) {
+        return undefined;
+      }
 
       const subscription = supabase
-        .channel(`workspace-shares-${userData.user.id}`)
+        .channel(`workspace-shares-${user.id}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'workspace_shares',
-            filter: `shared_with_user_id=eq.${userData.user.id}`
+            filter: `shared_with_user_id=eq.${user.id}`
           },
           callback
         )
@@ -439,7 +441,10 @@ export class WorkspaceService {
       return () => {
         supabase.removeChannel(subscription);
       };
-    });
+    } catch (error) {
+      console.error('Error subscribing to shares:', error);
+      return undefined;
+    }
   }
 
   /**

@@ -43,8 +43,12 @@ export function WorkspacePage({
   }, []);
 
   useEffect(() => {
-    const unsubscribe = WorkspaceService.subscribeToShares(() => {
+    let unsubscribe: (() => void) | undefined;
+
+    WorkspaceService.subscribeToShares(() => {
       loadShares();
+    }).then((cleanup) => {
+      unsubscribe = cleanup;
     });
 
     return () => {
