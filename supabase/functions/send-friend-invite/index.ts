@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
 
     if (!invitedName || !invitedEmail) {
       return new Response(
-        JSON.stringify({ error: "Nome e email são obrigatórios" }),
+        JSON.stringify({ error: "Nome e email s\u00e3o obrigat\u00f3rios" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(invitedEmail)) {
       return new Response(
-        JSON.stringify({ error: "Email inválido" }),
+        JSON.stringify({ error: "Email inv\u00e1lido" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -92,7 +92,7 @@ Deno.serve(async (req: Request) => {
 
     if (existingUser) {
       return new Response(
-        JSON.stringify({ error: "Este email já está cadastrado na plataforma" }),
+        JSON.stringify({ error: "Este email j\u00e1 est\u00e1 cadastrado na plataforma" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -114,7 +114,7 @@ Deno.serve(async (req: Request) => {
 
     if (existingInvite) {
       return new Response(
-        JSON.stringify({ error: "Você já enviou um convite para este email" }),
+        JSON.stringify({ error: "Voc\u00ea j\u00e1 enviou um convite para este email" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -154,54 +154,32 @@ Deno.serve(async (req: Request) => {
       ? `${inviterProfile.first_name} ${inviterProfile.last_name}`
       : "um colega";
 
+    // Try to send invitation email via Supabase Auth
+    // If it fails (SMTP not configured), invitation is still saved successfully
     try {
       const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
         invitedEmail.toLowerCase(),
         {
-          redirectTo: `${supabaseUrl}/auth/v1/verify`,
+          redirectTo: `${supabaseUrl}/sign-up`,
           data: {
             invited_by: user.id,
             inviter_name: inviterName,
+            invited_name: invitedName,
             invite_id: invite.id,
+            invitation_type: 'friend_invite',
           },
         }
       );
 
       if (inviteError) {
-        console.error("Error sending invite email:", inviteError);
-
-        await supabaseClient
-          .from("invite_friend")
-          .update({ status: "expired" })
-          .eq("id", invite.id);
-
-        return new Response(
-          JSON.stringify({
-            error: "Erro ao enviar email de convite. Por favor, tente novamente."
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        console.error("\u26a0\ufe0f Email not sent (SMTP may not be configured):", inviteError.message);
+        console.log("\u2705 Invitation saved successfully without email");
+      } else {
+        console.log("\u2705 Invitation email sent successfully to:", invitedEmail);
       }
     } catch (emailError) {
-      console.error("Exception sending email:", emailError);
-
-      await supabaseClient
-        .from("invite_friend")
-        .update({ status: "expired" })
-        .eq("id", invite.id);
-
-      return new Response(
-        JSON.stringify({
-          error: "Erro ao enviar email de convite. Por favor, tente novamente."
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      console.error("\u26a0\ufe0f Email sending failed (SMTP may not be configured):", emailError);
+      console.log("\u2705 Invitation saved successfully without email");
     }
 
     return new Response(

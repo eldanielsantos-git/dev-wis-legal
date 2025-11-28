@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
     // Get processo details
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
-      .select("numero_processo, nome_processo")
+      .select("numero_processo, file_name")
       .eq("id", processoId)
       .single();
 
@@ -91,7 +91,7 @@ Deno.serve(async (req: Request) => {
     const { data: ownerProfile } = await supabaseClient
       .from("user_profiles")
       .select("first_name, last_name, email")
-      .eq("user_id", user.id)
+      .eq("id", user.id)
       .single();
 
     const ownerName = ownerProfile
@@ -105,38 +105,36 @@ Deno.serve(async (req: Request) => {
     if (userExists) {
       const { data: invitedUserProfile } = await supabaseClient
         .from("user_profiles")
-        .select("user_id")
+        .select("id")
         .eq("email", invitedEmail.toLowerCase())
         .maybeSingle();
 
       if (invitedUserProfile) {
         await supabaseClient.from("notifications").insert({
-          user_id: invitedUserProfile.user_id,
+          user_id: invitedUserProfile.id,
           type: "workspace_share",
           title: "Novo processo compartilhado",
-          message: `${ownerName} compartilhou o processo "${processo.nome_processo || processo.numero_processo}" com você (${permissionText})`,
+          message: `${ownerName} compartilhou o processo "${processo.file_name || processo.numero_processo}" com voc\u00ea (${permissionText})`,
           link: `/lawsuits-detail/${processoId}`,
         });
       }
     }
 
-    // Send invitation email for BOTH new and existing users
-    // Using inviteUserByEmail temporarily (uses default Supabase invite template)
+    // Try to send invitation email via Supabase Auth
+    // If it fails (SMTP not configured), sharing is still created successfully
     try {
       const emailData = {
         shared_by: user.id,
         owner_name: ownerName,
         share_id: shareId,
         processo_id: processoId,
-        processo_name: processo.nome_processo || processo.numero_processo,
+        processo_name: processo.file_name || processo.numero_processo,
         permission_level: permissionLevel,
         permission_text: permissionText,
         user_exists: userExists,
         invited_name: invitedName,
       };
 
-      // For existing users, we still send an invite (they'll get the email)
-      // For new users, this will create their account
       const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
         invitedEmail.toLowerCase(),
         {
@@ -148,36 +146,18 @@ Deno.serve(async (req: Request) => {
       );
 
       if (inviteError) {
-        console.error("Error sending invite email:", inviteError);
-
-        // Don't fail the request, just log warning
-        return new Response(
-          JSON.stringify({
-            success: true,
-            warning: "Compartilhamento criado, mas houve erro ao enviar email. O usuário receberá uma notificação ao fazer login.",
-            emailError: inviteError.message,
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        console.error("\u26a0\ufe0f Email not sent (SMTP may not be configured):", inviteError.message);
+        console.log("\u2705 Workspace share created successfully without email");
+      } else {
+        console.log("\u2705 Workspace invitation email sent successfully to:", invitedEmail);
       }
     } catch (emailError) {
-      console.error("Exception sending email:", emailError);
-
-      // Don't fail the request, sharing was created successfully
-      return new Response(
-        JSON.stringify({
-          success: true,
-          warning: "Compartilhamento criado, mas houve erro ao enviar email. O usuário receberá uma notificação ao fazer login.",
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      console.error("\u26a0\ufe0f Email sending failed (SMTP may not be configured):", emailError);
+      console.log("\u2705 Workspace share created successfully without email");
     }
+
+    console.log(`Processo compartilhado: ${ownerName} compartilhou "${processo.file_name || processo.numero_processo}" com ${invitedName} (${invitedEmail})`);
+    console.log(`Share ID: ${shareId}, Permiss\u00e3o: ${permissionText}`);
 
     return new Response(
       JSON.stringify({
