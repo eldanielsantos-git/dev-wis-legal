@@ -360,7 +360,7 @@ export class ProcessosService {
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('is_admin')
-      .eq('id', user.id)
+      .eq('user_id', user.id)
       .single();
 
     const isAdmin = userProfile?.is_admin || false;

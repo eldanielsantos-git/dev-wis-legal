@@ -120,7 +120,7 @@ export class WorkspaceService {
       // Check if invited user already has an account
       const { data: invitedUser } = await supabase
         .from('user_profiles')
-        .select('user_id, email')
+        .select('id, email')
         .eq('email', request.email.toLowerCase())
         .maybeSingle();
 
@@ -130,7 +130,7 @@ export class WorkspaceService {
         .insert({
           processo_id: request.processoId,
           owner_user_id: user.id,
-          shared_with_user_id: invitedUser?.user_id || null,
+          shared_with_user_id: invitedUser?.id || null,
           shared_with_email: request.email.toLowerCase(),
           shared_with_name: request.name,
           permission_level: request.permissionLevel,
