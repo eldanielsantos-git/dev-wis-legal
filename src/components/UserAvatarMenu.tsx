@@ -94,13 +94,7 @@ export function UserAvatarMenu({
 
   const handleSignOut = async () => {
     setIsOpen(false);
-    try {
-      await signOut();
-      window.history.pushState({}, '', '/sign-in');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
+    await signOut();
   };
 
   const menuContent = isOpen && (

@@ -511,7 +511,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
       // Sign out and redirect
       await supabase.auth.signOut();
-      window.location.href = 'https://app.wislegal.io/sign-in';
+      window.location.href = '/sign-in';
     } catch (error: any) {
       console.error('Error deleting account:', error);
       setMessage({ type: 'error', text: error.message || 'Erro ao excluir conta' });
@@ -628,12 +628,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
               <div className="hidden sm:block w-px h-6 mx-1" style={{ backgroundColor: colors.textSecondary, opacity: 0.2 }}></div>
               <button
                 onClick={async () => {
-                  try {
-                    await signOut();
-                    window.location.href = 'https://app.wislegal.io/sign-in';
-                  } catch (error) {
-                    console.error('Error signing out:', error);
-                  }
+                  await signOut();
                 }}
                 className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap hover:bg-opacity-10"
                 style={{
