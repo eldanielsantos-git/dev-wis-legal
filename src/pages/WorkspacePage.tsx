@@ -157,7 +157,17 @@ export function WorkspacePage({
                 </p>
                 <button
                   onClick={onNavigateToMyProcess}
-                  className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="px-6 py-3 rounded-lg font-medium transition-colors"
+                  style={{
+                    backgroundColor: theme === 'dark' ? '#FFFFFF' : '#000000',
+                    color: theme === 'dark' ? '#000000' : '#FFFFFF'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = theme === 'dark' ? '#E5E5E5' : '#1A1A1A';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = theme === 'dark' ? '#FFFFFF' : '#000000';
+                  }}
                 >
                   Meus Processos
                 </button>
