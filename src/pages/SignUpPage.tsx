@@ -1,0 +1,758 @@
+import React, { useState, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Loader, ChevronDown, Eye, EyeOff, CheckCircle2, XCircle, Upload, User } from 'lucide-react';
+import Select from 'react-select';
+import { brazilianStates, type State } from '../data/brazilianLocations';
+
+interface SignUpPageProps {
+  onNavigateToSignIn: () => void;
+  onNavigateToTerms?: () => void;
+  onNavigateToPrivacy?: () => void;
+}
+
+export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateToPrivacy }: SignUpPageProps) {
+  const { signUp, signInWithGoogle, signInWithMicrosoft } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [microsoftLoading, setMicrosoftLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [step, setStep] = useState<'initial' | 'details'>('initial');
+  const [formData, setFormData] = useState({
+    firstName: '', lastName: '', email: '', phoneCountryCode: '+55', phone: '', password: '', confirmPassword: '',
+    oab: '', city: '', state: '', termsAccepted: false
+  });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [selectedState, setSelectedState] = useState<State | null>(null);
+  const [passwordValidation, setPasswordValidation] = useState({
+    minLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecialChar: false
+  });
+
+  const validatePassword = (password: string) => {
+    return {
+      minLength: password.length >= 6,
+      hasUppercase: /[A-Z]/.test(password),
+      hasLowercase: /[a-z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+      hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
+    };
+  };
+
+  const formatPhoneBrazil = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 11);
+    if (numbers.length <= 10) {
+      return numbers.replace(/(\d{2})(\d{4})(\d{0,4})/, (match, p1, p2, p3) => {
+        let formatted = `(${p1})`;
+        if (p2) formatted += ` ${p2}`;
+        if (p3) formatted += `-${p3}`;
+        return formatted;
+      });
+    }
+    return numbers.replace(/(\d{2})(\d{5})(\d{0,4})/, (match, p1, p2, p3) => {
+      let formatted = `(${p1})`;
+      if (p2) formatted += ` ${p2}`;
+      if (p3) formatted += `-${p3}`;
+      return formatted;
+    });
+  };
+
+  const formatOAB = (value: string) => {
+    const cleaned = value.replace(/[^0-9A-Za-z]/g, '').toUpperCase();
+    const numbers = cleaned.replace(/[A-Z]/g, '');
+    const letters = cleaned.replace(/[0-9]/g, '');
+
+    if (numbers.length <= 3) {
+      return cleaned;
+    }
+
+    const formattedNumbers = numbers.replace(/(\d{1,3})(?=(\d{3})+(?!\d))/g, '$1.');
+    return formattedNumbers + letters;
+  };
+
+  const countryCodes = [
+    { code: '+55', country: 'Brasil', flag: '🇧🇷', example: '(11) 98765-4321' },
+    { code: '+1', country: 'EUA/Canadá', flag: '🇺🇸', example: '(555) 123-4567' },
+    { code: '+44', country: 'Reino Unido', flag: '🇬🇧', example: '7911 123456' },
+    { code: '+33', country: 'França', flag: '🇫🇷', example: '6 12 34 56 78' },
+    { code: '+49', country: 'Alemanha', flag: '🇩🇪', example: '1512 3456789' },
+    { code: '+39', country: 'Itália', flag: '🇮🇹', example: '312 345 6789' },
+    { code: '+34', country: 'Espanha', flag: '🇪🇸', example: '612 34 56 78' },
+    { code: '+351', country: 'Portugal', flag: '🇵🇹', example: '912 345 678' },
+    { code: '+52', country: 'México', flag: '🇲🇽', example: '55 1234 5678' },
+    { code: '+54', country: 'Argentina', flag: '🇦🇷', example: '11 2345-6789' },
+    { code: '+56', country: 'Chile', flag: '🇨🇱', example: '9 1234 5678' },
+    { code: '+57', country: 'Colômbia', flag: '🇨🇴', example: '321 1234567' },
+    { code: '+51', country: 'Peru', flag: '🇵🇪', example: '987 654 321' },
+    { code: '+598', country: 'Uruguai', flag: '🇺🇾', example: '94 123 456' },
+    { code: '+595', country: 'Paraguai', flag: '🇵🇾', example: '981 123456' },
+    { code: '+593', country: 'Equador', flag: '🇪🇨', example: '99 123 4567' },
+    { code: '+591', country: 'Bolívia', flag: '🇧🇴', example: '71234567' },
+    { code: '+81', country: 'Japão', flag: '🇯🇵', example: '90-1234-5678' },
+    { code: '+86', country: 'China', flag: '🇨🇳', example: '138 0013 8000' },
+    { code: '+91', country: 'Índia', flag: '🇮🇳', example: '98765 43210' },
+    { code: '+61', country: 'Austrália', flag: '🇦🇺', example: '412 345 678' }
+  ];
+
+  const selectedCountry = countryCodes.find(c => c.code === formData.phoneCountryCode) || countryCodes[0];
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    if (file.size > 20 * 1024 * 1024) {
+      setError('A imagem é muito grande');
+      return;
+    }
+
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    setError(null);
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const removeAvatar = () => {
+    setAvatarFile(null);
+    setAvatarPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const validatePasswordStrict = (password: string): { valid: boolean; message?: string } => {
+    if (password.length < 6) {
+      return { valid: false, message: 'A senha deve ter no mínimo 6 caracteres' };
+    }
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, message: 'A senha deve conter pelo menos uma letra minúscula' };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, message: 'A senha deve conter pelo menos uma letra maiúscula' };
+    }
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, message: 'A senha deve conter pelo menos um número' };
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+      return { valid: false, message: 'A senha deve conter pelo menos um caractere especial' };
+    }
+    return { valid: true };
+  };
+
+  const handleInitialSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!formData.email) {
+      setError('Digite seu email');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Digite um email válido');
+      return;
+    }
+
+    if (!formData.termsAccepted) {
+      setError('Você deve aceitar os termos de uso');
+      return;
+    }
+
+    setStep('details');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    if (!formData.firstName.trim()) {
+      setError('Nome é obrigatório');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.lastName.trim()) {
+      setError('Sobrenome é obrigatório');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.phone.trim()) {
+      setError('Telefone é obrigatório');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.state.trim()) {
+      setError('Seccional é obrigatório');
+      setLoading(false);
+      return;
+    }
+
+    if (!formData.city.trim()) {
+      setError('Cidade é obrigatória');
+      setLoading(false);
+      return;
+    }
+
+    const passwordValidation = validatePasswordStrict(formData.password);
+    if (!passwordValidation.valid) {
+      setError(passwordValidation.message!);
+      setLoading(false);
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('As senhas não coincidem');
+      setLoading(false);
+      return;
+    }
+    try {
+      console.log('[SignUp] Tentando criar conta com email:', formData.email);
+
+      let avatarUrl: string | undefined = undefined;
+
+      if (avatarFile) {
+        console.log('[SignUp] Fazendo upload do avatar...');
+        try {
+          const { supabase } = await import('../lib/supabase');
+          const fileExt = avatarFile.name.split('.').pop();
+          const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          console.log('[SignUp] Upload path:', filePath);
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, avatarFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error('[SignUp] Erro ao fazer upload do avatar:', uploadError);
+          } else {
+            const { data: { publicUrl } } = supabase.storage
+              .from('avatars')
+              .getPublicUrl(filePath);
+            avatarUrl = publicUrl;
+            console.log('[SignUp] Avatar enviado com sucesso:', avatarUrl);
+            console.log('[SignUp] Upload data:', uploadData);
+          }
+        } catch (uploadErr) {
+          console.error('[SignUp] Erro ao processar upload do avatar:', uploadErr);
+        }
+      }
+
+      await signUp(formData.email, formData.password, {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone: formData.phone,
+        phone_country_code: formData.phoneCountryCode,
+        oab: formData.oab || undefined,
+        city: formData.city,
+        state: formData.state,
+        avatar_url: avatarUrl
+      });
+      setSuccess(true);
+    } catch (err: any) {
+      console.error('[SignUp] Erro ao criar conta:', err);
+      const errorMessage = err.message || 'Erro ao criar conta';
+
+      const errorMap: Record<string, string> = {
+        'User already registered': 'Este email já está cadastrado. Faça login ou use outro email.',
+        'Database error saving new user': 'Este email já está cadastrado. Faça login ou use outro email.',
+        'duplicate key value': 'Este email já está cadastrado. Faça login ou use outro email.',
+        'already exists': 'Este email já está cadastrado. Faça login ou use outro email.',
+        'Email address': 'Email inválido. Use um email real (ex: seunome@gmail.com)',
+        'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
+        'Invalid login credentials': 'Credenciais inválidas',
+        'Password should be at least 6 characters': 'A senha deve ter no mínimo 6 caracteres',
+        'Unable to validate email address': 'Não foi possível validar o endereço de email',
+        'Email link is invalid or has expired': 'Link de email inválido ou expirado'
+      };
+
+      let translatedError = errorMessage;
+      for (const [key, value] of Object.entries(errorMap)) {
+        if (errorMessage.includes(key)) {
+          translatedError = value;
+          break;
+        }
+      }
+
+      setError(translatedError);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="min-h-screen flex flex-col md:flex-row font-body">
+        <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
+          <div className="text-center">
+            <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-12 md:h-16 mx-auto mb-4 md:mb-6" />
+            <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+          </div>
+        </div>
+        <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
+          <div className="max-w-md w-full text-center px-2 sm:px-0">
+            <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4 text-center">Conta criada!</h1>
+            <p className="text-gray-600 mb-4 md:mb-6 text-center text-sm font-semibold">Acesse seu email informado no cadastro para fazer a verificação de sua conta.</p>
+            <button onClick={onNavigateToSignIn} className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base">Ir para Login</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'initial') {
+    return (
+      <div className="min-h-screen flex flex-col md:flex-row font-body">
+        <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
+          <div className="text-center">
+            <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-12 md:h-16 mx-auto mb-4 md:mb-6" />
+            <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+          </div>
+        </div>
+        <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
+          <div className="max-w-sm w-full px-2 sm:px-0">
+            <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-2 text-center">Criar Conta</h1>
+            <p className="text-gray-600 mb-4 md:mb-8 text-center">Comece sua jornada conosco</p>
+            {error && <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+            <form onSubmit={handleInitialSubmit} className="space-y-3 md:space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+                />
+              </div>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="terms"
+                  checked={formData.termsAccepted}
+                  onChange={(e) => setFormData({ ...formData, termsAccepted: e.target.checked })}
+                  className="mr-2 w-4 h-4 border border-gray-300 rounded bg-white checked:bg-white checked:border-gray-900 focus:ring-0 focus:ring-offset-0 appearance-none cursor-pointer relative checked:after:content-['✓'] checked:after:absolute checked:after:text-gray-900 checked:after:text-xs checked:after:left-1/2 checked:after:top-1/2 checked:after:-translate-x-1/2 checked:after:-translate-y-1/2 flex-shrink-0"
+                />
+                <label htmlFor="terms" className="text-sm text-gray-600">
+                  Aceito os{' '}
+                  <a
+                    href="http://wislegal.io/terms"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-wis-dark hover:underline font-medium"
+                  >
+                    termos de uso
+                  </a>
+                  {' '}e a{' '}
+                  <a
+                    href="http://wislegal.io/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-wis-dark hover:underline font-medium"
+                  >
+                    política de privacidade
+                  </a>
+                </label>
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base"
+              >
+                Criar Conta
+              </button>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-300"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-gray-500">ou</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={async () => {
+                  setGoogleLoading(true);
+                  setError(null);
+                  try {
+                    await signInWithGoogle();
+                  } catch (err: any) {
+                    setError(err.message || 'Erro ao fazer cadastro com Google');
+                    setGoogleLoading(false);
+                  }
+                }}
+                disabled={googleLoading || microsoftLoading}
+                className="w-full bg-white text-gray-700 py-2.5 md:py-3 px-4 rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm md:text-base"
+              >
+                {googleLoading ? (
+                  <><Loader className="w-4 md:w-5 h-4 md:h-5 animate-spin mr-2" />Conectando...</>
+                ) : (
+                  <><svg className="w-4 md:w-5 h-4 md:h-5 mr-2" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Continuar com Google</>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setMicrosoftLoading(true);
+                  setError(null);
+                  try {
+                    await signInWithMicrosoft();
+                  } catch (err: any) {
+                    setError(err.message || 'Erro ao fazer cadastro com Microsoft');
+                    setMicrosoftLoading(false);
+                  }
+                }}
+                disabled={googleLoading || microsoftLoading}
+                className="w-full bg-white text-gray-700 py-2.5 md:py-3 px-4 rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm md:text-base"
+              >
+                {microsoftLoading ? (
+                  <><Loader className="w-4 md:w-5 h-4 md:h-5 animate-spin mr-2" />Conectando...</>
+                ) : (
+                  <>
+                    <svg className="w-4 md:w-5 h-4 md:h-5 mr-2" viewBox="0 0 21 21">
+                      <path fill="#f25022" d="M0 0h10v10H0z"/>
+                      <path fill="#00a4ef" d="M11 0h10v10H11z"/>
+                      <path fill="#7fba00" d="M0 11h10v10H0z"/>
+                      <path fill="#ffb900" d="M11 11h10v10H11z"/>
+                    </svg>
+                    Continuar com Microsoft
+                  </>
+                )}
+              </button>
+              <p className="text-center text-sm text-gray-600">
+                Já tem uma conta?{' '}
+                <button type="button" onClick={onNavigateToSignIn} className="text-wis-dark hover:underline font-medium">Faça login</button>
+              </p>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row font-body">
+      <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
+        <div className="text-center">
+          <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-12 md:h-16 mx-auto mb-4 md:mb-6" />
+          <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+        </div>
+      </div>
+      <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
+        <div className="max-w-sm w-full px-2 sm:px-0">
+          <button
+            type="button"
+            onClick={() => setStep('initial')}
+            className="mb-4 text-gray-600 hover:text-gray-900 flex items-center text-sm"
+          >
+            ← Voltar
+          </button>
+          <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-4 md:mb-8 text-center">Complete seu Cadastro</h1>
+          {error && <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+            <div className="flex flex-col items-center">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Foto de perfil <span className="text-gray-400 text-xs">(opcional)</span>
+              </label>
+              <div className="relative inline-block">
+                <div
+                  onClick={handleAvatarClick}
+                  className="w-20 h-20 rounded-full overflow-hidden border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors bg-gray-100 flex items-center justify-center group"
+                >
+                  {avatarPreview ? (
+                    <>
+                      <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center">
+                        <Upload className="w-6 h-6 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </div>
+                    </>
+                  ) : (
+                    <User className="w-9 h-9 text-gray-400 stroke-[1.5]" />
+                  )}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-white rounded-full flex items-center justify-center border border-gray-300 shadow-sm">
+                  <Upload className="w-3.5 h-3.5 text-gray-500 stroke-[1.5]" />
+                </div>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome</label><input type="text" required value={formData.firstName} onChange={(e) => {
+                const value = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
+                setFormData({ ...formData, firstName: value });
+              }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600" /></div>
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">Sobrenome</label><input type="text" required value={formData.lastName} onChange={(e) => {
+                const value = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
+                setFormData({ ...formData, lastName: value });
+              }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600" /></div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+              <div className="flex gap-2">
+                <div className="relative">
+                  <select
+                    value={formData.phoneCountryCode}
+                    onChange={(e) => setFormData({ ...formData, phoneCountryCode: e.target.value })}
+                    className="appearance-none w-32 px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-white cursor-pointer text-gray-600"
+                  >
+                    {countryCodes.map((country) => (
+                      <option key={country.code} value={country.code}>
+                        {country.flag} {country.code}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+                </div>
+                <input
+                  type="tel"
+                  required
+                  value={formData.phone}
+                  onChange={(e) => {
+                    const formatted = formData.phoneCountryCode === '+55'
+                      ? formatPhoneBrazil(e.target.value)
+                      : e.target.value.replace(/[^0-9]/g, '');
+                    setFormData({ ...formData, phone: formatted });
+                  }}
+                  placeholder={selectedCountry.example}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                OAB <span className="text-gray-400 text-xs">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.oab}
+                onChange={(e) => {
+                  const formatted = formatOAB(e.target.value);
+                  setFormData({ ...formData, oab: formatted });
+                }}
+                placeholder="Digite o número da OAB (opcional)"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Seccional</label>
+              <Select
+                value={selectedState}
+                onChange={(option) => {
+                  setSelectedState(option);
+                  setFormData({ ...formData, state: option?.label || '' });
+                }}
+                options={brazilianStates}
+                placeholder="Selecione um estado"
+                isClearable={false}
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    borderColor: '#d1d5db',
+                    borderRadius: '0.5rem',
+                    padding: '0.125rem 0.5rem',
+                    minHeight: '42px',
+                    '&:hover': { borderColor: '#d1d5db' },
+                  }),
+                  placeholder: (base) => ({
+                    ...base,
+                    color: '#9ca3af',
+                  }),
+                  singleValue: (base) => ({
+                    ...base,
+                    color: '#6b7280',
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    color: '#6b7280',
+                    backgroundColor: state.isFocused ? '#f3f4f6' : 'white',
+                    '&:hover': {
+                      backgroundColor: '#f3f4f6',
+                    },
+                  }),
+                  menu: (base) => ({
+                    ...base,
+                    borderRadius: '0.5rem',
+                    marginTop: '0.25rem',
+                  }),
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cidade</label>
+              <input
+                type="text"
+                required
+                value={formData.city}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[0-9]/g, '');
+                  setFormData({ ...formData, city: value });
+                }}
+                placeholder="Digite sua cidade"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={formData.password}
+                  onChange={(e) => {
+                    const newPassword = e.target.value;
+                    setFormData({ ...formData, password: newPassword });
+                    setPasswordValidation(validatePassword(newPassword));
+                    if (formData.confirmPassword && newPassword !== formData.confirmPassword) {
+                      setError('As senhas não coincidem');
+                    } else if (newPassword === formData.confirmPassword) {
+                      setError(null);
+                    }
+                  }}
+                  minLength={6}
+                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordValidation.minLength ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className={passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}>
+                    Mínimo de 6 caracteres
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordValidation.hasUppercase ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className={passwordValidation.hasUppercase ? 'text-green-600' : 'text-gray-500'}>
+                    Letra maiúscula
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordValidation.hasLowercase ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className={passwordValidation.hasLowercase ? 'text-green-600' : 'text-gray-500'}>
+                    Letra minúscula
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordValidation.hasNumber ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className={passwordValidation.hasNumber ? 'text-green-600' : 'text-gray-500'}>
+                    Número
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordValidation.hasSpecialChar ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-gray-400" />
+                  )}
+                  <span className={passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}>
+                    Caractere especial (!@#$%...)
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Senha</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => {
+                    const newConfirmPassword = e.target.value;
+                    setFormData({ ...formData, confirmPassword: newConfirmPassword });
+                    if (newConfirmPassword && formData.password !== newConfirmPassword) {
+                      setError('As senhas não coincidem');
+                    } else if (formData.password === newConfirmPassword) {
+                      setError(null);
+                    }
+                  }}
+                  minLength={6}
+                  className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              {formData.confirmPassword && (
+                <div className="flex items-center gap-2 mt-1">
+                  {formData.password === formData.confirmPassword ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                      <p className="text-xs text-green-500">As senhas coincidem</p>
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="w-4 h-4 text-red-500" />
+                      <p className="text-xs text-red-500">As senhas não coincidem</p>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+            <button type="submit" disabled={loading} className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium disabled:opacity-50 flex items-center justify-center text-sm md:text-base">
+              {loading ? <><Loader className="w-4 md:w-5 h-4 md:h-5 animate-spin mr-2" />Criando...</> : 'Concluir Cadastro'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}

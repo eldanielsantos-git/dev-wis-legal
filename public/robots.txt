@@ -1,0 +1,45 @@
+# Wis Legal - Robots.txt
+# https://wislegal.io/robots.txt
+
+User-agent: *
+
+# Permitir acesso às páginas públicas
+Allow: /
+Allow: /sign-in
+Allow: /sign-up
+Allow: /forgot-password
+Allow: /reset-password
+Allow: /terms
+Allow: /privacy
+Allow: /cookies
+
+# Bloquear páginas privadas e autenticadas
+Disallow: /app
+Disallow: /profile
+Disallow: /lawsuits
+Disallow: /lawsuits-detail/
+Disallow: /processo/
+Disallow: /notifications
+Disallow: /signature
+Disallow: /tokens
+
+# Bloquear área administrativa
+Disallow: /admin
+Disallow: /admin-settings
+Disallow: /admin-users
+Disallow: /admin-models
+Disallow: /admin-integrity
+Disallow: /admin-prompts
+Disallow: /admin-tokens
+Disallow: /admin-stripe-diagnostic
+
+# Bloquear arquivos e diretórios técnicos
+Disallow: /api/
+Disallow: /*.json$
+Disallow: /*.config.js$
+
+# Referência ao Sitemap
+Sitemap: https://wislegal.io/sitemap.xml
+
+# Crawl-delay para bots menos agressivos
+Crawl-delay: 1

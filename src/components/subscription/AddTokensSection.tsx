@@ -1,0 +1,148 @@
+import React, { useState } from 'react';
+import { supabase } from '../../lib/supabase';
+import { useTheme } from '../../contexts/ThemeContext';
+import { getThemeColors } from '../../utils/themeUtils';
+import { useTokenPackages } from '../../hooks/useTokenPackages';
+import { Loader2 } from 'lucide-react';
+
+interface AddTokensSectionProps {
+  title?: string;
+  description?: string;
+  onPurchaseStart?: () => void;
+  onPurchaseComplete?: () => void;
+  onPurchaseError?: (error: string) => void;
+}
+
+export function AddTokensSection({
+  title = 'Adicione mais tokens em sua assinatura',
+  description = 'Escolha uma das opções abaixo:',
+  onPurchaseStart,
+  onPurchaseComplete,
+  onPurchaseError
+}: AddTokensSectionProps) {
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
+  const { packages, loading: packagesLoading } = useTokenPackages();
+  const [loading, setLoading] = useState<string | null>(null);
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(price);
+  };
+
+  const formatTokens = (tokens: number) => {
+    if (tokens >= 1000000) {
+      return `${(tokens / 1000000).toFixed(1)}M tokens`;
+    }
+    return `${tokens.toLocaleString('pt-BR')} tokens`;
+  };
+
+  const handlePurchaseTokens = (checkoutUrl: string, packageId: string) => {
+    if (!checkoutUrl) {
+      const errorMessage = 'Link de checkout não disponível para este pacote';
+      console.error(errorMessage);
+      if (onPurchaseError) {
+        onPurchaseError(errorMessage);
+      }
+      return;
+    }
+
+    setLoading(packageId);
+
+    if (onPurchaseStart) {
+      onPurchaseStart();
+    }
+
+    try {
+      if (onPurchaseComplete) {
+        onPurchaseComplete();
+      }
+      window.location.href = checkoutUrl;
+    } catch (error) {
+      console.error('Erro ao redirecionar para checkout:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao processar compra';
+
+      if (onPurchaseError) {
+        onPurchaseError(errorMessage);
+      }
+      setLoading(null);
+    }
+  };
+
+  if (packagesLoading) {
+    return (
+      <div className="mb-8 flex items-center justify-center py-8">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.textPrimary }} />
+      </div>
+    );
+  }
+
+  if (packages.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mb-8">
+      <h3 className="text-xl font-semibold mb-4" style={{ color: colors.textPrimary }}>
+        {title}
+      </h3>
+
+      <p className="mb-6" style={{ color: colors.textSecondary }}>
+        {description}
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {packages.map((pkg) => {
+          const isLoading = loading === pkg.id;
+          return (
+            <button
+              key={pkg.id}
+              onClick={() => handlePurchaseTokens(pkg.checkout_url || '', pkg.id)}
+              disabled={isLoading || loading !== null || !pkg.checkout_url}
+              className="p-6 rounded-xl text-left transition-all duration-200 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: colors.bgPrimary,
+                border: `2px solid ${colors.border}`
+              }}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <h4 className="text-lg font-bold mb-1" style={{ color: colors.textPrimary }}>
+                    {pkg.name}
+                  </h4>
+                  <p className="text-sm mb-2" style={{ color: colors.textSecondary }}>
+                    {formatTokens(pkg.tokens_amount)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-baseline">
+                <span className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
+                  {formatPrice(pkg.price_brl)}
+                </span>
+                <span className="ml-2 text-sm" style={{ color: colors.textSecondary }}>
+                  pagamento único
+                </span>
+              </div>
+              {isLoading && (
+                <div className="mt-4 text-center">
+                  <span className="text-sm font-medium" style={{ color: '#22c55e' }}>
+                    Processando...
+                  </span>
+                </div>
+              )}
+              {!pkg.checkout_url && (
+                <div className="mt-4 text-center">
+                  <span className="text-xs" style={{ color: '#EF4444' }}>
+                    Link indisponível
+                  </span>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

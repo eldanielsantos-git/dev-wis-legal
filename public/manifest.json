@@ -1,0 +1,84 @@
+{
+  "name": "Wis Legal - Análise Forense Jurídica",
+  "short_name": "Wis Legal",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0F0E0D",
+  "theme_color": "#111827",
+  "lang": "pt-BR",
+  "orientation": "portrait",
+  "description": "Plataforma automatizada para transcrição e análise forense de processos jurídicos utilizando inteligência artificial",
+  "categories": ["business", "productivity", "legal"],
+  "icons": [
+    {
+      "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-36x36.png",
+      "sizes": "36x36",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-48x48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-72x72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-96x96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nova Análise",
+      "short_name": "Nova",
+      "description": "Iniciar nova análise de processo",
+      "url": "/app",
+      "icons": [
+        {
+          "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Meus Processos",
+      "short_name": "Processos",
+      "description": "Ver processos analisados",
+      "url": "/lawsuits",
+      "icons": [
+        {
+          "src": "https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/icons/android-icon-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}

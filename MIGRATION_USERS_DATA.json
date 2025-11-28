@@ -1,0 +1,206 @@
+{
+  "users": [
+    {
+      "id": "87a4f9e4-db30-4dfe-957d-8122b66b7015",
+      "email": "daniel@dmzdigital.com.br",
+      "encrypted_password": "$2a$10$fDqhj.Jx0NxmO.3YUf1P4ehnxwUBxtOzJtwgcU.ldjAsHiMcTOvDG",
+      "email_confirmed_at": "2025-10-06 23:12:53.56099+00",
+      "raw_app_meta_data": {
+        "provider": "email",
+        "providers": ["email", "google"]
+      },
+      "raw_user_meta_data": {
+        "iss": "https://accounts.google.com",
+        "sub": "114622583704731644631",
+        "name": "Daniel Santos",
+        "email": "daniel@dmzdigital.com.br",
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocJE8ftCqlMn4XRoZhQrlgo61woKUWHIywyyYV5TjZYRRpUjnpQ=s96-c",
+        "full_name": "Daniel Santos",
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocJE8ftCqlMn4XRoZhQrlgo61woKUWHIywyyYV5TjZYRRpUjnpQ=s96-c",
+        "provider_id": "114622583704731644631",
+        "custom_claims": {
+          "hd": "dmzdigital.com.br"
+        },
+        "email_verified": true,
+        "phone_verified": false
+      },
+      "created_at": "2025-10-06 23:12:53.56099+00",
+      "updated_at": "2025-11-27 14:07:50.469951+00",
+      "last_sign_in_at": "2025-11-26 00:01:05.161935+00",
+      "profile": {
+        "first_name": "Daniel",
+        "last_name": "Santos",
+        "avatar_url": "https://zvlqcxiwsrziuodiotar.supabase.co/storage/v1/object/public/avatars/87a4f9e4-db30-4dfe-957d-8122b66b7015/avatar.JPG",
+        "oab": null,
+        "phone": "+55 11987556013",
+        "phone_country_code": "+55",
+        "city": "São Paulo",
+        "state": "SP",
+        "is_admin": true,
+        "theme_preference": "dark",
+        "terms_accepted_at": "2025-10-06 23:12:53.56099+00",
+        "email": "daniel@dmzdigital.com.br"
+      }
+    },
+    {
+      "id": "45ef022b-5963-42b9-9bc3-936a1d3de22a",
+      "email": "jp@dmzdigital.com.br",
+      "encrypted_password": "$2a$06$PzWPKSumoVUY9NvVLijuYuJpnWpbJtS1m0sIGjF89WzaXZZbPZl5K",
+      "email_confirmed_at": "2025-10-06 23:14:28.031418+00",
+      "raw_app_meta_data": {
+        "provider": "email",
+        "providers": ["email", "google"]
+      },
+      "raw_user_meta_data": {
+        "iss": "https://accounts.google.com",
+        "sub": "114847590530701049214",
+        "name": "João Pedro Raupp",
+        "email": "jp@dmzdigital.com.br",
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocJEnkaVC3egchkccj1tATS7CKywRjVbMhv2FcekVDv4u-1PXw=s96-c",
+        "full_name": "João Pedro Raupp",
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocJEnkaVC3egchkccj1tATS7CKywRjVbMhv2FcekVDv4u-1PXw=s96-c",
+        "provider_id": "114847590530701049214",
+        "custom_claims": {
+          "hd": "dmzdigital.com.br"
+        },
+        "email_verified": true,
+        "phone_verified": false
+      },
+      "created_at": "2025-10-06 23:14:28.031418+00",
+      "updated_at": "2025-11-27 13:31:10.308732+00",
+      "last_sign_in_at": "2025-11-25 12:14:00.358558+00",
+      "profile": {
+        "first_name": "João Pedro",
+        "last_name": "Raupp",
+        "avatar_url": "",
+        "oab": "61.178",
+        "phone": "+55 (11) 95801-4505",
+        "phone_country_code": "+55",
+        "city": "Pelotas",
+        "state": "Rio Grande do Sul",
+        "is_admin": true,
+        "theme_preference": "dark",
+        "terms_accepted_at": "2025-10-06 23:14:28.031418+00",
+        "email": "jp@dmzdigital.com.br"
+      }
+    },
+    {
+      "id": "4981cbe6-ce57-440f-aedc-46aefe0b275f",
+      "email": "rauppj3@gmail.com",
+      "encrypted_password": null,
+      "email_confirmed_at": "2025-11-19 20:55:03.232971+00",
+      "raw_app_meta_data": {
+        "provider": "google",
+        "providers": ["google"]
+      },
+      "raw_user_meta_data": {
+        "iss": "https://accounts.google.com",
+        "sub": "104090152326855810411",
+        "name": "Joao Raupp",
+        "email": "rauppj3@gmail.com",
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocLUwUds9U6A1g0bNlrxnY-RLOZ4AA-Np3Ml8P6obsy2lXiycg=s96-c",
+        "full_name": "Joao Raupp",
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocLUwUds9U6A1g0bNlrxnY-RLOZ4AA-Np3Ml8P6obsy2lXiycg=s96-c",
+        "provider_id": "104090152326855810411",
+        "email_verified": true,
+        "phone_verified": false
+      },
+      "created_at": "2025-11-19 20:55:03.222293+00",
+      "updated_at": "2025-11-25 13:14:05.341775+00",
+      "last_sign_in_at": "2025-11-19 20:55:03.234734+00",
+      "profile": {
+        "first_name": "Joao",
+        "last_name": "Raupp",
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocLUwUds9U6A1g0bNlrxnY-RLOZ4AA-Np3Ml8P6obsy2lXiycg=s96-c",
+        "oab": null,
+        "phone": null,
+        "phone_country_code": "+55",
+        "city": null,
+        "state": null,
+        "is_admin": false,
+        "theme_preference": "dark",
+        "terms_accepted_at": "2025-11-19 20:55:03.219918+00",
+        "email": "rauppj3@gmail.com"
+      }
+    },
+    {
+      "id": "c805c172-3d3d-4fbd-870c-a8a08706a86a",
+      "email": "jp+2025@dmzdigital.com.br",
+      "encrypted_password": "$2a$10$KP3WtrVXx6Saa/F0L5WEqejA1UTMMZYmOHjF9Ouc/EYwJ8nuQy4BK",
+      "email_confirmed_at": "2025-11-20 13:37:01.762068+00",
+      "raw_app_meta_data": {
+        "provider": "email",
+        "providers": ["email"]
+      },
+      "raw_user_meta_data": {
+        "oab": "88.888",
+        "sub": "c805c172-3d3d-4fbd-870c-a8a08706a86a",
+        "city": "Pelotas",
+        "email": "jp+2025@dmzdigital.com.br",
+        "phone": "(11) 95801-4505",
+        "state": "Rio Grande do Sul",
+        "last_name": "Teste Pg",
+        "first_name": "Joao",
+        "email_verified": true,
+        "phone_verified": false,
+        "phone_country_code": "+55"
+      },
+      "created_at": "2025-11-20 13:36:09.763513+00",
+      "updated_at": "2025-11-20 13:37:01.767852+00",
+      "last_sign_in_at": "2025-11-20 13:37:01.765144+00",
+      "profile": {
+        "first_name": "Joao",
+        "last_name": "Teste Pg",
+        "avatar_url": null,
+        "oab": "88.888",
+        "phone": "(11) 95801-4505",
+        "phone_country_code": "+55",
+        "city": "Pelotas",
+        "state": "Rio Grande do Sul",
+        "is_admin": false,
+        "theme_preference": "dark",
+        "terms_accepted_at": "2025-11-20 13:36:09.763178+00",
+        "email": "jp+2025@dmzdigital.com.br"
+      }
+    },
+    {
+      "id": "5429474f-97c2-4e61-b537-0da7099a85b1",
+      "email": "twaning2222@gmail.com",
+      "encrypted_password": null,
+      "email_confirmed_at": "2025-11-25 12:18:10.359766+00",
+      "raw_app_meta_data": {
+        "provider": "google",
+        "providers": ["google"]
+      },
+      "raw_user_meta_data": {
+        "iss": "https://accounts.google.com",
+        "sub": "103879016658438473014",
+        "name": "Twan",
+        "email": "twaning2222@gmail.com",
+        "picture": "https://lh3.googleusercontent.com/a/ACg8ocKRwhs0O3Inhmx6k0dDb0VsU80oMgAkvt6Paj4bkWcORanTmts=s96-c",
+        "full_name": "Twan",
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKRwhs0O3Inhmx6k0dDb0VsU80oMgAkvt6Paj4bkWcORanTmts=s96-c",
+        "provider_id": "103879016658438473014",
+        "email_verified": true,
+        "phone_verified": false
+      },
+      "created_at": "2025-11-25 12:18:10.342809+00",
+      "updated_at": "2025-11-25 12:18:10.365863+00",
+      "last_sign_in_at": "2025-11-25 12:18:10.36338+00",
+      "profile": {
+        "first_name": "Twan",
+        "last_name": "",
+        "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocKRwhs0O3Inhmx6k0dDb0VsU80oMgAkvt6Paj4bkWcORanTmts=s96-c",
+        "oab": null,
+        "phone": null,
+        "phone_country_code": "+55",
+        "city": null,
+        "state": null,
+        "is_admin": false,
+        "theme_preference": "dark",
+        "terms_accepted_at": "2025-11-25 12:18:10.336154+00",
+        "email": "twaning2222@gmail.com"
+      }
+    }
+  ]
+}
