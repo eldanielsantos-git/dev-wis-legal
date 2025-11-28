@@ -637,15 +637,14 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         planName={upgradeModal.planName}
         reason={upgradeModal.reason}
       />
-      {isSearchOpen && (
-        <IntelligentSearch
-          onClose={() => setIsSearchOpen(false)}
-          onSelectProcess={(processoId) => {
-            window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-        />
-      )}
+      <IntelligentSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelectProcess={(processoId) => {
+          window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+      />
       <ErrorModal
         isOpen={errorModal.isOpen}
         title={errorModal.title}

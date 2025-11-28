@@ -6,11 +6,12 @@ import { getThemeColors } from '../utils/themeUtils';
 import type { Processo } from '../lib/supabase';
 
 interface IntelligentSearchProps {
+  isOpen: boolean;
   onClose: () => void;
   onSelectProcess: (processoId: string) => void;
 }
 
-export function IntelligentSearch({ onClose, onSelectProcess }: IntelligentSearchProps) {
+export function IntelligentSearch({ isOpen, onClose, onSelectProcess }: IntelligentSearchProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [searchQuery, setSearchQuery] = useState('');
@@ -114,6 +115,8 @@ export function IntelligentSearch({ onClose, onSelectProcess }: IntelligentSearc
   const overlayBg = theme === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)';
   const hoverBg = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
   const selectedBg = theme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+
+  if (!isOpen) return null;
 
   return (
     <div

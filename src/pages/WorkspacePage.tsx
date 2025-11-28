@@ -250,7 +250,7 @@ export function WorkspacePage({
       <IntelligentSearch
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
-        onNavigateToDetail={handleNavigateToDetail}
+        onSelectProcess={handleNavigateToDetail}
       />
     </div>
   );

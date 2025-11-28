@@ -357,12 +357,11 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
           onNavigateToCookies={onNavigateToCookies}
         />
       </div>
-      {isSearchOpen && (
-        <IntelligentSearch
-          onClose={() => setIsSearchOpen(false)}
-          onSelectProcess={onNavigateToDetail}
-        />
-      )}
+      <IntelligentSearch
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSelectProcess={onNavigateToDetail}
+      />
       <ConfirmDeleteModal
         isOpen={deleteModalOpen}
         fileName={processoToDelete?.file_name || ''}
