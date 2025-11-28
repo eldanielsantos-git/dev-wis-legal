@@ -13,7 +13,8 @@ export interface WorkspaceShare {
   updated_at: string;
   processo?: {
     id: string;
-    numero_processo: string;
+    file_name: string;
+    file_size: number;
     nome_processo: string;
     status: string;
     created_at: string;
@@ -214,7 +215,7 @@ export class WorkspaceService {
       const processoIds = shares.map(s => s.processo_id);
       const { data: processos } = await supabase
         .from('processos')
-        .select('id, numero_processo, nome_processo, status, created_at')
+        .select('id, file_name, file_size, status, created_at')
         .in('id', processoIds);
 
       // Fetch owner details separately
@@ -289,7 +290,7 @@ export class WorkspaceService {
       const processoIds = shares.map(s => s.processo_id);
       const { data: processos } = await supabase
         .from('processos')
-        .select('id, numero_processo, nome_processo, status, created_at')
+        .select('id, file_name, file_size, status, created_at')
         .in('id', processoIds);
 
       // Combine data

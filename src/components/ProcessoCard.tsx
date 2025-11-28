@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Trash2, CheckCircle, Coins, Users } from 'lucide-react';
+import { FileText, Trash2, CheckCircle, Coins, Users, Calendar, Lock, Edit3 } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { ProcessStatusIndicator } from './ProcessStatusIndicator';
@@ -17,6 +17,12 @@ interface ProcessoCardProps {
     email: string;
     created_at: string;
   };
+  workspaceInfo?: {
+    sharedWith?: string;
+    sharedBy?: string;
+    sharedAt?: string;
+    permissionLevel?: 'read_only' | 'editor';
+  };
 }
 
 export const ProcessoCard: React.FC<ProcessoCardProps> = ({
@@ -26,7 +32,8 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
   isAdmin,
   isShared,
   shareCount,
-  userInfo
+  userInfo,
+  workspaceInfo
 }) => {
   const { theme } = useTheme();
   const totalPrompts = processo.total_prompts || 9;
@@ -165,6 +172,59 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
             minute: '2-digit'
           })}
         </div>
+
+        {workspaceInfo && (
+          <div
+            className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t space-y-2"
+            style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
+          >
+            {workspaceInfo.sharedWith && (
+              <div className="flex items-center text-xs" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Users className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+                <span>Compartilhado com {workspaceInfo.sharedWith}</span>
+              </div>
+            )}
+            {workspaceInfo.sharedBy && (
+              <div className="flex items-center text-xs" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Users className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+                <span>Compartilhado por {workspaceInfo.sharedBy}</span>
+              </div>
+            )}
+            {workspaceInfo.sharedAt && (
+              <div className="flex items-center text-xs" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Calendar className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+                <span>
+                  Compartilhado em {new Date(workspaceInfo.sharedAt).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                  })}
+                </span>
+              </div>
+            )}
+            {workspaceInfo.permissionLevel && (
+              <div
+                className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                style={{
+                  backgroundColor: workspaceInfo.permissionLevel === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                  color: workspaceInfo.permissionLevel === 'read_only' ? '#f59e0b' : '#3b82f6'
+                }}
+              >
+                {workspaceInfo.permissionLevel === 'read_only' ? (
+                  <>
+                    <Lock className="w-3 h-3" />
+                    <span>Somente Leitura</span>
+                  </>
+                ) : (
+                  <>
+                    <Edit3 className="w-3 h-3" />
+                    <span>Editor</span>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {isAdmin && userInfo && (
           <div

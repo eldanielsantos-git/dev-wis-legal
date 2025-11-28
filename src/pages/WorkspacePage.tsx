@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Loader, Lock, Edit3, Calendar, FileText } from 'lucide-react';
+import { Users, Loader } from 'lucide-react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
 import { WorkspaceService, WorkspaceShare } from '../services/WorkspaceService';
-import { ProcessStatusBadge } from '../components/ProcessStatusBadge';
+import { ProcessoCard } from '../components/ProcessoCard';
+import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 
@@ -82,15 +83,6 @@ export function WorkspacePage({
       window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
       window.dispatchEvent(new PopStateEvent('popstate'));
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
   };
 
   return (
@@ -242,115 +234,40 @@ export function WorkspacePage({
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(activeTab === 'received' ? sharedWithMe : myShares).map((share) => (
-                <div
-                  key={share.id}
-                  onClick={() => handleNavigateToDetail(share.processo_id)}
-                  className="rounded-xl border p-6 cursor-pointer hover:shadow-lg transition-all duration-200"
-                  style={{
-                    backgroundColor: colors.bgSecondary,
-                    borderColor: colors.border
-                  }}
-                >
-                  <div className="mb-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3
-                        className="text-lg font-semibold line-clamp-2"
-                        style={{ color: colors.textPrimary }}
-                      >
-                        {share.processo?.nome_processo || 'Sem nome'}
-                      </h3>
-                    </div>
+            <div className="flex flex-wrap gap-6 justify-center lg:justify-start">
+              {(activeTab === 'received' ? sharedWithMe : myShares).map((share) => {
+                if (!share.processo) return null;
 
-                    {share.processo?.numero_processo && (
-                      <p className="text-sm mb-3" style={{ color: colors.textSecondary }}>
-                        {share.processo.numero_processo}
-                      </p>
-                    )}
+                const processoData: Processo = {
+                  id: share.processo_id,
+                  user_id: share.owner_user_id,
+                  file_name: share.processo.file_name || share.processo.nome_processo || 'Sem nome',
+                  file_path: '',
+                  file_url: '',
+                  file_size: share.processo.file_size || 0,
+                  transcricao: { totalPages: 0 },
+                  status: share.processo.status as any,
+                  created_at: share.processo.created_at,
+                  updated_at: share.created_at,
+                  is_complex: false
+                };
 
-                    <div className="mb-3">
-                      {share.processo && (
-                        <ProcessStatusBadge status={share.processo.status} />
-                      )}
-                    </div>
-
-                    {activeTab === 'received' && (
-                      <div
-                        className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
-                        style={{
-                          backgroundColor: share.permission_level === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                          color: share.permission_level === 'read_only' ? '#f59e0b' : '#3b82f6'
-                        }}
-                      >
-                        {share.permission_level === 'read_only' ? (
-                          <>
-                            <Lock className="w-3 h-3" />
-                            <span>Somente Leitura</span>
-                          </>
-                        ) : (
-                          <>
-                            <Edit3 className="w-3 h-3" />
-                            <span>Editor</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div
-                    className="pt-4 border-t space-y-2"
-                    style={{ borderColor: colors.border }}
-                  >
-                    {activeTab === 'received' ? (
-                      <>
-                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
-                          <Users className="w-4 h-4 mr-2" />
-                          <span>
-                            Compartilhado por {share.owner?.first_name} {share.owner?.last_name}
-                          </span>
-                        </div>
-                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
-                          <Calendar className="w-4 h-4 mr-2" />
-                          <span>Compartilhado em {formatDate(share.created_at)}</span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
-                          <Users className="w-4 h-4 mr-2" />
-                          <span>
-                            Compartilhado com {share.shared_with_name}
-                          </span>
-                        </div>
-                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
-                          <Calendar className="w-4 h-4 mr-2" />
-                          <span>Compartilhado em {formatDate(share.created_at)}</span>
-                        </div>
-                        <div
-                          className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
-                          style={{
-                            backgroundColor: share.permission_level === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                            color: share.permission_level === 'read_only' ? '#f59e0b' : '#3b82f6'
-                          }}
-                        >
-                          {share.permission_level === 'read_only' ? (
-                            <>
-                              <Lock className="w-3 h-3" />
-                              <span>Somente Leitura</span>
-                            </>
-                          ) : (
-                            <>
-                              <Edit3 className="w-3 h-3" />
-                              <span>Editor</span>
-                            </>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
+                return (
+                  <ProcessoCard
+                    key={share.id}
+                    processo={processoData}
+                    onViewDetails={() => handleNavigateToDetail(share.processo_id)}
+                    workspaceInfo={{
+                      sharedWith: activeTab === 'shared' ? share.shared_with_name : undefined,
+                      sharedBy: activeTab === 'received'
+                        ? `${share.owner?.first_name || ''} ${share.owner?.last_name || ''}`.trim()
+                        : undefined,
+                      sharedAt: share.created_at,
+                      permissionLevel: share.permission_level
+                    }}
+                  />
+                );
+              })}
             </div>
           )}
         </main>
