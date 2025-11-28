@@ -17,7 +17,14 @@ interface WorkspaceInviteRequest {
 }
 
 Deno.serve(async (req: Request) => {
+  console.log("\ud83d\ude80 ==========================================");
+  console.log("\ud83d\ude80 send-workspace-invite function called!");
+  console.log("\ud83d\ude80 Method:", req.method);
+  console.log("\ud83d\ude80 URL:", req.url);
+  console.log("\ud83d\ude80 ==========================================");
+
   if (req.method === "OPTIONS") {
+    console.log("\u2705 Handling OPTIONS request");
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
@@ -25,15 +32,24 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    console.log("\ud83d\udd10 Step 1: Checking environment variables...");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+    console.log("\ud83d\udd10 Supabase URL:", supabaseUrl ? "\u2705 Present" : "\u274c Missing");
+    console.log("\ud83d\udd10 Service key:", supabaseServiceKey ? "\u2705 Present" : "\u274c Missing");
+
     if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("\u274c Missing Supabase environment variables");
       throw new Error("Missing Supabase environment variables");
     }
 
+    console.log("\ud83d\udd10 Step 2: Checking authorization header...");
     const authHeader = req.headers.get("Authorization");
+    console.log("\ud83d\udd10 Auth header:", authHeader ? `\u2705 Present (${authHeader.substring(0, 20)}...)` : "\u274c Missing");
+
     if (!authHeader) {
+      console.error("\u274c Missing authorization header");
       return new Response(
         JSON.stringify({ error: "Missing authorization header" }),
         {
@@ -43,13 +59,24 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("\ud83d\udd10 Step 3: Creating Supabase client...");
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
+    console.log("\ud83d\udd10 Step 4: Verifying user token...");
     const token = authHeader.replace("Bearer ", "");
     const {
       data: { user },
       error: userError,
     } = await supabaseClient.auth.getUser(token);
+
+    if (userError) {
+      console.error("\u274c User verification error:", userError);
+    }
+    if (!user) {
+      console.error("\u274c No user found");
+    } else {
+      console.log("\u2705 User verified:", user.id, user.email);
+    }
 
     if (userError || !user) {
       return new Response(
@@ -61,6 +88,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("\ud83d\udce5 Step 5: Parsing request body...");
     const {
       shareId,
       processoId,
@@ -70,21 +98,37 @@ Deno.serve(async (req: Request) => {
       userExists,
     }: WorkspaceInviteRequest = await req.json();
 
+    console.log("\ud83d\udce5 Received request data:", {
+      shareId,
+      processoId,
+      invitedEmail,
+      invitedName,
+      permissionLevel,
+      userExists
+    });
+
+    console.log("\ud83d\udd0d Step 6: Looking for processo with ID:", processoId);
+
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
       .select("numero_processo, file_name")
       .eq("id", processoId)
       .single();
 
+    console.log("\ud83d\udd0d Processo query result:", { processo, processoError });
+
     if (processoError || !processo) {
+      console.error("\u274c Processo not found. Error:", processoError);
       return new Response(
-        JSON.stringify({ error: "Processo not found" }),
+        JSON.stringify({ error: "Processo not found", details: processoError?.message }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
     }
+
+    console.log("\u2705 Step 7: Processo found:", processo.file_name || processo.numero_processo);
 
     const { data: ownerProfile } = await supabaseClient
       .from("user_profiles")
@@ -96,10 +140,13 @@ Deno.serve(async (req: Request) => {
       ? `${ownerProfile.first_name} ${ownerProfile.last_name}`
       : "um colega";
 
+    console.log("\ud83d\udc64 Owner:", ownerName);
+
     const permissionText =
       permissionLevel === "read_only" ? "Somente Leitura" : "Editor";
 
     if (userExists) {
+      console.log("\ud83d\udc65 Step 8: Creating notification for existing user...");
       const { data: invitedUserProfile } = await supabaseClient
         .from("user_profiles")
         .select("id")
@@ -115,10 +162,11 @@ Deno.serve(async (req: Request) => {
           link: `/lawsuits-detail/${processoId}`,
         });
 
-        console.log(`Notification created for existing user: ${invitedEmail}`);
+        console.log(`\u2705 Notification created for existing user: ${invitedEmail}`);
       }
     }
 
+    console.log("\ud83d\udce7 Step 9: Sending invitation email...");
     try {
       const emailData = {
         shared_by: user.id,
@@ -153,16 +201,17 @@ Deno.serve(async (req: Request) => {
         console.error("\u274c Email not sent - Full error:", JSON.stringify(inviteError, null, 2));
         console.error("\u274c Error message:", inviteError.message);
         console.error("\u274c Error name:", inviteError.name);
-        console.log("\u2705 Workspace share created successfully without email");
+        console.log("\u26a0\ufe0f Workspace share created successfully without email");
       } else {
         console.log(`\u2705 SUCCESS: Email sent to: ${invitedEmail}`);
         console.log(`\u2705 Email should arrive shortly`);
       }
     } catch (emailError) {
       console.error("\u26a0\ufe0f Email sending exception:", emailError);
-      console.log("\u2705 Workspace share created successfully without email");
+      console.log("\u26a0\ufe0f Workspace share created successfully without email");
     }
 
+    console.log(`\u2705 Step 10: Process completed successfully`);
     console.log(`Processo compartilhado: ${ownerName} -> ${invitedName} (${invitedEmail})`);
     console.log(`Share ID: ${shareId}, Permiss\u00e3o: ${permissionText}`);
 
@@ -179,7 +228,8 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("Error in send-workspace-invite function:", error);
+    console.error("\ud83d\udca5 FATAL ERROR in send-workspace-invite function:", error);
+    console.error("\ud83d\udca5 Error stack:", error instanceof Error ? error.stack : "No stack trace");
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Erro desconhecido",
