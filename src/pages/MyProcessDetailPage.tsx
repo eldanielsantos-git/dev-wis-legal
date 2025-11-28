@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
+import { ProcessContentSearch } from '../components/ProcessContentSearch';
 import { ProcessosService } from '../services/ProcessosService';
 import { AnalysisResultsService, type AnalysisResult } from '../services/AnalysisResultsService';
 import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, Edit3, Trash2 } from 'lucide-react';
@@ -587,6 +588,26 @@ export function MyProcessDetailPage({
             {/* Analysis Results */}
             {(analysisResults.length > 0 || totalPrompts > 0) && (
               <div className="space-y-6">
+                {/* Search Bar */}
+                {analysisResults.length > 0 && (
+                  <div className="mb-6">
+                    <ProcessContentSearch
+                      analysisResults={analysisResults}
+                      onResultClick={(resultId) => {
+                        setSelectedResultId(resultId);
+                        setShowFullAnalysis(false);
+                        setTimeout(() => {
+                          if (selectedContentRef.current) {
+                            selectedContentRef.current.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'start'
+                            });
+                          }
+                        }, 100);
+                      }}
+                    />
+                  </div>
+                )}
 
                 {showFullAnalysis && (
                   <div className="space-y-4 sm:space-y-8 mt-6">
