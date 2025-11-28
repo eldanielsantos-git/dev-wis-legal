@@ -14,6 +14,7 @@ import { AnalysisCard } from '../components/AnalysisCard';
 import { AnalysisViewSelector } from '../components/analysis-views/AnalysisViewSelector';
 import { calculateCardAvailability, getAvailableCards } from '../utils/analysisAvailability';
 import { ShareProcessModal } from '../components/ShareProcessModal';
+import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import { WorkspaceService, WorkspaceShare } from '../services/WorkspaceService';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,6 +23,7 @@ interface MyProcessDetailPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: (processoId?: string) => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -60,6 +62,8 @@ export function MyProcessDetailPage({
   const [canShare, setCanShare] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const [showSharesSection, setShowSharesSection] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
 
   // Removido: useEffect que causava reloads infinitos quando processo?.status mudava
@@ -267,6 +271,26 @@ export function MyProcessDetailPage({
     }
   };
 
+  const handleDeleteClick = () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!processo) return;
+
+    try {
+      setIsDeleting(true);
+      await ProcessosService.deleteProcesso(processo.id);
+      setShowDeleteModal(false);
+      onNavigateToMyProcess();
+    } catch (err) {
+      console.error('Erro ao excluir processo:', err);
+      alert('Erro ao excluir processo. Tente novamente.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleSelectResult = (resultId: string) => {
     const availabilityMap = calculateCardAvailability(analysisResults);
     const cardAvailability = availabilityMap.get(resultId);
@@ -466,6 +490,16 @@ export function MyProcessDetailPage({
                 >
                   <MessageSquare className="w-5 h-5" style={{ color: '#1C9BF1' }} />
                   <span className="text-sm font-normal" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>Chat com o processo</span>
+                </button>
+
+                <button
+                  onClick={handleDeleteClick}
+                  className="flex items-center space-x-1.5 px-3 py-2.5 rounded-lg transition-all duration-200 hover:opacity-80 whitespace-nowrap w-fit"
+                  style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}
+                  title="Excluir processo"
+                >
+                  <Trash2 className="w-5 h-5" style={{ color: '#EF4444' }} />
+                  <span className="text-sm font-normal hidden sm:inline" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>Excluir</span>
                 </button>
               </div>
             </div>
@@ -772,6 +806,14 @@ export function MyProcessDetailPage({
         processoId={processoId}
         processoName={processo?.file_name || 'Processo sem nome'}
         onShareSuccess={handleShareSuccess}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        processoName={processo?.file_name || 'este processo'}
+        isDeleting={isDeleting}
       />
 
       {isSearchOpen && (
