@@ -5,6 +5,7 @@ import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { ProcessoCard } from '../components/ProcessoCard';
 import { ProcessosService } from '../services/ProcessosService';
+import { WorkspaceService } from '../services/WorkspaceService';
 import { useAuth } from '../contexts/AuthContext';
 import { MessageSquare, Loader } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
@@ -43,9 +44,12 @@ export function ChatProcessSelectionPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [sharedProcessIds, setSharedProcessIds] = useState<Set<string>>(new Set());
+  const [shareCountByProcesso, setShareCountByProcesso] = useState<Map<string, number>>(new Map());
 
   useEffect(() => {
     loadProcessos();
+    loadSharedProcessIds();
   }, [user]);
 
   const loadProcessos = async () => {
@@ -63,6 +67,24 @@ export function ChatProcessSelectionPage({
       setError('Erro ao carregar processos');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadSharedProcessIds = async () => {
+    try {
+      const shares = await WorkspaceService.getMyShares();
+      const ids = new Set(shares.map(share => share.processo_id));
+      setSharedProcessIds(ids);
+
+      // Count shares per processo
+      const countMap = new Map<string, number>();
+      shares.forEach(share => {
+        const currentCount = countMap.get(share.processo_id) || 0;
+        countMap.set(share.processo_id, currentCount + 1);
+      });
+      setShareCountByProcesso(countMap);
+    } catch (error) {
+      console.error('Error loading shared process IDs:', error);
     }
   };
 
@@ -124,6 +146,8 @@ export function ChatProcessSelectionPage({
                   key={processo.id}
                   processo={processo}
                   onViewDetails={handleProcessoClick}
+                  isShared={sharedProcessIds.has(processo.id)}
+                  shareCount={shareCountByProcesso.get(processo.id) || 0}
                 />
               ))}
             </div>

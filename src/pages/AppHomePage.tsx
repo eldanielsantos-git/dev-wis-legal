@@ -71,6 +71,8 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { toasts, removeToast, success: showSuccess, error: showError, warning: showWarning, info: showInfo } = useToast();
   const [sharedProcessCount, setSharedProcessCount] = useState<number>(0);
+  const [sharedProcessIds, setSharedProcessIds] = useState<Set<string>>(new Set());
+  const [shareCountByProcesso, setShareCountByProcesso] = useState<Map<string, number>>(new Map());
 
   useEffectOnce(() => {
     const syncAndLoadData = async () => {
@@ -247,6 +249,19 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
       if (!user) return;
       const counts = await WorkspaceService.countShares();
       setSharedProcessCount(counts.sharedWithMe + counts.myShares);
+
+      // Load full share details for badge indicators
+      const shares = await WorkspaceService.getMyShares();
+      const ids = new Set(shares.map(share => share.processo_id));
+      setSharedProcessIds(ids);
+
+      // Count shares per processo
+      const countMap = new Map<string, number>();
+      shares.forEach(share => {
+        const currentCount = countMap.get(share.processo_id) || 0;
+        countMap.set(share.processo_id, currentCount + 1);
+      });
+      setShareCountByProcesso(countMap);
     } catch (err) {
       logger.error('AppHomePage', 'Erro ao carregar contagem de processos compartilhados:', err);
     }
@@ -593,6 +608,8 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
                       onViewDetails: handleViewDetails,
                       onDelete: canDelete ? handleDeleteProcesso : undefined,
                       isAdmin,
+                      isShared: sharedProcessIds.has(processo.id),
+                      shareCount: shareCountByProcesso.get(processo.id) || 0,
                       userInfo: processo.user_profile ? {
                         name: `${processo.user_profile.first_name} ${processo.user_profile.last_name}`.trim(),
                         email: processo.user_profile.email,
