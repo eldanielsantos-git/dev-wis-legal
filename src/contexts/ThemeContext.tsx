@@ -81,6 +81,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [isInitialized]);
 
   const setTheme = async (newTheme: Theme) => {
+    console.log('🎨 setTheme called with:', newTheme);
     setThemeState(newTheme);
     document.documentElement.setAttribute('data-theme', newTheme);
     themeCache.current = newTheme;
@@ -88,17 +89,31 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
     const { data: { session } } = await supabase.auth.getSession();
     const userId = session?.user?.id;
+    console.log('👤 User ID:', userId);
 
     if (userId) {
       try {
-        await supabase
+        console.log('💾 Attempting to save theme to database...');
+        const { data, error } = await supabase
           .from('user_profiles')
           .update({ theme_preference: newTheme })
-          .eq('id', userId);
-        logger.log('ThemeContext', 'Theme saved to database:', newTheme);
+          .eq('id', userId)
+          .select('id, theme_preference')
+          .single();
+
+        if (error) {
+          console.error('❌ Error saving theme to database:', error);
+          logger.error('ThemeContext', 'Error saving theme preference:', error);
+        } else {
+          console.log('✅ Theme saved successfully to database:', newTheme, 'Returned data:', data);
+          logger.log('ThemeContext', 'Theme saved to database:', newTheme);
+        }
       } catch (err) {
+        console.error('💥 Exception saving theme to database:', err);
         logger.error('ThemeContext', 'Error saving theme preference:', err);
       }
+    } else {
+      console.warn('⚠️ No user session found, theme not saved to database');
     }
   };
 
