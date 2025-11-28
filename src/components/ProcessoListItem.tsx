@@ -130,11 +130,11 @@ export const ProcessoListItem: React.FC<ProcessoListItemProps> = ({ processo, on
                   <span>{processo.transcricao?.totalPages || 0} páginas</span>
                   <span>•</span>
                   <span>{new Date(processo.created_at).toLocaleDateString('pt-BR')}</span>
-                  {isAdmin && userInfo && (
+                  {(userInfo || processo.user_profile) && (
                     <>
                       <span>•</span>
-                      <span className="truncate max-w-xs" title={userInfo.email}>
-                        {userInfo.name || userInfo.email}
+                      <span className="truncate max-w-xs" title={userInfo?.email || processo.user_profile?.email}>
+                        {userInfo?.name || `${processo.user_profile?.first_name || ''} ${processo.user_profile?.last_name || ''}`.trim() || userInfo?.email || processo.user_profile?.email}
                       </span>
                     </>
                   )}

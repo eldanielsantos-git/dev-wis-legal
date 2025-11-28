@@ -251,7 +251,7 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
           </div>
         )}
 
-        {isAdmin && userInfo && (
+        {(userInfo || processo.user_profile) && (
           <div
             className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t"
             style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
@@ -265,9 +265,11 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                   className="font-medium"
                   style={{ color: theme === 'dark' ? '#C8C8C8' : '#1F2937' }}
                 >
-                  Usuário:
+                  Analisado por:
                 </span>
-                <span className="truncate">{userInfo.name}</span>
+                <span className="truncate">
+                  {userInfo?.name || `${processo.user_profile?.first_name || ''} ${processo.user_profile?.last_name || ''}`.trim()}
+                </span>
               </div>
               <div className="flex justify-between gap-2">
                 <span
@@ -276,7 +278,9 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                 >
                   Email:
                 </span>
-                <span className="truncate">{userInfo.email}</span>
+                <span className="truncate">
+                  {userInfo?.email || processo.user_profile?.email}
+                </span>
               </div>
             </div>
           </div>
