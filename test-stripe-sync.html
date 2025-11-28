@@ -251,70 +251,44 @@
       btn.innerHTML = '⏳ Sincronizando<span class="loading"></span>';
 
       try {
-        const customer = diagnosisData.stripe_customers[0];
         const authData = JSON.parse(localStorage.getItem('sb-rslpleprodloodfsaext-auth-token') || '{}');
         const token = authData.access_token;
 
-        log('\n🔄 Iniciando sincronização...');
-        log(`Customer ID: ${customer.customer_id}`);
+        if (!token) {
+          throw new Error('Você precisa fazer login primeiro!');
+        }
 
-        // Primeiro, inserir o customer
-        log('1️⃣ Criando registro de customer...');
-        const customerResponse = await fetch(`${SUPABASE_URL}/rest/v1/stripe_customers`, {
+        log('\n🔄 Iniciando sincronização completa...');
+        log('Usando edge function force-sync-customer...');
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/force-sync-customer`, {
           method: 'POST',
           headers: {
-            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzbHBsZXByb2RsbG9vZGZzYWV4dCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzQ2NzQ2NDU4LCJleHAiOjIwNjIzMjI0NTh9.sTi4VYmZ5S0IVMNz2tWvn0bOCx4G0AcZTkP-K0WOpNk',
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
-            'Prefer': 'return=minimal'
           },
-          body: JSON.stringify({
-            user_id: diagnosisData.user_id,
-            customer_id: customer.customer_id,
-            email: customer.email
-          })
         });
 
-        if (!customerResponse.ok) {
-          const error = await customerResponse.text();
-          throw new Error(`Erro ao criar customer: ${error}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao sincronizar');
         }
 
-        log('✅ Customer criado com sucesso!', 'success');
-
-        // Agora sincronizar a subscription
-        if (customer.subscriptions && customer.subscriptions.length > 0) {
-          log('2️⃣ Sincronizando subscription...');
-
-          const syncResponse = await fetch(`${SUPABASE_URL}/functions/v1/sync-stripe-subscription`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-
-          const syncData = await syncResponse.json();
-
-          if (!syncResponse.ok) {
-            throw new Error(`Erro ao sincronizar: ${syncData.error}`);
-          }
-
-          log('✅ Subscription sincronizada com sucesso!', 'success');
-          log('\n📊 RESULTADO:');
-          log(`   Status: ${syncData.subscription.status}`);
-          log(`   Tokens do plano: ${syncData.subscription.plan_tokens}`);
-          log(`   Tokens extras: ${syncData.subscription.extra_tokens}`);
-          log(`   Tokens totais: ${syncData.subscription.tokens_total}`);
-          log(`   Tokens usados: ${syncData.subscription.tokens_used}`);
-
-          log('\n✅ SINCRONIZAÇÃO CONCLUÍDA COM SUCESSO!', 'success');
-          log('Atualize a página para ver seus tokens!', 'success');
-        }
+        log('✅ SINCRONIZAÇÃO CONCLUÍDA COM SUCESSO!', 'success');
+        log('\n📊 RESULTADO:');
+        log(`   Customer ID: ${data.customer_id}`);
+        log(`   Subscription ID: ${data.subscription_id}`);
+        log(`   Status: ${data.status}`);
+        log(`   Price ID: ${data.price_id}`);
+        log(`   Tokens do plano: ${data.plan_tokens}`);
+        log(`   Tokens totais: ${data.tokens_total}`);
+        log('\n✨ Atualize a página principal para ver seus tokens!', 'success');
 
       } catch (error) {
         log(`❌ Erro na sincronização: ${error.message}`, 'error');
       } finally {
+        btn.disabled = false;
         btn.innerHTML = '✅ Sincronizar Customer + Subscription';
       }
     }
