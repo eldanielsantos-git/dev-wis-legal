@@ -770,7 +770,7 @@ export function MyProcessDetailPage({
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         processoId={processoId}
-        processoName={processo.nome_processo || 'Processo sem nome'}
+        processoName={processo?.file_name || 'Processo sem nome'}
         onShareSuccess={handleShareSuccess}
       />
 
