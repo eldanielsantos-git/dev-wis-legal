@@ -360,7 +360,7 @@ export class ProcessosService {
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('is_admin')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     const isAdmin = userProfile?.is_admin || false;
@@ -401,7 +401,7 @@ export class ProcessosService {
         balanco_financeiro,
         mapa_preclusoes,
         conclusoes_perspectivas,
-        user_profile:user_profiles(first_name, last_name, email)
+        user_profile:user_profiles!processos_user_id_user_profiles_fkey(first_name, last_name, email)
       `);
 
     if (!isAdmin) {
