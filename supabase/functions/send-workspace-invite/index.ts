@@ -117,46 +117,53 @@ Deno.serve(async (req: Request) => {
           message: `${ownerName} compartilhou o processo "${processo.file_name || processo.numero_processo}" com voc\u00ea (${permissionText})`,
           link: `/lawsuits-detail/${processoId}`,
         });
+
+        console.log(`Notification created for existing user: ${invitedEmail}`);
       }
     }
 
     // Try to send invitation email via Supabase Auth
-    // If it fails (SMTP not configured), sharing is still created successfully
+    // Only send email for NEW users (userExists = false)
+    // For existing users, they get in-app notification instead
     try {
-      const emailData = {
-        shared_by: user.id,
-        owner_name: ownerName,
-        share_id: shareId,
-        processo_id: processoId,
-        processo_name: processo.file_name || processo.numero_processo,
-        permission_level: permissionLevel,
-        permission_text: permissionText,
-        user_exists: userExists,
-        invited_name: invitedName,
-      };
+      if (!userExists) {
+        const emailData = {
+          shared_by: user.id,
+          owner_name: ownerName,
+          share_id: shareId,
+          processo_id: processoId,
+          processo_name: processo.file_name || processo.numero_processo,
+          permission_level: permissionLevel,
+          permission_text: permissionText,
+          invited_name: invitedName,
+          invitation_type: 'workspace_share',
+        };
 
-      const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
-        invitedEmail.toLowerCase(),
-        {
-          redirectTo: userExists
-            ? `${supabaseUrl}/lawsuits-detail/${processoId}`
-            : `${supabaseUrl}/workspace`,
-          data: emailData,
+        console.log(`Attempting to send email to new user: ${invitedEmail}`);
+
+        const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
+          invitedEmail.toLowerCase(),
+          {
+            redirectTo: `${supabaseUrl}/workspace`,
+            data: emailData,
+          }
+        );
+
+        if (inviteError) {
+          console.error("Email not sent - Error:", inviteError.message);
+          console.log("Workspace share created successfully without email");
+        } else {
+          console.log(`SUCCESS: Workspace invitation email sent to: ${invitedEmail}`);
         }
-      );
-
-      if (inviteError) {
-        console.error("\u26a0\ufe0f Email not sent (SMTP may not be configured):", inviteError.message);
-        console.log("\u2705 Workspace share created successfully without email");
       } else {
-        console.log("\u2705 Workspace invitation email sent successfully to:", invitedEmail);
+        console.log(`Existing user ${invitedEmail} - using in-app notification only`);
       }
     } catch (emailError) {
-      console.error("\u26a0\ufe0f Email sending failed (SMTP may not be configured):", emailError);
-      console.log("\u2705 Workspace share created successfully without email");
+      console.error("Email sending exception:", emailError);
+      console.log("Workspace share created successfully without email");
     }
 
-    console.log(`Processo compartilhado: ${ownerName} compartilhou "${processo.file_name || processo.numero_processo}" com ${invitedName} (${invitedEmail})`);
+    console.log(`Processo compartilhado: ${ownerName} -> ${invitedName} (${invitedEmail})`);
     console.log(`Share ID: ${shareId}, Permiss\u00e3o: ${permissionText}`);
 
     return new Response(
