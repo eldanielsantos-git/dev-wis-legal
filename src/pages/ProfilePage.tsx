@@ -91,6 +91,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
   const [deleteProgress, setDeleteProgress] = useState({
     subscription: false,
     processos: false,
+    storage: false,
     chat: false,
     profile: false,
     auth: false
@@ -475,7 +476,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     try {
       setIsDeleting(true);
       setMessage(null);
-      setDeleteProgress({ subscription: false, processos: false, chat: false, profile: false, auth: false });
+      setDeleteProgress({ subscription: false, processos: false, storage: false, chat: false, profile: false, auth: false });
 
       const { data: { session } } = await supabase.auth.getSession();
 
@@ -486,6 +487,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       // Simulate progress updates
       setTimeout(() => setDeleteProgress(prev => ({ ...prev, subscription: true })), 500);
       setTimeout(() => setDeleteProgress(prev => ({ ...prev, processos: true })), 1000);
+      setTimeout(() => setDeleteProgress(prev => ({ ...prev, storage: true })), 1500);
       setTimeout(() => setDeleteProgress(prev => ({ ...prev, chat: true })), 2000);
       setTimeout(() => setDeleteProgress(prev => ({ ...prev, profile: true })), 3000);
 
@@ -1274,6 +1276,16 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                     )}
                     <span className="text-sm" style={{ color: deleteProgress.processos ? '#10b981' : '#C8C8C8' }}>
                       Apagando seus processos
+                    </span>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    {deleteProgress.storage ? (
+                      <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                    ) : (
+                      <Loader className="w-5 h-5 animate-spin flex-shrink-0" style={{ color: '#C8C8C8' }} />
+                    )}
+                    <span className="text-sm" style={{ color: deleteProgress.storage ? '#10b981' : '#C8C8C8' }}>
+                      Removendo seus arquivos PDF
                     </span>
                   </div>
                   <div className="flex items-center space-x-3">

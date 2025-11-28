@@ -89,11 +89,32 @@ Deno.serve(async (req: Request) => {
 
     const { data: processosData } = await supabase
       .from('processos')
-      .select('id')
+      .select('id, storage_path')
       .eq('user_id', userId);
 
     if (processosData && processosData.length > 0) {
       const processoIds = processosData.map(p => p.id);
+
+      // Delete PDF files from storage bucket
+      const filesToDelete = processosData
+        .filter(p => p.storage_path)
+        .map(p => p.storage_path);
+
+      if (filesToDelete.length > 0) {
+        try {
+          const { error: storageError } = await supabase.storage
+            .from('processos')
+            .remove(filesToDelete);
+
+          if (storageError) {
+            console.error('Error deleting files from storage:', storageError);
+          } else {
+            console.log(`Deleted ${filesToDelete.length} PDF files from storage for user ${userId}`);
+          }
+        } catch (storageDeleteError: any) {
+          console.error('Exception while deleting storage files:', storageDeleteError);
+        }
+      }
 
       const { error: paginasError } = await supabase
         .from('paginas')
