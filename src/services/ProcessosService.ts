@@ -400,8 +400,7 @@ export class ProcessosService {
         riscos_alertas,
         balanco_financeiro,
         mapa_preclusoes,
-        conclusoes_perspectivas,
-        user_profile:user_profiles!processos_user_id_user_profiles_fkey(first_name, last_name, email)
+        conclusoes_perspectivas
       `);
 
     if (!isAdmin) {

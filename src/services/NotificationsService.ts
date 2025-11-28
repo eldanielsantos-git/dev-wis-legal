@@ -19,10 +19,7 @@ export class NotificationsService {
   static async getNotifications(): Promise<Notification[]> {
     const { data, error } = await supabase
       .from('notifications')
-      .select(`
-        *,
-        processo:processos(file_name)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) throw new Error(`Erro ao buscar notificações: ${error.message}`);
