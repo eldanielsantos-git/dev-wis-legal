@@ -33,8 +33,10 @@ export function WorkspacePage({
 }: WorkspacePageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const [shares, setShares] = useState<WorkspaceShare[]>([]);
+  const [sharedWithMe, setSharedWithMe] = useState<WorkspaceShare[]>([]);
+  const [myShares, setMyShares] = useState<WorkspaceShare[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'received' | 'shared'>('received');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
@@ -60,8 +62,12 @@ export function WorkspacePage({
 
   const loadShares = async () => {
     try {
-      const data = await WorkspaceService.getSharedWithMe();
-      setShares(data);
+      const [received, shared] = await Promise.all([
+        WorkspaceService.getSharedWithMe(),
+        WorkspaceService.getMyShares()
+      ]);
+      setSharedWithMe(received);
+      setMyShares(shared);
     } catch (error) {
       console.error('Error loading shared processes:', error);
     } finally {
@@ -125,18 +131,60 @@ export function WorkspacePage({
             <p className="text-sm sm:text-base font-body text-center" style={{ color: colors.textSecondary }}>
               Processos compartilhados
             </p>
-            {!loading && shares.length > 0 && (
-              <p className="text-sm sm:text-base font-body mt-2 text-center" style={{ color: colors.textTertiary }}>
-                Você tem {shares.length} {shares.length === 1 ? 'processo compartilhado' : 'processos compartilhados'}
-              </p>
-            )}
           </section>
+
+          <div className="flex justify-center gap-2 mb-6">
+            <button
+              onClick={() => setActiveTab('received')}
+              className="px-6 py-2.5 rounded-lg font-medium transition-all duration-200"
+              style={{
+                backgroundColor: activeTab === 'received' ? colors.bgTertiary : 'transparent',
+                color: activeTab === 'received' ? colors.textPrimary : colors.textSecondary,
+                border: `1px solid ${activeTab === 'received' ? colors.border : 'transparent'}`
+              }}
+            >
+              Compartilhados comigo
+              {!loading && sharedWithMe.length > 0 && (
+                <span
+                  className="ml-2 px-2 py-0.5 rounded-full text-xs"
+                  style={{
+                    backgroundColor: colors.bgPrimary,
+                    color: colors.textPrimary
+                  }}
+                >
+                  {sharedWithMe.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('shared')}
+              className="px-6 py-2.5 rounded-lg font-medium transition-all duration-200"
+              style={{
+                backgroundColor: activeTab === 'shared' ? colors.bgTertiary : 'transparent',
+                color: activeTab === 'shared' ? colors.textPrimary : colors.textSecondary,
+                border: `1px solid ${activeTab === 'shared' ? colors.border : 'transparent'}`
+              }}
+            >
+              Compartilhados por mim
+              {!loading && myShares.length > 0 && (
+                <span
+                  className="ml-2 px-2 py-0.5 rounded-full text-xs"
+                  style={{
+                    backgroundColor: colors.bgPrimary,
+                    color: colors.textPrimary
+                  }}
+                >
+                  {myShares.length}
+                </span>
+              )}
+            </button>
+          </div>
 
           {loading ? (
             <div className="flex justify-center py-16">
               <Loader className="w-8 h-8 animate-spin" style={{ color: colors.textPrimary }} />
             </div>
-          ) : shares.length === 0 ? (
+          ) : activeTab === 'received' && sharedWithMe.length === 0 ? (
             <div
               className="rounded-xl border p-12 text-center"
               style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}
@@ -149,7 +197,27 @@ export function WorkspacePage({
                   <Users className="w-7 h-7" style={{ color: colors.textSecondary }} strokeWidth={1.5} />
                 </div>
                 <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
-                  Você ainda não tem nenhum Processo com análise compartilhada
+                  Nenhum processo compartilhado com você ainda
+                </h3>
+                <p className="text-sm mb-6" style={{ color: colors.textSecondary }}>
+                  Quando alguém compartilhar um processo com você, ele aparecerá aqui.
+                </p>
+              </div>
+            </div>
+          ) : activeTab === 'shared' && myShares.length === 0 ? (
+            <div
+              className="rounded-xl border p-12 text-center"
+              style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}
+            >
+              <div className="max-w-md mx-auto">
+                <div
+                  className="p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center"
+                  style={{ backgroundColor: colors.bgTertiary }}
+                >
+                  <Users className="w-7 h-7" style={{ color: colors.textSecondary }} strokeWidth={1.5} />
+                </div>
+                <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
+                  Você ainda não compartilhou nenhum processo
                 </h3>
                 <p className="text-sm mb-6" style={{ color: colors.textSecondary }}>
                   Acesse sua área de processos e análises e compartilhe processos com colegas de trabalho,
@@ -175,7 +243,7 @@ export function WorkspacePage({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {shares.map((share) => (
+              {(activeTab === 'received' ? sharedWithMe : myShares).map((share) => (
                 <div
                   key={share.id}
                   onClick={() => handleNavigateToDetail(share.processo_id)}
@@ -207,42 +275,79 @@ export function WorkspacePage({
                       )}
                     </div>
 
-                    <div
-                      className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
-                      style={{
-                        backgroundColor: share.permission_level === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                        color: share.permission_level === 'read_only' ? '#f59e0b' : '#3b82f6'
-                      }}
-                    >
-                      {share.permission_level === 'read_only' ? (
-                        <>
-                          <Lock className="w-3 h-3" />
-                          <span>Somente Leitura</span>
-                        </>
-                      ) : (
-                        <>
-                          <Edit3 className="w-3 h-3" />
-                          <span>Editor</span>
-                        </>
-                      )}
-                    </div>
+                    {activeTab === 'received' && (
+                      <div
+                        className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                        style={{
+                          backgroundColor: share.permission_level === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                          color: share.permission_level === 'read_only' ? '#f59e0b' : '#3b82f6'
+                        }}
+                      >
+                        {share.permission_level === 'read_only' ? (
+                          <>
+                            <Lock className="w-3 h-3" />
+                            <span>Somente Leitura</span>
+                          </>
+                        ) : (
+                          <>
+                            <Edit3 className="w-3 h-3" />
+                            <span>Editor</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div
                     className="pt-4 border-t space-y-2"
                     style={{ borderColor: colors.border }}
                   >
-                    <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
-                      <Users className="w-4 h-4 mr-2" />
-                      <span>
-                        Compartilhado por {share.owner?.first_name} {share.owner?.last_name}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
-                      <Calendar className="w-4 h-4 mr-2" />
-                      <span>Compartilhado em {formatDate(share.created_at)}</span>
-                    </div>
+                    {activeTab === 'received' ? (
+                      <>
+                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
+                          <Users className="w-4 h-4 mr-2" />
+                          <span>
+                            Compartilhado por {share.owner?.first_name} {share.owner?.last_name}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
+                          <Calendar className="w-4 h-4 mr-2" />
+                          <span>Compartilhado em {formatDate(share.created_at)}</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
+                          <Users className="w-4 h-4 mr-2" />
+                          <span>
+                            Compartilhado com {share.shared_with_name}
+                          </span>
+                        </div>
+                        <div className="flex items-center text-xs" style={{ color: colors.textSecondary }}>
+                          <Calendar className="w-4 h-4 mr-2" />
+                          <span>Compartilhado em {formatDate(share.created_at)}</span>
+                        </div>
+                        <div
+                          className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                          style={{
+                            backgroundColor: share.permission_level === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                            color: share.permission_level === 'read_only' ? '#f59e0b' : '#3b82f6'
+                          }}
+                        >
+                          {share.permission_level === 'read_only' ? (
+                            <>
+                              <Lock className="w-3 h-3" />
+                              <span>Somente Leitura</span>
+                            </>
+                          ) : (
+                            <>
+                              <Edit3 className="w-3 h-3" />
+                              <span>Editor</span>
+                            </>
+                          )}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
