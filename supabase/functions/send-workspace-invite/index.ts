@@ -111,7 +111,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
-      .select("numero_processo, file_name")
+      .select("file_name")
       .eq("id", processoId)
       .single();
 
@@ -128,7 +128,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("\u2705 Step 7: Processo found:", processo.file_name || processo.numero_processo);
+    console.log("\u2705 Step 7: Processo found:", processo.file_name);
 
     const { data: ownerProfile } = await supabaseClient
       .from("user_profiles")
@@ -158,7 +158,7 @@ Deno.serve(async (req: Request) => {
           user_id: invitedUserProfile.id,
           type: "workspace_share",
           title: "Novo processo compartilhado",
-          message: `${ownerName} compartilhou o processo \"${processo.file_name || processo.numero_processo}\" com voc\u00ea (${permissionText})`,
+          message: `${ownerName} compartilhou o processo \"${processo.file_name}\" com voc\u00ea (${permissionText})`,
           link: `/lawsuits-detail/${processoId}`,
         });
 
@@ -173,7 +173,7 @@ Deno.serve(async (req: Request) => {
         owner_name: ownerName,
         share_id: shareId,
         processo_id: processoId,
-        processo_name: processo.file_name || processo.numero_processo,
+        processo_name: processo.file_name,
         permission_level: permissionLevel,
         permission_text: permissionText,
         invited_name: invitedName,
