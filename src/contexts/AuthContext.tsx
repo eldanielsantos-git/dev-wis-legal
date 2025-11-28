@@ -113,6 +113,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.log('AuthContext', 'Perfil carregado:', data ? 'Sucesso' : 'Sem dados');
       setProfile(data);
       hasLoadedProfile.current = userId;
+
+      // Auto-accept pending workspace invitations on login
+      if (data?.email) {
+        try {
+          const { data: acceptedCount, error: acceptError } = await supabase.rpc(
+            'accept_pending_invitations_by_email',
+            {
+              p_user_id: userId,
+              p_email: data.email
+            }
+          );
+
+          if (!acceptError && acceptedCount && acceptedCount > 0) {
+            logger.log('AuthContext', `Auto-accepted ${acceptedCount} pending invitations`);
+          }
+        } catch (acceptError) {
+          logger.error('AuthContext', 'Erro ao aceitar convites pendentes:', acceptError);
+        }
+      }
     } catch (error) {
       logger.error('AuthContext', 'Erro ao carregar perfil (catch):', error);
       setProfile(null);
