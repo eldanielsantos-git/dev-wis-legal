@@ -479,7 +479,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
                 Beta
               </span>
             </h1>
-            <p className="text-base sm:text-lg font-body" style={{ color: colors.textSecondary }}>Plataforma para transcrição e análise forense</p>
+            <p className="text-base sm:text-lg font-body" style={{ color: colors.textSecondary }}>Plataforma análise de processos</p>
           </section>
           <section className="mb-8 sm:mb-10 lg:mb-12 rounded-lg p-6 sm:p-8 mx-auto max-w-3xl" style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}>
             <h2 className="text-xl sm:text-2xl font-title font-bold mb-4 text-center" style={{ color: colors.textPrimary }}>Upload do Processo</h2>
