@@ -14,6 +14,7 @@ interface ChatProcessSelectionPageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat: (processoId?: string) => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToNotifications?: () => void;
@@ -27,7 +28,8 @@ interface ChatProcessSelectionPageProps {
 export function ChatProcessSelectionPage({
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat, onNavigateToWorkspace,
+  onNavigateToChat,
+  onNavigateToWorkspace,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToNotifications,
@@ -98,6 +100,7 @@ export function ChatProcessSelectionPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={() => onNavigateToChat()}
+        onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToNotifications={onNavigateToNotifications}
