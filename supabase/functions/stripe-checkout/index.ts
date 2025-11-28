@@ -22,7 +22,11 @@ const supabase = createClient(
 );
 
 Deno.serve(async (req) => {
+  console.log('\ud83d\ude80 stripe-checkout function called');
+  console.log('\ud83d\ude80 Method:', req.method);
+
   if (req.method === 'OPTIONS') {
+    console.log('\u2705 Handling OPTIONS request');
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
@@ -30,6 +34,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('\ud83d\udd10 Verifying user authentication...');
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
 
@@ -39,21 +44,40 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
+      console.error('\u274c User authentication failed:', userError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { priceId, mode = 'subscription', successUrl, cancelUrl } = await req.json();
+    console.log('\u2705 User authenticated:', user.id, user.email);
 
-    if (!priceId) {
+    const requestBody = await req.json();
+    console.log('\ud83d\udce5 Request body received:', requestBody);
+
+    const { price_id, priceId, mode = 'subscription', success_url, successUrl, cancel_url, cancelUrl } = requestBody;
+
+    const finalPriceId = price_id || priceId;
+    const finalSuccessUrl = success_url || successUrl;
+    const finalCancelUrl = cancel_url || cancelUrl;
+
+    console.log('\ud83d\udcb3 Processing checkout with:', {
+      priceId: finalPriceId,
+      mode,
+      successUrl: finalSuccessUrl,
+      cancelUrl: finalCancelUrl
+    });
+
+    if (!finalPriceId) {
+      console.error('\u274c Price ID is missing');
       return new Response(JSON.stringify({ error: 'Price ID is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('\ud83d\udd0d Looking for existing Stripe customer...');
     const { data: customerData, error: customerError } = await supabase
       .from('stripe_customers')
       .select('customer_id')
@@ -63,6 +87,7 @@ Deno.serve(async (req) => {
     let customerId: string | undefined = customerData?.customer_id;
 
     if (!customerId) {
+      console.log('\ud83d\udcdd Creating new Stripe customer...');
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('email, first_name, last_name')
@@ -78,25 +103,30 @@ Deno.serve(async (req) => {
       });
 
       customerId = customer.id;
+      console.log('\u2705 Stripe customer created:', customerId);
 
       await supabase.from('stripe_customers').insert({
         user_id: user.id,
         customer_id: customerId,
         email: profile?.email || user.email!,
       });
+      console.log('\u2705 Customer saved to database');
+    } else {
+      console.log('\u2705 Found existing Stripe customer:', customerId);
     }
 
+    console.log('\ud83d\udecd\ufe0f Creating checkout session...');
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       line_items: [
         {
-          price: priceId,
+          price: finalPriceId,
           quantity: 1,
         },
       ],
       mode: mode as 'subscription' | 'payment',
-      success_url: successUrl || `${Deno.env.get('SUPABASE_URL')}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${Deno.env.get('SUPABASE_URL')}/`,
+      success_url: finalSuccessUrl || `${Deno.env.get('SUPABASE_URL')}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: finalCancelUrl || `${Deno.env.get('SUPABASE_URL')}/`,
       allow_promotion_codes: true,
       billing_address_collection: 'auto',
     };
@@ -116,6 +146,8 @@ Deno.serve(async (req) => {
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
+    console.log('\u2705 Checkout session created:', session.id);
+    console.log('\ud83d\udd17 Checkout URL:', session.url);
 
     return new Response(
       JSON.stringify({
@@ -128,7 +160,8 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('Error creating checkout session:', error);
+    console.error('\ud83d\udca5 Error creating checkout session:', error);
+    console.error('\ud83d\udca5 Error stack:', error.stack);
     return new Response(
       JSON.stringify({
         error: error.message || 'Internal server error',
