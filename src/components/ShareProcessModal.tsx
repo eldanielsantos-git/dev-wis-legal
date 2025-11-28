@@ -301,7 +301,11 @@ export function ShareProcessModal({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+              className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center space-x-2"
+              style={{
+                backgroundColor: theme === 'dark' ? '#ffffff' : '#000000',
+                color: theme === 'dark' ? '#000000' : '#ffffff'
+              }}
             >
               {isSubmitting ? (
                 <>
