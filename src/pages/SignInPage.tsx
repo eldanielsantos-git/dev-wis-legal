@@ -56,7 +56,7 @@ export function SignInPage({ onNavigateToSignUp, onNavigateToForgotPassword, onN
       <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
         <div className="text-center">
           <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-16 md:h-20 mx-auto mb-4 md:mb-6" />
-          <p className="text-white text-lg md:text-xl font-title">Plataforma para transcrição e análise forense</p>
+          <p className="text-white text-lg md:text-xl font-title">Plataforma para análise de processos</p>
         </div>
       </div>
       <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
