@@ -140,7 +140,7 @@ export function WorkspacePage({
               style={{
                 backgroundColor: activeTab === 'received' ? colors.bgTertiary : 'transparent',
                 color: activeTab === 'received' ? colors.textPrimary : colors.textSecondary,
-                border: `1px solid ${activeTab === 'received' ? colors.border : 'transparent'}`
+                border: `1px solid ${colors.border}`
               }}
             >
               Compartilhados comigo
@@ -162,7 +162,7 @@ export function WorkspacePage({
               style={{
                 backgroundColor: activeTab === 'shared' ? colors.bgTertiary : 'transparent',
                 color: activeTab === 'shared' ? colors.textPrimary : colors.textSecondary,
-                border: `1px solid ${activeTab === 'shared' ? colors.border : 'transparent'}`
+                border: `1px solid ${colors.border}`
               }}
             >
               Compartilhados por mim
