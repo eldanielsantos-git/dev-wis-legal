@@ -195,23 +195,9 @@ export class WorkspaceService {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data: shares, error } = await supabase
         .from('workspace_shares')
-        .select(`
-          *,
-          processo:processos!workspace_shares_processo_id_fkey(
-            id,
-            numero_processo,
-            nome_processo,
-            status,
-            created_at
-          ),
-          owner:user_profiles!workspace_shares_owner_user_id_fkey(
-            first_name,
-            last_name,
-            email
-          )
-        `)
+        .select('*')
         .or(`shared_with_user_id.eq.${user.id},shared_with_email.eq.${user.email}`)
         .order('created_at', { ascending: false });
 
@@ -220,7 +206,30 @@ export class WorkspaceService {
         return [];
       }
 
-      return data || [];
+      if (!shares || shares.length === 0) {
+        return [];
+      }
+
+      // Fetch processo details separately
+      const processoIds = shares.map(s => s.processo_id);
+      const { data: processos } = await supabase
+        .from('processos')
+        .select('id, numero_processo, nome_processo, status, created_at')
+        .in('id', processoIds);
+
+      // Fetch owner details separately
+      const ownerIds = [...new Set(shares.map(s => s.owner_user_id))];
+      const { data: owners } = await supabase
+        .from('user_profiles')
+        .select('id, first_name, last_name, email')
+        .in('id', ownerIds);
+
+      // Combine data
+      return shares.map(share => ({
+        ...share,
+        processo: processos?.find(p => p.id === share.processo_id),
+        owner: owners?.find(o => o.id === share.owner_user_id)
+      }));
     } catch (error) {
       console.error('Error in getSharedWithMe:', error);
       return [];
@@ -261,18 +270,9 @@ export class WorkspaceService {
         return [];
       }
 
-      const { data, error } = await supabase
+      const { data: shares, error } = await supabase
         .from('workspace_shares')
-        .select(`
-          *,
-          processo:processos!workspace_shares_processo_id_fkey(
-            id,
-            numero_processo,
-            nome_processo,
-            status,
-            created_at
-          )
-        `)
+        .select('*')
         .eq('owner_user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -281,7 +281,22 @@ export class WorkspaceService {
         return [];
       }
 
-      return data || [];
+      if (!shares || shares.length === 0) {
+        return [];
+      }
+
+      // Fetch processo details separately
+      const processoIds = shares.map(s => s.processo_id);
+      const { data: processos } = await supabase
+        .from('processos')
+        .select('id, numero_processo, nome_processo, status, created_at')
+        .in('id', processoIds);
+
+      // Combine data
+      return shares.map(share => ({
+        ...share,
+        processo: processos?.find(p => p.id === share.processo_id)
+      }));
     } catch (error) {
       console.error('Error in getMyShares:', error);
       return [];
