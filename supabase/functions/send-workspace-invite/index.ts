@@ -132,45 +132,35 @@ Deno.serve(async (req: Request) => {
         invitation_type: 'workspace_share',
       };
 
-      if (!userExists) {
-        console.log(`Attempting to send email to NEW user: ${invitedEmail}`);
+      const redirectUrl = userExists
+        ? `${supabaseUrl}/lawsuits-detail/${processoId}`
+        : `${supabaseUrl}/workspace`;
 
-        const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
-          invitedEmail.toLowerCase(),
-          {
-            redirectTo: `${supabaseUrl}/workspace`,
-            data: emailData,
-          }
-        );
+      console.log(`\ud83d\udce7 Attempting to send email to: ${invitedEmail}`);
+      console.log(`\ud83d\udce7 User exists: ${userExists}`);
+      console.log(`\ud83d\udce7 Redirect URL: ${redirectUrl}`);
+      console.log(`\ud83d\udce7 Email data:`, JSON.stringify(emailData, null, 2));
 
-        if (inviteError) {
-          console.error("Email not sent - Error:", inviteError.message);
-          console.log("Workspace share created successfully without email");
-        } else {
-          console.log(`SUCCESS: Email sent to NEW user: ${invitedEmail}`);
+      const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
+        invitedEmail.toLowerCase(),
+        {
+          redirectTo: redirectUrl,
+          data: emailData,
         }
+      );
+
+      if (inviteError) {
+        console.error("\u274c Email not sent - Full error:", JSON.stringify(inviteError, null, 2));
+        console.error("\u274c Error message:", inviteError.message);
+        console.error("\u274c Error name:", inviteError.name);
+        console.log("\u2705 Workspace share created successfully without email");
       } else {
-        console.log(`Attempting to send email to EXISTING user: ${invitedEmail}`);
-
-        const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
-          type: 'magiclink',
-          email: invitedEmail.toLowerCase(),
-          options: {
-            redirectTo: `${supabaseUrl}/lawsuits-detail/${processoId}`,
-            data: emailData,
-          }
-        });
-
-        if (linkError) {
-          console.error("Email not sent to existing user - Error:", linkError.message);
-          console.log("Workspace share created with in-app notification only");
-        } else {
-          console.log(`SUCCESS: Email sent to EXISTING user: ${invitedEmail}`);
-        }
+        console.log(`\u2705 SUCCESS: Email sent to: ${invitedEmail}`);
+        console.log(`\u2705 Email should arrive shortly`);
       }
     } catch (emailError) {
-      console.error("Email sending exception:", emailError);
-      console.log("Workspace share created successfully without email");
+      console.error("\u26a0\ufe0f Email sending exception:", emailError);
+      console.log("\u2705 Workspace share created successfully without email");
     }
 
     console.log(`Processo compartilhado: ${ownerName} -> ${invitedName} (${invitedEmail})`);
