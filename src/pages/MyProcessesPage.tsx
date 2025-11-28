@@ -3,10 +3,11 @@ import { ProcessoCard } from '../components/ProcessoCard';
 import { ProcessoListItem } from '../components/ProcessoListItem';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import { ProcessosService } from '../services/ProcessosService';
+import { WorkspaceService } from '../services/WorkspaceService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { FileText, Loader, LayoutGrid, List } from 'lucide-react';
+import { FileText, Loader, LayoutGrid, List, Users } from 'lucide-react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
@@ -18,13 +19,14 @@ interface MyProcessesPageProps {
   onNavigateToAdmin: () => void;
   onNavigateToApp: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
 }
 
-export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNavigateToAdmin, onNavigateToApp, onNavigateToChat, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: MyProcessesPageProps) {
+export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNavigateToAdmin, onNavigateToApp, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: MyProcessesPageProps) {
   const onNavigateToDetail = (processoId: string) => {
     window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -40,6 +42,8 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [processoToDelete, setProcessoToDelete] = useState<Processo | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [filterMode, setFilterMode] = useState<'all' | 'shared'>('all');
+  const [sharedProcessIds, setSharedProcessIds] = useState<Set<string>>(new Set());
 
   const loadProcessos = useCallback(async (isInitialLoad = false) => {
     try {
@@ -64,7 +68,18 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
 
   useEffect(() => {
     loadProcessos(true);
+    loadSharedProcessIds();
   }, [loadProcessos]);
+
+  const loadSharedProcessIds = async () => {
+    try {
+      const shares = await WorkspaceService.getMyShares();
+      const ids = new Set(shares.map(share => share.processo_id));
+      setSharedProcessIds(ids);
+    } catch (error) {
+      console.error('Error loading shared process IDs:', error);
+    }
+  };
 
   useEffect(() => {
     const pollingInterval = setInterval(() => {
@@ -148,6 +163,7 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={() => {}}
         onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={onNavigateToAdmin}
@@ -188,10 +204,47 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
               )}
             </div>
             <p className="text-sm sm:text-base font-body text-center" style={{ color: colors.textSecondary }}>Visualize e gerencie todos os seus processos</p>
+
             {!initialLoading && processos.length > 0 && (
-              <p className="text-sm sm:text-base font-body mt-2 text-center" style={{ color: colors.textTertiary }}>
-                Você tem {processos.length} {processos.length === 1 ? 'processo' : 'processos'}
-              </p>
+              <>
+                <div className="flex justify-center mt-6 mb-4">
+                  <div className="inline-flex rounded-lg p-1" style={{ backgroundColor: colors.bgSecondary }}>
+                    <button
+                      onClick={() => setFilterMode('all')}
+                      className="px-6 py-2 rounded-lg text-sm font-medium transition-all"
+                      style={{
+                        backgroundColor: filterMode === 'all' ? colors.bgPrimary : 'transparent',
+                        color: filterMode === 'all' ? colors.textPrimary : colors.textSecondary
+                      }}
+                    >
+                      Todos
+                      <span className="ml-2 px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgTertiary }}>
+                        {processos.length}
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => setFilterMode('shared')}
+                      className="px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2"
+                      style={{
+                        backgroundColor: filterMode === 'shared' ? colors.bgPrimary : 'transparent',
+                        color: filterMode === 'shared' ? colors.textPrimary : colors.textSecondary
+                      }}
+                    >
+                      <Users className="w-4 h-4" />
+                      <span>Compartilhados</span>
+                      <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgTertiary }}>
+                        {sharedProcessIds.size}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+                <p className="text-sm sm:text-base font-body mt-2 text-center" style={{ color: colors.textTertiary }}>
+                  {filterMode === 'all'
+                    ? `Você tem ${processos.length} ${processos.length === 1 ? 'processo' : 'processos'}`
+                    : `Você compartilhou ${sharedProcessIds.size} ${sharedProcessIds.size === 1 ? 'processo' : 'processos'}`
+                  }
+                </p>
+              </>
             )}
           </section>
 
@@ -219,9 +272,31 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
             </div>
           ) : (
             <>
-              <div className="flex flex-wrap justify-center gap-6 sm:contents">
-                <div className={`hidden sm:${viewMode === 'grid' ? 'flex flex-wrap justify-center gap-6' : 'block space-y-4'}`}>
-                  {processos.map(processo => {
+              {(() => {
+                const filteredProcessos = filterMode === 'shared'
+                  ? processos.filter(p => sharedProcessIds.has(p.id))
+                  : processos;
+
+                if (filteredProcessos.length === 0 && filterMode === 'shared') {
+                  return (
+                    <div className="rounded-xl border p-12 text-center" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}>
+                      <div className="max-w-sm mx-auto">
+                        <div className="p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: colors.bgTertiary }}>
+                          <Users className="w-7 h-7" style={{ color: colors.textSecondary }} strokeWidth={1.5} />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>Você ainda não compartilhou nenhum processo</h3>
+                        <p className="text-sm" style={{ color: colors.textSecondary }}>
+                          Compartilhe seus processos analisados com colegas para colaborar de forma mais eficiente
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="flex flex-wrap justify-center gap-6 sm:contents">
+                    <div className={`hidden sm:${viewMode === 'grid' ? 'flex flex-wrap justify-center gap-6' : 'block space-y-4'}`}>
+                      {filteredProcessos.map(processo => {
                     const isOwner = user?.id === processo.user_id;
                     const canDelete = isAdmin || isOwner;
                     const commonProps = {
@@ -244,27 +319,29 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                     );
                   })}
                 </div>
-                <div className="sm:hidden w-full flex flex-wrap justify-center gap-6">
-                  {processos.map(processo => {
-                    const isOwner = user?.id === processo.user_id;
-                    const canDelete = isAdmin || isOwner;
-                    return (
-                      <ProcessoCard
-                        key={processo.id}
-                        processo={processo}
-                        onViewDetails={handleViewDetails}
-                        onDelete={canDelete ? handleDeleteProcesso : undefined}
-                        isAdmin={isAdmin}
-                        userInfo={processo.user_profile ? {
-                          name: `${processo.user_profile.first_name} ${processo.user_profile.last_name}`.trim(),
-                          email: processo.user_profile.email,
-                          created_at: processo.user_profile.created_at
-                        } : undefined}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
+                    <div className="sm:hidden w-full flex flex-wrap justify-center gap-6">
+                      {filteredProcessos.map(processo => {
+                        const isOwner = user?.id === processo.user_id;
+                        const canDelete = isAdmin || isOwner;
+                        return (
+                          <ProcessoCard
+                            key={processo.id}
+                            processo={processo}
+                            onViewDetails={handleViewDetails}
+                            onDelete={canDelete ? handleDeleteProcesso : undefined}
+                            isAdmin={isAdmin}
+                            userInfo={processo.user_profile ? {
+                              name: `${processo.user_profile.first_name} ${processo.user_profile.last_name}`.trim(),
+                              email: processo.user_profile.email,
+                              created_at: processo.user_profile.created_at
+                            } : undefined}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {processos.length > 0 && (
                 <div className="flex justify-center py-8">

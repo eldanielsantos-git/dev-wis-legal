@@ -28,6 +28,7 @@ interface AppHomePageProps {
   onNavigateToAdmin: () => void;
   onNavigateToMyProcess?: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
@@ -35,7 +36,7 @@ interface AppHomePageProps {
   onNavigateToApp?: () => void;
 }
 
-export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateToMyProcess, onNavigateToChat, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToApp }: AppHomePageProps) {
+export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToApp }: AppHomePageProps) {
   logger.log('AppHomePage', 'Renderizando componente');
   const { user, isAdmin } = useAuth();
   const { theme } = useTheme();
@@ -439,6 +440,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
           }
         }}
         onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

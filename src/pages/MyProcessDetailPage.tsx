@@ -4,7 +4,7 @@ import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ProcessosService } from '../services/ProcessosService';
 import { AnalysisResultsService, type AnalysisResult } from '../services/AnalysisResultsService';
-import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft } from 'lucide-react';
+import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, Edit3, Trash2 } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
@@ -13,6 +13,9 @@ import { ComplexProcessingProgress } from '../components/ComplexProcessingProgre
 import { AnalysisCard } from '../components/AnalysisCard';
 import { AnalysisViewSelector } from '../components/analysis-views/AnalysisViewSelector';
 import { calculateCardAvailability, getAvailableCards } from '../utils/analysisAvailability';
+import { ShareProcessModal } from '../components/ShareProcessModal';
+import { WorkspaceService, WorkspaceShare } from '../services/WorkspaceService';
+import { useAuth } from '../contexts/AuthContext';
 
 interface MyProcessDetailPageProps {
   processoId: string;
@@ -52,12 +55,20 @@ export function MyProcessDetailPage({
   const [showFullAnalysis, setShowFullAnalysis] = useState(true);
   const selectedContentRef = React.useRef<HTMLDivElement>(null);
   const pollIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [shares, setShares] = useState<WorkspaceShare[]>([]);
+  const [canShare, setCanShare] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const [showSharesSection, setShowSharesSection] = useState(false);
+  const { user } = useAuth();
 
   // Removido: useEffect que causava reloads infinitos quando processo?.status mudava
 
   useEffect(() => {
     loadProcesso();
     loadAnalysisResults();
+    loadShares();
+    checkCanShare();
 
     const processoChannel = ProcessosService.subscribeToProcessoChanges(
       processoId,
@@ -86,6 +97,7 @@ export function MyProcessDetailPage({
     // Inicia polling a cada 3 segundos
     pollIntervalRef.current = setInterval(() => {
       loadAnalysisResults();
+      loadShares();
     }, 3000);
 
     return () => {
@@ -160,6 +172,63 @@ export function MyProcessDetailPage({
       }
     } catch (err) {
       console.error('❌ Erro ao carregar resultados:', err);
+    }
+  };
+
+  const loadShares = async () => {
+    try {
+      const processShares = await WorkspaceService.getProcessShares(processoId);
+      setShares(processShares);
+    } catch (error) {
+      console.error('Error loading shares:', error);
+    }
+  };
+
+  const checkCanShare = async () => {
+    try {
+      const result = await WorkspaceService.canShare(processoId);
+      setCanShare(result.canShare);
+      if (!result.canShare) {
+        setShareError(result.reason);
+      }
+    } catch (error) {
+      console.error('Error checking if can share:', error);
+      setCanShare(false);
+    }
+  };
+
+  const handleShareClick = () => {
+    if (canShare) {
+      setIsShareModalOpen(true);
+    }
+  };
+
+  const handleShareSuccess = () => {
+    loadShares();
+    checkCanShare();
+  };
+
+  const handleRemoveShare = async (shareId: string) => {
+    if (!confirm('Tem certeza que deseja remover este compartilhamento?')) {
+      return;
+    }
+
+    try {
+      await WorkspaceService.removeShare(shareId);
+      loadShares();
+    } catch (error) {
+      console.error('Error removing share:', error);
+      alert('Erro ao remover compartilhamento');
+    }
+  };
+
+  const handleUpdatePermission = async (shareId: string, newPermission: 'read_only' | 'editor') => {
+    try {
+      await WorkspaceService.updateSharePermission(shareId, newPermission);
+      loadShares();
+    } catch (error) {
+      console.error('Error updating permission:', error);
+      alert('Erro ao atualizar permissão');
     }
   };
 
@@ -377,14 +446,27 @@ export function MyProcessDetailPage({
                   )}
                 </div>
               </div>
-              <button
-                onClick={() => onNavigateToChat?.(processoId)}
-                className="flex items-center space-x-1.5 px-3 py-2.5 rounded-lg transition-all duration-200 hover:opacity-80 whitespace-nowrap w-fit mx-auto sm:mx-0"
-                style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}
-              >
-                <MessageSquare className="w-5 h-5" style={{ color: '#1C9BF1' }} />
-                <span className="text-sm font-normal" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>Chat com o processo</span>
-              </button>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleShareClick}
+                  disabled={!canShare}
+                  className="flex items-center space-x-1.5 px-3 py-2.5 rounded-lg transition-all duration-200 hover:opacity-80 whitespace-nowrap w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}
+                  title={canShare ? 'Compartilhe com outros usuários' : shareError || 'Aguarde a análise ser concluída para compartilhar'}
+                >
+                  <Share2 className="w-5 h-5" style={{ color: canShare ? '#10B981' : colors.textSecondary }} />
+                  <span className="text-sm font-normal hidden sm:inline" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>Compartilhar</span>
+                </button>
+
+                <button
+                  onClick={() => onNavigateToChat?.(processoId)}
+                  className="flex items-center space-x-1.5 px-3 py-2.5 rounded-lg transition-all duration-200 hover:opacity-80 whitespace-nowrap w-fit"
+                  style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}
+                >
+                  <MessageSquare className="w-5 h-5" style={{ color: '#1C9BF1' }} />
+                  <span className="text-sm font-normal" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>Chat com o processo</span>
+                </button>
+              </div>
             </div>
 
             {/* Título Áreas de Análise */}
@@ -580,9 +662,116 @@ export function MyProcessDetailPage({
                 </p>
               </div>
             )}
+
+            {/* Seção de Compartilhamentos */}
+            {user?.id === processo.user_id && shares.length > 0 && (
+              <div className="mt-8">
+                <button
+                  onClick={() => setShowSharesSection(!showSharesSection)}
+                  className="w-full flex items-center justify-between p-4 rounded-lg transition-colors hover:opacity-80"
+                  style={{ backgroundColor: colors.bgSecondary }}
+                >
+                  <div className="flex items-center space-x-3">
+                    <Users className="w-5 h-5" style={{ color: colors.textPrimary }} />
+                    <span className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                      Compartilhamentos
+                    </span>
+                    <span
+                      className="px-2 py-1 rounded-full text-xs font-medium"
+                      style={{ backgroundColor: colors.bgTertiary, color: colors.textSecondary }}
+                    >
+                      {shares.length}
+                    </span>
+                  </div>
+                  {showSharesSection ? (
+                    <ChevronUp className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                  ) : (
+                    <ChevronDown className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                  )}
+                </button>
+
+                {showSharesSection && (
+                  <div className="mt-4 space-y-3">
+                    {shares.map((share) => (
+                      <div
+                        key={share.id}
+                        className="p-4 rounded-lg border"
+                        style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 mb-1">
+                              <p className="font-medium" style={{ color: colors.textPrimary }}>
+                                {share.shared_with_name}
+                              </p>
+                              <span
+                                className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                                style={{
+                                  backgroundColor: share.permission_level === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                                  color: share.permission_level === 'read_only' ? '#f59e0b' : '#3b82f6'
+                                }}
+                              >
+                                {share.permission_level === 'read_only' ? (
+                                  <>
+                                    <Lock className="w-3 h-3" />
+                                    <span>Somente Leitura</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Edit3 className="w-3 h-3" />
+                                    <span>Editor</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                            <p className="text-sm" style={{ color: colors.textSecondary }}>
+                              {share.shared_with_email}
+                            </p>
+                            <p className="text-xs mt-1" style={{ color: colors.textTertiary }}>
+                              Compartilhado em {new Date(share.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2 ml-4">
+                            <select
+                              value={share.permission_level}
+                              onChange={(e) => handleUpdatePermission(share.id, e.target.value as 'read_only' | 'editor')}
+                              className="px-3 py-1.5 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              style={{
+                                backgroundColor: colors.bgPrimary,
+                                borderColor: colors.border,
+                                color: colors.textPrimary
+                              }}
+                            >
+                              <option value="read_only">Somente Leitura</option>
+                              <option value="editor">Editor</option>
+                            </select>
+                            <button
+                              onClick={() => handleRemoveShare(share.id)}
+                              className="p-2 rounded-lg hover:bg-red-100 transition-colors"
+                              style={{ color: '#EF4444' }}
+                              title="Remover acesso"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>
+
+      <ShareProcessModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        processoId={processoId}
+        processoName={processo.nome_processo || 'Processo sem nome'}
+        onShareSuccess={handleShareSuccess}
+      />
 
       {isSearchOpen && (
         <IntelligentSearch

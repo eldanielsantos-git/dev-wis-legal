@@ -33,6 +33,7 @@ import { SubscriptionPage } from './pages/SubscriptionPage';
 import { TokensPage } from './pages/TokensPage';
 import { ChatPage } from './pages/ChatPage';
 import { ChatProcessSelectionPage } from './pages/ChatProcessSelectionPage';
+import { WorkspacePage } from './pages/WorkspacePage';
 import { Loader } from 'lucide-react';
 
 function AppContent() {
@@ -138,6 +139,22 @@ function AppContent() {
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
+  }
+
+  if (currentPath === '/workspace') {
+    return (
+      <WorkspacePage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToAdmin={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+        onNavigateToProcessDetail={(processoId) => navigate(`/lawsuits-detail/${processoId}`)}
       />
     );
   }
@@ -388,6 +405,7 @@ function AppContent() {
         onNavigateToAdmin={() => navigate('/admin')}
         onNavigateToApp={() => navigate('/app')}
         onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
@@ -451,6 +469,7 @@ function AppContent() {
         onNavigateToAdmin={() => navigate('/admin')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}

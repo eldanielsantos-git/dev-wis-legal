@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, FileText, Sun, Moon, Coins, Menu, X, Home, ChevronLeft, ChevronRight, MessageSquare, UserPlus } from 'lucide-react';
+import { Search, Plus, FileText, Sun, Moon, Coins, Menu, X, Home, ChevronLeft, ChevronRight, MessageSquare, UserPlus, Users } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
@@ -14,6 +14,7 @@ interface SidebarWisProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToSettings?: () => void;
@@ -22,10 +23,10 @@ interface SidebarWisProps {
   onNavigateToSubscription?: () => void;
   onCollapsedChange?: (isCollapsed: boolean) => void;
   onSearchClick?: () => void;
-  activePage?: 'home' | 'myProcesses' | 'chat' | 'notifications' | 'settings' | 'profile' | 'tokens' | 'subscription';
+  activePage?: 'home' | 'myProcesses' | 'chat' | 'workspace' | 'notifications' | 'settings' | 'profile' | 'tokens' | 'subscription';
 }
 
-export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToAdmin, onNavigateToProfile, onNavigateToSettings, onNavigateToNotifications, onNavigateToTokens, onNavigateToSubscription, onCollapsedChange, onSearchClick, activePage }: SidebarWisProps) {
+export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToSettings, onNavigateToNotifications, onNavigateToTokens, onNavigateToSubscription, onCollapsedChange, onSearchClick, activePage }: SidebarWisProps) {
   const { profile, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const colors = getThemeColors(theme);
@@ -181,6 +182,20 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
               <MessageSquare className="w-5 h-5 flex-shrink-0" />
               <span className="ml-3 text-sm font-medium">Chat</span>
             </button>
+
+            <button
+              onClick={() => {
+                onNavigateToWorkspace?.();
+                closeMobileMenu();
+              }}
+              className="w-full flex items-center px-4 py-3 rounded-lg transition-colors"
+              style={getButtonStyle('workspace')}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'workspace' ? activeBg : 'transparent'}
+            >
+              <Users className="w-5 h-5 flex-shrink-0" />
+              <span className="ml-3 text-sm font-medium">Meu workspace</span>
+            </button>
           </div>
 
           <div className="flex-1"></div>
@@ -323,6 +338,18 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
             >
               <MessageSquare className="w-5 h-5 flex-shrink-0" />
               {!isCollapsed && <span className="ml-3 text-sm font-medium">Chat</span>}
+            </button>
+
+            <button
+              onClick={() => onNavigateToWorkspace?.()}
+              className={`w-full flex items-center py-3 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              style={getButtonStyle('workspace')}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'workspace' ? activeBg : 'transparent'}
+              title="Meu workspace"
+            >
+              <Users className="w-5 h-5 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 text-sm font-medium">Meu workspace</span>}
             </button>
           </div>
 
