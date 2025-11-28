@@ -44,6 +44,7 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [filterMode, setFilterMode] = useState<'all' | 'shared'>('all');
   const [sharedProcessIds, setSharedProcessIds] = useState<Set<string>>(new Set());
+  const [shareCountByProcesso, setShareCountByProcesso] = useState<Map<string, number>>(new Map());
 
   const loadProcessos = useCallback(async (isInitialLoad = false) => {
     try {
@@ -76,6 +77,14 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
       const shares = await WorkspaceService.getMyShares();
       const ids = new Set(shares.map(share => share.processo_id));
       setSharedProcessIds(ids);
+
+      // Count shares per processo
+      const countMap = new Map<string, number>();
+      shares.forEach(share => {
+        const currentCount = countMap.get(share.processo_id) || 0;
+        countMap.set(share.processo_id, currentCount + 1);
+      });
+      setShareCountByProcesso(countMap);
     } catch (error) {
       console.error('Error loading shared process IDs:', error);
     }
@@ -305,6 +314,8 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                       onViewDetails: handleViewDetails,
                       onDelete: canDelete ? handleDeleteProcesso : undefined,
                       isAdmin,
+                      isShared: sharedProcessIds.has(processo.id),
+                      shareCount: shareCountByProcesso.get(processo.id) || 0,
                       userInfo: processo.user_profile ? {
                         name: `${processo.user_profile.first_name} ${processo.user_profile.last_name}`.trim(),
                         email: processo.user_profile.email,
@@ -330,6 +341,8 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                             onViewDetails={handleViewDetails}
                             onDelete={canDelete ? handleDeleteProcesso : undefined}
                             isAdmin={isAdmin}
+                            isShared={sharedProcessIds.has(processo.id)}
+                            shareCount={shareCountByProcesso.get(processo.id) || 0}
                             userInfo={processo.user_profile ? {
                               name: `${processo.user_profile.first_name} ${processo.user_profile.last_name}`.trim(),
                               email: processo.user_profile.email,

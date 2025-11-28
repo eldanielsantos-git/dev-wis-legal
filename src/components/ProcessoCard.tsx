@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Trash2, CheckCircle, Coins } from 'lucide-react';
+import { FileText, Trash2, CheckCircle, Coins, Users } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { ProcessStatusIndicator } from './ProcessStatusIndicator';
@@ -10,6 +10,8 @@ interface ProcessoCardProps {
   onViewDetails: (processo: Processo) => void;
   onDelete?: (processo: Processo) => void;
   isAdmin?: boolean;
+  isShared?: boolean;
+  shareCount?: number;
   userInfo?: {
     name: string;
     email: string;
@@ -22,6 +24,8 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
   onViewDetails,
   onDelete,
   isAdmin,
+  isShared,
+  shareCount,
   userInfo
 }) => {
   const { theme } = useTheme();
@@ -77,24 +81,50 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
             />
           </div>
 
-          {onDelete && (
-            <button
-              onClick={handleDeleteClick}
-              className="p-2 rounded-lg transition-colors duration-200 ml-2 flex-shrink-0"
-              style={{ color: '#C8C8C8' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = '#A0A0A0';
-                e.currentTarget.style.backgroundColor = 'rgba(200, 200, 200, 0.1)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = '#C8C8C8';
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-              title="Excluir processo"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
-          )}
+          <div className="flex items-center gap-2 ml-2">
+            {isShared && (
+              <div
+                className="relative p-2 rounded-lg transition-colors duration-200 flex-shrink-0"
+                style={{
+                  color: '#3b82f6',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                }}
+                title={shareCount && shareCount > 0 ? `Compartilhado com ${shareCount} ${shareCount === 1 ? 'pessoa' : 'pessoas'}` : 'Processo compartilhado'}
+              >
+                <Users className="w-5 h-5" />
+                {shareCount && shareCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-xs font-bold flex items-center justify-center"
+                    style={{
+                      backgroundColor: '#3b82f6',
+                      color: '#ffffff'
+                    }}
+                  >
+                    {shareCount > 9 ? '9+' : shareCount}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {onDelete && (
+              <button
+                onClick={handleDeleteClick}
+                className="p-2 rounded-lg transition-colors duration-200 flex-shrink-0"
+                style={{ color: '#C8C8C8' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.color = '#A0A0A0';
+                  e.currentTarget.style.backgroundColor = 'rgba(200, 200, 200, 0.1)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.color = '#C8C8C8';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+                title="Excluir processo"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
