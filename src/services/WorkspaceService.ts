@@ -158,8 +158,19 @@ export class WorkspaceService {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const { data: { session } } = await supabase.auth.getSession();
 
+      console.log('📧 Calling send-workspace-invite edge function...');
+      console.log('📧 URL:', `${supabaseUrl}/functions/v1/send-workspace-invite`);
+      console.log('📧 Payload:', {
+        shareId: share.id,
+        processoId: request.processoId,
+        invitedEmail: request.email,
+        invitedName: request.name,
+        permissionLevel: request.permissionLevel,
+        userExists: !!invitedUser
+      });
+
       try {
-        await fetch(`${supabaseUrl}/functions/v1/send-workspace-invite`, {
+        const response = await fetch(`${supabaseUrl}/functions/v1/send-workspace-invite`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${session?.access_token}`,
@@ -174,8 +185,19 @@ export class WorkspaceService {
             userExists: !!invitedUser
           })
         });
+
+        console.log('📧 Response status:', response.status);
+
+        const responseData = await response.json();
+        console.log('📧 Response data:', responseData);
+
+        if (!response.ok) {
+          console.error('❌ Edge function returned error:', responseData);
+        } else {
+          console.log('✅ Email invitation sent successfully');
+        }
       } catch (emailError) {
-        console.error('Error sending invitation email:', emailError);
+        console.error('❌ Error calling edge function:', emailError);
       }
 
       return {
