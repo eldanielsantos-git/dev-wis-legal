@@ -4,12 +4,23 @@ import { useTheme } from '../contexts/ThemeContext';
 
 interface ConfirmDeleteModalProps {
   isOpen: boolean;
-  fileName: string;
+  fileName?: string;
+  processoName?: string;
   onConfirm: () => void;
-  onCancel: () => void;
+  onCancel?: () => void;
+  onClose?: () => void;
 }
 
-export function ConfirmDeleteModal({ isOpen, fileName, onConfirm, onCancel }: ConfirmDeleteModalProps) {
+export function ConfirmDeleteModal({
+  isOpen,
+  fileName,
+  processoName,
+  onConfirm,
+  onCancel,
+  onClose
+}: ConfirmDeleteModalProps) {
+  const handleCancel = onCancel || onClose || (() => {});
+  const displayName = fileName || processoName || 'este processo';
   const { theme } = useTheme();
   useEffect(() => {
     if (!isOpen) return;
@@ -17,7 +28,7 @@ export function ConfirmDeleteModal({ isOpen, fileName, onConfirm, onCancel }: Co
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        onCancel();
+        handleCancel();
       } else if (event.key === 'Enter') {
         event.preventDefault();
         onConfirm();
@@ -29,21 +40,25 @@ export function ConfirmDeleteModal({ isOpen, fileName, onConfirm, onCancel }: Co
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, onConfirm, onCancel]);
+  }, [isOpen, onConfirm, handleCancel]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-40 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-40 backdrop-blur-sm"
+      onClick={handleCancel}
+    >
       <div
         className="relative w-full max-w-sm rounded-xl p-5 shadow-2xl border"
         style={{
           backgroundColor: theme === 'dark' ? '#1a1d21' : '#FFFFFF',
           borderColor: theme === 'dark' ? '#374151' : '#E5E7EB'
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         <button
-          onClick={onCancel}
+          onClick={handleCancel}
           className="absolute top-3 right-3 p-1 rounded transition-colors"
           style={{
             color: theme === 'dark' ? '#9CA3AF' : '#6B7280'
@@ -70,7 +85,7 @@ export function ConfirmDeleteModal({ isOpen, fileName, onConfirm, onCancel }: Co
             className="text-sm mb-2 break-words"
             style={{ color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}
           >
-            {fileName}
+            {displayName}
           </p>
           <p className="text-xs" style={{ color: '#EF4444' }}>
             Esta ação é irreversível
@@ -79,7 +94,7 @@ export function ConfirmDeleteModal({ isOpen, fileName, onConfirm, onCancel }: Co
 
         <div className="flex gap-2 justify-end">
           <button
-            onClick={onCancel}
+            onClick={handleCancel}
             className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
             style={{
               color: theme === 'dark' ? '#D1D5DB' : '#374151',
