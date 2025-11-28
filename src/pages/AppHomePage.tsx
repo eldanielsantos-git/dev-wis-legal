@@ -7,6 +7,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { UpgradeModal } from '../components/UpgradeModal';
 import { ProcessoCard } from '../components/ProcessoCard';
 import { ProcessoListItem } from '../components/ProcessoListItem';
+import { StatusCard } from '../components/StatusCard';
 // TODO: Reimplementar
 // import ForensicBackgroundProgress from '../components/ForensicBackgroundProgress';
 import { ErrorModal } from '../components/ErrorModal';
@@ -14,12 +15,13 @@ import { ToastContainer } from '../components/ToastContainer';
 import { useToast } from '../hooks/useToast';
 import { ProcessosService } from '../services/ProcessosService';
 import { TokenValidationService } from '../services/TokenValidationService';
+import { WorkspaceService } from '../services/WorkspaceService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { logger } from '../utils/logger';
 import { useEffectOnce } from '../hooks/useEffectOnce';
-import { FileText, CheckCircle, Loader, LayoutGrid, List } from 'lucide-react';
+import { FileText, CheckCircle, Loader, LayoutGrid, List, Users } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
 
@@ -68,6 +70,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
   const [errorModal, setErrorModal] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: '', message: '' });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const { toasts, removeToast, success: showSuccess, error: showError, warning: showWarning, info: showInfo } = useToast();
+  const [sharedProcessCount, setSharedProcessCount] = useState<number>(0);
 
   useEffectOnce(() => {
     const syncAndLoadData = async () => {
@@ -125,6 +128,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
       hasLoadedProcessos.current = true;
     }
     detectProcessosEmAndamento();
+    loadSharedProcessCount();
 
   });
 
@@ -235,6 +239,16 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
       }
     } catch (err) {
       logger.error('AppHomePage', 'Erro ao detectar processos em andamento:', err);
+    }
+  }, [user]);
+
+  const loadSharedProcessCount = useCallback(async () => {
+    try {
+      if (!user) return;
+      const counts = await WorkspaceService.countShares();
+      setSharedProcessCount(counts.sharedWithMe + counts.myShares);
+    } catch (err) {
+      logger.error('AppHomePage', 'Erro ao carregar contagem de processos compartilhados:', err);
     }
   }, [user]);
 
@@ -507,47 +521,43 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
           </section>
           <section className="mb-8 sm:mb-10 lg:mb-12">
             <h2 className="text-xl sm:text-2xl font-title font-bold mb-4 sm:mb-6 text-center" style={{ color: colors.textPrimary }}>Status</h2>
-            <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3 justify-items-center max-w-7xl mx-auto">
-              <button
+            <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-4 justify-items-center max-w-7xl mx-auto">
+              <StatusCard
+                title="Processos Registrados"
+                value={totalProcessos}
+                icon={FileText}
+                iconColor="text-blue-500"
+                iconBg="bg-blue-100 dark:bg-blue-900/30"
+                description="Total de processos"
                 onClick={() => onNavigateToMyProcess?.()}
-                className="rounded-lg p-4 sm:p-6 w-full max-w-sm transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
-                style={{ backgroundColor: theme === 'dark' ? '#1D1C1B' : colors.bgSecondary }}
-              >
-                <div className="flex items-center space-x-3 mb-2">
-                  <FileText className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: colors.textPrimary }} />
-                  <span className="text-xs sm:text-sm font-medium" style={{ color: colors.textPrimary }}>Processos Registrados</span>
-                </div>
-                <p className="text-3xl sm:text-4xl font-bold" style={{ color: colors.textPrimary }}>{totalProcessos}</p>
-                <p className="text-xs sm:text-sm mt-1" style={{ color: colors.textPrimary }}>Total de processos</p>
-              </button>
-
-              <button
+              />
+              <StatusCard
+                title="Processos Analisados"
+                value={processosCompletos}
+                icon={CheckCircle}
+                iconColor="text-green-500"
+                iconBg="bg-green-100 dark:bg-green-900/30"
+                description="Processos completos"
                 onClick={() => onNavigateToMyProcess?.()}
-                className="rounded-lg p-4 sm:p-6 w-full max-w-sm transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
-                style={{ backgroundColor: theme === 'dark' ? '#1D1C1B' : colors.bgSecondary }}
-              >
-                <div className="flex items-center space-x-3 mb-2">
-                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: colors.textPrimary }} />
-                  <span className="text-xs sm:text-sm font-medium" style={{ color: colors.textPrimary }}>Processos Analisados</span>
-                </div>
-                <p className="text-3xl sm:text-4xl font-bold" style={{ color: colors.textPrimary }}>{processosCompletos}</p>
-                <p className="text-xs sm:text-sm mt-1" style={{ color: colors.textPrimary }}>Processos completos</p>
-              </button>
-
-              <button
+              />
+              <StatusCard
+                title="Processos em Análise"
+                value={processosProcessando}
+                icon={Loader}
+                iconColor="text-yellow-500"
+                iconBg="bg-yellow-100 dark:bg-yellow-900/30"
+                description={processosProcessando > 0 ? 'Sendo analisados' : 'Você não tem arquivos em análise'}
                 onClick={() => onNavigateToMyProcess?.()}
-                className="rounded-lg p-4 sm:p-6 w-full max-w-sm transition-all duration-200 hover:scale-105 hover:shadow-lg cursor-pointer"
-                style={{ backgroundColor: theme === 'dark' ? '#1D1C1B' : colors.bgSecondary }}
-              >
-                <div className="flex items-center space-x-3 mb-2">
-                  <Loader className={`w-5 h-5 sm:w-6 sm:h-6 ${processosProcessando > 0 ? 'animate-spin' : ''}`} style={{ color: colors.textPrimary }} />
-                  <span className="text-xs sm:text-sm font-medium" style={{ color: colors.textPrimary }}>Processos em Análise</span>
-                </div>
-                <p className="text-3xl sm:text-4xl font-bold" style={{ color: colors.textPrimary }}>{processosProcessando}</p>
-                <p className="text-xs sm:text-sm mt-1" style={{ color: colors.textPrimary }}>
-                  {processosProcessando > 0 ? 'Sendo analisados' : 'Você não tem arquivos em análise'}
-                </p>
-              </button>
+              />
+              <StatusCard
+                title="Meu Workspace"
+                value={sharedProcessCount}
+                icon={Users}
+                iconColor="text-purple-500"
+                iconBg="bg-purple-100 dark:bg-purple-900/30"
+                description={sharedProcessCount > 0 ? 'Acessar processos compartilhados' : 'Você ainda não compartilhou nenhum processo'}
+                onClick={() => onNavigateToWorkspace?.()}
+              />
             </div>
           </section>
 
