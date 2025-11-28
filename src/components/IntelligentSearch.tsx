@@ -43,9 +43,17 @@ export function IntelligentSearch({ isOpen, onClose, onSelectProcess }: Intellig
             pagina.text?.toLowerCase().includes(query)
           ) || false;
 
+          const userNameMatch = processo.user_profile
+            ? `${processo.user_profile.first_name} ${processo.user_profile.last_name}`.toLowerCase().includes(query)
+            : false;
+
+          const userEmailMatch = processo.user_profile
+            ? processo.user_profile.email.toLowerCase().includes(query)
+            : false;
+
           const forensicMatch = false;
 
-          return fileNameMatch || contentMatch || forensicMatch;
+          return fileNameMatch || contentMatch || userNameMatch || userEmailMatch || forensicMatch;
         });
 
         const sortedResults = filtered.sort((a, b) =>
@@ -134,7 +142,7 @@ export function IntelligentSearch({ isOpen, onClose, onSelectProcess }: Intellig
           <input
             ref={inputRef}
             type="text"
-            placeholder="Buscar por nome do arquivo ou conteúdo..."
+            placeholder="Buscar por nome do arquivo, conteúdo, nome ou email do usuário..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -159,7 +167,7 @@ export function IntelligentSearch({ isOpen, onClose, onSelectProcess }: Intellig
             <div className="px-6 py-8 text-center" style={{ color: colors.textSecondary }}>
               <Search className="w-12 h-12 mx-auto mb-3" style={{ color: colors.textTertiary }} />
               <p className="text-sm">Digite pelo menos 2 caracteres para buscar</p>
-              <p className="text-xs mt-2">Busque por nome do arquivo, conteúdo do PDF ou análise forense</p>
+              <p className="text-xs mt-2">Busque por nome do arquivo, conteúdo do PDF, nome do usuário, email ou análise forense</p>
             </div>
           ) : searchResults.length === 0 && !loading ? (
             <div className="px-6 py-8 text-center" style={{ color: colors.textSecondary }}>
@@ -200,6 +208,18 @@ export function IntelligentSearch({ isOpen, onClose, onSelectProcess }: Intellig
                       <span>{formatFileSize(processo.file_size)}</span>
                       <span>{processo.transcricao?.totalPages || 0} páginas</span>
                     </div>
+                    {processo.user_profile && (
+                      <div className="mt-1 text-xs" style={{ color: colors.textSecondary }}>
+                        <span>
+                          {highlightMatch(
+                            `${processo.user_profile.first_name} ${processo.user_profile.last_name}`,
+                            searchQuery
+                          )}
+                          {' • '}
+                          {highlightMatch(processo.user_profile.email, searchQuery)}
+                        </span>
+                      </div>
+                    )}
                     {processo.status === 'completed' && (
                       <div className="mt-1">
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" style={{
