@@ -120,40 +120,63 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // For new users, send invitation email
-    if (!userExists) {
-      try {
-        const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
-          invitedEmail.toLowerCase(),
+    // Send invitation email for BOTH new and existing users
+    // Using inviteUserByEmail temporarily (uses default Supabase invite template)
+    try {
+      const emailData = {
+        shared_by: user.id,
+        owner_name: ownerName,
+        share_id: shareId,
+        processo_id: processoId,
+        processo_name: processo.nome_processo || processo.numero_processo,
+        permission_level: permissionLevel,
+        permission_text: permissionText,
+        user_exists: userExists,
+        invited_name: invitedName,
+      };
+
+      // For existing users, we still send an invite (they'll get the email)
+      // For new users, this will create their account
+      const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
+        invitedEmail.toLowerCase(),
+        {
+          redirectTo: userExists
+            ? `${supabaseUrl}/lawsuits-detail/${processoId}`
+            : `${supabaseUrl}/workspace`,
+          data: emailData,
+        }
+      );
+
+      if (inviteError) {
+        console.error("Error sending invite email:", inviteError);
+
+        // Don't fail the request, just log warning
+        return new Response(
+          JSON.stringify({
+            success: true,
+            warning: "Compartilhamento criado, mas houve erro ao enviar email. O usuário receberá uma notificação ao fazer login.",
+            emailError: inviteError.message,
+          }),
           {
-            redirectTo: `${supabaseUrl}/workspace`,
-            data: {
-              shared_by: user.id,
-              owner_name: ownerName,
-              share_id: shareId,
-              processo_id: processoId,
-              processo_name: processo.nome_processo || processo.numero_processo,
-              permission_level: permissionLevel,
-            },
+            status: 200,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
           }
         );
-
-        if (inviteError) {
-          console.error("Error sending invite email:", inviteError);
-          return new Response(
-            JSON.stringify({
-              success: true,
-              warning: "Compartilhamento criado, mas houve erro ao enviar email",
-            }),
-            {
-              status: 200,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            }
-          );
-        }
-      } catch (emailError) {
-        console.error("Exception sending email:", emailError);
       }
+    } catch (emailError) {
+      console.error("Exception sending email:", emailError);
+
+      // Don't fail the request, sharing was created successfully
+      return new Response(
+        JSON.stringify({
+          success: true,
+          warning: "Compartilhamento criado, mas houve erro ao enviar email. O usuário receberá uma notificação ao fazer login.",
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     return new Response(
