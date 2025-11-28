@@ -185,7 +185,12 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
 
             <button
               onClick={() => {
-                onNavigateToWorkspace?.();
+                console.log('Workspace button clicked, onNavigateToWorkspace:', onNavigateToWorkspace);
+                if (onNavigateToWorkspace) {
+                  onNavigateToWorkspace();
+                } else {
+                  console.error('onNavigateToWorkspace is undefined!');
+                }
                 closeMobileMenu();
               }}
               className="w-full flex items-center px-4 py-3 rounded-lg transition-colors"
@@ -341,7 +346,14 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
             </button>
 
             <button
-              onClick={() => onNavigateToWorkspace?.()}
+              onClick={() => {
+                console.log('Workspace button clicked (collapsed), onNavigateToWorkspace:', onNavigateToWorkspace);
+                if (onNavigateToWorkspace) {
+                  onNavigateToWorkspace();
+                } else {
+                  console.error('onNavigateToWorkspace is undefined!');
+                }
+              }}
               className={`w-full flex items-center py-3 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
               style={getButtonStyle('workspace')}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
