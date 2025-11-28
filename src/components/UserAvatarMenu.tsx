@@ -96,7 +96,8 @@ export function UserAvatarMenu({
     setIsOpen(false);
     try {
       await signOut();
-      window.location.href = 'https://app.wislegal.io/sign-in';
+      window.history.pushState({}, '', '/sign-in');
+      window.dispatchEvent(new PopStateEvent('popstate'));
     } catch (error) {
       console.error('Error signing out:', error);
     }
