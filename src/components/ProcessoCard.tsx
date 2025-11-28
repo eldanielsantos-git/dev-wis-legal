@@ -22,6 +22,7 @@ interface ProcessoCardProps {
     sharedBy?: string;
     sharedAt?: string;
     permissionLevel?: 'read_only' | 'editor';
+    onManageShares?: () => void;
   };
 }
 
@@ -203,25 +204,49 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
               </div>
             )}
             {workspaceInfo.permissionLevel && (
-              <div
-                className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
-                style={{
-                  backgroundColor: workspaceInfo.permissionLevel === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
-                  color: workspaceInfo.permissionLevel === 'read_only' ? '#f59e0b' : '#3b82f6'
-                }}
-              >
-                {workspaceInfo.permissionLevel === 'read_only' ? (
-                  <>
-                    <Lock className="w-3 h-3" />
-                    <span>Somente Leitura</span>
-                  </>
-                ) : (
-                  <>
-                    <Edit3 className="w-3 h-3" />
-                    <span>Editor</span>
-                  </>
-                )}
-              </div>
+              workspaceInfo.onManageShares ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    workspaceInfo.onManageShares?.();
+                  }}
+                  className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                  style={{
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    color: '#3b82f6'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+                  }}
+                  title="Clique para gerenciar compartilhamentos"
+                >
+                  <Users className="w-3 h-3" />
+                  <span>Gerenciar compartilhamento</span>
+                </button>
+              ) : (
+                <div
+                  className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: workspaceInfo.permissionLevel === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
+                    color: workspaceInfo.permissionLevel === 'read_only' ? '#f59e0b' : '#3b82f6'
+                  }}
+                >
+                  {workspaceInfo.permissionLevel === 'read_only' ? (
+                    <>
+                      <Lock className="w-3 h-3" />
+                      <span>Somente Leitura</span>
+                    </>
+                  ) : (
+                    <>
+                      <Edit3 className="w-3 h-3" />
+                      <span>Editor</span>
+                    </>
+                  )}
+                </div>
+              )
             )}
           </div>
         )}

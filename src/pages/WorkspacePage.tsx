@@ -3,6 +3,7 @@ import { Users, Loader } from 'lucide-react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
+import { ManageSharesModal } from '../components/ManageSharesModal';
 import { WorkspaceService, WorkspaceShare } from '../services/WorkspaceService';
 import { ProcessoCard } from '../components/ProcessoCard';
 import type { Processo } from '../lib/supabase';
@@ -40,6 +41,15 @@ export function WorkspacePage({
   const [activeTab, setActiveTab] = useState<'received' | 'shared'>('received');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [manageSharesModal, setManageSharesModal] = useState<{
+    isOpen: boolean;
+    processoId: string;
+    processoName: string;
+  }>({
+    isOpen: false,
+    processoId: '',
+    processoName: ''
+  });
 
   useEffect(() => {
     loadShares();
@@ -268,7 +278,16 @@ export function WorkspacePage({
                         ? `${share.owner?.first_name || ''} ${share.owner?.last_name || ''}`.trim()
                         : undefined,
                       sharedAt: share.created_at,
-                      permissionLevel: share.permission_level
+                      permissionLevel: share.permission_level,
+                      onManageShares: activeTab === 'shared'
+                        ? () => {
+                            setManageSharesModal({
+                              isOpen: true,
+                              processoId: share.processo_id,
+                              processoName: share.processo.file_name || share.processo.nome_processo || 'Sem nome'
+                            });
+                          }
+                        : undefined
                     }}
                   />
                 );
@@ -288,6 +307,16 @@ export function WorkspacePage({
         isOpen={isSearchOpen}
         onClose={() => setIsSearchOpen(false)}
         onSelectProcess={handleNavigateToDetail}
+      />
+
+      <ManageSharesModal
+        isOpen={manageSharesModal.isOpen}
+        onClose={() => {
+          setManageSharesModal({ isOpen: false, processoId: '', processoName: '' });
+          loadShares();
+        }}
+        processoId={manageSharesModal.processoId}
+        processoName={manageSharesModal.processoName}
       />
     </div>
   );
