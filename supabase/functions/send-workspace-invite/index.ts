@@ -70,7 +70,6 @@ Deno.serve(async (req: Request) => {
       userExists,
     }: WorkspaceInviteRequest = await req.json();
 
-    // Get processo details
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
       .select("numero_processo, file_name")
@@ -87,7 +86,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Get owner profile
     const { data: ownerProfile } = await supabaseClient
       .from("user_profiles")
       .select("first_name, last_name, email")
@@ -101,7 +99,6 @@ Deno.serve(async (req: Request) => {
     const permissionText =
       permissionLevel === "read_only" ? "Somente Leitura" : "Editor";
 
-    // Create notification for existing users
     if (userExists) {
       const { data: invitedUserProfile } = await supabaseClient
         .from("user_profiles")
@@ -114,7 +111,7 @@ Deno.serve(async (req: Request) => {
           user_id: invitedUserProfile.id,
           type: "workspace_share",
           title: "Novo processo compartilhado",
-          message: `${ownerName} compartilhou o processo "${processo.file_name || processo.numero_processo}" com voc\u00ea (${permissionText})`,
+          message: `${ownerName} compartilhou o processo \"${processo.file_name || processo.numero_processo}\" com voc\u00ea (${permissionText})`,
           link: `/lawsuits-detail/${processoId}`,
         });
 
@@ -122,24 +119,21 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Try to send invitation email via Supabase Auth
-    // Only send email for NEW users (userExists = false)
-    // For existing users, they get in-app notification instead
     try {
-      if (!userExists) {
-        const emailData = {
-          shared_by: user.id,
-          owner_name: ownerName,
-          share_id: shareId,
-          processo_id: processoId,
-          processo_name: processo.file_name || processo.numero_processo,
-          permission_level: permissionLevel,
-          permission_text: permissionText,
-          invited_name: invitedName,
-          invitation_type: 'workspace_share',
-        };
+      const emailData = {
+        shared_by: user.id,
+        owner_name: ownerName,
+        share_id: shareId,
+        processo_id: processoId,
+        processo_name: processo.file_name || processo.numero_processo,
+        permission_level: permissionLevel,
+        permission_text: permissionText,
+        invited_name: invitedName,
+        invitation_type: 'workspace_share',
+      };
 
-        console.log(`Attempting to send email to new user: ${invitedEmail}`);
+      if (!userExists) {
+        console.log(`Attempting to send email to NEW user: ${invitedEmail}`);
 
         const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
           invitedEmail.toLowerCase(),
@@ -153,10 +147,26 @@ Deno.serve(async (req: Request) => {
           console.error("Email not sent - Error:", inviteError.message);
           console.log("Workspace share created successfully without email");
         } else {
-          console.log(`SUCCESS: Workspace invitation email sent to: ${invitedEmail}`);
+          console.log(`SUCCESS: Email sent to NEW user: ${invitedEmail}`);
         }
       } else {
-        console.log(`Existing user ${invitedEmail} - using in-app notification only`);
+        console.log(`Attempting to send email to EXISTING user: ${invitedEmail}`);
+
+        const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
+          type: 'magiclink',
+          email: invitedEmail.toLowerCase(),
+          options: {
+            redirectTo: `${supabaseUrl}/lawsuits-detail/${processoId}`,
+            data: emailData,
+          }
+        });
+
+        if (linkError) {
+          console.error("Email not sent to existing user - Error:", linkError.message);
+          console.log("Workspace share created with in-app notification only");
+        } else {
+          console.log(`SUCCESS: Email sent to EXISTING user: ${invitedEmail}`);
+        }
       }
     } catch (emailError) {
       console.error("Email sending exception:", emailError);
