@@ -4,7 +4,9 @@ import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ManageSharesModal } from '../components/ManageSharesModal';
+import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import { WorkspaceService, WorkspaceShare } from '../services/WorkspaceService';
+import { ProcessosService } from '../services/ProcessosService';
 import { ProcessoCard } from '../components/ProcessoCard';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
@@ -50,6 +52,13 @@ export function WorkspacePage({
     processoId: '',
     processoName: ''
   });
+  const [deleteModal, setDeleteModal] = useState<{
+    isOpen: boolean;
+    processo: Processo | null;
+  }>({
+    isOpen: false,
+    processo: null
+  });
 
   useEffect(() => {
     loadShares();
@@ -92,6 +101,24 @@ export function WorkspacePage({
     } else {
       window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
       window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+  };
+
+  const handleDeleteProcesso = async () => {
+    if (!deleteModal.processo) return;
+
+    try {
+      const result = await ProcessosService.deleteProcesso(deleteModal.processo.id);
+
+      if (result.success) {
+        setDeleteModal({ isOpen: false, processo: null });
+        loadShares();
+      } else {
+        alert(result.error || 'Erro ao excluir processo');
+      }
+    } catch (error) {
+      console.error('Error deleting processo:', error);
+      alert('Erro ao excluir processo');
     }
   };
 
@@ -267,11 +294,15 @@ export function WorkspacePage({
                   is_complex: false
                 };
 
+                // Usuário pode excluir se for proprietário (na aba "shared") ou se tiver permissão de editor
+                const canDelete = activeTab === 'shared' || share.permission_level === 'editor';
+
                 return (
                   <ProcessoCard
                     key={share.id}
                     processo={processoData}
                     onViewDetails={() => handleNavigateToDetail(share.processo_id)}
+                    onDelete={canDelete ? (processo) => setDeleteModal({ isOpen: true, processo }) : undefined}
                     workspaceInfo={{
                       sharedWith: activeTab === 'shared' ? share.shared_with_name : undefined,
                       sharedBy: activeTab === 'received'
@@ -317,6 +348,13 @@ export function WorkspacePage({
         }}
         processoId={manageSharesModal.processoId}
         processoName={manageSharesModal.processoName}
+      />
+
+      <ConfirmDeleteModal
+        isOpen={deleteModal.isOpen}
+        onClose={() => setDeleteModal({ isOpen: false, processo: null })}
+        onConfirm={handleDeleteProcesso}
+        processoName={deleteModal.processo?.file_name || ''}
       />
     </div>
   );
