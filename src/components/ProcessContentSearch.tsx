@@ -75,6 +75,28 @@ export function ProcessContentSearch({ analysisResults, onResultClick }: Process
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const extractReadableText = (content: string): string => {
+    try {
+      const parsed = JSON.parse(content);
+
+      const extractText = (obj: any): string => {
+        if (typeof obj === 'string') return obj;
+        if (typeof obj === 'number' || typeof obj === 'boolean') return String(obj);
+        if (Array.isArray(obj)) {
+          return obj.map(item => extractText(item)).join(' ');
+        }
+        if (obj && typeof obj === 'object') {
+          return Object.values(obj).map(value => extractText(value)).join(' ');
+        }
+        return '';
+      };
+
+      return extractText(parsed).replace(/\s+/g, ' ').trim();
+    } catch {
+      return content;
+    }
+  };
+
   const performSearch = (query: string) => {
     const results: SearchResult[] = [];
     const lowerQuery = query.toLowerCase();
@@ -89,7 +111,8 @@ export function ProcessContentSearch({ analysisResults, onResultClick }: Process
     filteredResults.forEach((result) => {
       if (!result.result_content) return;
 
-      const lowerContent = result.result_content.toLowerCase();
+      const readableContent = extractReadableText(result.result_content);
+      const lowerContent = readableContent.toLowerCase();
       let startIndex = 0;
       let matchCount = 0;
 
@@ -97,12 +120,12 @@ export function ProcessContentSearch({ analysisResults, onResultClick }: Process
         const index = lowerContent.indexOf(lowerQuery, startIndex);
         if (index === -1) break;
 
-        const contextStart = Math.max(0, index - 50);
-        const contextEnd = Math.min(result.result_content.length, index + query.length + 50);
-        let matchText = result.result_content.substring(contextStart, contextEnd);
+        const contextStart = Math.max(0, index - 80);
+        const contextEnd = Math.min(readableContent.length, index + query.length + 80);
+        let matchText = readableContent.substring(contextStart, contextEnd);
 
         if (contextStart > 0) matchText = '...' + matchText;
-        if (contextEnd < result.result_content.length) matchText = matchText + '...';
+        if (contextEnd < readableContent.length) matchText = matchText + '...';
 
         results.push({
           resultId: result.id,
@@ -113,6 +136,8 @@ export function ProcessContentSearch({ analysisResults, onResultClick }: Process
 
         matchCount++;
         startIndex = index + query.length;
+
+        if (matchCount >= 3) break;
       }
     });
 
