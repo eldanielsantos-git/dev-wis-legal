@@ -91,16 +91,12 @@ export function ChatPage({
 
   const loadProcessoDetails = async (id: string) => {
     try {
-      let query = supabase
+      // RLS já filtra automaticamente (próprios + compartilhados + admin)
+      const { data, error } = await supabase
         .from('processos')
         .select('id, file_name, created_at, status')
-        .eq('id', id);
-
-      if (!isAdmin) {
-        query = query.eq('user_id', user?.id);
-      }
-
-      const { data, error } = await query.maybeSingle();
+        .eq('id', id)
+        .maybeSingle();
 
       if (error) throw error;
       setProcesso(data);
@@ -112,16 +108,11 @@ export function ChatPage({
   const loadProcessos = async () => {
     setIsLoadingProcessos(true);
     try {
-      let query = supabase
+      // RLS já filtra automaticamente (próprios + compartilhados + admin)
+      const { data, error } = await supabase
         .from('processos')
         .select('id, file_name, created_at, status')
         .order('created_at', { ascending: false });
-
-      if (!isAdmin) {
-        query = query.eq('user_id', user?.id);
-      }
-
-      const { data, error } = await query;
 
       if (error) throw error;
 

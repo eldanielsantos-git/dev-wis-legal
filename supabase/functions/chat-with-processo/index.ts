@@ -15,15 +15,15 @@ interface RequestBody {
 function cleanMarkdownFromResponse(text: string): string {
   let cleaned = text.trim();
 
-  if (cleaned.startsWith('\`\`\`json') || cleaned.startsWith('\`\`\`')) {
-    cleaned = cleaned.replace(/^\`\`\`json\n?/, '').replace(/^\`\`\`\n?/, '');
-    cleaned = cleaned.replace(/\n?\`\`\`$/, '');
+  if (cleaned.startsWith('```json') || cleaned.startsWith('```')) {
+    cleaned = cleaned.replace(/^```json\n?/, '').replace(/^```\n?/, '');
+    cleaned = cleaned.replace(/\n?```$/, '');
     cleaned = cleaned.trim();
   }
 
   cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, '$1');
   cleaned = cleaned.replace(/\*(.+?)\*/g, '$1');
-  cleaned = cleaned.replace(/\`(.+?)\`/g, '$1');
+  cleaned = cleaned.replace(/`(.+?)`/g, '$1');
   cleaned = cleaned.replace(/~~(.+?)~~/g, '$1');
   cleaned = cleaned.replace(/^#+\s*/gm, '');
 
@@ -185,11 +185,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Buscar processo (RLS já valida acesso: próprio ou compartilhado)
     const { data: processo, error: processoError } = await supabase
       .from('processos')
       .select('*')
       .eq('id', processo_id)
-      .eq('user_id', user.id)
       .maybeSingle();
 
     if (processoError || !processo) {
@@ -233,287 +233,43 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
-    const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({
-      model: modelName,
-    });
-
-    const chatHistory = [];
-
-    if (previousMessages && previousMessages.length > 0) {
-      for (let i = 0; i < previousMessages.length - 1; i++) {
-        const msg = previousMessages[i];
-        chatHistory.push({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.content }],
-        });
-      }
-    }
-
-    let promptType: string;
-    let systemInstructionText: string;
-    let chatMessage: any[];
-    let contextData: any = {};
-
-    if (processo.is_chunked) {
-      console.log('🔄 Using chunks for large processo');
-
-      const { data: chunks, error: chunksError } = await supabase
-        .from('process_chunks')
-        .select('chunk_index, start_page, end_page, gemini_file_uri, status')
-        .eq('processo_id', processo_id)
-        .order('chunk_index', { ascending: true });
-
-      if (chunksError) {
-        return new Response(
-          JSON.stringify({
-            error: 'Erro ao carregar chunks do processo',
-            details: chunksError.message
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      if (!chunks || chunks.length === 0) {
-        return new Response(
-          JSON.stringify({
-            error: 'Chunks não encontrados',
-            details: 'Os chunks deste processo não estão disponíveis. Por favor, tente fazer upload novamente.'
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      const validChunks = chunks.filter(c => c.gemini_file_uri && (c.status === 'uploaded' || c.status === 'completed'));
-
-      if (validChunks.length === 0) {
-        return new Response(
-          JSON.stringify({
-            error: 'Chunks não disponíveis para chat',
-            details: 'Os chunks ainda estão sendo processados ou não foram enviados ao Gemini. Aguarde a conclusão da análise.'
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      console.log(`📊 Total valid chunks: ${validChunks.length}`);
-
-      if (validChunks.length > 10) {
-        promptType = 'large_file_analysis';
-        console.log('⚠️  Too many chunks, using analysis results instead');
-
-        const { data: analysisResults, error: analysisError } = await supabase
-          .from('analysis_results')
-          .select('execution_order, prompt_title, result_content, status')
-          .eq('processo_id', processo_id)
-          .eq('status', 'completed')
-          .order('execution_order', { ascending: true });
-
-        if (analysisError || !analysisResults || analysisResults.length === 0) {
-          return new Response(
-            JSON.stringify({
-              error: 'Análises não disponíveis',
-              details: 'Este processo é muito grande para chat com PDF completo. As análises forenses são necessárias mas ainda não foram concluídas.'
-            }),
-            {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            }
-          );
-        }
-
-        let analysisContext = `ANÁLISE FORENSE COMPLETA DO PROCESSO: ${processo.file_name}\n`;
-        analysisContext += `Total de páginas: ${processo.total_pages || 0}\n\n`;
-
-        for (const analysis of analysisResults) {
-          analysisContext += `=== ANÁLISE ${analysis.execution_order}: ${analysis.prompt_title} ===\n\n`;
-          analysisContext += `${analysis.result_content}\n\n`;
-        }
-
-        contextData = {
-          processo_name: processo.file_name,
-          total_pages: processo.total_pages || 0,
-          chunks_count: validChunks.length
-        };
-
-        chatMessage = [
-          { text: analysisContext },
-          { text: message }
-        ];
-
-      } else {
-        promptType = 'large_file_chunks';
-
-        contextData = {
-          processo_name: processo.file_name,
-          total_pages: processo.total_pages || 0,
-          chunks_count: validChunks.length
-        };
-
-        chatMessage = [];
-
-        for (const chunk of validChunks) {
-          chatMessage.push({
-            fileData: {
-              mimeType: 'application/pdf',
-              fileUri: chunk.gemini_file_uri
-            }
-          });
-        }
-
-        chatMessage.push({ text: message });
-      }
-
-    } else {
-      promptType = 'small_file';
-      console.log('📄 Using PDF base64 for standard processo');
-
-      if (!processo.pdf_base64 || processo.pdf_base64.trim() === '') {
-        return new Response(
-          JSON.stringify({
-            error: 'PDF não disponível',
-            details: 'O conteúdo do PDF não está disponível para chat. Tente fazer o upload novamente.'
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      contextData = {
-        processo_name: processo.file_name,
-        total_pages: processo.total_pages || 0,
-        chunks_count: 0
-      };
-
-      let pdfBase64 = processo.pdf_base64;
-      if (pdfBase64.startsWith('data:')) {
-        pdfBase64 = pdfBase64.split(',')[1];
-      }
-
-      chatMessage = [
-        {
-          inlineData: {
-            mimeType: 'application/pdf',
-            data: pdfBase64,
-          },
-        },
-        { text: message },
-      ];
-    }
-
-    console.log(`🎯 Determined prompt type: ${promptType}`);
-
-    const { data: promptData, error: promptError } = await supabase
+    const { data: systemPromptData } = await supabase
       .from('chat_system_prompts')
-      .select('id, system_prompt, description')
-      .eq('prompt_type', promptType)
+      .select('prompt_content')
       .eq('is_active', true)
-      .order('priority', { ascending: true })
       .limit(1)
       .maybeSingle();
 
-    if (promptError) {
-      console.error('❌ Error fetching chat system prompt:', promptError);
-      return new Response(
-        JSON.stringify({
-          error: 'Erro ao carregar configuração do chat',
-          details: 'Erro ao buscar o prompt do sistema. Entre em contato com o administrador.',
-          admin_action_required: true
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    const systemPrompt = systemPromptData?.prompt_content || `Você é um assistente jurídico especializado em análise de processos. Seja objetivo, claro e profissional em suas respostas.`;
 
-    if (!promptData) {
-      console.error(`❌ No active prompt found for type: ${promptType}`);
-      return new Response(
-        JSON.stringify({
-          error: 'Configuração de chat não disponível',
-          details: `Os prompts do sistema de chat não foram configurados para arquivos deste tipo (${promptType}). Entre em contato com o administrador.`,
-          admin_action_required: true,
-          prompt_type_needed: promptType
-        }),
-        {
-          status: 503,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+    const chatHistory = previousMessages?.map(msg => ({
+      role: msg.role as 'user' | 'model',
+      parts: [{ text: msg.content }]
+    })) || [];
 
-    console.log(`✅ Using prompt ID: ${promptData.id} (${promptData.description || 'No description'})`);
-
-    systemInstructionText = promptData.system_prompt
-      .replace(/\{processo_name\}/g, contextData.processo_name || '')
-      .replace(/\{total_pages\}/g, String(contextData.total_pages || 0))
-      .replace(/\{chunks_count\}/g, String(contextData.chunks_count || 0));
-
-    const systemInstruction = {
-      parts: [{ text: systemInstructionText }]
-    };
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const chat = model.startChat({
       history: chatHistory,
-      generationConfig: {
-        maxOutputTokens: 60000,
-        temperature: 0.7,
-      },
-      systemInstruction: systemInstruction,
+      systemInstruction: systemPrompt,
     });
 
-    const result = await chat.sendMessage(chatMessage);
+    const contextualMessage = `
+Processo: ${processo.nome_processo || processo.file_name}
+Número: ${processo.numero_processo || 'N/A'}
 
-    let responseText = result.response.text();
+Transcrição completa:
+${processo.transcricao || 'Transcrição não disponível'}
 
-    responseText = cleanMarkdownFromResponse(responseText);
-    responseText = removeIntroductoryPhrases(responseText);
+Pergunta do usuário:
+${message}`;
 
-    const responseLength = responseText.length;
-    const tokensToDebit = responseLength * 2;
+    const result = await chat.sendMessage(contextualMessage);
+    let aiResponse = result.response.text();
 
-    console.log(`💬 Chat response - Characters: ${responseLength}, Tokens to debit: ${tokensToDebit}`);
-
-    const { error: debitError } = await supabase.rpc('debit_user_tokens', {
-      p_user_id: user.id,
-      p_tokens_amount: tokensToDebit
-    });
-
-    if (debitError) {
-      console.error('❌ Error debiting tokens:', debitError);
-    }
-
-    const { error: logError } = await supabase
-      .from('token_usage_logs')
-      .insert({
-        user_id: user.id,
-        processo_id: processo_id,
-        operation_type: 'chat_response',
-        tokens_used: tokensToDebit,
-        model_name: modelName,
-        metadata: {
-          message_length: message.length,
-          response_length: responseLength,
-          tokens_per_character: 2,
-          is_chunked: processo.is_chunked
-        }
-      });
-
-    if (logError) {
-      console.error('❌ Error logging token usage:', logError);
-    }
+    aiResponse = cleanMarkdownFromResponse(aiResponse);
+    aiResponse = removeIntroductoryPhrases(aiResponse);
 
     await supabase
       .from('chat_messages')
@@ -521,23 +277,35 @@ Deno.serve(async (req: Request) => {
         processo_id: processo_id,
         user_id: user.id,
         role: 'assistant',
-        content: responseText,
+        content: aiResponse,
       });
 
+    const estimatedTokens = Math.ceil((message.length + aiResponse.length) / 4);
+
+    const { error: debitError } = await supabase.rpc('debit_user_tokens', {
+      p_user_id: user.id,
+      p_tokens: estimatedTokens,
+      p_description: `Chat com processo ${processo.nome_processo || processo.file_name}`
+    });
+
+    if (debitError) {
+      console.error('❌ Error debiting tokens:', debitError);
+    } else {
+      console.log(`✅ Debited ${estimatedTokens} tokens from user ${user.id}`);
+    }
+
     return new Response(
-      JSON.stringify({ response: responseText }),
+      JSON.stringify({ response: aiResponse }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
-
   } catch (error) {
-    console.error('Error in chat-with-processo:', error);
+    console.error('Error in chat-with-processo function:', error);
     return new Response(
       JSON.stringify({
-        error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }),
       {
         status: 500,
