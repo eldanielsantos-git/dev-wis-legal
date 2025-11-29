@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
@@ -30,6 +30,32 @@ interface MyProcessDetailPageProps {
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
+}
+
+class SilentErrorBoundary extends Component<
+  { children: ReactNode; fallback?: ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: ReactNode; fallback?: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('🚨 Silent Error Boundary caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || null;
+    }
+
+    return this.props.children;
+  }
 }
 
 function MyProcessDetailPageInner({
@@ -616,7 +642,9 @@ function MyProcessDetailPageInner({
                           className="rounded-lg px-3 sm:px-[18px] py-3 sm:py-[18px] pt-3 sm:pt-4"
                           style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}
                         >
-                          <AnalysisViewSelector title={result.prompt_title} content={result.result_content || ''} />
+                          <SilentErrorBoundary>
+                            <AnalysisViewSelector title={result.prompt_title} content={result.result_content || ''} />
+                          </SilentErrorBoundary>
                           <div className="mt-4 text-xs" style={{ color: colors.textSecondary }}>
                             Gerado em: {formatDate(result.created_at)}
                           </div>
@@ -675,7 +703,9 @@ function MyProcessDetailPageInner({
                       return (
                         <div>
                           {selectedResult.result_content ? (
-                            <AnalysisViewSelector title={selectedResult.prompt_title} content={selectedResult.result_content} />
+                            <SilentErrorBoundary>
+                              <AnalysisViewSelector title={selectedResult.prompt_title} content={selectedResult.result_content} />
+                            </SilentErrorBoundary>
                           ) : selectedResult.status === 'completed' ? (
                             <div className="text-center py-8">
                               <div className="mb-3">
@@ -850,10 +880,9 @@ function MyProcessDetailPageInner({
 }
 
 export function MyProcessDetailPage(props: MyProcessDetailPageProps) {
-  try {
-    return <MyProcessDetailPageInner {...props} />;
-  } catch (error) {
-    console.error('Error rendering MyProcessDetailPage:', error);
-    return null;
-  }
+  return (
+    <SilentErrorBoundary>
+      <MyProcessDetailPageInner {...props} />
+    </SilentErrorBoundary>
+  );
 }
