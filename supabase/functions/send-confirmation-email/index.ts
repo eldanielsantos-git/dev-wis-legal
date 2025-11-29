@@ -128,7 +128,8 @@ Deno.serve(async (req: Request) => {
 
     console.log("✓ Confirmation token generated successfully");
 
-    const confirmationUrl = `${frontendUrl}/confirm-email?token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
+    const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
+    const confirmationUrl = `${baseUrl}/confirm-email?token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
     console.log("Confirmation URL:", confirmationUrl);
 
     console.log("Step 2: Sending email via Mailchimp Customer Journey...");
