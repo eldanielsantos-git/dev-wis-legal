@@ -21,14 +21,24 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
  try {
   const validation = validateAndSanitizeJson(content);
 
-  console.log('🔍 AnalysisViewSelector validation:', { title, validation, contentLength: content?.length });
+  const isRiscos = title?.toLowerCase().includes('riscos');
+
+  if (isRiscos) {
+   console.log('🔍 RISCOS - AnalysisViewSelector validation:', {
+    title,
+    validation,
+    contentLength: content?.length,
+    firstChars: content?.substring(0, 100)
+   });
+  }
 
   if (validation.isEmpty) {
+   if (isRiscos) console.log('❌ RISCOS - Content is empty');
    return null;
   }
 
   if (!validation.isValid) {
-   console.error('❌ Validation failed for:', title, validation.error);
+   if (isRiscos) console.error('❌ RISCOS - Validation failed:', title, validation.error);
    return null;
   }
 
@@ -56,6 +66,12 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
  }
 
  if (normalizedTitle.includes('riscos') && normalizedTitle.includes('alertas')) {
+  console.log('✅ Matched Riscos e Alertas!', {
+   title,
+   normalizedTitle,
+   sanitizedLength: sanitizedContent.length,
+   firstChars: sanitizedContent.substring(0, 200)
+  });
   return <RiscosAlertasView content={sanitizedContent} />;
  }
 
