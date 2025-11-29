@@ -32,7 +32,7 @@ interface MyProcessDetailPageProps {
   onNavigateToCookies?: () => void;
 }
 
-export function MyProcessDetailPage({
+function MyProcessDetailPageInner({
   processoId,
   onNavigateToApp,
   onNavigateToMyProcess,
@@ -847,4 +847,13 @@ export function MyProcessDetailPage({
       )}
     </div>
   );
+}
+
+export function MyProcessDetailPage(props: MyProcessDetailPageProps) {
+  try {
+    return <MyProcessDetailPageInner {...props} />;
+  } catch (error) {
+    console.error('Error rendering MyProcessDetailPage:', error);
+    return null;
+  }
 }
