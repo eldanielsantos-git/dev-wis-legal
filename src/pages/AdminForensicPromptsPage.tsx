@@ -1146,8 +1146,8 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                           }}
                         >
                           <option value="small_file">Chat Padrão (menos de 1000 páginas)</option>
-                          <option value="large_file_analysis">Arquivos Grandes (mais de 3000 páginas)</option>
-                          <option value="large_file_chunks">Arquivos Extra Grandes (1000-3000 páginas)</option>
+                          <option value="large_file_chunks">Chat Arquivos Grandes (1000 ou mais páginas)</option>
+                          <option value="audio">Chat com Áudio</option>
                         </select>
                         <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
                           {ChatSystemPromptsService.getPromptTypeDescription(chatSystemFormData.prompt_type)}
@@ -1272,8 +1272,8 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                                 }}
                               >
                                 <option value="small_file">Chat Padrão</option>
-                                <option value="large_file_analysis">Arquivos Grandes</option>
-                                <option value="large_file_chunks">Arquivos Extra Grandes</option>
+                                <option value="large_file_chunks">Chat Arquivos Grandes</option>
+                                <option value="audio">Chat com Áudio</option>
                               </select>
                             ) : (
                               <div className="flex items-center gap-2 flex-wrap">
@@ -1281,9 +1281,9 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                                   className="px-3 py-1 rounded-full text-xs font-medium"
                                   style={{
                                     backgroundColor: prompt.prompt_type === 'small_file' ? '#10B98120' :
-                                                   prompt.prompt_type === 'large_file_chunks' ? '#3B82F620' : '#8B5CF620',
+                                                   prompt.prompt_type === 'large_file_chunks' ? '#3B82F620' : '#F59E0B20',
                                     color: prompt.prompt_type === 'small_file' ? '#10B981' :
-                                          prompt.prompt_type === 'large_file_chunks' ? '#3B82F6' : '#8B5CF6'
+                                          prompt.prompt_type === 'large_file_chunks' ? '#3B82F6' : '#F59E0B'
                                   }}
                                 >
                                   {ChatSystemPromptsService.getPromptTypeLabel(prompt.prompt_type)}

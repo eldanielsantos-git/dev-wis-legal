@@ -156,12 +156,10 @@ Deno.serve(async (req: Request) => {
 
     if (tokenCheckError) {
       console.error('❌ Error checking token availability:', tokenCheckError);
-      console.error('❌ Error details:', JSON.stringify(tokenCheckError, null, 2));
       return new Response(
         JSON.stringify({
           error: 'Erro ao verificar saldo de tokens',
-          details: tokenCheckError.message || 'Erro desconhecido ao verificar tokens',
-          code: tokenCheckError.code
+          details: tokenCheckError.message || 'Erro desconhecido'
         }),
         {
           status: 500,
@@ -170,13 +168,11 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('✅ Token availability check result:', tokenAvailable);
-
     if (!tokenAvailable) {
       return new Response(
         JSON.stringify({
           error: 'Saldo de tokens insuficiente',
-          details: 'Você não possui tokens suficientes para continuar o chat. Adquira mais tokens para continuar.'
+          details: 'Você não possui tokens suficientes para continuar o chat.'
         }),
         {
           status: 402,
@@ -185,7 +181,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Buscar processo (RLS já valida acesso: próprio ou compartilhado)
+    // Buscar processo (RLS já valida acesso)
     const { data: processo, error: processoError } = await supabase
       .from('processos')
       .select('*')
@@ -202,7 +198,109 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: priorityModel, error: modelError } = await supabase
+    // Determinar qual tipo de prompt usar baseado no processo
+    let promptType: 'small_file' | 'large_file_chunks' = 'small_file';
+    let contextualMessage = '';
+
+    if (processo.is_chunked && processo.total_chunks_count > 0) {
+      // ARQUIVO GRANDE: Usa chunks
+      promptType = 'large_file_chunks';
+      console.log(`📚 Large file detected: ${processo.total_chunks_count} chunks`);
+
+      // Buscar chunks completados em ordem
+      const { data: chunks, error: chunksError } = await supabase
+        .from('process_chunks')
+        .select('chunk_index, start_page, end_page, gemini_file_uri, pages_count, status')
+        .eq('processo_id', processo_id)
+        .eq('status', 'completed')
+        .order('chunk_index', { ascending: true });
+
+      if (chunksError) {
+        console.error('❌ Error fetching chunks:', chunksError);
+        return new Response(
+          JSON.stringify({
+            error: 'Erro ao buscar chunks do processo',
+            details: chunksError.message
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!chunks || chunks.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'Chunks não disponíveis',
+            details: 'Os chunks ainda estão sendo processados. Aguarde alguns instantes e tente novamente.'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Construir contexto com informações dos chunks
+      const chunksInfo = chunks.map(c =>
+        `Chunk ${c.chunk_index}: Páginas ${c.start_page}-${c.end_page} (${c.pages_count} páginas)`
+      ).join('\n');
+
+      contextualMessage = `
+Processo: ${processo.nome_processo || processo.file_name}
+Número: ${processo.numero_processo || 'N/A'}
+Total de páginas: ${processo.total_pages || 'N/A'}
+Dividido em ${chunks.length} partes
+
+Chunks disponíveis:
+${chunksInfo}
+
+Pergunta do usuário:
+${message}`;
+
+      console.log(`✅ Using ${chunks.length} chunks for context`);
+    } else {
+      // ARQUIVO PEQUENO: Usa transcricao
+      promptType = 'small_file';
+      console.log('📄 Small file detected, using transcription');
+
+      contextualMessage = `
+Processo: ${processo.nome_processo || processo.file_name}
+Número: ${processo.numero_processo || 'N/A'}
+
+Transcrição completa:
+${processo.transcricao || 'Transcrição não disponível'}
+
+Pergunta do usuário:
+${message}`;
+    }
+
+    // Buscar prompt ativo do tipo determinado
+    const { data: systemPromptData, error: promptError } = await supabase
+      .from('chat_system_prompts')
+      .select('system_prompt, prompt_type')
+      .eq('prompt_type', promptType)
+      .eq('is_active', true)
+      .order('priority', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (promptError || !systemPromptData) {
+      console.error('❌ Error fetching system prompt:', promptError);
+      return new Response(
+        JSON.stringify({
+          error: 'Prompt do sistema não encontrado',
+          details: `Não há prompt ativo para o tipo: ${promptType}`
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Substituir variáveis no prompt
+    let systemPrompt = systemPromptData.system_prompt;
+    systemPrompt = systemPrompt.replace('{processo_name}', processo.nome_processo || processo.file_name);
+    systemPrompt = systemPrompt.replace('{total_pages}', String(processo.total_pages || 0));
+    systemPrompt = systemPrompt.replace('{chunks_count}', String(processo.total_chunks_count || 0));
+
+    console.log(`📝 Using prompt type: ${promptType}`);
+
+    // Buscar modelo ativo
+    const { data: priorityModel } = await supabase
       .from('admin_system_models')
       .select('system_model, priority')
       .eq('is_active', true)
@@ -210,13 +308,10 @@ Deno.serve(async (req: Request) => {
       .limit(1)
       .maybeSingle();
 
-    if (modelError) {
-      console.error('❌ Error fetching model:', modelError);
-    }
+    const modelName = priorityModel?.system_model || 'gemini-2.0-flash-exp';
+    console.log(`📱 Using model: ${modelName}`);
 
-    const modelName = priorityModel?.system_model || 'gemini-2.5-pro';
-    console.log(`📱 Using model: ${modelName} (priority: ${priorityModel?.priority || 'fallback'})`);
-
+    // Salvar mensagem do usuário
     await supabase
       .from('chat_messages')
       .insert({
@@ -226,6 +321,7 @@ Deno.serve(async (req: Request) => {
         content: message,
       });
 
+    // Buscar histórico de mensagens
     const { data: previousMessages } = await supabase
       .from('chat_messages')
       .select('role, content')
@@ -233,20 +329,12 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
-    const { data: systemPromptData } = await supabase
-      .from('chat_system_prompts')
-      .select('prompt_content')
-      .eq('is_active', true)
-      .limit(1)
-      .maybeSingle();
-
-    const systemPrompt = systemPromptData?.prompt_content || `Você é um assistente jurídico especializado em análise de processos. Seja objetivo, claro e profissional em suas respostas.`;
-
     const chatHistory = previousMessages?.map(msg => ({
       role: msg.role as 'user' | 'model',
       parts: [{ text: msg.content }]
     })) || [];
 
+    // Iniciar chat com Gemini
     const genAI = new GoogleGenerativeAI(geminiApiKey);
     const model = genAI.getGenerativeModel({ model: modelName });
 
@@ -255,22 +343,15 @@ Deno.serve(async (req: Request) => {
       systemInstruction: systemPrompt,
     });
 
-    const contextualMessage = `
-Processo: ${processo.nome_processo || processo.file_name}
-Número: ${processo.numero_processo || 'N/A'}
-
-Transcrição completa:
-${processo.transcricao || 'Transcrição não disponível'}
-
-Pergunta do usuário:
-${message}`;
-
+    // Enviar mensagem
     const result = await chat.sendMessage(contextualMessage);
     let aiResponse = result.response.text();
 
+    // Limpar resposta
     aiResponse = cleanMarkdownFromResponse(aiResponse);
     aiResponse = removeIntroductoryPhrases(aiResponse);
 
+    // Salvar resposta do assistente
     await supabase
       .from('chat_messages')
       .insert({
@@ -280,6 +361,7 @@ ${message}`;
         content: aiResponse,
       });
 
+    // Debitar tokens
     const estimatedTokens = Math.ceil((message.length + aiResponse.length) / 4);
 
     const { error: debitError } = await supabase.rpc('debit_user_tokens', {

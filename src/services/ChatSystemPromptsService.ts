@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-export type PromptType = 'small_file' | 'large_file_chunks' | 'large_file_analysis';
+export type PromptType = 'small_file' | 'large_file_chunks' | 'audio';
 
 export interface ChatSystemPrompt {
   id: string;
@@ -290,17 +290,17 @@ export class ChatSystemPromptsService {
   static getPromptTypeLabel(type: PromptType): string {
     const labels: Record<PromptType, string> = {
       'small_file': 'Chat Padrão',
-      'large_file_chunks': 'Arquivos Extra Grandes',
-      'large_file_analysis': 'Arquivos Grandes'
+      'large_file_chunks': 'Chat Arquivos Grandes',
+      'audio': 'Chat com Áudio'
     };
     return labels[type] || type;
   }
 
   static getPromptTypeDescription(type: PromptType): string {
     const descriptions: Record<PromptType, string> = {
-      'small_file': 'Para processos com PDF completo em base64 (< 1000 páginas)',
-      'large_file_chunks': 'Para processos extra grandes divididos em chunks (1000-3000 páginas, até 10 partes)',
-      'large_file_analysis': 'Para processos grandes usando análises consolidadas (> 3000 páginas, > 10 chunks)'
+      'small_file': 'Para processos com menos de 1000 páginas (usa transcrição completa)',
+      'large_file_chunks': 'Para processos com 1000 páginas ou mais (usa chunks como contexto)',
+      'audio': 'Para mensagens de áudio enviadas no chat'
     };
     return descriptions[type] || '';
   }
@@ -308,8 +308,8 @@ export class ChatSystemPromptsService {
   static getPromptTypeSortOrder(type: PromptType): number {
     const order: Record<PromptType, number> = {
       'small_file': 1,
-      'large_file_analysis': 2,
-      'large_file_chunks': 3
+      'large_file_chunks': 2,
+      'audio': 3
     };
     return order[type] || 999;
   }
@@ -318,7 +318,7 @@ export class ChatSystemPromptsService {
     const colors: Record<PromptType, string> = {
       'small_file': 'green',
       'large_file_chunks': 'blue',
-      'large_file_analysis': 'purple'
+      'audio': 'orange'
     };
     return colors[type] || 'gray';
   }

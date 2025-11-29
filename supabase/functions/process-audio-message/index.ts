@@ -251,12 +251,33 @@ Deno.serve(async (req: Request) => {
 
       console.log('[process-audio-message] Generating AI response');
 
-      const contextPrompt = `Você é um assistente jurídico especializado em análise de processos.
+      // Buscar prompt específico para áudio
+      const { data: audioPromptData, error: promptError } = await supabase
+        .from('chat_system_prompts')
+        .select('system_prompt')
+        .eq('prompt_type', 'audio')
+        .eq('is_active', true)
+        .order('priority', { ascending: true })
+        .limit(1)
+        .maybeSingle();
 
-REGRA CRÍTICA - INÍCIO IMEDIATO:
-- NUNCA use: "Com certeza", "Claro", "Vou elaborar", "Com base", "Elaboro abaixo", "Segue", "Apresento", "Vou analisar"
-- PROIBIDO qualquer preâmbulo ou introdução
-- Responda DIRETAMENTE à pergunta sem frases de transição
+      if (promptError || !audioPromptData) {
+        console.error('[process-audio-message] Error fetching audio prompt:', promptError);
+        return new Response(
+          JSON.stringify({
+            error: 'Prompt de áudio não encontrado',
+            details: 'Não há prompt ativo configurado para mensagens de áudio'
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Substituir variáveis no prompt
+      let systemPrompt = audioPromptData.system_prompt;
+      systemPrompt = systemPrompt.replace('{processo_name}', processo.nome_processo || processo.file_name);
+      systemPrompt = systemPrompt.replace('{total_pages}', String(processo.total_pages || 0));
+
+      const contextPrompt = `${systemPrompt}
 
 Pergunta do usuário (transcrição de áudio): "${transcription}"
 
