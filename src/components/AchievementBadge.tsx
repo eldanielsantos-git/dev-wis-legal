@@ -66,9 +66,9 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Ícone Principal */}
-      <div className="flex flex-col items-center mb-3">
+      <div className="flex flex-col items-center mb-4 pt-2">
         <div
-          className={`text-4xl mb-2 transition-all duration-300 ${
+          className={`text-4xl mb-2.5 transition-all duration-300 ${
             unlocked ? 'animate-pulse' : 'grayscale'
           }`}
         >
@@ -77,7 +77,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
         {/* Título e Descrição */}
         <h3
-          className="text-sm font-bold text-center mb-1 px-1"
+          className="text-sm font-bold text-center mb-1.5 px-1"
           style={{
             color: unlocked ? '#FFFFFF' : colors.textPrimary
           }}
@@ -95,7 +95,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Barra de Progresso */}
-      <div className="mt-3 space-y-1.5">
+      <div className="mt-4 space-y-1.5">
         <div className="flex justify-between text-xs font-medium">
           <span
             style={{
@@ -144,7 +144,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
       {/* Data de Desbloqueio */}
       {unlocked && unlockedAt && (
-        <div className="mt-3 pt-3 border-t border-white border-opacity-25">
+        <div className="mt-4 pt-3 border-t border-white border-opacity-25">
           <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Desbloqueado em {formatDate(unlockedAt)}
           </p>
