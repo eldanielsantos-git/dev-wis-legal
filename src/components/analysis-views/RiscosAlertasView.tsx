@@ -123,20 +123,21 @@ export function RiscosAlertasView({ content }: RiscosAlertasViewProps) {
 
  try {
   data = JSON.parse(content);
+  console.log('🔍 RiscosAlertasView parsed data:', {
+   hasData: !!data,
+   hasRiscosAlertasProcessuais: !!data?.riscosAlertasProcessuais,
+   keys: data ? Object.keys(data) : [],
+   contentLength: content.length,
+   firstChars: content.substring(0, 100)
+  });
  } catch (error) {
-  return (
-   <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-    <p className="text-red-800">Erro ao processar os dados da análise.</p>
-   </div>
-  );
+  console.error('❌ RiscosAlertasView parse error:', error);
+  return null;
  }
 
  if (!data?.riscosAlertasProcessuais) {
-  return (
-   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-    <p className="text-yellow-800">Estrutura de dados inválida.</p>
-   </div>
-  );
+  console.error('❌ RiscosAlertasView: missing riscosAlertasProcessuais', { data });
+  return null;
  }
 
  const { riscosAlertasProcessuais } = data;
