@@ -1109,6 +1109,17 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
               ) : (
                 <div className="space-y-4">
                   <div className="rounded-lg p-4 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                    <h2 className="text-xl font-bold mb-3" style={{ color: colors.textPrimary }}>
+                      Suas Conquistas
+                    </h2>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {achievementProgress.map((achievement) => (
+                        <AchievementBadge key={achievement.config.type} achievement={achievement} />
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg p-4 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                         <p className="text-xs font-medium" style={{ color: colors.textSecondary }}>Processos Analisados</p>
@@ -1129,17 +1140,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           })()}
                         </p>
                       </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg p-4 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
-                    <h2 className="text-xl font-bold mb-3" style={{ color: colors.textPrimary }}>
-                      Suas Conquistas
-                    </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                      {achievementProgress.map((achievement) => (
-                        <AchievementBadge key={achievement.config.type} achievement={achievement} />
-                      ))}
                     </div>
                   </div>
                 </div>
