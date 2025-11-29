@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader, ChevronDown, Eye, EyeOff, CheckCircle2, XCircle, Upload, User } from 'lucide-react';
 import Select from 'react-select';
