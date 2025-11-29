@@ -22,11 +22,11 @@ const supabase = createClient(
 );
 
 Deno.serve(async (req) => {
-  console.log('\ud83d\ude80 stripe-checkout function called');
-  console.log('\ud83d\ude80 Method:', req.method);
+  console.log('🚀 stripe-checkout function called');
+  console.log('🚀 Method:', req.method);
 
   if (req.method === 'OPTIONS') {
-    console.log('\u2705 Handling OPTIONS request');
+    console.log('✅ Handling OPTIONS request');
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('\ud83d\udd10 Verifying user authentication...');
+    console.log('🔐 Verifying user authentication...');
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
 
@@ -44,17 +44,17 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      console.error('\u274c User authentication failed:', userError);
+      console.error('❌ User authentication failed:', userError);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('\u2705 User authenticated:', user.id, user.email);
+    console.log('✅ User authenticated:', user.id, user.email);
 
     const requestBody = await req.json();
-    console.log('\ud83d\udce5 Request body received:', requestBody);
+    console.log('📥 Request body received:', requestBody);
 
     const { price_id, priceId, mode = 'subscription', success_url, successUrl, cancel_url, cancelUrl } = requestBody;
 
@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
     const finalSuccessUrl = success_url || successUrl;
     const finalCancelUrl = cancel_url || cancelUrl;
 
-    console.log('\ud83d\udcb3 Processing checkout with:', {
+    console.log('💳 Processing checkout with:', {
       priceId: finalPriceId,
       mode,
       successUrl: finalSuccessUrl,
@@ -70,14 +70,14 @@ Deno.serve(async (req) => {
     });
 
     if (!finalPriceId) {
-      console.error('\u274c Price ID is missing');
+      console.error('❌ Price ID is missing');
       return new Response(JSON.stringify({ error: 'Price ID is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('\ud83d\udd0d Looking for existing Stripe customer...');
+    console.log('🔍 Looking for existing Stripe customer...');
     const { data: customerData, error: customerError } = await supabase
       .from('stripe_customers')
       .select('customer_id')
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
     let customerId: string | undefined = customerData?.customer_id;
 
     if (!customerId) {
-      console.log('\ud83d\udcdd Creating new Stripe customer...');
+      console.log('📝 Creating new Stripe customer...');
       const { data: profile } = await supabase
         .from('user_profiles')
         .select('email, first_name, last_name')
@@ -103,19 +103,76 @@ Deno.serve(async (req) => {
       });
 
       customerId = customer.id;
-      console.log('\u2705 Stripe customer created:', customerId);
+      console.log('✅ Stripe customer created:', customerId);
 
-      await supabase.from('stripe_customers').insert({
+      const { error: insertCustomerError } = await supabase.from('stripe_customers').insert({
         user_id: user.id,
         customer_id: customerId,
-        email: profile?.email || user.email!,
       });
-      console.log('\u2705 Customer saved to database');
+
+      if (insertCustomerError) {
+        console.error('❌ Error saving customer to database:', insertCustomerError);
+        // Rollback: delete Stripe customer
+        await stripe.customers.del(customerId);
+        throw new Error('Failed to save customer to database');
+      }
+
+      console.log('✅ Customer saved to database');
+
+      // Create initial subscription record for subscription mode
+      if (mode === 'subscription') {
+        console.log('📝 Creating initial subscription record...');
+        const { error: insertSubError } = await supabase.from('stripe_subscriptions').insert({
+          customer_id: customerId,
+          status: 'not_started',
+          plan_tokens: 0,
+          extra_tokens: 0,
+          tokens_used: 0,
+          tokens_total: 0,
+        });
+
+        if (insertSubError) {
+          console.error('❌ Error creating subscription record:', insertSubError);
+          // Rollback: delete customer records and Stripe customer
+          await supabase.from('stripe_customers').delete().eq('customer_id', customerId);
+          await stripe.customers.del(customerId);
+          throw new Error('Failed to create subscription record');
+        }
+
+        console.log('✅ Initial subscription record created');
+      }
     } else {
-      console.log('\u2705 Found existing Stripe customer:', customerId);
+      console.log('✅ Found existing Stripe customer:', customerId);
+
+      // Check if subscription record exists for existing customers
+      if (mode === 'subscription') {
+        const { data: existingSub } = await supabase
+          .from('stripe_subscriptions')
+          .select('id')
+          .eq('customer_id', customerId)
+          .maybeSingle();
+
+        if (!existingSub) {
+          console.log('📝 Creating subscription record for existing customer...');
+          const { error: insertSubError } = await supabase.from('stripe_subscriptions').insert({
+            customer_id: customerId,
+            status: 'not_started',
+            plan_tokens: 0,
+            extra_tokens: 0,
+            tokens_used: 0,
+            tokens_total: 0,
+          });
+
+          if (insertSubError) {
+            console.error('❌ Error creating subscription record:', insertSubError);
+          } else {
+            console.log('✅ Subscription record created for existing customer');
+          }
+        }
+      }
     }
 
-    console.log('\ud83d\udecd\ufe0f Creating checkout session...');
+    console.log('🛒️ Creating checkout session...');
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       line_items: [
@@ -146,8 +203,8 @@ Deno.serve(async (req) => {
     }
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
-    console.log('\u2705 Checkout session created:', session.id);
-    console.log('\ud83d\udd17 Checkout URL:', session.url);
+    console.log('✅ Checkout session created:', session.id);
+    console.log('🔗 Checkout URL:', session.url);
 
     return new Response(
       JSON.stringify({
@@ -160,8 +217,8 @@ Deno.serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('\ud83d\udca5 Error creating checkout session:', error);
-    console.error('\ud83d\udca5 Error stack:', error.stack);
+    console.error('💥 Error creating checkout session:', error);
+    console.error('💥 Error stack:', error.stack);
     return new Response(
       JSON.stringify({
         error: error.message || 'Internal server error',

@@ -26,7 +26,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelingSubscription, setCancelingSubscription] = useState(false);
   const [syncingSubscription, setSyncingSubscription] = useState(true);
-  const [forcingSync, setForcingSync] = useState(false);
 
   useEffect(() => {
     syncAndFetchSubscription();
@@ -179,47 +178,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
     }
   };
 
-  const handleForceSync = async () => {
-    setForcingSync(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (!session) {
-        alert('Sessão expirada. Por favor, faça login novamente.');
-        return;
-      }
-
-      console.log('Forçando sincronização completa...');
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/force-sync-customer`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erro ao sincronizar');
-      }
-
-      console.log('Sincronização bem-sucedida:', data);
-      alert('Assinatura sincronizada com sucesso! Recarregue a página.');
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      window.location.reload();
-    } catch (error: any) {
-      console.error('Erro ao forçar sincronização:', error);
-      alert(`Erro: ${error.message}`);
-    } finally {
-      setForcingSync(false);
-    }
-  };
-
 
   if (syncingSubscription || plansLoading) {
     return (
@@ -250,21 +208,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
             Escolha o plano ideal para suas necessidades.
           </p>
 
-          {!currentSubscription && (
-            <div className="mt-6">
-              <button
-                onClick={handleForceSync}
-                disabled={forcingSync}
-                className="px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: theme === 'dark' ? '#3b82f6' : '#2563eb',
-                  color: '#fff'
-                }}
-              >
-                {forcingSync ? 'Sincronizando...' : '🔄 Problemas com sua assinatura? Clique aqui'}
-              </button>
-            </div>
-          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
