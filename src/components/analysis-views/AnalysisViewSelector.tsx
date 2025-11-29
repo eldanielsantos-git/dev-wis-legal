@@ -18,48 +18,19 @@ interface AnalysisViewSelectorProps {
 }
 
 export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorProps) {
- const validation = validateAndSanitizeJson(content);
+ try {
+  const validation = validateAndSanitizeJson(content);
 
- if (validation.isEmpty) {
-  return (
-   <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-lg">
-    <div className="flex items-start gap-3">
-     <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-     <div>
-      <h3 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
-       Conteúdo não disponível
-      </h3>
-      <p className="text-sm text-yellow-700 dark:text-yellow-300">
-       Houve um problema ao processar este item. Por favor, reprocesse o arquivo.
-      </p>
-     </div>
-    </div>
-   </div>
-  );
- }
+  console.log('🔍 AnalysisViewSelector validation:', { title, validation, contentLength: content?.length });
 
- if (!validation.isValid) {
-  return (
-   <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-lg">
-    <div className="flex items-start gap-3">
-     <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-     <div>
-      <h3 className="font-semibold text-red-800 dark:text-red-200 mb-1">
-       Erro ao processar análise
-      </h3>
-      <p className="text-sm text-red-700 dark:text-red-300 mb-2">
-       {validation.error || 'O conteúdo da análise está corrompido ou incompleto.'}
-      </p>
-      {validation.isTruncated && (
-       <p className="text-sm text-red-600 dark:text-red-400">
-        O conteúdo foi interrompido durante a geração. Recomendamos reprocessar o arquivo.
-       </p>
-      )}
-     </div>
-    </div>
-   </div>
-  );
- }
+  if (validation.isEmpty) {
+   return null;
+  }
+
+  if (!validation.isValid) {
+   console.error('❌ Validation failed for:', title, validation.error);
+   return null;
+  }
 
  const sanitizedContent = validation.sanitizedContent || content;
  const normalizedTitle = title.toLowerCase().trim();
@@ -101,4 +72,8 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
  }
 
  return <AnalysisContentRenderer content={sanitizedContent} />;
+ } catch (error) {
+  console.error('❌ Error in AnalysisViewSelector:', { title, error });
+  return null;
+ }
 }
