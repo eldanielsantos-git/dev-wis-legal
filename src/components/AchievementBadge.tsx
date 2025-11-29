@@ -116,18 +116,16 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Área com altura fixa para data de desbloqueio */}
-      <div className="h-14 mt-4 pt-3 border-t border-white border-opacity-25 flex items-center justify-center">
-        {unlocked && unlockedAt ? (
+      <div className={`h-14 mt-4 pt-3 flex items-center justify-center ${unlocked ? 'border-t border-white border-opacity-25' : ''}`}>
+        {unlocked && unlockedAt && (
           <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Desbloqueado em {formatDate(unlockedAt)}
           </p>
-        ) : (
-          <div className="h-full" />
         )}
       </div>
 
       {/* Badge de Status - Altura fixa no final */}
-      <div className="flex justify-center h-6 items-center">
+      <div className="flex justify-center h-7 items-center mb-1">
         {unlocked ? (
           <div
             className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
