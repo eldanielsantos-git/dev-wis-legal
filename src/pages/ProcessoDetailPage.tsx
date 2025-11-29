@@ -353,20 +353,26 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
     return null;
   }
 
-  console.log('[ProcessoDetailPage] Calculando totalChars:', {
-    paginasLength: paginas?.length || 0,
-    processContentLength: processo.process_content?.length || 0,
-    paginasData: paginas,
-    processContent: processo.process_content
-  });
+  let totalChars = 0;
+  try {
+    console.log('[ProcessoDetailPage] Calculando totalChars:', {
+      paginasLength: paginas?.length || 0,
+      processContentLength: processo.process_content?.length || 0,
+      paginasData: paginas,
+      processContent: processo.process_content
+    });
 
-  const totalChars = paginas && paginas.length > 0
-    ? paginas.reduce((acc, page) => acc + (page.text?.length || 0), 0)
-    : (processo.process_content && Array.isArray(processo.process_content)
-        ? processo.process_content.reduce((acc, page) => acc + (page.content?.length || 0), 0)
-        : 0);
+    totalChars = paginas && paginas.length > 0
+      ? paginas.reduce((acc, page) => acc + (page.text?.length || 0), 0)
+      : (processo.process_content && Array.isArray(processo.process_content)
+          ? processo.process_content.reduce((acc, page) => acc + (page.content?.length || 0), 0)
+          : 0);
 
-  console.log('[ProcessoDetailPage] totalChars calculado:', totalChars);
+    console.log('[ProcessoDetailPage] totalChars calculado:', totalChars);
+  } catch (err) {
+    console.error('[ProcessoDetailPage] Erro ao calcular totalChars:', err);
+    totalChars = 0;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50 overflow-x-hidden w-full">
@@ -610,16 +616,41 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
                   </div>
                   <div className="bg-white rounded-lg p-4 sm:p-6 border border-gray-200 max-h-96 overflow-y-auto">
                     <div className="space-y-4">
-                      {processo.process_content?.map((page, index) => (
-                        <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
-                          <div className="text-xs font-semibold text-blue-600 mb-2">
-                            Página {page.pagina}
-                          </div>
-                          <p className="text-xs sm:text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">
-                            {page.content}
-                          </p>
+                      {processo.process_content && Array.isArray(processo.process_content) ? (
+                        processo.process_content.map((page, index) => {
+                          try {
+                            return (
+                              <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                                <div className="text-xs font-semibold text-blue-600 mb-2">
+                                  Página {page?.pagina || index + 1}
+                                </div>
+                                <p className="text-xs sm:text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">
+                                  {page?.content || '[Conteúdo não disponível]'}
+                                </p>
+                              </div>
+                            );
+                          } catch (err) {
+                            console.error('[ProcessoDetailPage] Erro ao renderizar página:', err, page);
+                            return (
+                              <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                                <div className="text-xs font-semibold text-red-600 mb-2">
+                                  Erro ao carregar página {index + 1}
+                                </div>
+                                <p className="text-xs text-red-500">
+                                  {String(err)}
+                                </p>
+                              </div>
+                            );
+                          }
+                        })
+                      ) : (
+                        <div className="text-center text-gray-500 py-4">
+                          <p>Conteúdo não disponível ou em formato inválido</p>
+                          {processo.process_content && (
+                            <p className="text-xs mt-2">Tipo: {typeof processo.process_content}</p>
+                          )}
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>
