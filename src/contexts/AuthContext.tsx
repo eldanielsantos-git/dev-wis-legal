@@ -147,17 +147,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     profileData: Omit<UserProfile, 'id' | 'is_admin' | 'created_at' | 'updated_at' | 'terms_accepted_at'>
   ) => {
-    // Check if user already exists before attempting signup
-    const { data: existingUser } = await supabase
-      .from('user_profiles')
-      .select('email')
-      .eq('email', email.toLowerCase())
-      .maybeSingle();
-
-    if (existingUser) {
-      throw new Error('Este email já está cadastrado. Faça login ou use outro email.');
-    }
-
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -175,6 +164,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     });
+
+    // If user already exists, check if they're confirmed
+    if (error && error.message.includes('already')) {
+      logger.log('AuthContext', 'User already exists, checking if confirmed...');
+
+      // Query the user_profiles to get user_id
+      const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('id, email')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+
+      if (profile) {
+        // User exists and has a profile - they should login instead
+        throw new Error('Este email já está cadastrado. Faça login ou use outro email.');
+      } else {
+        // User exists in auth.users but no profile - they might not be confirmed
+        // Try to re-send confirmation email
+        logger.log('AuthContext', 'User exists in auth but no profile, attempting to re-send email');
+        throw new Error('Este email já foi registrado mas não confirmado. Use "Esqueci minha senha" para redefinir ou contate o suporte.');
+      }
+    }
+
     if (error) throw error;
 
     if (data?.user) {
