@@ -121,26 +121,68 @@ const getRiscoGlobalColor = (risco: string) => {
 export function RiscosAlertasView({ content }: RiscosAlertasViewProps) {
  let data: { riscosAlertasProcessuais: RiscosAlertasProcessuais } | null = null;
 
+ console.log('🚀 RiscosAlertasView - RENDERING', {
+  contentLength: content?.length,
+  contentType: typeof content,
+  firstChars: content?.substring(0, 150)
+ });
+
  try {
   data = JSON.parse(content);
-  console.log('🔍 RiscosAlertasView parsed data:', {
+  console.log('✅ RiscosAlertasView - JSON PARSED', {
    hasData: !!data,
    hasRiscosAlertasProcessuais: !!data?.riscosAlertasProcessuais,
    keys: data ? Object.keys(data) : [],
-   contentLength: content.length,
-   firstChars: content.substring(0, 100)
+   secoes: data?.riscosAlertasProcessuais?.secoes?.length || 0
   });
  } catch (error) {
-  console.error('❌ RiscosAlertasView parse error:', error);
-  return null;
+  console.error('❌ RiscosAlertasView - PARSE ERROR:', error, { content: content?.substring(0, 200) });
+
+  // Retornar card de erro visível ao invés de null
+  return (
+   <div className="p-6 bg-red-50 dark:bg-red-900/20 border-2 border-red-500 rounded-lg">
+    <h3 className="text-lg font-bold text-red-800 dark:text-red-300 mb-2">⚠️ Erro ao processar análise</h3>
+    <p className="text-sm text-red-700 dark:text-red-400">Não foi possível fazer o parse do JSON.</p>
+    <pre className="mt-2 text-xs bg-red-100 dark:bg-red-950 p-2 rounded overflow-auto max-h-40">
+     {content?.substring(0, 300)}...
+    </pre>
+   </div>
+  );
  }
 
  if (!data?.riscosAlertasProcessuais) {
-  console.error('❌ RiscosAlertasView: missing riscosAlertasProcessuais', { data });
-  return null;
+  console.error('❌ RiscosAlertasView - MISSING STRUCTURE', {
+   hasData: !!data,
+   dataKeys: data ? Object.keys(data) : [],
+   data: JSON.stringify(data).substring(0, 200)
+  });
+
+  // Retornar card de erro estrutural ao invés de null
+  return (
+   <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-500 rounded-lg">
+    <h3 className="text-lg font-bold text-yellow-800 dark:text-yellow-300 mb-2">⚠️ Estrutura inválida</h3>
+    <p className="text-sm text-yellow-700 dark:text-yellow-400">
+     O JSON não contém a propriedade <code className="bg-yellow-100 dark:bg-yellow-950 px-1 rounded">riscosAlertasProcessuais</code>
+    </p>
+    <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2">
+     Chaves encontradas: {data ? Object.keys(data).join(', ') : 'nenhuma'}
+    </p>
+   </div>
+  );
  }
 
  const { riscosAlertasProcessuais } = data;
+
+ console.log('✅ RiscosAlertasView - RENDERING CONTENT', {
+  titulo: riscosAlertasProcessuais.titulo,
+  numSecoes: riscosAlertasProcessuais.secoes?.length || 0,
+  secoes: riscosAlertasProcessuais.secoes?.map(s => ({
+   id: s.id,
+   titulo: s.titulo,
+   alertas: s.listaAlertas?.length || 0,
+   campos: s.campos?.length || 0
+  }))
+ });
 
  return (
   <div className="space-y-6">
