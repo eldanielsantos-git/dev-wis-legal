@@ -24,7 +24,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
   return (
     <div
-      className={`relative rounded-lg p-4 shadow-md transition-all duration-300 ${
+      className={`relative rounded-lg p-4 pb-3 shadow-md transition-all duration-300 ${
         unlocked ? 'transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
       }`}
       style={{
@@ -115,17 +115,19 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
         </div>
       </div>
 
-      {/* Data de Desbloqueio */}
-      {unlocked && unlockedAt && (
-        <div className="mt-4 pt-3 border-t border-white border-opacity-25">
-          <p className="text-xs text-center mb-2" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+      {/* Área com altura fixa para data de desbloqueio */}
+      <div className="h-14 mt-4 pt-3 border-t border-white border-opacity-25 flex items-center justify-center">
+        {unlocked && unlockedAt ? (
+          <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Desbloqueado em {formatDate(unlockedAt)}
           </p>
-        </div>
-      )}
+        ) : (
+          <div className="h-full" />
+        )}
+      </div>
 
-      {/* Badge de Status - Agora na parte inferior */}
-      <div className="flex justify-center mt-3">
+      {/* Badge de Status - Altura fixa no final */}
+      <div className="flex justify-center h-6 items-center">
         {unlocked ? (
           <div
             className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
