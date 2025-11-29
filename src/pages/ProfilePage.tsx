@@ -1270,10 +1270,10 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                       </label>
                       <div className="relative">
                         <input
-                          type={showPassword ? "text" : "password"}
+                          type={showNewPassword ? "text" : "password"}
                           id="new_password"
-                          name="new_password"
-                          value={newPassword}
+                          name="newPassword"
+                          value={passwordData.newPassword}
                           onChange={handlePasswordChange}
                           required
                           className="w-full px-4 py-2 pr-10 rounded-lg focus:outline-none"
@@ -1281,11 +1281,11 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                         />
                         <button
                           type="button"
-                          onClick={() => setShowPassword(!showPassword)}
+                          onClick={() => setShowNewPassword(!showNewPassword)}
                           className="absolute right-3 top-1/2 transform -translate-y-1/2"
                           style={{ color: colors.textSecondary }}
                         >
-                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
                     </div>
@@ -1298,9 +1298,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                         <input
                           type={showConfirmPassword ? "text" : "password"}
                           id="confirm_password"
-                          name="confirm_password"
-                          value={confirmPassword}
-                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          name="confirmPassword"
+                          value={passwordData.confirmPassword}
+                          onChange={handlePasswordChange}
                           required
                           className="w-full px-4 py-2 pr-10 rounded-lg focus:outline-none"
                           style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, border: `1px solid ${colors.border}` }}
@@ -1374,7 +1374,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
                     <button
                       type="submit"
-                      disabled={isPasswordLoading || !Object.values(passwordValidation).every(Boolean) || newPassword !== confirmPassword}
+                      disabled={isPasswordLoading || !Object.values(passwordValidation).every(Boolean) || passwordData.newPassword !== passwordData.confirmPassword}
                       className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                       style={{
                         backgroundColor: '#3B82F6',
