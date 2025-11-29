@@ -1073,182 +1073,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 </button>
               </div>
             </form>
-
-            {isEmailPasswordUser && (
-              <form onSubmit={handlePasswordUpdate} className="rounded-lg p-4 sm:p-6 lg:p-8 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
-                <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>Alterar Senha</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="newPassword" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                      Nova Senha *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? "text" : "password"}
-                        id="newPassword"
-                        name="newPassword"
-                        value={passwordData.newPassword}
-                        onChange={handlePasswordChange}
-                        required
-                        minLength={6}
-                        className="w-full px-4 py-2 pr-10 rounded-lg focus:outline-none"
-                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    {passwordData.newPassword && (
-                      <div className="mt-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          {passwordValidation.minLength ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <p className="text-xs" style={{ color: passwordValidation.minLength ? '#10b981' : '#ef4444' }}>
-                            Mínimo de 6 caracteres
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {passwordValidation.hasUppercase ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <p className="text-xs" style={{ color: passwordValidation.hasUppercase ? '#10b981' : '#ef4444' }}>
-                            Pelo menos uma letra maiúscula
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {passwordValidation.hasLowercase ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <p className="text-xs" style={{ color: passwordValidation.hasLowercase ? '#10b981' : '#ef4444' }}>
-                            Pelo menos uma letra minúscula
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {passwordValidation.hasNumber ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <p className="text-xs" style={{ color: passwordValidation.hasNumber ? '#10b981' : '#ef4444' }}>
-                            Pelo menos um número
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {passwordValidation.hasSpecialChar ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
-                          )}
-                          <p className="text-xs" style={{ color: passwordValidation.hasSpecialChar ? '#10b981' : '#ef4444' }}>
-                            Pelo menos um caractere especial (!@#$%^&*)
-                          </p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <label htmlFor="confirmPassword" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                      Confirmar Nova Senha *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? "text" : "password"}
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        value={passwordData.confirmPassword}
-                        onChange={handlePasswordChange}
-                        required
-                        minLength={6}
-                        className="w-full px-4 py-2 pr-10 rounded-lg focus:outline-none"
-                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-70 transition-opacity"
-                        style={{ color: colors.textSecondary }}
-                      >
-                        {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    {passwordData.confirmPassword && (
-                      <div className="flex items-center gap-2 mt-1">
-                        {passwordData.newPassword === passwordData.confirmPassword ? (
-                          <>
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
-                            <p className="text-xs text-green-500">As senhas coincidem</p>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-4 h-4 text-red-500" />
-                            <p className="text-xs text-red-500">As senhas não coincidem</p>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={isPasswordLoading}
-                      className="flex items-center space-x-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
-                      style={{ backgroundColor: '#C8C8C8', color: '#29323A' }}
-                    >
-                      {isPasswordLoading ? (
-                        <>
-                          <Loader className="w-4 h-4 animate-spin" />
-                          <span>Atualizando...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Save className="w-4 h-4" />
-                          <span>Atualizar Senha</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
-
-            <div className="rounded-lg p-4 sm:p-6 lg:p-8 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-start gap-3 sm:gap-4 mb-4">
-                <div className="flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5 sm:w-6 sm:h-6" style={{ color: colors.textTertiary }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg sm:text-xl font-bold mb-2" style={{ color: colors.textSecondary }}>
-                    Deletar minha conta
-                  </h2>
-                  <p className="text-xs sm:text-sm break-words" style={{ color: colors.textTertiary }}>
-                    Ao deletar sua conta, todos os seus processos analisados serão excluídos, tenha certeza antes de realizar a exclusão de sua conta. Esta é uma ação irreversível.
-                  </p>
-                </div>
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="flex items-center justify-center space-x-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors hover:opacity-70"
-                  style={{ backgroundColor: colors.textTertiary, color: colors.bgPrimary }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Deletar minha conta</span>
-                </button>
-              </div>
-            </div>
           </div>
           )}
 
@@ -1272,6 +1096,331 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 onNavigateToPrivacy={onNavigateToPrivacy}
                 onNavigateToCookies={onNavigateToCookies}
               />
+            </div>
+          )}
+
+          {/* Achievements Tab */}
+          {activeTab === 'achievements' && (
+            <div className="max-w-6xl mx-auto">
+              {isLoadingAchievements ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="w-8 h-8 animate-spin" style={{ color: colors.textPrimary }} />
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  <div className="rounded-lg p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                    <h2 className="text-2xl font-bold mb-4" style={{ color: colors.textPrimary }}>
+                      Suas Conquistas
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Processos Analisados</p>
+                        <p className="text-3xl font-bold mt-1" style={{ color: colors.textPrimary }}>{completedCount}</p>
+                      </div>
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Conquistas Desbloqueadas</p>
+                        <p className="text-3xl font-bold mt-1" style={{ color: colors.textPrimary }}>
+                          {achievementProgress.filter(a => a.unlocked).length} / {achievementProgress.length}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Próxima Conquista</p>
+                        <p className="text-lg font-bold mt-1" style={{ color: colors.textPrimary }}>
+                          {(() => {
+                            const next = UserAchievementsService.getNextAchievement(completedCount);
+                            return next ? `${next.requiredCount - completedCount} processos` : 'Todas desbloqueadas!';
+                          })()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {achievementProgress.map((achievement) => (
+                      <AchievementBadge key={achievement.config.type} achievement={achievement} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Preferences Tab */}
+          {activeTab === 'preferences' && (
+            <div className="max-w-3xl mx-auto space-y-6">
+              {isLoadingPreferences ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader className="w-8 h-8 animate-spin" style={{ color: colors.textPrimary }} />
+                </div>
+              ) : preferences ? (
+                <>
+                  <div className="rounded-lg p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>
+                      Notificações
+                    </h2>
+                    <div className="space-y-2">
+                      <PreferenceToggle
+                        label="Processos Concluídos"
+                        description="Receber alertas quando processos forem finalizados"
+                        checked={preferences.notify_process_completed}
+                        onChange={(value) => handlePreferenceChange('notify_process_completed', value)}
+                      />
+                      <PreferenceToggle
+                        label="Convites de Workspace"
+                        description="Receber alertas de convites para workspaces compartilhados"
+                        checked={preferences.notify_invites}
+                        onChange={(value) => handlePreferenceChange('notify_invites', value)}
+                      />
+                      <PreferenceToggle
+                        label="Alertas Sonoros"
+                        description="Reproduzir som ao receber notificações"
+                        checked={preferences.sound_enabled}
+                        onChange={(value) => handlePreferenceChange('sound_enabled', value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>
+                      Aparência
+                    </h2>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-3" style={{ color: colors.textSecondary }}>
+                          Tema Visual
+                        </label>
+                        <div className="flex gap-4">
+                          <button
+                            onClick={() => handleThemeChange('dark')}
+                            className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                              preferences.theme_preference === 'dark' ? 'border-blue-500' : 'border-transparent'
+                            }`}
+                            style={{
+                              backgroundColor: colors.bgPrimary,
+                              borderColor: preferences.theme_preference === 'dark' ? '#3B82F6' : colors.border
+                            }}
+                          >
+                            <div className="text-center">
+                              <div className="text-2xl mb-2">🌙</div>
+                              <p className="font-medium" style={{ color: colors.textPrimary }}>Escuro</p>
+                            </div>
+                          </button>
+                          <button
+                            onClick={() => handleThemeChange('light')}
+                            className={`flex-1 p-4 rounded-lg border-2 transition-all ${
+                              preferences.theme_preference === 'light' ? 'border-blue-500' : 'border-transparent'
+                            }`}
+                            style={{
+                              backgroundColor: colors.bgPrimary,
+                              borderColor: preferences.theme_preference === 'light' ? '#3B82F6' : colors.border
+                            }}
+                          >
+                            <div className="text-center">
+                              <div className="text-2xl mb-2">☀️</div>
+                              <p className="font-medium" style={{ color: colors.textPrimary }}>Claro</p>
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                    <h2 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>
+                      Comunicações por Email
+                    </h2>
+                    <div className="space-y-2">
+                      <PreferenceToggle
+                        label="Novos Lançamentos"
+                        description="Receber emails sobre novidades e atualizações da plataforma"
+                        checked={preferences.email_launches}
+                        onChange={(value) => handlePreferenceChange('email_launches', value)}
+                      />
+                      <PreferenceToggle
+                        label="Ofertas e Promoções"
+                        description="Aceitar receber ofertas da Wis Legal e parceiros"
+                        checked={preferences.email_offers}
+                        onChange={(value) => handlePreferenceChange('email_offers', value)}
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-12">
+                  <p style={{ color: colors.textSecondary }}>Erro ao carregar preferências</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Security Tab */}
+          {activeTab === 'security' && (
+            <div className="max-w-3xl mx-auto space-y-6">
+              {isEmailPasswordUser && (
+                <div className="rounded-lg p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                  <h2 className="text-xl font-bold mb-6" style={{ color: colors.textPrimary }}>
+                    Alterar Senha
+                  </h2>
+                  <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                    <div>
+                      <label htmlFor="new_password" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                        Nova Senha *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showPassword ? "text" : "password"}
+                          id="new_password"
+                          name="new_password"
+                          value={newPassword}
+                          onChange={handlePasswordChange}
+                          required
+                          className="w-full px-4 py-2 pr-10 rounded-lg focus:outline-none"
+                          style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, border: `1px solid ${colors.border}` }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                          style={{ color: colors.textSecondary }}
+                        >
+                          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="confirm_password" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                        Confirmar Nova Senha *
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? "text" : "password"}
+                          id="confirm_password"
+                          name="confirm_password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          required
+                          className="w-full px-4 py-2 pr-10 rounded-lg focus:outline-none"
+                          style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, border: `1px solid ${colors.border}` }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                          style={{ color: colors.textSecondary }}
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                      <p className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Requisitos da senha:</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          {passwordValidation.minLength ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-500" />
+                          )}
+                          <span style={{ color: passwordValidation.minLength ? '#10B981' : '#EF4444' }}>
+                            Mínimo de 8 caracteres
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {passwordValidation.hasUppercase ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-500" />
+                          )}
+                          <span style={{ color: passwordValidation.hasUppercase ? '#10B981' : '#EF4444' }}>
+                            Letra maiúscula
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {passwordValidation.hasLowercase ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-500" />
+                          )}
+                          <span style={{ color: passwordValidation.hasLowercase ? '#10B981' : '#EF4444' }}>
+                            Letra minúscula
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {passwordValidation.hasNumber ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-500" />
+                          )}
+                          <span style={{ color: passwordValidation.hasNumber ? '#10B981' : '#EF4444' }}>
+                            Número
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          {passwordValidation.hasSpecialChar ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-500" />
+                          )}
+                          <span style={{ color: passwordValidation.hasSpecialChar ? '#10B981' : '#EF4444' }}>
+                            Caractere especial
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isPasswordLoading || !Object.values(passwordValidation).every(Boolean) || newPassword !== confirmPassword}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                      style={{
+                        backgroundColor: '#3B82F6',
+                        color: '#FFFFFF'
+                      }}
+                    >
+                      {isPasswordLoading ? (
+                        <>
+                          <Loader className="w-4 h-4 animate-spin" />
+                          <span>Atualizando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>Atualizar Senha</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              <div className="rounded-lg p-6 shadow-lg border-2 border-red-500" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="flex items-start gap-3 mb-4">
+                  <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
+                  <div>
+                    <h2 className="text-xl font-bold mb-2" style={{ color: colors.textPrimary }}>
+                      Zona de Perigo
+                    </h2>
+                    <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+                      Esta ação é irreversível. Todos os seus dados serão permanentemente excluídos.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={isDeleting}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  style={{
+                    backgroundColor: '#DC2626',
+                    color: '#FFFFFF'
+                  }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Deletar Minha Conta</span>
+                </button>
+              </div>
             </div>
           )}
         </main>
