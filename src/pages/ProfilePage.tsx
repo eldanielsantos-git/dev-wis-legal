@@ -9,9 +9,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { supabase } from '../lib/supabase';
-import { Camera, Save, Loader, Trash2, AlertTriangle, ChevronDown, Eye, EyeOff, CheckCircle2, XCircle, User, CreditCard, Settings, LogOut } from 'lucide-react';
+import { Camera, Save, Loader, Trash2, AlertTriangle, ChevronDown, Eye, EyeOff, CheckCircle2, XCircle, User, CreditCard, Settings, LogOut, Trophy, Sliders, Shield } from 'lucide-react';
 import Select from 'react-select';
 import { brazilianStates, type State } from '../data/brazilianLocations';
+import { UserPreferencesService, type UserPreferences } from '../services/UserPreferencesService';
+import { UserAchievementsService, type AchievementProgress } from '../services/UserAchievementsService';
+import { AchievementBadge } from '../components/AchievementBadge';
+import { PreferenceToggle } from '../components/PreferenceToggle';
 
 interface ProfilePageProps {
   onNavigateToApp: () => void;
@@ -31,12 +35,15 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
   const { profile, user, refreshProfile, loading, isAdmin, signOut } = useAuth();
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const [activeTab, setActiveTab] = useState<'profile' | 'subscription' | 'admin'>(() => {
+  const [activeTab, setActiveTab] = useState<'achievements' | 'subscription' | 'profile' | 'preferences' | 'security' | 'admin'>(() => {
     const hash = window.location.hash;
     if (hash === '#admin' && isAdmin) return 'admin';
-    if (hash === '#profile') return 'profile';
+    if (hash === '#achievements') return 'achievements';
     if (hash === '#subscription') return 'subscription';
-    return 'subscription';
+    if (hash === '#profile') return 'profile';
+    if (hash === '#preferences') return 'preferences';
+    if (hash === '#security') return 'security';
+    return 'achievements';
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,8 +55,11 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     const handleHashChange = () => {
       const hash = window.location.hash;
       if (hash === '#admin' && isAdmin) setActiveTab('admin');
-      else if (hash === '#profile') setActiveTab('profile');
+      else if (hash === '#achievements') setActiveTab('achievements');
       else if (hash === '#subscription') setActiveTab('subscription');
+      else if (hash === '#profile') setActiveTab('profile');
+      else if (hash === '#preferences') setActiveTab('preferences');
+      else if (hash === '#security') setActiveTab('security');
       window.scrollTo(0, 0);
     };
 
@@ -108,6 +118,12 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     hasNumber: false,
     hasSpecialChar: false
   });
+
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
+  const [achievementProgress, setAchievementProgress] = useState<AchievementProgress[]>([]);
+  const [completedCount, setCompletedCount] = useState(0);
+  const [isLoadingAchievements, setIsLoadingAchievements] = useState(false);
+  const [isLoadingPreferences, setIsLoadingPreferences] = useState(false);
 
   const formatPhoneBrazil = (value: string) => {
     const numbers = value.replace(/\D/g, '').slice(0, 11);
@@ -227,6 +243,50 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, [isAdmin]);
+
+  useEffect(() => {
+    const loadAchievements = async () => {
+      if (!user) return;
+
+      setIsLoadingAchievements(true);
+      try {
+        const [progress, count] = await Promise.all([
+          UserAchievementsService.getAchievementProgress(),
+          UserAchievementsService.getCompletedProcessesCount()
+        ]);
+        setAchievementProgress(progress);
+        setCompletedCount(count);
+      } catch (error) {
+        console.error('Erro ao carregar conquistas:', error);
+      } finally {
+        setIsLoadingAchievements(false);
+      }
+    };
+
+    if (activeTab === 'achievements') {
+      loadAchievements();
+    }
+  }, [user, activeTab]);
+
+  useEffect(() => {
+    const loadPreferences = async () => {
+      if (!user) return;
+
+      setIsLoadingPreferences(true);
+      try {
+        const prefs = await UserPreferencesService.getUserPreferences();
+        setPreferences(prefs);
+      } catch (error) {
+        console.error('Erro ao carregar preferências:', error);
+      } finally {
+        setIsLoadingPreferences(false);
+      }
+    };
+
+    if (activeTab === 'preferences') {
+      loadPreferences();
+    }
+  }, [user, activeTab]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -522,6 +582,36 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     }
   };
 
+  const handlePreferenceChange = async (field: keyof UserPreferences, value: boolean) => {
+    if (!preferences) return;
+
+    try {
+      const updated = await UserPreferencesService.updatePreferences({ [field]: value });
+      setPreferences(updated);
+      setMessage({ type: 'success', text: 'Preferência atualizada com sucesso!' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
+      console.error('Erro ao atualizar preferência:', error);
+      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar preferência' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  const handleThemeChange = async (newTheme: 'dark' | 'light') => {
+    if (!preferences) return;
+
+    try {
+      const updated = await UserPreferencesService.updateTheme(newTheme);
+      setPreferences(updated);
+      setMessage({ type: 'success', text: 'Tema atualizado com sucesso!' });
+      setTimeout(() => setMessage(null), 3000);
+    } catch (error: any) {
+      console.error('Erro ao atualizar tema:', error);
+      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar tema' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
@@ -592,6 +682,17 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
           <div className="mb-6 flex justify-center px-4">
             <div className="inline-flex flex-wrap justify-center items-center rounded-lg p-1 gap-1" style={{ backgroundColor: colors.bgSecondary }}>
               <button
+                onClick={() => setActiveTab('achievements')}
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap"
+                style={{
+                  backgroundColor: activeTab === 'achievements' ? colors.bgPrimary : 'transparent',
+                  color: activeTab === 'achievements' ? colors.textPrimary : colors.textSecondary
+                }}
+              >
+                <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span>Conquistas</span>
+              </button>
+              <button
                 onClick={() => setActiveTab('subscription')}
                 className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap"
                 style={{
@@ -611,8 +712,30 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 }}
               >
                 <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
-                <span className="hidden xs:inline">Editar meu Perfil</span>
-                <span className="xs:hidden">Perfil</span>
+                <span className="hidden xs:inline">Meus Dados</span>
+                <span className="xs:hidden">Dados</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('preferences')}
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap"
+                style={{
+                  backgroundColor: activeTab === 'preferences' ? colors.bgPrimary : 'transparent',
+                  color: activeTab === 'preferences' ? colors.textPrimary : colors.textSecondary
+                }}
+              >
+                <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span>Preferências</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('security')}
+                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 font-medium text-xs sm:text-sm whitespace-nowrap"
+                style={{
+                  backgroundColor: activeTab === 'security' ? colors.bgPrimary : 'transparent',
+                  color: activeTab === 'security' ? colors.textPrimary : colors.textSecondary
+                }}
+              >
+                <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                <span>Segurança</span>
               </button>
               {isAdmin && (
                 <button
