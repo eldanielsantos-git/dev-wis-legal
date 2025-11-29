@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { createHash } from "node:crypto";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,12 +64,10 @@ Deno.serve(async (req: Request) => {
 
     const token = authHeader.replace("Bearer ", "");
 
-    // Check if the token is the service role key (called by trigger)
     const isServiceRole = token === supabaseServiceKey;
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Only validate user token if it's not a service role call
     if (!isServiceRole) {
       const {
         data: { user },
@@ -134,15 +133,9 @@ Deno.serve(async (req: Request) => {
 
     console.log("Step 2: Sending email via Mailchimp Customer Journey...");
 
-    const subscriberHash = await crypto.subtle.digest(
-      "MD5",
-      new TextEncoder().encode(email.toLowerCase())
-    ).then(buffer => Array.from(new Uint8Array(buffer))
-      .map(b => b.toString(16).padStart(2, "0"))
-      .join("")
-    );
+    const subscriberHash = createHash('md5').update(email.toLowerCase()).digest('hex');
 
-    const mailchimpUrl = `${mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash)}`;
+    const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
     console.log("Mailchimp URL:", mailchimpUrl);
 
     const mailchimpResponse = await fetch(mailchimpUrl, {
