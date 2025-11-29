@@ -42,7 +42,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       <div className="flex flex-col items-center mb-4 pt-2">
         <div
           className={`text-4xl mb-2.5 transition-all duration-300 ${
-            unlocked ? 'animate-pulse' : 'grayscale'
+            unlocked ? '' : 'grayscale'
           }`}
         >
           {config.icon}
@@ -153,18 +153,6 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
         )}
       </div>
 
-      {/* Efeito de Brilho quando desbloqueado */}
-      {unlocked && (
-        <div
-          className="absolute inset-0 rounded-lg pointer-events-none"
-          style={{
-            background:
-              'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%)',
-            backgroundSize: '200% 200%',
-            animation: 'shimmer 3s infinite'
-          }}
-        />
-      )}
     </div>
   );
 }
