@@ -147,10 +147,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     profileData: Omit<UserProfile, 'id' | 'is_admin' | 'created_at' | 'updated_at' | 'terms_accepted_at'>
   ) => {
+    // Check if user already exists before attempting signup
+    const { data: existingUser } = await supabase
+      .from('user_profiles')
+      .select('email')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (existingUser) {
+      throw new Error('Este email já está cadastrado. Faça login ou use outro email.');
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/confirm-email`,
         data: {
           first_name: profileData.first_name,
           last_name: profileData.last_name,
