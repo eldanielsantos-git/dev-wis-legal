@@ -130,7 +130,6 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
   const loadProcessoAndPaginas = async () => {
     try {
       setLoading(true);
-      setError(null);
 
       const processoData = await ProcessosService.getProcesso(processoId);
 
@@ -141,15 +140,11 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
           .eq('id', processoId)
           .single();
 
-        if (!fallbackData) {
-          setError('Processo não encontrado no banco de dados');
-          return;
+        if (fallbackData) {
+          setProcesso(fallbackData as any);
+          setPaginas(fallbackData.paginas || []);
+          setPaginasCount(fallbackData.paginas?.length || 0);
         }
-
-        setProcesso(fallbackData as any);
-        setPaginas(fallbackData.paginas || []);
-        setPaginasCount(fallbackData.paginas?.length || 0);
-        setError('Dados carregados com algumas limitações');
         return;
       }
 
@@ -182,16 +177,10 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
           setProcesso(fallbackData as any);
           setPaginas(fallbackData.paginas || []);
           setPaginasCount(fallbackData.paginas?.length || 0);
-          setError(`Erro ao processar dados: ${err.message}. Mostrando dados brutos do banco.`);
-          playErrorSound();
-          return;
         }
       } catch (fallbackErr) {
         console.error('Erro no fallback:', fallbackErr);
       }
-
-      setError(err.message);
-      playErrorSound();
     } finally {
       setLoading(false);
     }
@@ -322,34 +311,6 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
   }
 
   if (!processo) {
-    if (error) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-sky-50 flex items-center justify-center p-4">
-          <div className="text-center max-w-md">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#DC2626' }}>
-              <AlertCircle className="w-8 h-8" style={{ color: '#FFFFFF' }} />
-            </div>
-            <h2 className="text-2xl font-bold mb-2 text-gray-900">
-              Processo não encontrado
-            </h2>
-            <p className="text-base font-normal mb-6 text-gray-700">
-              {error}
-            </p>
-            <button
-              onClick={onBack}
-              className="px-6 py-2.5 rounded-lg transition-colors border hover:bg-gray-50"
-              style={{
-                backgroundColor: '#FFFFFF',
-                color: '#0F0E0D',
-                borderColor: '#E5E7EB'
-              }}
-            >
-              Voltar
-            </button>
-          </div>
-        </div>
-      );
-    }
     return null;
   }
 
@@ -449,28 +410,6 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
           </div>
         </div>
       </header>
-
-      {/* Error Warning Banner */}
-      {error && (
-        <div className="mx-3 sm:mx-6 mt-4">
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
-            <div className="flex items-start">
-              <AlertCircle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
-              <div className="ml-3 flex-1">
-                <h3 className="text-sm font-semibold text-yellow-800">
-                  Aviso: Dados carregados com limitações
-                </h3>
-                <p className="text-xs text-yellow-700 mt-1">
-                  {error}
-                </p>
-                <p className="text-xs text-yellow-600 mt-2 italic">
-                  Os dados exibidos foram recuperados diretamente do banco de dados e podem estar incompletos ou não processados.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <main className="py-3 sm:py-6 overflow-x-hidden w-full">
         {/* Stats Grid */}
