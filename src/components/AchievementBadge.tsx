@@ -24,7 +24,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
   return (
     <div
-      className={`relative rounded-lg p-3 shadow-md transition-all duration-300 ${
+      className={`relative rounded-lg p-4 shadow-md transition-all duration-300 ${
         unlocked ? 'transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
       }`}
       style={{
@@ -39,7 +39,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       }}
     >
       {/* Badge de Status */}
-      <div className="absolute top-1.5 right-1.5">
+      <div className="absolute top-2 right-2">
         {unlocked ? (
           <div
             className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-semibold"
@@ -66,9 +66,9 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Ícone Principal */}
-      <div className="flex flex-col items-center mb-2">
+      <div className="flex flex-col items-center mb-3">
         <div
-          className={`text-3xl mb-1.5 transition-all duration-300 ${
+          className={`text-4xl mb-2 transition-all duration-300 ${
             unlocked ? 'animate-pulse' : 'grayscale'
           }`}
         >
@@ -77,7 +77,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
         {/* Título e Descrição */}
         <h3
-          className="text-sm font-bold text-center mb-0.5 px-1"
+          className="text-sm font-bold text-center mb-1 px-1"
           style={{
             color: unlocked ? '#FFFFFF' : colors.textPrimary
           }}
@@ -95,7 +95,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Barra de Progresso */}
-      <div className="mt-2 space-y-1">
+      <div className="mt-3 space-y-1.5">
         <div className="flex justify-between text-xs font-medium">
           <span
             style={{
@@ -144,7 +144,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
       {/* Data de Desbloqueio */}
       {unlocked && unlockedAt && (
-        <div className="mt-2 pt-2 border-t border-white border-opacity-25">
+        <div className="mt-3 pt-3 border-t border-white border-opacity-25">
           <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Desbloqueado em {formatDate(unlockedAt)}
           </p>
