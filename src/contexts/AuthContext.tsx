@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     profileData: Omit<UserProfile, 'id' | 'is_admin' | 'created_at' | 'updated_at' | 'terms_accepted_at'>
   ) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -164,6 +164,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
     if (error) throw error;
+
+    if (data?.user) {
+      logger.log('AuthContext', 'User created successfully, sending confirmation email via Mailchimp...');
+
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        if (token) {
+          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: data.user.id,
+              email: email,
+              first_name: profileData.first_name
+            })
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            logger.error('AuthContext', 'Failed to send confirmation email:', errorData);
+          } else {
+            logger.log('AuthContext', 'Confirmation email sent successfully via Mailchimp');
+          }
+        } else {
+          logger.warn('AuthContext', 'No session token available, skipping confirmation email');
+        }
+      } catch (emailError) {
+        logger.error('AuthContext', 'Error sending confirmation email (non-blocking):', emailError);
+      }
+    }
   };
 
   const signIn = async (email: string, password: string) => {

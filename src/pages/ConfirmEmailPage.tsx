@@ -1,0 +1,162 @@
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { Loader, CheckCircle, XCircle } from 'lucide-react';
+import { logger } from '../utils/logger';
+
+export function ConfirmEmailPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('Confirmando seu email...');
+
+  useEffect(() => {
+    const confirmEmail = async () => {
+      try {
+        const token = searchParams.get('token');
+        const type = searchParams.get('type') || 'signup';
+
+        if (!token) {
+          logger.error('ConfirmEmail', 'No token provided in URL');
+          setStatus('error');
+          setMessage('Link de confirmação inválido. Token não encontrado.');
+          return;
+        }
+
+        logger.log('ConfirmEmail', 'Attempting to verify email with token');
+
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: type as 'signup' | 'email',
+        });
+
+        if (error) {
+          logger.error('ConfirmEmail', 'Error verifying token:', error);
+          setStatus('error');
+          setMessage(error.message || 'Erro ao confirmar email. O link pode ter expirado.');
+          return;
+        }
+
+        if (data?.user) {
+          logger.log('ConfirmEmail', 'Email confirmed successfully:', data.user.email);
+
+          try {
+            const { data: sessionData } = await supabase.auth.getSession();
+            const sessionToken = sessionData?.session?.access_token;
+
+            if (sessionToken && data.user.email) {
+              logger.log('ConfirmEmail', 'Updating Mailchimp status to confirmado...');
+
+              const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-mailchimp-status`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${sessionToken}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  email: data.user.email,
+                  status: 'confirmado'
+                })
+              });
+
+              if (!response.ok) {
+                const errorData = await response.json();
+                logger.error('ConfirmEmail', 'Failed to update Mailchimp status:', errorData);
+              } else {
+                logger.log('ConfirmEmail', 'Mailchimp status updated successfully');
+              }
+            }
+          } catch (mailchimpError) {
+            logger.error('ConfirmEmail', 'Error updating Mailchimp (non-blocking):', mailchimpError);
+          }
+
+          setStatus('success');
+          setMessage('Email confirmado com sucesso! Redirecionando...');
+
+          setTimeout(() => {
+            navigate('/app');
+          }, 2000);
+        } else {
+          logger.error('ConfirmEmail', 'No user data returned after verification');
+          setStatus('error');
+          setMessage('Erro ao confirmar email. Tente novamente.');
+        }
+      } catch (err) {
+        logger.error('ConfirmEmail', 'Unexpected error during confirmation:', err);
+        setStatus('error');
+        setMessage('Erro inesperado ao confirmar email. Tente novamente.');
+      }
+    };
+
+    confirmEmail();
+  }, [searchParams, navigate]);
+
+  return (
+    <div className="min-h-screen flex flex-col md:flex-row font-body">
+      <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
+        <div className="text-center">
+          <img
+            src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg"
+            alt="Wis Legal"
+            className="h-12 md:h-16 mx-auto mb-4 md:mb-6"
+          />
+          <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+        </div>
+      </div>
+
+      <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
+        <div className="max-w-md w-full text-center px-2 sm:px-0">
+          {status === 'loading' && (
+            <>
+              <Loader className="w-16 h-16 animate-spin mx-auto mb-6 text-wis-dark" />
+              <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4">
+                Confirmando Email
+              </h1>
+              <p className="text-gray-600 mb-6 text-sm">
+                {message}
+              </p>
+            </>
+          )}
+
+          {status === 'success' && (
+            <>
+              <CheckCircle className="w-16 h-16 mx-auto mb-6 text-green-600" />
+              <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4">
+                Email Confirmado!
+              </h1>
+              <p className="text-gray-600 mb-6 text-sm">
+                {message}
+              </p>
+            </>
+          )}
+
+          {status === 'error' && (
+            <>
+              <XCircle className="w-16 h-16 mx-auto mb-6 text-red-600" />
+              <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4">
+                Erro na Confirmação
+              </h1>
+              <p className="text-gray-600 mb-6 text-sm">
+                {message}
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={() => navigate('/sign-in')}
+                  className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base"
+                >
+                  Ir para Login
+                </button>
+                <button
+                  onClick={() => navigate('/sign-up')}
+                  className="w-full bg-white text-gray-700 py-2.5 md:py-3 px-4 rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors font-medium text-sm md:text-base"
+                >
+                  Criar Nova Conta
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

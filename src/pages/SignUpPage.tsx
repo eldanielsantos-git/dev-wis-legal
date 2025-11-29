@@ -20,6 +20,10 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState<'initial' | 'details'>('initial');
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const [userEmail, setUserEmail] = useState('');
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phoneCountryCode: '+55', phone: '', password: '', confirmPassword: '',
     oab: '', city: '', state: '', termsAccepted: false
@@ -103,6 +107,70 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   ];
 
   const selectedCountry = countryCodes.find(c => c.code === formData.phoneCountryCode) || countryCodes[0];
+
+  useEffect(() => {
+    if (resendCountdown > 0) {
+      const timer = setTimeout(() => {
+        setResendCountdown(resendCountdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (resendCountdown === 0 && resendDisabled) {
+      setResendDisabled(false);
+    }
+  }, [resendCountdown, resendDisabled]);
+
+  const handleResendEmail = async () => {
+    if (resendDisabled || !userEmail) return;
+
+    setResendLoading(true);
+    setError(null);
+
+    try {
+      const { supabase } = await import('../lib/supabase');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      if (!token) {
+        throw new Error('Sessão não encontrada');
+      }
+
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('id, first_name')
+        .eq('email', userEmail.toLowerCase())
+        .maybeSingle();
+
+      if (!profileData) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: profileData.id,
+          email: userEmail,
+          first_name: profileData.first_name
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao reenviar email');
+      }
+
+      setResendDisabled(true);
+      setResendCountdown(60);
+    } catch (err: any) {
+      console.error('[ResendEmail] Erro ao reenviar email:', err);
+      setError(err.message || 'Erro ao reenviar email de confirmação');
+    } finally {
+      setResendLoading(false);
+    }
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -275,7 +343,10 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         state: formData.state,
         avatar_url: avatarUrl
       });
+      setUserEmail(formData.email);
       setSuccess(true);
+      setResendDisabled(true);
+      setResendCountdown(60);
     } catch (err: any) {
       console.error('[SignUp] Erro ao criar conta:', err);
       const errorMessage = err.message || 'Erro ao criar conta';
@@ -320,7 +391,26 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
           <div className="max-w-md w-full text-center px-2 sm:px-0">
             <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4 text-center">Conta criada!</h1>
             <p className="text-gray-600 mb-4 md:mb-6 text-center text-sm font-semibold">Acesse seu email informado no cadastro para fazer a verificação de sua conta.</p>
-            <button onClick={onNavigateToSignIn} className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base">Ir para Login</button>
+            {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+            <div className="space-y-3">
+              <button onClick={onNavigateToSignIn} className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base">Ir para Login</button>
+              <button
+                onClick={handleResendEmail}
+                disabled={resendDisabled || resendLoading}
+                className="w-full bg-white text-gray-700 py-2.5 md:py-3 px-4 rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors font-medium text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {resendLoading ? (
+                  <>
+                    <Loader className="w-4 h-4 animate-spin mr-2" />
+                    Reenviando...
+                  </>
+                ) : resendDisabled ? (
+                  `Reenviar email (${resendCountdown}s)`
+                ) : (
+                  'Reenviar email de confirmação'
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>

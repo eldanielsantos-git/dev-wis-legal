@@ -11,6 +11,7 @@ import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { TermsPage } from './pages/TermsPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { CookiesPage } from './pages/CookiesPage';
+import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
 import { AppHomePage } from './pages/AppHomePage';
 import { MyProcessesPage } from './pages/MyProcessesPage';
 import { ProcessoDetailPage } from './pages/ProcessoDetailPage';
@@ -90,6 +91,10 @@ function AppContent() {
 
   if (currentPath === '/reset-password') {
     return <ResetPasswordPage onNavigateToSignIn={() => navigate('/sign-in')} />;
+  }
+
+  if (currentPath === '/confirm-email') {
+    return <ConfirmEmailPage />;
   }
 
   if (!user) {
