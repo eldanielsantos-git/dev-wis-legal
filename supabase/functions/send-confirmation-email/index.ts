@@ -61,26 +61,35 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const token = authHeader.replace("Bearer ", "");
+
+    // Check if the token is the service role key (called by trigger)
+    const isServiceRole = token === supabaseServiceKey;
+
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: userError,
-    } = await supabaseClient.auth.getUser(token);
+    // Only validate user token if it's not a service role call
+    if (!isServiceRole) {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabaseClient.auth.getUser(token);
 
-    if (userError || !user) {
-      console.error("User verification error:", userError);
-      return new Response(
-        JSON.stringify({ error: "Invalid or expired token" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      if (userError || !user) {
+        console.error("User verification error:", userError);
+        return new Response(
+          JSON.stringify({ error: "Invalid or expired token" }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      console.log("User verified:", user.id, user.email);
+    } else {
+      console.log("Service role authenticated - called by database trigger");
     }
-
-    console.log("User verified:", user.id, user.email);
 
     const { user_id, email, first_name }: ConfirmationEmailRequest = await req.json();
 
@@ -98,138 +107,96 @@ Deno.serve(async (req: Request) => {
 
     console.log("Step 1: Generating confirmation token via Supabase Admin API...");
     const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
-      type: 'signup',
+      type: "signup",
       email: email,
-      options: {
-        redirectTo: `${frontendUrl}/confirm-email`,
-      }
     });
 
-    if (linkError || !linkData) {
+    if (linkError) {
       console.error("Error generating confirmation link:", linkError);
+      throw linkError;
+    }
+
+    if (!linkData?.properties?.action_link) {
+      console.error("No action link generated");
       throw new Error("Failed to generate confirmation link");
     }
 
-    const confirmationUrl = linkData.properties?.action_link || '';
-    console.log("✓ Confirmation URL generated:", confirmationUrl.substring(0, 50) + "...");
+    const confirmationToken = new URL(linkData.properties.action_link).searchParams.get("token");
+    if (!confirmationToken) {
+      console.error("No token found in action link:", linkData.properties.action_link);
+      throw new Error("Failed to extract confirmation token");
+    }
 
-    console.log("Step 2: Adding contact to Mailchimp audience...");
-    const mailchimpListUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members`;
+    console.log("✓ Confirmation token generated successfully");
 
-    const mailchimpMemberData = {
-      email_address: email,
-      status: "subscribed",
-      merge_fields: {
-        FNAME: first_name,
-        CONFIRM_STATUS: "pendente"
-      }
-    };
+    const confirmationUrl = `${frontendUrl}/confirm-email?token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
+    console.log("Confirmation URL:", confirmationUrl);
 
-    console.log("Mailchimp member data:", mailchimpMemberData);
+    console.log("Step 2: Sending email via Mailchimp Customer Journey...");
 
-    const addMemberResponse = await fetch(mailchimpListUrl, {
+    const subscriberHash = await crypto.subtle.digest(
+      "MD5",
+      new TextEncoder().encode(email.toLowerCase())
+    ).then(buffer => Array.from(new Uint8Array(buffer))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("")
+    );
+
+    const mailchimpUrl = `${mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash)}`;
+    console.log("Mailchimp URL:", mailchimpUrl);
+
+    const mailchimpResponse = await fetch(mailchimpUrl, {
       method: "POST",
       headers: {
+        "Content-Type": "application/json",
         "Authorization": `Bearer ${mailchimpApiKey}`,
-        "Content-Type": "application/json",
       },
-      body: JSON.stringify(mailchimpMemberData),
+      body: JSON.stringify({
+        email_address: email,
+        merge_fields: {
+          FNAME: first_name,
+          CONFURL: confirmationUrl,
+        },
+      }),
     });
 
-    if (!addMemberResponse.ok) {
-      const errorText = await addMemberResponse.text();
-      console.log("Mailchimp add member response:", addMemberResponse.status, errorText);
-
-      if (addMemberResponse.status === 400 && errorText.includes("already exists")) {
-        console.log("Member already exists, updating instead...");
-
-        const emailHash = await crypto.subtle.digest(
-          "MD5",
-          new TextEncoder().encode(email.toLowerCase())
-        );
-        const hashArray = Array.from(new Uint8Array(emailHash));
-        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-        const updateUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members/${hashHex}`;
-        const updateResponse = await fetch(updateUrl, {
-          method: "PUT",
-          headers: {
-            "Authorization": `Bearer ${mailchimpApiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(mailchimpMemberData),
-        });
-
-        if (!updateResponse.ok) {
-          const updateError = await updateResponse.text();
-          console.error("Failed to update existing member:", updateError);
-        } else {
-          console.log("✓ Member updated successfully");
-        }
-      } else {
-        console.error("Failed to add member to Mailchimp:", errorText);
-      }
-    } else {
-      const memberData = await addMemberResponse.json();
-      console.log("✓ Member added to Mailchimp:", memberData.id);
+    if (!mailchimpResponse.ok) {
+      const errorText = await mailchimpResponse.text();
+      console.error("Mailchimp API error:", mailchimpResponse.status, errorText);
+      throw new Error(`Mailchimp API error: ${mailchimpResponse.status} - ${errorText}`);
     }
 
-    console.log("Step 3: Triggering Mailchimp Journey...");
-    const journeyPayload = {
-      email_address: email,
-      properties: {
-        FNAME: first_name,
-        EMAIL: email,
-        CONFIRMATION_URL: confirmationUrl
-      }
-    };
+    const mailchimpResult = await mailchimpResponse.json();
+    console.log("✓ Email sent successfully via Mailchimp");
+    console.log("Mailchimp response:", mailchimpResult);
 
-    console.log("Journey payload:", journeyPayload);
-
-    const journeyResponse = await fetch(mailchimpJourneyEndpoint, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${mailchimpJourneyKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(journeyPayload),
-    });
-
-    console.log("Journey API response status:", journeyResponse.status);
-
-    if (!journeyResponse.ok) {
-      const errorText = await journeyResponse.text();
-      console.error("Failed to trigger Mailchimp Journey:", errorText);
-      throw new Error(`Mailchimp Journey API error: ${journeyResponse.status}`);
-    }
-
-    console.log("✓ Mailchimp Journey triggered successfully");
-
-    console.log("Step 4: Logging email send to database...");
+    console.log("Step 3: Logging email event to database...");
     const { error: logError } = await supabaseClient
       .from("email_logs")
       .insert({
-        user_id: user_id,
-        email: email,
-        type: "confirmation",
+        user_id,
+        email,
+        email_type: "confirmation",
+        provider: "mailchimp",
         status: "sent",
-        mailchimp_response: {
-          journey_triggered: true,
-          member_added: true
+        metadata: {
+          journey_key: mailchimpJourneyKey,
+          subscriber_hash: subscriberHash,
+          mailchimp_response: mailchimpResult,
         },
-        sent_at: new Date().toISOString()
       });
 
     if (logError) {
-      console.error("Failed to log email send:", logError);
+      console.error("Error logging email event:", logError);
     } else {
-      console.log("✓ Email send logged to database");
+      console.log("✓ Email event logged successfully");
     }
 
     return new Response(
-      JSON.stringify({
+      JSON.stringify({ 
         success: true,
-        message: "Confirmation email sent successfully via Mailchimp"
+        message: "Confirmation email sent successfully",
+        email,
       }),
       {
         status: 200,
@@ -237,14 +204,12 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("💥 Error in send-confirmation-email function:", error);
-    console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
-
     return new Response(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : "Unknown error occurred",
-        success: false
+      JSON.stringify({ 
+        error: error.message || "Internal server error",
+        details: error.toString(),
       }),
       {
         status: 500,
