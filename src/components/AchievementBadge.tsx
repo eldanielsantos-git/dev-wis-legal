@@ -41,11 +41,17 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       {/* Ícone Principal */}
       <div className="flex flex-col items-center mb-4 pt-2">
         <div
-          className={`text-4xl mb-2.5 transition-all duration-300 ${
-            unlocked ? '' : 'grayscale'
+          className={`mb-2.5 transition-all duration-300 ${
+            unlocked ? '' : 'opacity-40'
           }`}
         >
-          {config.icon}
+          <config.icon
+            className="w-12 h-12"
+            style={{
+              color: unlocked ? '#FFFFFF' : colors.textSecondary,
+              strokeWidth: 1.5
+            }}
+          />
         </div>
 
         {/* Título e Descrição */}

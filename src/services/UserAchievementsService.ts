@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { Target, Star, Diamond, Trophy, Crown } from 'lucide-react';
 
 export type AchievementType =
   | 'first_process'
@@ -19,7 +20,7 @@ export interface AchievementConfig {
   type: AchievementType;
   title: string;
   description: string;
-  icon: string;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   requiredCount: number;
   badgeGradient: string;
@@ -38,46 +39,46 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
     type: 'first_process',
     title: 'Primeira Análise',
     description: 'Complete sua primeira análise forense',
-    icon: '🎯',
-    color: '#10B981',
+    icon: Target,
+    color: '#64748B',
     requiredCount: 1,
-    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
+    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
   },
   {
     type: 'three_processes',
     title: 'Iniciante',
     description: 'Complete 3 análises forenses',
-    icon: '⭐',
-    color: '#3B82F6',
+    icon: Star,
+    color: '#64748B',
     requiredCount: 3,
-    badgeGradient: 'linear-gradient(135deg, #3B82F6, #2563EB)'
+    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
   },
   {
     type: 'ten_processes',
     title: 'Experiente',
     description: 'Complete 10 análises forenses',
-    icon: '💎',
-    color: '#8B5CF6',
+    icon: Diamond,
+    color: '#64748B',
     requiredCount: 10,
-    badgeGradient: 'linear-gradient(135deg, #8B5CF6, #7C3AED)'
+    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
   },
   {
     type: 'fifty_processes',
     title: 'Expert',
     description: 'Complete 50 análises forenses',
-    icon: '🏆',
-    color: '#F59E0B',
+    icon: Trophy,
+    color: '#64748B',
     requiredCount: 50,
-    badgeGradient: 'linear-gradient(135deg, #F59E0B, #D97706)'
+    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
   },
   {
     type: 'hundred_processes',
     title: 'Mestre Forense',
     description: 'Complete 100 análises forenses',
-    icon: '👑',
-    color: '#EF4444',
+    icon: Crown,
+    color: '#64748B',
     requiredCount: 100,
-    badgeGradient: 'linear-gradient(135deg, #EF4444, #DC2626)'
+    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
   }
 ];
 
