@@ -24,8 +24,8 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
   return (
     <div
-      className={`relative rounded-xl p-6 shadow-lg transition-all duration-300 ${
-        unlocked ? 'transform hover:scale-105 hover:shadow-xl' : 'opacity-60'
+      className={`relative rounded-lg p-4 shadow-md transition-all duration-300 ${
+        unlocked ? 'transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
       }`}
       style={{
         background: unlocked
@@ -39,36 +39,36 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       }}
     >
       {/* Badge de Status */}
-      <div className="absolute top-3 right-3">
+      <div className="absolute top-2 right-2">
         {unlocked ? (
           <div
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.25)',
               color: '#FFFFFF'
             }}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Desbloqueado</span>
+            <CheckCircle2 className="w-3 h-3" />
+            <span className="hidden sm:inline">Desbloqueado</span>
           </div>
         ) : (
           <div
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+            className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold"
             style={{
               backgroundColor: theme === 'dark' ? '#374151' : '#E5E7EB',
               color: theme === 'dark' ? '#9CA3AF' : '#6B7280'
             }}
           >
-            <Lock className="w-3.5 h-3.5" />
-            <span>Bloqueado</span>
+            <Lock className="w-3 h-3" />
+            <span className="hidden sm:inline">Bloqueado</span>
           </div>
         )}
       </div>
 
       {/* Ícone Principal */}
-      <div className="flex flex-col items-center mb-4">
+      <div className="flex flex-col items-center mb-3">
         <div
-          className={`text-6xl mb-3 transition-all duration-300 ${
+          className={`text-4xl mb-2 transition-all duration-300 ${
             unlocked ? 'animate-pulse' : 'grayscale'
           }`}
         >
@@ -77,7 +77,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
         {/* Título e Descrição */}
         <h3
-          className="text-xl font-bold text-center mb-2"
+          className="text-base font-bold text-center mb-1"
           style={{
             color: unlocked ? '#FFFFFF' : colors.textPrimary
           }}
@@ -85,7 +85,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
           {config.title}
         </h3>
         <p
-          className="text-sm text-center"
+          className="text-xs text-center line-clamp-2"
           style={{
             color: unlocked ? 'rgba(255, 255, 255, 0.9)' : colors.textSecondary
           }}
@@ -95,7 +95,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Barra de Progresso */}
-      <div className="mt-4 space-y-2">
+      <div className="mt-3 space-y-1.5">
         <div className="flex justify-between text-xs font-medium">
           <span
             style={{
@@ -113,7 +113,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
           </span>
         </div>
         <div
-          className="h-2 rounded-full overflow-hidden"
+          className="h-1.5 rounded-full overflow-hidden"
           style={{
             backgroundColor: unlocked
               ? 'rgba(255, 255, 255, 0.25)'
@@ -144,7 +144,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
       {/* Data de Desbloqueio */}
       {unlocked && unlockedAt && (
-        <div className="mt-4 pt-4 border-t border-white border-opacity-25">
+        <div className="mt-3 pt-3 border-t border-white border-opacity-25">
           <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Desbloqueado em {formatDate(unlockedAt)}
           </p>
@@ -154,7 +154,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       {/* Efeito de Brilho quando desbloqueado */}
       {unlocked && (
         <div
-          className="absolute inset-0 rounded-xl pointer-events-none"
+          className="absolute inset-0 rounded-lg pointer-events-none"
           style={{
             background:
               'linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%)',

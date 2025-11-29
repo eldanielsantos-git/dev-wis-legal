@@ -1107,25 +1107,22 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                   <Loader className="w-8 h-8 animate-spin" style={{ color: colors.textPrimary }} />
                 </div>
               ) : (
-                <div className="space-y-8">
-                  <div className="rounded-lg p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
-                    <h2 className="text-2xl font-bold mb-4" style={{ color: colors.textPrimary }}>
-                      Suas Conquistas
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                        <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Processos Analisados</p>
-                        <p className="text-3xl font-bold mt-1" style={{ color: colors.textPrimary }}>{completedCount}</p>
+                <div className="space-y-4">
+                  <div className="rounded-lg p-4 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <p className="text-xs font-medium" style={{ color: colors.textSecondary }}>Processos Analisados</p>
+                        <p className="text-2xl font-bold mt-0.5" style={{ color: colors.textPrimary }}>{completedCount}</p>
                       </div>
-                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                        <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Conquistas Desbloqueadas</p>
-                        <p className="text-3xl font-bold mt-1" style={{ color: colors.textPrimary }}>
+                      <div className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <p className="text-xs font-medium" style={{ color: colors.textSecondary }}>Conquistas Desbloqueadas</p>
+                        <p className="text-2xl font-bold mt-0.5" style={{ color: colors.textPrimary }}>
                           {achievementProgress.filter(a => a.unlocked).length} / {achievementProgress.length}
                         </p>
                       </div>
-                      <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                        <p className="text-sm font-medium" style={{ color: colors.textSecondary }}>Próxima Conquista</p>
-                        <p className="text-lg font-bold mt-1" style={{ color: colors.textPrimary }}>
+                      <div className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <p className="text-xs font-medium" style={{ color: colors.textSecondary }}>Próxima Conquista</p>
+                        <p className="text-base font-bold mt-0.5" style={{ color: colors.textPrimary }}>
                           {(() => {
                             const next = UserAchievementsService.getNextAchievement(completedCount);
                             return next ? `${next.requiredCount - completedCount} processos` : 'Todas desbloqueadas!';
@@ -1135,10 +1132,15 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {achievementProgress.map((achievement) => (
-                      <AchievementBadge key={achievement.config.type} achievement={achievement} />
-                    ))}
+                  <div className="rounded-lg p-4 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                    <h2 className="text-xl font-bold mb-3" style={{ color: colors.textPrimary }}>
+                      Suas Conquistas
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {achievementProgress.map((achievement) => (
+                        <AchievementBadge key={achievement.config.type} achievement={achievement} />
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
