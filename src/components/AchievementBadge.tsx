@@ -38,35 +38,6 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
           : `2px solid ${theme === 'dark' ? '#374151' : '#D1D5DB'}`
       }}
     >
-      {/* Badge de Status */}
-      <div className="absolute top-2 right-2">
-        {unlocked ? (
-          <div
-            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
-            style={{
-              backgroundColor: 'rgba(255, 255, 255, 0.25)',
-              color: '#FFFFFF',
-              fontSize: '0.65rem'
-            }}
-          >
-            <CheckCircle2 className="w-2.5 h-2.5" />
-            <span className="hidden sm:inline">Desbloqueado</span>
-          </div>
-        ) : (
-          <div
-            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
-            style={{
-              backgroundColor: theme === 'dark' ? '#374151' : '#E5E7EB',
-              color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
-              fontSize: '0.65rem'
-            }}
-          >
-            <Lock className="w-2.5 h-2.5" />
-            <span className="hidden sm:inline">Bloqueado</span>
-          </div>
-        )}
-      </div>
-
       {/* Ícone Principal */}
       <div className="flex flex-col items-center mb-4 pt-2">
         <div
@@ -147,11 +118,40 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       {/* Data de Desbloqueio */}
       {unlocked && unlockedAt && (
         <div className="mt-4 pt-3 border-t border-white border-opacity-25">
-          <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+          <p className="text-xs text-center mb-2" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Desbloqueado em {formatDate(unlockedAt)}
           </p>
         </div>
       )}
+
+      {/* Badge de Status - Agora na parte inferior */}
+      <div className="flex justify-center mt-3">
+        {unlocked ? (
+          <div
+            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.25)',
+              color: '#FFFFFF',
+              fontSize: '0.65rem'
+            }}
+          >
+            <CheckCircle2 className="w-2.5 h-2.5" />
+            <span>Desbloqueado</span>
+          </div>
+        ) : (
+          <div
+            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
+            style={{
+              backgroundColor: theme === 'dark' ? '#374151' : '#E5E7EB',
+              color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
+              fontSize: '0.65rem'
+            }}
+          >
+            <Lock className="w-2.5 h-2.5" />
+            <span>Bloqueado</span>
+          </div>
+        )}
+      </div>
 
       {/* Efeito de Brilho quando desbloqueado */}
       {unlocked && (
