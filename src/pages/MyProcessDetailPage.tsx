@@ -120,11 +120,28 @@ export function MyProcessDetailPage({
     try {
       setLoading(true);
       setError(null);
+
       const data = await ProcessosService.getProcessoById(processoId);
+
       if (!data) {
-        setError('Processo não encontrado');
+        // FALLBACK: Tenta buscar direto no banco
+        const { supabase } = await import('../lib/supabase');
+        const { data: fallbackData } = await supabase
+          .from('processos')
+          .select('*')
+          .eq('id', processoId)
+          .single();
+
+        if (!fallbackData) {
+          setError('Processo não encontrado no banco de dados');
+          return;
+        }
+
+        setProcesso(fallbackData as any);
+        setError('Dados carregados em modo de recuperação');
         return;
       }
+
       setProcesso(data);
     } catch (err: any) {
       console.error('Erro ao carregar processo:', err);
@@ -133,6 +150,24 @@ export function MyProcessDetailPage({
         console.log(`Tentando novamente... (${retryCount + 1}/3)`);
         setTimeout(() => loadProcesso(retryCount + 1), 1000 * (retryCount + 1));
         return;
+      }
+
+      // FALLBACK 2: Última tentativa com query direta
+      try {
+        const { supabase } = await import('../lib/supabase');
+        const { data: fallbackData } = await supabase
+          .from('processos')
+          .select('*')
+          .eq('id', processoId)
+          .single();
+
+        if (fallbackData) {
+          setProcesso(fallbackData as any);
+          setError(`Erro ao processar dados: ${err.message}. Mostrando dados brutos do banco.`);
+          return;
+        }
+      } catch (fallbackErr) {
+        console.error('Erro no fallback:', fallbackErr);
       }
 
       setError('Erro ao conectar. Verifique sua conexão e tente novamente.');
@@ -331,33 +366,36 @@ export function MyProcessDetailPage({
     );
   }
 
-  if (error || (!loading && !processo)) {
-    return (
-      <div className="min-h-screen font-body flex items-center justify-center p-4" style={{ backgroundColor: colors.bgPrimary }}>
-        <div className="text-center max-w-md">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#DC2626' }}>
-            <AlertCircle className="w-8 h-8" style={{ color: '#FFFFFF' }} />
+  if (!processo) {
+    if (error) {
+      return (
+        <div className="min-h-screen font-body flex items-center justify-center p-4" style={{ backgroundColor: colors.bgPrimary }}>
+          <div className="text-center max-w-md">
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: '#DC2626' }}>
+              <AlertCircle className="w-8 h-8" style={{ color: '#FFFFFF' }} />
+            </div>
+            <h2 className="text-2xl font-bold mb-2" style={{ color: colors.textPrimary }}>
+              Processo não encontrado
+            </h2>
+            <p className="text-base font-normal mb-6" style={{ color: colors.textSecondary }}>
+              {error}
+            </p>
+            <button
+              onClick={onNavigateToMyProcess}
+              className="px-6 py-2.5 rounded-lg transition-colors border hover:bg-gray-50"
+              style={{
+                backgroundColor: '#FFFFFF',
+                color: '#0F0E0D',
+                borderColor: '#E5E7EB'
+              }}
+            >
+              Voltar
+            </button>
           </div>
-          <h2 className="text-2xl font-bold mb-2" style={{ color: colors.textPrimary }}>
-            Ops!
-          </h2>
-          <p className="text-base font-normal mb-6" style={{ color: colors.textSecondary }}>
-            Este processo não foi encontrado ou foi removido.
-          </p>
-          <button
-            onClick={onNavigateToMyProcess}
-            className="px-6 py-2.5 rounded-lg transition-colors border hover:bg-gray-50"
-            style={{
-              backgroundColor: '#FFFFFF',
-              color: '#0F0E0D',
-              borderColor: '#E5E7EB'
-            }}
-          >
-            Voltar
-          </button>
         </div>
-      </div>
-    );
+      );
+    }
+    return null;
   }
 
   const totalPrompts = 9;
@@ -554,6 +592,30 @@ export function MyProcessDetailPage({
             )}
           </div>
         </section>
+
+        {/* Error Warning Banner */}
+        {error && (
+          <div className="px-4 sm:px-6 pt-4">
+            <div className="max-w-5xl mx-auto">
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 p-4 rounded-lg">
+                <div className="flex items-start">
+                  <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div className="ml-3 flex-1">
+                    <h3 className="text-sm font-semibold text-yellow-800 dark:text-yellow-300">
+                      Aviso: Dados carregados com limitações
+                    </h3>
+                    <p className="text-xs text-yellow-700 dark:text-yellow-400 mt-1">
+                      {error}
+                    </p>
+                    <p className="text-xs text-yellow-600 dark:text-yellow-500 mt-2 italic">
+                      Os dados exibidos foram recuperados diretamente do banco de dados e podem estar incompletos ou não processados.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Conteúdo Rolável */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 pt-1 pb-6 sm:pt-1 sm:pb-8 w-full">
