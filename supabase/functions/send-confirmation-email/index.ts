@@ -188,7 +188,18 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Mailchimp API error: ${mailchimpResponse.status} - ${errorText}`);
     }
 
-    const mailchimpResult = await mailchimpResponse.json();
+    let mailchimpResult = { status: mailchimpResponse.status };
+
+    // Customer Journey endpoint returns 204 No Content on success
+    if (mailchimpResponse.status !== 204) {
+      const contentType = mailchimpResponse.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        mailchimpResult = await mailchimpResponse.json();
+      } else {
+        mailchimpResult = { status: mailchimpResponse.status, body: await mailchimpResponse.text() };
+      }
+    }
+
     console.log("✓ Customer Journey triggered successfully");
     console.log("Mailchimp response:", mailchimpResult);
 
