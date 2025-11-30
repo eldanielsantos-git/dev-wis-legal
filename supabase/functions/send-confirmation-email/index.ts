@@ -131,9 +131,38 @@ Deno.serve(async (req: Request) => {
     const confirmationUrl = `${baseUrl}/confirm-email?token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
     console.log("Confirmation URL:", confirmationUrl);
 
-    console.log("Step 2: Sending email via Mailchimp Customer Journey...");
+    console.log("Step 2: Adding/Updating subscriber in Mailchimp Audience...");
 
     const subscriberHash = createHash('md5').update(email.toLowerCase()).digest('hex');
+
+    const addSubscriberUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members/${subscriberHash}`;
+
+    const addSubscriberResponse = await fetch(addSubscriberUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${mailchimpApiKey}`,
+      },
+      body: JSON.stringify({
+        email_address: email,
+        status_if_new: "subscribed",
+        merge_fields: {
+          FNAME: first_name,
+          CONFURL: confirmationUrl,
+        },
+      }),
+    });
+
+    if (!addSubscriberResponse.ok) {
+      const errorText = await addSubscriberResponse.text();
+      console.error("Error adding subscriber to Mailchimp:", addSubscriberResponse.status, errorText);
+      throw new Error(`Failed to add subscriber: ${addSubscriberResponse.status} - ${errorText}`);
+    }
+
+    const subscriberResult = await addSubscriberResponse.json();
+    console.log("✓ Subscriber added/updated in Mailchimp");
+
+    console.log("Step 3: Triggering Customer Journey...");
 
     const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
     console.log("Mailchimp URL:", mailchimpUrl);
@@ -160,10 +189,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const mailchimpResult = await mailchimpResponse.json();
-    console.log("✓ Email sent successfully via Mailchimp");
+    console.log("✓ Customer Journey triggered successfully");
     console.log("Mailchimp response:", mailchimpResult);
 
-    console.log("Step 3: Logging email event to database...");
+    console.log("Step 4: Logging email event to database...");
     const { error: logError } = await supabaseClient
       .from("email_logs")
       .insert({
