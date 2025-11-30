@@ -15,6 +15,8 @@ interface ConfirmationEmailRequest {
   last_name?: string;
   phone?: string;
   phone_country_code?: string;
+  city?: string;
+  state?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -71,9 +73,9 @@ Deno.serve(async (req: Request) => {
     const isServiceRole = token === supabaseServiceKey;
     console.log(isServiceRole ? "Service role authenticated" : "Public/User token provided");
 
-    const { user_id, email, first_name, last_name, phone, phone_country_code }: ConfirmationEmailRequest = await req.json();
+    const { user_id, email, first_name, last_name, phone, phone_country_code, city, state }: ConfirmationEmailRequest = await req.json();
 
-    console.log("Request data:", { user_id, email, first_name, last_name, phone, phone_country_code });
+    console.log("Request data:", { user_id, email, first_name, last_name, phone, phone_country_code, city, state });
 
     if (!user_id || !email || !first_name) {
       return new Response(
@@ -168,6 +170,8 @@ Deno.serve(async (req: Request) => {
     const finalLastName = last_name || userProfile?.last_name || '';
     const finalPhone = phone || userProfile?.phone || '';
     const finalPhoneCountryCode = phone_country_code || userProfile?.phone_country_code || '';
+    const finalCity = city || userProfile?.city || '';
+    const finalState = state || userProfile?.state || '';
 
     const subscriberPayload = {
       email_address: email,
@@ -177,6 +181,8 @@ Deno.serve(async (req: Request) => {
         LNAME: finalLastName,
         PHONE: finalPhone,
         CTR_CODE: finalPhoneCountryCode,
+        CITY: finalCity,
+        STATE: finalState,
         CONFIRM: confirmationUrl,
       },
     };
@@ -214,6 +220,8 @@ Deno.serve(async (req: Request) => {
         LNAME: finalLastName,
         PHONE: finalPhone,
         CTR_CODE: finalPhoneCountryCode,
+        CITY: finalCity,
+        STATE: finalState,
         CONFIRM: confirmationUrl,
       },
     };
