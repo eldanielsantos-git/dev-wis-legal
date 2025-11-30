@@ -239,9 +239,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         logger.error('AuthContext', 'Error sending confirmation email (non-blocking):', emailError);
       }
 
-      // With "Confirm email" enabled in Supabase settings, user is created as unconfirmed
-      // and cannot login until they confirm their email via the Mailchimp link
-      logger.log('AuthContext', 'User created as unconfirmed, waiting for email confirmation');
+      // Force logout after signup to prevent automatic login
+      // User must confirm email before accessing the app
+      logger.log('AuthContext', 'User created as unconfirmed, forcing logout');
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setSession(null);
     }
   };
 

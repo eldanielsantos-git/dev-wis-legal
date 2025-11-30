@@ -35,6 +35,8 @@ import { TokensPage } from './pages/TokensPage';
 import { ChatPage } from './pages/ChatPage';
 import { ChatProcessSelectionPage } from './pages/ChatProcessSelectionPage';
 import { WorkspacePage } from './pages/WorkspacePage';
+import { VerifyEmailRequiredPage } from './pages/VerifyEmailRequiredPage';
+import { RequireEmailVerification } from './components/RequireEmailVerification';
 import { Loader } from 'lucide-react';
 
 function AppContent() {
@@ -97,6 +99,10 @@ function AppContent() {
     return <ConfirmEmailPage />;
   }
 
+  if (currentPath === '/verify-email-required') {
+    return <VerifyEmailRequiredPage />;
+  }
+
   if (!user) {
     if (currentPath === '/sign-up') {
       return (
@@ -151,7 +157,8 @@ function AppContent() {
 
   if (currentPath === '/workspace') {
     return (
-      <WorkspacePage
+      <RequireEmailVerification>
+        <WorkspacePage
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
@@ -162,12 +169,14 @@ function AppContent() {
         onNavigateToCookies={() => navigate('/cookies')}
         onNavigateToProcessDetail={(processoId) => navigate(`/lawsuits-detail/${processoId}`)}
       />
+      </RequireEmailVerification>
     );
   }
 
   if (currentPath === '/chat') {
     return (
-      <ChatProcessSelectionPage
+      <RequireEmailVerification>
+        <ChatProcessSelectionPage
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={(processoId) => navigate(processoId ? `/chat/${processoId}` : '/chat')}
@@ -181,13 +190,15 @@ function AppContent() {
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
       />
+      </RequireEmailVerification>
     );
   }
 
   const chatPathMatch = currentPath.match(/^\/chat\/([a-f0-9-]+)$/);
   if (chatPathMatch) {
     return (
-      <ChatPage
+      <RequireEmailVerification>
+        <ChatPage
         processoId={chatPathMatch[1]}
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
@@ -202,6 +213,7 @@ function AppContent() {
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
       />
+      </RequireEmailVerification>
     );
   }
 
@@ -487,7 +499,8 @@ function AppContent() {
   }
 
     return (
-      <AppHomePage
+      <RequireEmailVerification>
+        <AppHomePage
         onNavigateToDetail={(id) => navigate(`/lawsuits-detail/${id}`)}
         onNavigateToAdmin={() => navigate('/admin')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
@@ -499,6 +512,7 @@ function AppContent() {
         onNavigateToCookies={() => navigate('/cookies')}
         onNavigateToApp={() => navigate('/app')}
       />
+      </RequireEmailVerification>
     );
   } catch (error) {
     logger.error('AppContent', 'Error in AppContent:', error);
