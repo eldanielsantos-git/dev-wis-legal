@@ -198,65 +198,78 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify(subscriberPayload),
     });
 
+    let mailchimpSuccess = false;
+    let skipMailchimp = false;
+
     if (!addSubscriberResponse.ok) {
       const errorText = await addSubscriberResponse.text();
       console.error("Error adding subscriber to Mailchimp:", addSubscriberResponse.status, errorText);
-      throw new Error(`Failed to add subscriber: ${addSubscriberResponse.status} - ${errorText}`);
-    }
 
-    const subscriberResult = await addSubscriberResponse.json();
-    console.log("✓ Subscriber added/updated in Mailchimp");
-    console.log("Subscriber data:", JSON.stringify(subscriberResult, null, 2));
+      // Check if it's a rate limit error (too many signups)
+      const isRateLimitError = errorText.includes("signed up to a lot of lists very recently");
 
-    console.log("Step 3: Triggering Customer Journey...");
-
-    const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
-    console.log("Mailchimp URL:", mailchimpUrl);
-
-    const journeyPayload = {
-      email_address: email,
-      merge_fields: {
-        FNAME: first_name,
-        LNAME: finalLastName,
-        PHONE: finalPhone,
-        CTR_CODE: finalPhoneCountryCode,
-        CITY: finalCity,
-        STATE: finalState,
-        CONFIRM: confirmationUrl,
-      },
-    };
-
-    console.log("Journey trigger payload:", JSON.stringify(journeyPayload, null, 2));
-
-    const mailchimpResponse = await fetch(mailchimpUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${mailchimpApiKey}`,
-      },
-      body: JSON.stringify(journeyPayload),
-    });
-
-    if (!mailchimpResponse.ok) {
-      const errorText = await mailchimpResponse.text();
-      console.error("Mailchimp API error:", mailchimpResponse.status, errorText);
-      throw new Error(`Mailchimp API error: ${mailchimpResponse.status} - ${errorText}`);
-    }
-
-    let mailchimpResult = { status: mailchimpResponse.status };
-
-    // Customer Journey endpoint returns 204 No Content on success
-    if (mailchimpResponse.status !== 204) {
-      const contentType = mailchimpResponse.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        mailchimpResult = await mailchimpResponse.json();
+      if (isRateLimitError) {
+        console.log("⚠️ Mailchimp rate limit detected, skipping Mailchimp entirely...");
+        skipMailchimp = true;
       } else {
-        mailchimpResult = { status: mailchimpResponse.status, body: await mailchimpResponse.text() };
+        throw new Error(`Failed to add subscriber: ${addSubscriberResponse.status} - ${errorText}`);
+      }
+    } else {
+      const subscriberResult = await addSubscriberResponse.json();
+      console.log("✓ Subscriber added/updated in Mailchimp");
+      console.log("Subscriber data:", JSON.stringify(subscriberResult, null, 2));
+
+      console.log("Step 3: Triggering Customer Journey...");
+
+      const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
+      console.log("Mailchimp URL:", mailchimpUrl);
+
+      const journeyPayload = {
+        email_address: email,
+        merge_fields: {
+          FNAME: first_name,
+          LNAME: finalLastName,
+          PHONE: finalPhone,
+          CTR_CODE: finalPhoneCountryCode,
+          CITY: finalCity,
+          STATE: finalState,
+          CONFIRM: confirmationUrl,
+        },
+      };
+
+      console.log("Journey trigger payload:", JSON.stringify(journeyPayload, null, 2));
+
+      const mailchimpResponse = await fetch(mailchimpUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${mailchimpApiKey}`,
+        },
+        body: JSON.stringify(journeyPayload),
+      });
+
+      if (!mailchimpResponse.ok) {
+        const errorText = await mailchimpResponse.text();
+        console.error("Mailchimp API error:", mailchimpResponse.status, errorText);
+        console.log("⚠️ Customer Journey failed, but continuing...");
+      } else {
+        let mailchimpResult = { status: mailchimpResponse.status };
+
+        // Customer Journey endpoint returns 204 No Content on success
+        if (mailchimpResponse.status !== 204) {
+          const contentType = mailchimpResponse.headers.get("content-type");
+          if (contentType && contentType.includes("application/json")) {
+            mailchimpResult = await mailchimpResponse.json();
+          } else {
+            mailchimpResult = { status: mailchimpResponse.status, body: await mailchimpResponse.text() };
+          }
+        }
+
+        console.log("✓ Customer Journey triggered successfully");
+        console.log("Mailchimp response:", mailchimpResult);
+        mailchimpSuccess = true;
       }
     }
-
-    console.log("✓ Customer Journey triggered successfully");
-    console.log("Mailchimp response:", mailchimpResult);
 
     console.log("Step 4: Logging email event to database...");
     const { error: logError } = await supabaseClient
@@ -265,11 +278,15 @@ Deno.serve(async (req: Request) => {
         user_id,
         email,
         type: "confirmation",
-        status: "sent",
-        mailchimp_response: {
+        status: skipMailchimp ? "pending_manual" : "sent",
+        mailchimp_response: skipMailchimp ? {
+          skipped: true,
+          reason: "Rate limit detected",
+          confirmation_url: confirmationUrl,
+        } : {
           journey_key: mailchimpJourneyKey,
           subscriber_hash: subscriberHash,
-          response: mailchimpResult,
+          success: mailchimpSuccess,
         },
       });
 
@@ -279,11 +296,20 @@ Deno.serve(async (req: Request) => {
       console.log("✓ Email event logged successfully");
     }
 
+    if (skipMailchimp) {
+      console.log("⚠️ Email not sent via Mailchimp due to rate limit");
+      console.log("📧 User can manually use confirmation URL:", confirmationUrl);
+    }
+
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         success: true,
-        message: "Confirmation email sent successfully",
+        message: skipMailchimp
+          ? "User registered successfully. Email sending skipped due to rate limit."
+          : "Confirmation email sent successfully",
         email,
+        mailchimp_skipped: skipMailchimp,
+        confirmation_url: skipMailchimp ? confirmationUrl : undefined,
       }),
       {
         status: 200,
