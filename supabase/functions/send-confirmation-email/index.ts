@@ -99,6 +99,14 @@ Deno.serve(async (req: Request) => {
       console.error("User not found in database:", profileError);
       console.log("Attempting to create user profile as fallback...");
 
+      // Get avatar_url from auth.users metadata
+      const { data: authUser } = await supabaseClient.auth.admin.getUserById(user_id);
+      const avatarUrl = authUser?.user?.user_metadata?.avatar_url;
+
+      if (avatarUrl) {
+        console.log("Found avatar_url in auth metadata:", avatarUrl);
+      }
+
       // Fallback: Create user profile if trigger failed
       const { data: createdProfile, error: createError } = await supabaseClient
         .from('user_profiles')
@@ -111,6 +119,7 @@ Deno.serve(async (req: Request) => {
           phone_country_code: phone_country_code || '+55',
           city: city || '',
           state: state || '',
+          avatar_url: avatarUrl || null,
         })
         .select('id, email, last_name, phone, phone_country_code, city, state')
         .single();
