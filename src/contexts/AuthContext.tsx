@@ -206,7 +206,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             body: JSON.stringify({
               user_id: data.user.id,
               email: email,
-              first_name: profileData.first_name
+              first_name: profileData.first_name,
+              last_name: profileData.last_name || '',
+              phone: profileData.phone || '',
+              phone_country_code: profileData.phone_country_code || ''
             })
           });
 
