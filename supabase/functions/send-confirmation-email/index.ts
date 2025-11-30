@@ -239,23 +239,51 @@ Deno.serve(async (req: Request) => {
     });
 
     let mailchimpSuccess = false;
-    let skipMailchimp = false;
 
     if (!addSubscriberResponse.ok) {
       const errorText = await addSubscriberResponse.text();
       console.error("Error adding subscriber to Mailchimp:", addSubscriberResponse.status, errorText);
 
-      const isRateLimitError = errorText.includes("signed up to a lot of lists very recently");
       const isPermanentlyDeleted = errorText.includes("permanently deleted and cannot be re-imported");
 
-      if (isRateLimitError || isPermanentlyDeleted) {
-        if (isRateLimitError) {
-          console.log("⚠️ Mailchimp rate limit detected, skipping Mailchimp...");
+      if (isPermanentlyDeleted) {
+        console.log("⚠️ Email permanently deleted, attempting to re-add via POST...");
+
+        const readdUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members`;
+
+        const readdPayload = {
+          email_address: email,
+          status: "subscribed",
+          merge_fields: {
+            FNAME: first_name,
+            LNAME: finalLastName,
+            PHONE: finalPhone,
+            CTR_CODE: finalPhoneCountryCode,
+            CITY: finalCity,
+            STATE: finalState,
+            CONFIRM_URL: confirmationUrl,
+          },
+        };
+
+        console.log("Attempting to re-add deleted subscriber via POST...");
+        const readdResponse = await fetch(readdUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${mailchimpApiKey}`,
+          },
+          body: JSON.stringify(readdPayload),
+        });
+
+        if (!readdResponse.ok) {
+          const readdError = await readdResponse.text();
+          console.error("Failed to re-add deleted subscriber:", readdResponse.status, readdError);
+          throw new Error(`Failed to re-add deleted subscriber: ${readdResponse.status} - ${readdError}`);
         }
-        if (isPermanentlyDeleted) {
-          console.log("⚠️ Email permanently deleted from Mailchimp, skipping...");
-        }
-        skipMailchimp = true;
+
+        const readdResult = await readdResponse.json();
+        console.log("✓ Deleted subscriber successfully re-added to Mailchimp");
+        console.log("Re-added subscriber data:", JSON.stringify(readdResult, null, 2));
       } else {
         throw new Error(`Failed to add subscriber: ${addSubscriberResponse.status} - ${errorText}`);
       }
@@ -320,10 +348,8 @@ Deno.serve(async (req: Request) => {
         user_id: user_id,
         email: email,
         type: "confirmation",
-        status: skipMailchimp ? "pending_manual" : (mailchimpSuccess ? "success" : "failed"),
-        mailchimp_response: skipMailchimp 
-          ? { skipped: true, reason: "rate_limit" }
-          : { journey_triggered: mailchimpSuccess },
+        status: mailchimpSuccess ? "success" : "failed",
+        mailchimp_response: { journey_triggered: mailchimpSuccess },
         sent_at: new Date().toISOString()
       });
 
@@ -331,21 +357,6 @@ Deno.serve(async (req: Request) => {
       console.error("Failed to log email:", logError);
     } else {
       console.log("✓ Email send logged to database");
-    }
-
-    if (skipMailchimp) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          message: "Mailchimp rate limit detected. Email will be sent manually.",
-          confirmation_url: confirmationUrl,
-          mailchimp_skipped: true
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
     }
 
     return new Response(
