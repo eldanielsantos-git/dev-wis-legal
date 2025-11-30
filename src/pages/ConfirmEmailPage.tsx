@@ -31,9 +31,10 @@ export function ConfirmEmailPage() {
           return;
         }
 
-        const token = searchParams.get('token');
-        const type = searchParams.get('type') || 'signup';
-        const email = searchParams.get('email');
+        // Try to get token from hash first (new format), then from query params (old format)
+        let token = hashParams.get('token') || searchParams.get('token');
+        let type = hashParams.get('type') || searchParams.get('type') || 'signup';
+        let email = hashParams.get('email') || searchParams.get('email');
 
         if (email) {
           setUserEmail(decodeURIComponent(email));

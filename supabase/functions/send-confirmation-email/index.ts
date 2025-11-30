@@ -137,7 +137,7 @@ Deno.serve(async (req: Request) => {
       if (magicData?.properties?.action_link) {
         confirmationToken = new URL(magicData.properties.action_link).searchParams.get("token") || "";
         const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
-        confirmationUrl = `${baseUrl}/confirm-email?token=${confirmationToken}&type=magiclink&email=${encodeURIComponent(email)}`;
+        confirmationUrl = `${baseUrl}/confirm-email#token=${confirmationToken}&type=magiclink&email=${encodeURIComponent(email)}`;
         console.log("✓ Magic link generated successfully");
       }
     } else if (linkError) {
@@ -146,7 +146,7 @@ Deno.serve(async (req: Request) => {
     } else if (linkData?.properties?.action_link) {
       confirmationToken = new URL(linkData.properties.action_link).searchParams.get("token") || "";
       const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
-      confirmationUrl = `${baseUrl}/confirm-email?token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
+      confirmationUrl = `${baseUrl}/confirm-email#token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
       console.log("✓ Confirmation token generated successfully");
     } else {
       console.error("No action link generated");
