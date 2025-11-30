@@ -198,7 +198,8 @@ Deno.serve(async (req: Request) => {
       throw new Error("Failed to generate confirmation URL");
     }
 
-    console.log("Confirmation URL generated (token hidden for security)");
+    console.log("✓ Confirmation URL generated successfully");
+    console.log("Confirmation URL (sanitized):", confirmationUrl.replace(confirmationToken, "***TOKEN***"));
 
     // Use data from user profile if available, otherwise use request data
     const finalLastName = userProfile?.last_name || last_name || '';
@@ -223,11 +224,17 @@ Deno.serve(async (req: Request) => {
         CTR_CODE: finalPhoneCountryCode,
         CITY: finalCity,
         STATE: finalState,
-        CONFIRM_URL: confirmationUrl,
+        CONFIRMATION_URL: confirmationUrl,
       },
     };
 
-    console.log("Sending to Mailchimp:", JSON.stringify(subscriberPayload, null, 2));
+    console.log("Sending to Mailchimp (URL sanitized):", JSON.stringify({
+      ...subscriberPayload,
+      merge_fields: {
+        ...subscriberPayload.merge_fields,
+        CONFIRMATION_URL: confirmationUrl.substring(0, 50) + "..." + confirmationUrl.substring(confirmationUrl.length - 20)
+      }
+    }, null, 2));
 
     const addSubscriberResponse = await fetch(addSubscriberUrl, {
       method: "PUT",
@@ -261,11 +268,18 @@ Deno.serve(async (req: Request) => {
             CTR_CODE: finalPhoneCountryCode,
             CITY: finalCity,
             STATE: finalState,
-            CONFIRM_URL: confirmationUrl,
+            CONFIRMATION_URL: confirmationUrl,
           },
         };
 
         console.log("Attempting to re-add deleted subscriber via POST...");
+        console.log("Re-add payload (URL sanitized):", JSON.stringify({
+          ...readdPayload,
+          merge_fields: {
+            ...readdPayload.merge_fields,
+            CONFIRMATION_URL: confirmationUrl.substring(0, 50) + "..." + confirmationUrl.substring(confirmationUrl.length - 20)
+          }
+        }, null, 2));
         const readdResponse = await fetch(readdUrl, {
           method: "POST",
           headers: {
@@ -306,7 +320,7 @@ Deno.serve(async (req: Request) => {
           CTR_CODE: finalPhoneCountryCode,
           CITY: finalCity,
           STATE: finalState,
-          CONFIRM_URL: confirmationUrl,
+          CONFIRMATION_URL: confirmationUrl,
         },
       };
 
