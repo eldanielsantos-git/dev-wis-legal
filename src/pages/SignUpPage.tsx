@@ -393,7 +393,10 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
           <div className="max-w-md w-full text-center px-2 sm:px-0">
             <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4 text-center">Conta criada!</h1>
-            <p className="text-gray-600 mb-4 md:mb-6 text-center text-sm font-semibold">Acesse a caixa de entrada de seu email informado no cadastro para fazer a verificação de sua conta. Se não localizar verifique a caixa de spam ou lixo eletrônico.</p>
+            <div className="mb-4 md:mb-6 text-center">
+              <p className="text-gray-900 text-sm font-semibold mb-2">Acesse a caixa de entrada de seu email informado no cadastro para fazer a verificação de sua conta.</p>
+              <p className="text-gray-500 text-sm">Se não localizar verifique a caixa de spam ou lixo eletrônico.</p>
+            </div>
             {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
             <div className="space-y-3">
               <button onClick={onNavigateToSignIn} className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base">Ir para Login</button>
