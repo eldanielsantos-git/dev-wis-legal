@@ -147,6 +147,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     profileData: Omit<UserProfile, 'id' | 'is_admin' | 'created_at' | 'updated_at' | 'terms_accepted_at'>
   ) => {
+    // Check if user already exists BEFORE attempting signup
+    const { data: existingProfile } = await supabase
+      .from('user_profiles')
+      .select('id, email')
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (existingProfile) {
+      throw new Error('Este email já está cadastrado. Faça login ou use outro email.');
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

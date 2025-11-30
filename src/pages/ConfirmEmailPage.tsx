@@ -1,12 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Loader, CheckCircle, XCircle } from 'lucide-react';
 import { logger } from '../utils/logger';
 
 export function ConfirmEmailPage() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  // Parse URL params manually (not using React Router)
+  const getHashParams = () => {
+    const hash = window.location.hash.substring(1);
+    return new URLSearchParams(hash);
+  };
+
+  const getQueryParams = () => {
+    return new URLSearchParams(window.location.search);
+  };
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Confirmando seu email...');
   const [userEmail, setUserEmail] = useState<string | null>(null);
@@ -15,9 +21,10 @@ export function ConfirmEmailPage() {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
+        const hashParams = getHashParams();
+        const queryParams = getQueryParams();
+
         // Check for errors in URL hash (from Supabase redirect)
-        const hash = window.location.hash.substring(1);
-        const hashParams = new URLSearchParams(hash);
         const errorFromHash = hashParams.get('error');
         const errorDescription = hashParams.get('error_description');
 
@@ -32,9 +39,9 @@ export function ConfirmEmailPage() {
         }
 
         // Try to get token from hash first (new format), then from query params (old format)
-        let token = hashParams.get('token') || searchParams.get('token');
-        let type = hashParams.get('type') || searchParams.get('type') || 'signup';
-        let email = hashParams.get('email') || searchParams.get('email');
+        let token = hashParams.get('token') || queryParams.get('token');
+        let type = hashParams.get('type') || queryParams.get('type') || 'signup';
+        let email = hashParams.get('email') || queryParams.get('email');
 
         if (email) {
           setUserEmail(decodeURIComponent(email));
@@ -98,7 +105,7 @@ export function ConfirmEmailPage() {
           setMessage('Email confirmado com sucesso! Redirecionando...');
 
           setTimeout(() => {
-            navigate('/app');
+            window.location.href = '/app';
           }, 2000);
         } else {
           logger.error('ConfirmEmail', 'No user data returned after verification');
@@ -202,13 +209,13 @@ export function ConfirmEmailPage() {
                   </button>
                 )}
                 <button
-                  onClick={() => navigate('/sign-in')}
+                  onClick={() => window.location.href = '/sign-in'}
                   className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base"
                 >
                   Ir para Login
                 </button>
                 <button
-                  onClick={() => navigate('/sign-up')}
+                  onClick={() => window.location.href = '/sign-up'}
                   className="w-full bg-white text-gray-700 py-2.5 md:py-3 px-4 rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors font-medium text-sm md:text-base"
                 >
                   Criar Nova Conta

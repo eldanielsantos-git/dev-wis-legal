@@ -311,11 +311,10 @@ Deno.serve(async (req: Request) => {
         user_id,
         email,
         type: "confirmation",
-        status: skipMailchimp ? "pending_manual" : "sent",
+        status: skipMailchimp ? "failed" : "sent",
         mailchimp_response: skipMailchimp ? {
           skipped: true,
-          reason: "Rate limit detected",
-          confirmation_url: confirmationUrl,
+          reason: "Rate limit detected - user needs to request new confirmation email",
         } : {
           journey_key: mailchimpJourneyKey,
           subscriber_hash: subscriberHash,
@@ -331,7 +330,7 @@ Deno.serve(async (req: Request) => {
 
     if (skipMailchimp) {
       console.log("⚠️ Email not sent via Mailchimp due to rate limit");
-      console.log("📧 User can manually use confirmation URL:", confirmationUrl);
+      console.log("⚠️ User needs to request a new confirmation email from the sign-in page");
     }
 
     return new Response(
@@ -342,7 +341,6 @@ Deno.serve(async (req: Request) => {
           : "Confirmation email sent successfully",
         email,
         mailchimp_skipped: skipMailchimp,
-        confirmation_url: skipMailchimp ? confirmationUrl : undefined,
       }),
       {
         status: 200,
