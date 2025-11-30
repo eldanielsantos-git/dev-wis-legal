@@ -165,11 +165,26 @@ Deno.serve(async (req: Request) => {
 
     const subscriberResult = await addSubscriberResponse.json();
     console.log("✓ Subscriber added/updated in Mailchimp");
+    console.log("Subscriber data:", JSON.stringify(subscriberResult, null, 2));
+
+    // Wait 1 second to ensure merge fields are propagated in Mailchimp
+    console.log("Waiting 1 second for merge fields to propagate...");
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     console.log("Step 3: Triggering Customer Journey...");
 
     const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
     console.log("Mailchimp URL:", mailchimpUrl);
+
+    const journeyPayload = {
+      email_address: email,
+      merge_fields: {
+        FNAME: first_name,
+        CONFURL: confirmationUrl,
+      },
+    };
+
+    console.log("Journey trigger payload:", JSON.stringify(journeyPayload, null, 2));
 
     const mailchimpResponse = await fetch(mailchimpUrl, {
       method: "POST",
@@ -177,13 +192,7 @@ Deno.serve(async (req: Request) => {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${mailchimpApiKey}`,
       },
-      body: JSON.stringify({
-        email_address: email,
-        merge_fields: {
-          FNAME: first_name,
-          CONFURL: confirmationUrl,
-        },
-      }),
+      body: JSON.stringify(journeyPayload),
     });
 
     if (!mailchimpResponse.ok) {
