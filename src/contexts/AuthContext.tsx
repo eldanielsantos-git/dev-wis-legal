@@ -194,34 +194,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       logger.log('AuthContext', 'User created successfully, sending confirmation email via Mailchimp...');
 
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token;
+        // Use service role key (anon key) for edge function call
+        // User doesn't have session yet because email is unconfirmed
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            user_id: data.user.id,
+            email: email,
+            first_name: profileData.first_name,
+            last_name: profileData.last_name || '',
+            phone: profileData.phone || '',
+            phone_country_code: profileData.phone_country_code || ''
+          })
+        });
 
-        if (token) {
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              user_id: data.user.id,
-              email: email,
-              first_name: profileData.first_name,
-              last_name: profileData.last_name || '',
-              phone: profileData.phone || '',
-              phone_country_code: profileData.phone_country_code || ''
-            })
-          });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            logger.error('AuthContext', 'Failed to send confirmation email:', errorData);
-          } else {
-            logger.log('AuthContext', 'Confirmation email sent successfully via Mailchimp');
-          }
+        if (!response.ok) {
+          const errorText = await response.text();
+          logger.error('AuthContext', 'Failed to send confirmation email:', errorText);
         } else {
-          logger.warn('AuthContext', 'No session token available, skipping confirmation email');
+          logger.log('AuthContext', 'Confirmation email sent successfully via Mailchimp');
         }
       } catch (emailError) {
         logger.error('AuthContext', 'Error sending confirmation email (non-blocking):', emailError);

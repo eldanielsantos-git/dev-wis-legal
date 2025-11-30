@@ -301,34 +301,36 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       let avatarUrl: string | undefined = undefined;
 
       if (avatarFile) {
-        console.log('[SignUp] Fazendo upload do avatar...');
+        console.log('[SignUp] Preparing avatar for upload...');
         try {
           const { supabase } = await import('../lib/supabase');
           const fileExt = avatarFile.name.split('.').pop();
-          const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-          const filePath = `${fileName}`;
+          // Use temp name first, will be renamed after user creation
+          const tempFileName = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+          const tempFilePath = `${tempFileName}`;
 
-          console.log('[SignUp] Upload path:', filePath);
+          console.log('[SignUp] Uploading avatar to temp path:', tempFilePath);
 
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('avatars')
-            .upload(filePath, avatarFile, {
+            .upload(tempFilePath, avatarFile, {
               cacheControl: '3600',
               upsert: false
             });
 
           if (uploadError) {
-            console.error('[SignUp] Erro ao fazer upload do avatar:', uploadError);
+            console.error('[SignUp] Error uploading avatar:', uploadError);
+            console.error('[SignUp] Error details:', JSON.stringify(uploadError));
           } else {
             const { data: { publicUrl } } = supabase.storage
               .from('avatars')
-              .getPublicUrl(filePath);
+              .getPublicUrl(tempFilePath);
             avatarUrl = publicUrl;
-            console.log('[SignUp] Avatar enviado com sucesso:', avatarUrl);
+            console.log('[SignUp] Avatar uploaded successfully:', avatarUrl);
             console.log('[SignUp] Upload data:', uploadData);
           }
         } catch (uploadErr) {
-          console.error('[SignUp] Erro ao processar upload do avatar:', uploadErr);
+          console.error('[SignUp] Exception during avatar upload:', uploadErr);
         }
       }
 
