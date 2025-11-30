@@ -152,6 +152,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         emailRedirectTo: `${window.location.origin}/confirm-email`,
+        emailConfirmation: true,
         data: {
           first_name: profileData.first_name,
           last_name: profileData.last_name,
@@ -225,12 +226,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } catch (emailError) {
         logger.error('AuthContext', 'Error sending confirmation email (non-blocking):', emailError);
       }
+
+      // CRITICAL: Sign out the user immediately after signup
+      // User must confirm email before they can login
+      logger.log('AuthContext', 'Signing out user - email confirmation required');
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setSession(null);
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
     if (error) throw error;
+
+    // Check if email is confirmed
+    if (data?.user && !data.user.email_confirmed_at) {
+      logger.warn('AuthContext', 'User email not confirmed, signing out...');
+      await supabase.auth.signOut();
+      setUser(null);
+      setProfile(null);
+      setSession(null);
+      throw new Error('Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.');
+    }
   };
 
   const signInWithGoogle = async () => {

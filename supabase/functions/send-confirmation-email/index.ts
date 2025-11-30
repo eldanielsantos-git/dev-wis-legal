@@ -107,31 +107,55 @@ Deno.serve(async (req: Request) => {
     console.log("✓ User verified in database");
 
     console.log("Step 1: Generating confirmation token via Supabase Admin API...");
+
+    // For new users, use generateLink. For existing unconfirmed users, use magic link
+    let confirmationUrl = "";
+    let confirmationToken = "";
+
+    // Try generateLink first (works for new signups)
     const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
       type: "signup",
       email: email,
     });
 
-    if (linkError) {
+    if (linkError && linkError.message?.includes('already been registered')) {
+      console.log("User already registered, generating magic link instead...");
+
+      // User already exists, use magic link instead
+      const { data: magicData, error: magicError } = await supabaseClient.auth.admin.generateLink({
+        type: "magiclink",
+        email: email,
+      });
+
+      if (magicError) {
+        console.error("Error generating magic link:", magicError);
+        throw magicError;
+      }
+
+      if (magicData?.properties?.action_link) {
+        confirmationToken = new URL(magicData.properties.action_link).searchParams.get("token") || "";
+        const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
+        confirmationUrl = `${baseUrl}/confirm-email?token=${confirmationToken}&type=magiclink&email=${encodeURIComponent(email)}`;
+        console.log("✓ Magic link generated successfully");
+      }
+    } else if (linkError) {
       console.error("Error generating confirmation link:", linkError);
       throw linkError;
-    }
-
-    if (!linkData?.properties?.action_link) {
+    } else if (linkData?.properties?.action_link) {
+      confirmationToken = new URL(linkData.properties.action_link).searchParams.get("token") || "";
+      const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
+      confirmationUrl = `${baseUrl}/confirm-email?token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
+      console.log("✓ Confirmation token generated successfully");
+    } else {
       console.error("No action link generated");
       throw new Error("Failed to generate confirmation link");
     }
 
-    const confirmationToken = new URL(linkData.properties.action_link).searchParams.get("token");
-    if (!confirmationToken) {
-      console.error("No token found in action link:", linkData.properties.action_link);
-      throw new Error("Failed to extract confirmation token");
+    if (!confirmationToken || !confirmationUrl) {
+      console.error("Failed to generate confirmation URL");
+      throw new Error("Failed to generate confirmation URL");
     }
 
-    console.log("✓ Confirmation token generated successfully");
-
-    const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
-    const confirmationUrl = `${baseUrl}/confirm-email?token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
     console.log("Confirmation URL:", confirmationUrl);
 
     console.log("Step 2: Adding/Updating subscriber in Mailchimp Audience...");
