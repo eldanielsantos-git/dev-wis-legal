@@ -54,11 +54,14 @@ export function ConfirmEmailPage() {
           return;
         }
 
-        logger.log('ConfirmEmail', 'Attempting to verify email with token');
+        logger.log('ConfirmEmail', 'Attempting to verify email with token, type:', type);
+
+        // Mailchimp sends 'magiclink' type, map it to 'email' for Supabase
+        const supabaseType = type === 'magiclink' ? 'email' : (type as 'signup' | 'email');
 
         const { data, error } = await supabase.auth.verifyOtp({
           token_hash: token,
-          type: type as 'signup' | 'email',
+          type: supabaseType,
         });
 
         if (error) {

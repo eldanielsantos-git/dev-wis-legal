@@ -216,7 +216,6 @@ Deno.serve(async (req: Request) => {
         CTR_CODE: finalPhoneCountryCode,
         CITY: finalCity,
         STATE: finalState,
-        CONFIRM: confirmationUrl,
       },
     };
 
@@ -266,7 +265,6 @@ Deno.serve(async (req: Request) => {
           CTR_CODE: finalPhoneCountryCode,
           CITY: finalCity,
           STATE: finalState,
-          CONFIRM: confirmationUrl,
         },
       };
 
