@@ -88,25 +88,49 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log("Verifying user exists in database...");
-    const { data: userProfile, error: profileError } = await supabaseClient
+    let { data: userProfile, error: profileError } = await supabaseClient
       .from('user_profiles')
-      .select('id, email, last_name, phone, phone_country_code')
+      .select('id, email, last_name, phone, phone_country_code, city, state')
       .eq('id', user_id)
       .eq('email', email.toLowerCase())
       .maybeSingle();
 
     if (profileError || !userProfile) {
       console.error("User not found in database:", profileError);
-      return new Response(
-        JSON.stringify({ error: "User not found" }),
-        {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
+      console.log("Attempting to create user profile as fallback...");
 
-    console.log("✓ User verified in database");
+      // Fallback: Create user profile if trigger failed
+      const { data: createdProfile, error: createError } = await supabaseClient
+        .from('user_profiles')
+        .insert({
+          id: user_id,
+          email: email.toLowerCase(),
+          first_name: first_name,
+          last_name: last_name || '',
+          phone: phone || '',
+          phone_country_code: phone_country_code || '+55',
+          city: city || '',
+          state: state || '',
+        })
+        .select('id, email, last_name, phone, phone_country_code, city, state')
+        .single();
+
+      if (createError) {
+        console.error("Failed to create user profile:", createError);
+        return new Response(
+          JSON.stringify({ error: "User profile creation failed", details: createError.message }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      userProfile = createdProfile;
+      console.log("✓ User profile created successfully via fallback");
+    } else {
+      console.log("✓ User verified in database");
+    }
 
     console.log("Step 1: Generating confirmation token via Supabase Admin API...");
 
