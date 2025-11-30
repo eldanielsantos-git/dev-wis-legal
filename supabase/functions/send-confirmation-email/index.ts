@@ -137,20 +137,24 @@ Deno.serve(async (req: Request) => {
 
     const addSubscriberUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members/${subscriberHash}`;
 
+    const subscriberPayload = {
+      email_address: email,
+      status_if_new: "subscribed",
+      merge_fields: {
+        FNAME: first_name,
+        CONFURL: confirmationUrl,
+      },
+    };
+
+    console.log("Sending to Mailchimp:", JSON.stringify(subscriberPayload, null, 2));
+
     const addSubscriberResponse = await fetch(addSubscriberUrl, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${mailchimpApiKey}`,
       },
-      body: JSON.stringify({
-        email_address: email,
-        status_if_new: "subscribed",
-        merge_fields: {
-          FNAME: first_name,
-          CONFURL: confirmationUrl,
-        },
-      }),
+      body: JSON.stringify(subscriberPayload),
     });
 
     if (!addSubscriberResponse.ok) {
