@@ -142,7 +142,7 @@ Deno.serve(async (req: Request) => {
       status_if_new: "subscribed",
       merge_fields: {
         FNAME: first_name,
-        CONFURL: confirmationUrl,
+        CONFIRM: confirmationUrl,
       },
     };
 
@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
       email_address: email,
       merge_fields: {
         FNAME: first_name,
-        CONFURL: confirmationUrl,
+        CONFIRM: confirmationUrl,
       },
     };
 
