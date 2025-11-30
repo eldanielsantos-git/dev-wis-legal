@@ -12,6 +12,9 @@ interface ConfirmationEmailRequest {
   user_id: string;
   email: string;
   first_name: string;
+  last_name?: string;
+  phone?: string;
+  phone_country_code?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -68,9 +71,9 @@ Deno.serve(async (req: Request) => {
     const isServiceRole = token === supabaseServiceKey;
     console.log(isServiceRole ? "Service role authenticated" : "Public/User token provided");
 
-    const { user_id, email, first_name }: ConfirmationEmailRequest = await req.json();
+    const { user_id, email, first_name, last_name, phone, phone_country_code }: ConfirmationEmailRequest = await req.json();
 
-    console.log("Request data:", { user_id, email, first_name });
+    console.log("Request data:", { user_id, email, first_name, last_name, phone, phone_country_code });
 
     if (!user_id || !email || !first_name) {
       return new Response(
@@ -85,7 +88,7 @@ Deno.serve(async (req: Request) => {
     console.log("Verifying user exists in database...");
     const { data: userProfile, error: profileError } = await supabaseClient
       .from('user_profiles')
-      .select('id, email')
+      .select('id, email, last_name, phone, phone_country_code')
       .eq('id', user_id)
       .eq('email', email.toLowerCase())
       .maybeSingle();
@@ -137,11 +140,19 @@ Deno.serve(async (req: Request) => {
 
     const addSubscriberUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members/${subscriberHash}`;
 
+    // Get additional user data from database or request
+    const finalLastName = last_name || userProfile?.last_name || '';
+    const finalPhone = phone || userProfile?.phone || '';
+    const finalPhoneCountryCode = phone_country_code || userProfile?.phone_country_code || '';
+    const fullPhone = finalPhoneCountryCode && finalPhone ? `${finalPhoneCountryCode} ${finalPhone}` : finalPhone;
+
     const subscriberPayload = {
       email_address: email,
       status_if_new: "subscribed",
       merge_fields: {
         FNAME: first_name,
+        LNAME: finalLastName,
+        PHONE: fullPhone,
         CONFIRM: confirmationUrl,
       },
     };
@@ -180,6 +191,8 @@ Deno.serve(async (req: Request) => {
       email_address: email,
       merge_fields: {
         FNAME: first_name,
+        LNAME: finalLastName,
+        PHONE: fullPhone,
         CONFIRM: confirmationUrl,
       },
     };

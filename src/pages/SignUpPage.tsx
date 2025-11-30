@@ -130,7 +130,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('id, first_name')
+        .select('id, first_name, last_name, phone, phone_country_code')
         .eq('email', userEmail.toLowerCase())
         .maybeSingle();
 
@@ -147,7 +147,10 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         body: JSON.stringify({
           user_id: profileData.id,
           email: userEmail,
-          first_name: profileData.first_name
+          first_name: profileData.first_name,
+          last_name: profileData.last_name,
+          phone: profileData.phone,
+          phone_country_code: profileData.phone_country_code
         })
       });
 
