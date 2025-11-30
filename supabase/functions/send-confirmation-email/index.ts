@@ -1,6 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { createHash } from "node:crypto";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +18,14 @@ interface ConfirmationEmailRequest {
   state?: string;
 }
 
+async function md5Hash(text: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(text);
+  const hashBuffer = await crypto.subtle.digest("MD5", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 Deno.serve(async (req: Request) => {
   console.log("🚀 send-confirmation-email function called");
   console.log("Method:", req.method);
@@ -34,26 +41,30 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const mailchimpApiKey = Deno.env.get("MAILCHIMP_API_KEY");
-    const mailchimpJourneyKey = Deno.env.get("MAILCHIMP_JOURNEY_KEY");
-    const mailchimpJourneyEndpoint = Deno.env.get("MAILCHIMP_JOURNEY_ENDPOINT");
     const mailchimpAudienceId = Deno.env.get("MAILCHIMP_AUDIENCE_ID");
-    const frontendUrl = Deno.env.get("FRONTEND_URL") || Deno.env.get("VITE_APP_URL") || "https://app.wislegal.io";
+    const mailchimpJourneyEndpoint = Deno.env.get("MAILCHIMP_JOURNEY_ENDPOINT");
+    const mailchimpJourneyKey = Deno.env.get("MAILCHIMP_JOURNEY_KEY");
+    const frontendUrl = Deno.env.get("FRONTEND_URL") || "https://app.wislegal.io";
 
     console.log("Environment check:");
     console.log("- SUPABASE_URL:", supabaseUrl ? "✓" : "✗");
     console.log("- SUPABASE_SERVICE_ROLE_KEY:", supabaseServiceKey ? "✓" : "✗");
     console.log("- MAILCHIMP_API_KEY:", mailchimpApiKey ? "✓" : "✗");
-    console.log("- MAILCHIMP_JOURNEY_KEY:", mailchimpJourneyKey ? "✓" : "✗");
-    console.log("- MAILCHIMP_JOURNEY_ENDPOINT:", mailchimpJourneyEndpoint ? "✓" : "✗");
     console.log("- MAILCHIMP_AUDIENCE_ID:", mailchimpAudienceId ? "✓" : "✗");
+    console.log("- MAILCHIMP_JOURNEY_ENDPOINT:", mailchimpJourneyEndpoint ? "✓" : "✗");
+    console.log("- MAILCHIMP_JOURNEY_KEY:", mailchimpJourneyKey ? "✓" : "✗");
     console.log("- FRONTEND_URL:", frontendUrl);
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
     }
 
-    if (!mailchimpApiKey || !mailchimpJourneyKey || !mailchimpJourneyEndpoint || !mailchimpAudienceId) {
+    if (!mailchimpApiKey || !mailchimpAudienceId) {
       throw new Error("Missing Mailchimp environment variables");
+    }
+
+    if (!mailchimpJourneyEndpoint || !mailchimpJourneyKey) {
+      throw new Error("Missing Mailchimp Journey configuration");
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -67,11 +78,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
-
-    const isServiceRole = token === supabaseServiceKey;
-    console.log(isServiceRole ? "Service role authenticated" : "Public/User token provided");
 
     const { user_id, email, first_name, last_name, phone, phone_country_code, city, state }: ConfirmationEmailRequest = await req.json();
 
@@ -121,13 +128,16 @@ Deno.serve(async (req: Request) => {
           state: state || '',
           avatar_url: avatarUrl || null,
         })
-        .select('id, email, last_name, phone, phone_country_code, city, state')
+        .select()
         .single();
 
       if (createError) {
         console.error("Failed to create user profile:", createError);
         return new Response(
-          JSON.stringify({ error: "User profile creation failed", details: createError.message }),
+          JSON.stringify({ 
+            error: "User profile not found and could not be created",
+            details: createError.message 
+          }),
           {
             status: 500,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -136,7 +146,7 @@ Deno.serve(async (req: Request) => {
       }
 
       userProfile = createdProfile;
-      console.log("✓ User profile created successfully via fallback");
+      console.log("✓ User profile created successfully");
     } else {
       console.log("✓ User verified in database");
     }
@@ -180,31 +190,27 @@ Deno.serve(async (req: Request) => {
       confirmationToken = new URL(linkData.properties.action_link).searchParams.get("token") || "";
       const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
       confirmationUrl = `${baseUrl}/confirm-email#token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
-      console.log("✓ Confirmation token generated successfully");
-    } else {
-      console.error("No action link generated");
-      throw new Error("Failed to generate confirmation link");
+      console.log("✓ Confirmation link generated successfully");
     }
 
-    if (!confirmationToken || !confirmationUrl) {
-      console.error("Failed to generate confirmation URL");
+    if (!confirmationUrl || !confirmationToken) {
       throw new Error("Failed to generate confirmation URL");
     }
 
-    console.log("Confirmation URL:", confirmationUrl);
+    console.log("Confirmation URL generated (token hidden for security)");
 
-    console.log("Step 2: Adding/Updating subscriber in Mailchimp Audience...");
+    // Use data from user profile if available, otherwise use request data
+    const finalLastName = userProfile?.last_name || last_name || '';
+    const finalPhone = userProfile?.phone || phone || '';
+    const finalPhoneCountryCode = userProfile?.phone_country_code || phone_country_code || '+55';
+    const finalCity = userProfile?.city || city || '';
+    const finalState = userProfile?.state || state || '';
 
-    const subscriberHash = createHash('md5').update(email.toLowerCase()).digest('hex');
+    console.log("Step 2: Adding/updating subscriber in Mailchimp...");
+    const subscriberHash = await md5Hash(email.toLowerCase());
+    console.log("Subscriber hash:", subscriberHash);
 
     const addSubscriberUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members/${subscriberHash}`;
-
-    // Get additional user data from database or request
-    const finalLastName = last_name || userProfile?.last_name || '';
-    const finalPhone = phone || userProfile?.phone || '';
-    const finalPhoneCountryCode = phone_country_code || userProfile?.phone_country_code || '';
-    const finalCity = city || userProfile?.city || '';
-    const finalState = state || userProfile?.state || '';
 
     const subscriberPayload = {
       email_address: email,
@@ -293,54 +299,55 @@ Deno.serve(async (req: Request) => {
           const contentType = mailchimpResponse.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {
             mailchimpResult = await mailchimpResponse.json();
-          } else {
-            mailchimpResult = { status: mailchimpResponse.status, body: await mailchimpResponse.text() };
           }
         }
 
-        console.log("✓ Customer Journey triggered successfully");
-        console.log("Mailchimp response:", mailchimpResult);
+        console.log("✓ Customer Journey triggered successfully", mailchimpResult);
         mailchimpSuccess = true;
       }
     }
 
-    console.log("Step 4: Logging email event to database...");
+    console.log("Step 4: Logging email send to database...");
     const { error: logError } = await supabaseClient
       .from("email_logs")
       .insert({
-        user_id,
-        email,
+        user_id: user_id,
+        email: email,
         type: "confirmation",
-        status: skipMailchimp ? "failed" : "sent",
-        mailchimp_response: skipMailchimp ? {
-          skipped: true,
-          reason: "Rate limit detected - user needs to request new confirmation email",
-        } : {
-          journey_key: mailchimpJourneyKey,
-          subscriber_hash: subscriberHash,
-          success: mailchimpSuccess,
-        },
+        status: skipMailchimp ? "pending_manual" : (mailchimpSuccess ? "success" : "failed"),
+        mailchimp_response: skipMailchimp 
+          ? { skipped: true, reason: "rate_limit" }
+          : { journey_triggered: mailchimpSuccess },
+        sent_at: new Date().toISOString()
       });
 
     if (logError) {
-      console.error("Error logging email event:", logError);
+      console.error("Failed to log email:", logError);
     } else {
-      console.log("✓ Email event logged successfully");
+      console.log("✓ Email send logged to database");
     }
 
     if (skipMailchimp) {
-      console.log("⚠️ Email not sent via Mailchimp due to rate limit");
-      console.log("⚠️ User needs to request a new confirmation email from the sign-in page");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Mailchimp rate limit detected. Email will be sent manually.",
+          confirmation_url: confirmationUrl,
+          mailchimp_skipped: true
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: skipMailchimp
-          ? "User registered successfully. Email sending skipped due to rate limit."
-          : "Confirmation email sent successfully",
-        email,
-        mailchimp_skipped: skipMailchimp,
+        message: "Confirmation email triggered via Mailchimp Customer Journey",
+        confirmation_url: confirmationUrl,
+        mailchimp_success: mailchimpSuccess
       }),
       {
         status: 200,
@@ -348,12 +355,14 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-  } catch (error: any) {
+  } catch (error) {
     console.error("💥 Error in send-confirmation-email function:", error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
+
     return new Response(
-      JSON.stringify({ 
-        error: error.message || "Internal server error",
-        details: error.toString(),
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error occurred",
+        success: false
       }),
       {
         status: 500,
