@@ -209,13 +209,12 @@ Deno.serve(async (req: Request) => {
       .insert({
         user_id,
         email,
-        email_type: "confirmation",
-        provider: "mailchimp",
+        type: "confirmation",
         status: "sent",
-        metadata: {
+        mailchimp_response: {
           journey_key: mailchimpJourneyKey,
           subscriber_hash: subscriberHash,
-          mailchimp_response: mailchimpResult,
+          response: mailchimpResult,
         },
       });
 
