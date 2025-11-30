@@ -245,11 +245,16 @@ Deno.serve(async (req: Request) => {
       const errorText = await addSubscriberResponse.text();
       console.error("Error adding subscriber to Mailchimp:", addSubscriberResponse.status, errorText);
 
-      // Check if it's a rate limit error (too many signups)
       const isRateLimitError = errorText.includes("signed up to a lot of lists very recently");
+      const isPermanentlyDeleted = errorText.includes("permanently deleted and cannot be re-imported");
 
-      if (isRateLimitError) {
-        console.log("⚠️ Mailchimp rate limit detected, skipping Mailchimp entirely...");
+      if (isRateLimitError || isPermanentlyDeleted) {
+        if (isRateLimitError) {
+          console.log("⚠️ Mailchimp rate limit detected, skipping Mailchimp...");
+        }
+        if (isPermanentlyDeleted) {
+          console.log("⚠️ Email permanently deleted from Mailchimp, skipping...");
+        }
         skipMailchimp = true;
       } else {
         throw new Error(`Failed to add subscriber: ${addSubscriberResponse.status} - ${errorText}`);
