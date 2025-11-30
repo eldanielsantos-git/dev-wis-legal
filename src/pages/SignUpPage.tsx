@@ -362,7 +362,9 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         'Invalid login credentials': 'Credenciais inválidas',
         'Password should be at least 6 characters': 'A senha deve ter no mínimo 6 caracteres',
         'Unable to validate email address': 'Não foi possível validar o endereço de email',
-        'Email link is invalid or has expired': 'Link de email inválido ou expirado'
+        'Email link is invalid or has expired': 'Link de email inválido ou expirado',
+        'Password is known to be weak and easy to guess': 'Esta senha é muito fraca e fácil de adivinhar. Por favor, escolha uma senha diferente.',
+        'weak and easy to guess': 'Esta senha é muito fraca e fácil de adivinhar. Por favor, escolha uma senha mais forte.'
       };
 
       let translatedError = errorMessage;
