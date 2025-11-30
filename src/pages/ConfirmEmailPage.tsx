@@ -9,6 +9,8 @@ export function ConfirmEmailPage() {
   const navigate = useNavigate();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('Confirmando seu email...');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
     const confirmEmail = async () => {
@@ -31,6 +33,11 @@ export function ConfirmEmailPage() {
 
         const token = searchParams.get('token');
         const type = searchParams.get('type') || 'signup';
+        const email = searchParams.get('email');
+
+        if (email) {
+          setUserEmail(decodeURIComponent(email));
+        }
 
         if (!token) {
           logger.error('ConfirmEmail', 'No token provided in URL');
@@ -107,6 +114,34 @@ export function ConfirmEmailPage() {
     confirmEmail();
   }, [searchParams, navigate]);
 
+  const handleResendEmail = async () => {
+    if (!userEmail || isResending) return;
+
+    setIsResending(true);
+    try {
+      logger.log('ConfirmEmail', 'Resending confirmation email to:', userEmail);
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: userEmail,
+      });
+
+      if (error) {
+        logger.error('ConfirmEmail', 'Error resending email:', error);
+        setMessage('Erro ao reenviar email. Tente novamente mais tarde.');
+      } else {
+        logger.log('ConfirmEmail', 'Email resent successfully');
+        setMessage('Email reenviado com sucesso! Verifique sua caixa de entrada.');
+        setStatus('success');
+      }
+    } catch (err) {
+      logger.error('ConfirmEmail', 'Unexpected error resending email:', err);
+      setMessage('Erro ao reenviar email. Tente novamente mais tarde.');
+    } finally {
+      setIsResending(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-body">
       <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
@@ -156,6 +191,15 @@ export function ConfirmEmailPage() {
                 {message}
               </p>
               <div className="space-y-3">
+                {userEmail && (
+                  <button
+                    onClick={handleResendEmail}
+                    disabled={isResending}
+                    className="w-full bg-blue-600 text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isResending ? 'Reenviando...' : 'Reenviar Email de Confirmação'}
+                  </button>
+                )}
                 <button
                   onClick={() => navigate('/sign-in')}
                   className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base"
