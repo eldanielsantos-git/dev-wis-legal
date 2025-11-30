@@ -178,10 +178,6 @@ Deno.serve(async (req: Request) => {
     console.log("✓ Subscriber added/updated in Mailchimp");
     console.log("Subscriber data:", JSON.stringify(subscriberResult, null, 2));
 
-    // Wait 1 second to ensure merge fields are propagated in Mailchimp
-    console.log("Waiting 1 second for merge fields to propagate...");
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
     console.log("Step 3: Triggering Customer Journey...");
 
     const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
