@@ -144,7 +144,6 @@ Deno.serve(async (req: Request) => {
     const finalLastName = last_name || userProfile?.last_name || '';
     const finalPhone = phone || userProfile?.phone || '';
     const finalPhoneCountryCode = phone_country_code || userProfile?.phone_country_code || '';
-    const fullPhone = finalPhoneCountryCode && finalPhone ? `${finalPhoneCountryCode} ${finalPhone}` : finalPhone;
 
     const subscriberPayload = {
       email_address: email,
@@ -152,7 +151,8 @@ Deno.serve(async (req: Request) => {
       merge_fields: {
         FNAME: first_name,
         LNAME: finalLastName,
-        PHONE: fullPhone,
+        PHONE: finalPhone,
+        CTR_CODE: finalPhoneCountryCode,
         CONFIRM: confirmationUrl,
       },
     };
@@ -192,7 +192,8 @@ Deno.serve(async (req: Request) => {
       merge_fields: {
         FNAME: first_name,
         LNAME: finalLastName,
-        PHONE: fullPhone,
+        PHONE: finalPhone,
+        CTR_CODE: finalPhoneCountryCode,
         CONFIRM: confirmationUrl,
       },
     };
