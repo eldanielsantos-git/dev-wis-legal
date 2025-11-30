@@ -127,12 +127,6 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
     try {
       const { supabase } = await import('../lib/supabase');
-      const { data: sessionData } = await supabase.auth.getSession();
-      const token = sessionData?.session?.access_token;
-
-      if (!token) {
-        throw new Error('Sessão não encontrada');
-      }
 
       const { data: profileData } = await supabase
         .from('user_profiles')
@@ -147,7 +141,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -164,6 +158,8 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
       setResendDisabled(true);
       setResendCountdown(60);
+      setError(null);
+      alert('Email de confirmação reenviado com sucesso! Verifique sua caixa de entrada.');
     } catch (err: any) {
       console.error('[ResendEmail] Erro ao reenviar email:', err);
       setError(err.message || 'Erro ao reenviar email de confirmação');

@@ -63,32 +63,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-
-    const isServiceRole = token === supabaseServiceKey;
-
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    if (!isServiceRole) {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabaseClient.auth.getUser(token);
-
-      if (userError || !user) {
-        console.error("User verification error:", userError);
-        return new Response(
-          JSON.stringify({ error: "Invalid or expired token" }),
-          {
-            status: 401,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      console.log("User verified:", user.id, user.email);
-    } else {
-      console.log("Service role authenticated - called by database trigger");
-    }
+    const isServiceRole = token === supabaseServiceKey;
+    console.log(isServiceRole ? "Service role authenticated" : "Public/User token provided");
 
     const { user_id, email, first_name }: ConfirmationEmailRequest = await req.json();
 
@@ -103,6 +81,27 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    console.log("Verifying user exists in database...");
+    const { data: userProfile, error: profileError } = await supabaseClient
+      .from('user_profiles')
+      .select('id, email')
+      .eq('id', user_id)
+      .eq('email', email.toLowerCase())
+      .maybeSingle();
+
+    if (profileError || !userProfile) {
+      console.error("User not found in database:", profileError);
+      return new Response(
+        JSON.stringify({ error: "User not found" }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    console.log("✓ User verified in database");
 
     console.log("Step 1: Generating confirmation token via Supabase Admin API...");
     const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
