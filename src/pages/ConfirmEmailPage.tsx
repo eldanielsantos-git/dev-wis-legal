@@ -13,6 +13,22 @@ export function ConfirmEmailPage() {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
+        // Check for errors in URL hash (from Supabase redirect)
+        const hash = window.location.hash.substring(1);
+        const hashParams = new URLSearchParams(hash);
+        const errorFromHash = hashParams.get('error');
+        const errorDescription = hashParams.get('error_description');
+
+        if (errorFromHash) {
+          logger.error('ConfirmEmail', 'Error from URL hash:', errorFromHash, errorDescription);
+          setStatus('error');
+          setMessage(
+            errorDescription?.replace(/\+/g, ' ') ||
+            'Link de confirmação inválido ou expirado. Por favor, solicite um novo link.'
+          );
+          return;
+        }
+
         const token = searchParams.get('token');
         const type = searchParams.get('type') || 'signup';
 
