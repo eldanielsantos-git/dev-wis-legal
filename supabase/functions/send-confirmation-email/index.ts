@@ -107,7 +107,6 @@ Deno.serve(async (req: Request) => {
       console.error("User not found in database:", profileError);
       console.log("Attempting to create user profile as fallback...");
 
-      // Get avatar_url from auth.users metadata
       const { data: authUser } = await supabaseClient.auth.admin.getUserById(user_id);
       const avatarUrl = authUser?.user?.user_metadata?.avatar_url;
 
@@ -115,7 +114,6 @@ Deno.serve(async (req: Request) => {
         console.log("Found avatar_url in auth metadata:", avatarUrl);
       }
 
-      // Fallback: Create user profile if trigger failed
       const { data: createdProfile, error: createError } = await supabaseClient
         .from('user_profiles')
         .insert({
@@ -154,11 +152,9 @@ Deno.serve(async (req: Request) => {
 
     console.log("Step 1: Generating confirmation token via Supabase Admin API...");
 
-    // For new users, use generateLink. For existing unconfirmed users, use magic link
     let confirmationUrl = "";
     let confirmationToken = "";
 
-    // Try generateLink first (works for new signups)
     const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
       type: "signup",
       email: email,
@@ -167,7 +163,6 @@ Deno.serve(async (req: Request) => {
     if (linkError && linkError.message?.includes('already been registered')) {
       console.log("User already registered, generating magic link instead...");
 
-      // User already exists, use magic link instead
       const { data: magicData, error: magicError } = await supabaseClient.auth.admin.generateLink({
         type: "magiclink",
         email: email,
@@ -198,10 +193,21 @@ Deno.serve(async (req: Request) => {
       throw new Error("Failed to generate confirmation URL");
     }
 
+    try {
+      const urlTest = new URL(confirmationUrl);
+      if (!confirmationUrl.startsWith(frontendUrl.replace(/\/$/, ''))) {
+        throw new Error(`Generated URL does not match FRONTEND_URL. Expected: ${frontendUrl}, Got: ${confirmationUrl.substring(0, 50)}`);
+      }
+      console.log("✓ URL validation passed");
+    } catch (urlError) {
+      console.error("URL validation failed:", urlError);
+      throw new Error(`Invalid confirmation URL generated: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`);
+    }
+
     console.log("✓ Confirmation URL generated successfully");
     console.log("Confirmation URL (sanitized):", confirmationUrl.replace(confirmationToken, "***TOKEN***"));
+    console.log("URL starts with FRONTEND_URL:", confirmationUrl.startsWith(frontendUrl.replace(/\/$/, '')));
 
-    // Use data from user profile if available, otherwise use request data
     const finalLastName = userProfile?.last_name || last_name || '';
     const finalPhone = userProfile?.phone || phone || '';
     const finalPhoneCountryCode = userProfile?.phone_country_code || phone_country_code || '+55';
@@ -272,14 +278,6 @@ Deno.serve(async (req: Request) => {
           },
         };
 
-        console.log("Attempting to re-add deleted subscriber via POST...");
-        console.log("Re-add payload (URL sanitized):", JSON.stringify({
-          ...readdPayload,
-          merge_fields: {
-            ...readdPayload.merge_fields,
-            CONFIRMATION_URL: confirmationUrl.substring(0, 50) + "..." + confirmationUrl.substring(confirmationUrl.length - 20)
-          }
-        }, null, 2));
         const readdResponse = await fetch(readdUrl, {
           method: "POST",
           headers: {
@@ -324,8 +322,6 @@ Deno.serve(async (req: Request) => {
         },
       };
 
-      console.log("Journey trigger payload:", JSON.stringify(journeyPayload, null, 2));
-
       const mailchimpResponse = await fetch(mailchimpUrl, {
         method: "POST",
         headers: {
@@ -342,7 +338,6 @@ Deno.serve(async (req: Request) => {
       } else {
         let mailchimpResult = { status: mailchimpResponse.status };
 
-        // Customer Journey endpoint returns 204 No Content on success
         if (mailchimpResponse.status !== 204) {
           const contentType = mailchimpResponse.headers.get("content-type");
           if (contentType && contentType.includes("application/json")) {

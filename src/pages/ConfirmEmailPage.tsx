@@ -74,6 +74,26 @@ export function ConfirmEmailPage() {
         if (data?.user) {
           logger.log('ConfirmEmail', 'Email confirmed successfully:', data.user.email);
 
+          // Step 1: Update email_verified in user_profiles
+          try {
+            const { error: updateError } = await supabase
+              .from('user_profiles')
+              .update({
+                email_verified: true,
+                email_verified_at: new Date().toISOString()
+              })
+              .eq('id', data.user.id);
+
+            if (updateError) {
+              logger.error('ConfirmEmail', 'Failed to update email_verified:', updateError);
+            } else {
+              logger.log('ConfirmEmail', 'email_verified updated successfully');
+            }
+          } catch (updateErr) {
+            logger.error('ConfirmEmail', 'Exception updating email_verified:', updateErr);
+          }
+
+          // Step 2: Update Mailchimp status (non-blocking)
           try {
             const { data: sessionData } = await supabase.auth.getSession();
             const sessionToken = sessionData?.session?.access_token;
@@ -81,7 +101,7 @@ export function ConfirmEmailPage() {
             if (sessionToken && data.user.email) {
               logger.log('ConfirmEmail', 'Updating Mailchimp status to confirmado...');
 
-              const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-mailchimp-status`, {
+              const mailchimpPromise = fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-mailchimp-status`, {
                 method: 'POST',
                 headers: {
                   'Authorization': `Bearer ${sessionToken}`,
@@ -93,11 +113,21 @@ export function ConfirmEmailPage() {
                 })
               });
 
-              if (!response.ok) {
-                const errorData = await response.json();
-                logger.error('ConfirmEmail', 'Failed to update Mailchimp status:', errorData);
-              } else {
-                logger.log('ConfirmEmail', 'Mailchimp status updated successfully');
+              // Wait max 3 seconds for Mailchimp update
+              const timeoutPromise = new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Mailchimp timeout')), 3000)
+              );
+
+              try {
+                const response = await Promise.race([mailchimpPromise, timeoutPromise]) as Response;
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  logger.error('ConfirmEmail', 'Failed to update Mailchimp status:', errorData);
+                } else {
+                  logger.log('ConfirmEmail', 'Mailchimp status updated successfully');
+                }
+              } catch (raceError) {
+                logger.error('ConfirmEmail', 'Mailchimp update timeout or failed (non-blocking):', raceError);
               }
             }
           } catch (mailchimpError) {

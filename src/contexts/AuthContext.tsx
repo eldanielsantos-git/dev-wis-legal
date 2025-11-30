@@ -14,6 +14,8 @@ interface UserProfile {
   city?: string;
   state?: string;
   is_admin: boolean;
+  email_verified: boolean;
+  email_verified_at?: string;
   terms_accepted_at: string;
   created_at: string;
   updated_at: string;
@@ -24,7 +26,8 @@ interface AuthContextType {
   profile: UserProfile | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, profileData: Omit<UserProfile, 'id' | 'is_admin' | 'created_at' | 'updated_at' | 'terms_accepted_at'>) => Promise<void>;
+  emailVerified: boolean;
+  signUp: (email: string, password: string, profileData: Omit<UserProfile, 'id' | 'is_admin' | 'created_at' | 'updated_at' | 'terms_accepted_at' | 'email_verified' | 'email_verified_at'>) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signInWithMicrosoft: () => Promise<void>;
@@ -32,6 +35,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   refreshProfile: () => Promise<void>;
+  refreshEmailStatus: () => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -339,11 +343,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshEmailStatus = async () => {
+    if (!user) return;
+    try {
+      logger.log('AuthContext', 'Refreshing email verification status for:', user.id);
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('email_verified, email_verified_at')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        logger.error('AuthContext', 'Error refreshing email status:', error);
+        return;
+      }
+
+      if (data && profile) {
+        setProfile({
+          ...profile,
+          email_verified: data.email_verified,
+          email_verified_at: data.email_verified_at
+        });
+        logger.log('AuthContext', 'Email verification status updated:', data.email_verified);
+      }
+    } catch (error) {
+      logger.error('AuthContext', 'Exception refreshing email status:', error);
+    }
+  };
+
   const value = {
     user,
     profile,
     session,
     loading,
+    emailVerified: profile?.email_verified ?? false,
     signUp,
     signIn,
     signInWithGoogle,
@@ -352,6 +385,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     resetPassword,
     updatePassword,
     refreshProfile,
+    refreshEmailStatus,
     isAdmin: profile?.is_admin ?? false,
   };
 
