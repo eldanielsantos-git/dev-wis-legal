@@ -140,22 +140,60 @@ Deno.serve(async (req: Request) => {
       if (!audienceId) {
         console.warn("RESEND_AUDIENCE_ID not set, skipping audience addition");
       } else {
-        const contactData = {
+        // Primeiro, vamos listar as propriedades disponíveis
+        console.log("Fetching available contact properties...");
+        const propertiesListResponse = await fetch("https://api.resend.com/contact-properties", {
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${resendApiKey}`,
+          },
+        });
+
+        if (propertiesListResponse.ok) {
+          const propertiesList = await propertiesListResponse.json();
+          console.log("Available properties:", JSON.stringify(propertiesList, null, 2));
+        } else {
+          console.error("Failed to fetch properties:", await propertiesListResponse.text());
+        }
+
+        // Preparar dados do contato
+        const contactData: any = {
           email: email,
           firstName: finalFirstName,
-          lastName: userProfile?.last_name || last_name,
+          lastName: userProfile?.last_name || last_name || "",
           unsubscribed: false,
-          audienceId: audienceId,
-          properties: {
-            phone_country_code: userProfile?.phone_country_code || phone_country_code,
-            phone: userProfile?.phone || phone,
-            city: userProfile?.city || city,
-            state: userProfile?.state || state,
-            avatar_url: userProfile?.avatar_url || ''
-          }
+          audienceId: audienceId
         };
 
-        console.log("Adding contact to audience with properties:", JSON.stringify(contactData, null, 2));
+        // Adicionar properties apenas se houver valores
+        const properties: any = {};
+
+        const phoneCountryCode = userProfile?.phone_country_code || phone_country_code;
+        const phoneValue = userProfile?.phone || phone;
+        const cityValue = userProfile?.city || city;
+        const stateValue = userProfile?.state || state;
+        const avatarValue = userProfile?.avatar_url || '';
+
+        console.log("Property values to add:", {
+          phone_country_code: phoneCountryCode,
+          phone: phoneValue,
+          city: cityValue,
+          state: stateValue,
+          avatar_url: avatarValue
+        });
+
+        if (phoneCountryCode) properties.phone_country_code = phoneCountryCode;
+        if (phoneValue) properties.phone = phoneValue;
+        if (cityValue) properties.city = cityValue;
+        if (stateValue) properties.state = stateValue;
+        if (avatarValue) properties.avatar_url = avatarValue;
+
+        // Só adicionar properties se houver alguma
+        if (Object.keys(properties).length > 0) {
+          contactData.properties = properties;
+        }
+
+        console.log("Final contact data to send:", JSON.stringify(contactData, null, 2));
 
         const resendContactResponse = await fetch("https://api.resend.com/contacts", {
           method: "POST",
@@ -166,17 +204,20 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify(contactData),
         });
 
+        const responseText = await resendContactResponse.text();
+        console.log("Resend API response status:", resendContactResponse.status);
+        console.log("Resend API response body:", responseText);
+
         if (!resendContactResponse.ok) {
-          const errorText = await resendContactResponse.text();
-          console.error("Failed to add contact to Resend audience:", resendContactResponse.status, errorText);
+          console.error("Failed to add contact to Resend audience:", resendContactResponse.status, responseText);
         } else {
-          const contactResult = await resendContactResponse.json();
+          const contactResult = JSON.parse(responseText);
           console.log("✓ Contact added to Resend audience:", contactResult);
         }
       }
     } catch (audienceError) {
       console.error("Error adding contact to audience:", audienceError);
-      // Não falhar a função inteira se houver erro ao adicionar à audiência
+      console.error("Stack trace:", audienceError instanceof Error ? audienceError.stack : "No stack");
     }
 
     console.log("Step 4: Logging email send to database...");
