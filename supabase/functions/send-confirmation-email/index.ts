@@ -132,6 +132,49 @@ Deno.serve(async (req: Request) => {
       resendSuccess = true;
     }
 
+    console.log("Step 3.5: Adding contact to Resend Audience...");
+
+    try {
+      const audienceId = Deno.env.get("RESEND_AUDIENCE_ID");
+
+      if (!audienceId) {
+        console.warn("RESEND_AUDIENCE_ID not set, skipping audience addition");
+      } else {
+        const contactData = {
+          email: email,
+          first_name: finalFirstName,
+          last_name: userProfile?.last_name || last_name,
+          unsubscribed: false,
+          phone_country_code: userProfile?.phone_country_code || phone_country_code,
+          phone: userProfile?.phone || phone,
+          city: userProfile?.city || city,
+          state: userProfile?.state || state
+        };
+
+        console.log("Adding contact to audience:", contactData.email);
+
+        const resendContactResponse = await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${resendApiKey}`,
+          },
+          body: JSON.stringify(contactData),
+        });
+
+        if (!resendContactResponse.ok) {
+          const errorText = await resendContactResponse.text();
+          console.error("Failed to add contact to Resend audience:", resendContactResponse.status, errorText);
+        } else {
+          const contactResult = await resendContactResponse.json();
+          console.log("✓ Contact added to Resend audience:", contactResult);
+        }
+      }
+    } catch (audienceError) {
+      console.error("Error adding contact to audience:", audienceError);
+      // Não falhar a função inteira se houver erro ao adicionar à audiência
+    }
+
     console.log("Step 4: Logging email send to database...");
     const { error: logError } = await supabaseClient
       .from("email_logs")
