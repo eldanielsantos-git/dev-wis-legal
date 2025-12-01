@@ -355,7 +355,9 @@ function AppContent() {
 
   if (currentPath === '/admin-tokens') {
     return (
-      <AdminTokenManagementPage />
+      <AdminTokenManagementPage
+        onNavigateToApp={() => navigate('/app')}
+      />
     );
   }
 

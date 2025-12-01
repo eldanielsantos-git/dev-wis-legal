@@ -3,7 +3,6 @@ import { Sidebar } from '../components/Sidebar';
 import { tokenService, type UserTokenQuota } from '../services/TokenService';
 import { Activity, Users, TrendingUp, Edit2, Save, X, Search } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
 
 interface UserQuotaWithProfile extends UserTokenQuota {
   email: string;
@@ -11,9 +10,12 @@ interface UserQuotaWithProfile extends UserTokenQuota {
   last_name: string;
 }
 
-export function AdminTokenManagementPage() {
+interface AdminTokenManagementPageProps {
+  onNavigateToApp: () => void;
+}
+
+export function AdminTokenManagementPage({ onNavigateToApp }: AdminTokenManagementPageProps) {
   const { user, isAdmin } = useAuth();
-  const navigate = useNavigate();
   const [users, setUsers] = useState<UserQuotaWithProfile[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<UserQuotaWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,14 +25,14 @@ export function AdminTokenManagementPage() {
 
   useEffect(() => {
     if (!isAdmin) {
-      navigate('/app');
+      onNavigateToApp();
       return;
     }
 
     loadUsers();
     const interval = setInterval(loadUsers, 30000);
     return () => clearInterval(interval);
-  }, [isAdmin, navigate]);
+  }, [isAdmin, onNavigateToApp]);
 
   useEffect(() => {
     filterUsers();

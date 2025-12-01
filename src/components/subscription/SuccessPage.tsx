@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight, Home, Loader2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { stripeProducts } from '../../stripe-config';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -11,8 +10,11 @@ interface SubscriptionData {
   price_id: string;
 }
 
-export function SuccessPage() {
-  const navigate = useNavigate();
+interface SuccessPageProps {
+  onNavigateToApp: () => void;
+}
+
+export function SuccessPage({ onNavigateToApp }: SuccessPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [countdown, setCountdown] = useState(8);
@@ -30,9 +32,7 @@ export function SuccessPage() {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const sessionId = urlParams.get('session_id');
-            navigate(`/app?from_stripe=success&session_id=${sessionId || 'unknown'}`);
+            onNavigateToApp();
             return 0;
           }
           return prev - 1;
@@ -41,7 +41,7 @@ export function SuccessPage() {
 
       return () => clearInterval(timer);
     }
-  }, [syncing, syncComplete, navigate]);
+  }, [syncing, syncComplete, onNavigateToApp]);
 
   const syncSubscription = async () => {
     setSyncing(true);
@@ -150,7 +150,7 @@ export function SuccessPage() {
               </p>
 
               <button
-                onClick={() => navigate('/')}
+                onClick={onNavigateToApp}
                 className="w-full py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center"
                 style={{ backgroundColor: '#3B82F6', color: '#FFFFFF' }}
               >
@@ -188,11 +188,7 @@ export function SuccessPage() {
 
               <div className="space-y-4">
                 <button
-                  onClick={() => {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const sessionId = urlParams.get('session_id');
-                    navigate(`/app?from_stripe=success&session_id=${sessionId || 'unknown'}`);
-                  }}
+                  onClick={onNavigateToApp}
                   className="w-full py-3 px-6 rounded-lg font-semibold hover:opacity-90 focus:ring-2 focus:ring-offset-2 transition-colors flex items-center justify-center"
                   style={{ backgroundColor: '#10B981', color: '#FFFFFF' }}
                 >
