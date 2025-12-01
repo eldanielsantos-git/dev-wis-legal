@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
 
     if (data?.user) {
-      logger.log('AuthContext', 'User created successfully, sending confirmation email via Mailchimp...');
+      logger.log('AuthContext', 'User created successfully, sending confirmation email via Resend...');
 
       // Send confirmation email - Fire and forget (errors logged but don't block signup)
       fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
@@ -232,7 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               logger.error('AuthContext', 'Failed to send confirmation email:', errorText);
             });
           } else {
-            logger.log('AuthContext', 'Confirmation email sent successfully via Mailchimp');
+            logger.log('AuthContext', 'Confirmation email sent successfully via Resend');
           }
         })
         .catch(emailError => {

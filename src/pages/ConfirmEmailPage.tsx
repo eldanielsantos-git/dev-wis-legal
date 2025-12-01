@@ -56,8 +56,8 @@ export function ConfirmEmailPage() {
 
         logger.log('ConfirmEmail', 'Attempting to verify email with token, type:', type);
 
-        // Mailchimp sends 'magiclink' type, map it to 'email' for Supabase
-        const supabaseType = type === 'magiclink' ? 'email' : (type as 'signup' | 'email');
+        // Map token type for Supabase
+        const supabaseType = (type as 'signup' | 'email');
 
         const { data, error } = await supabase.auth.verifyOtp({
           token_hash: token,
@@ -93,46 +93,7 @@ export function ConfirmEmailPage() {
             logger.error('ConfirmEmail', 'Exception updating email_verified:', updateErr);
           }
 
-          // Step 2: Update Mailchimp status (non-blocking)
-          try {
-            const { data: sessionData } = await supabase.auth.getSession();
-            const sessionToken = sessionData?.session?.access_token;
-
-            if (sessionToken && data.user.email) {
-              logger.log('ConfirmEmail', 'Updating Mailchimp status to confirmado...');
-
-              const mailchimpPromise = fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-mailchimp-status`, {
-                method: 'POST',
-                headers: {
-                  'Authorization': `Bearer ${sessionToken}`,
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  email: data.user.email,
-                  status: 'confirmado'
-                })
-              });
-
-              // Wait max 3 seconds for Mailchimp update
-              const timeoutPromise = new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Mailchimp timeout')), 3000)
-              );
-
-              try {
-                const response = await Promise.race([mailchimpPromise, timeoutPromise]) as Response;
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  logger.error('ConfirmEmail', 'Failed to update Mailchimp status:', errorData);
-                } else {
-                  logger.log('ConfirmEmail', 'Mailchimp status updated successfully');
-                }
-              } catch (raceError) {
-                logger.error('ConfirmEmail', 'Mailchimp update timeout or failed (non-blocking):', raceError);
-              }
-            }
-          } catch (mailchimpError) {
-            logger.error('ConfirmEmail', 'Error updating Mailchimp (non-blocking):', mailchimpError);
-          }
+          // Email verified successfully - no additional actions needed
 
           setStatus('success');
           setMessage('Email confirmado com sucesso! Redirecionando...');

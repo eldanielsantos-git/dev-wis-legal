@@ -1,6 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
-import { crypto } from "https://deno.land/std@0.177.0/crypto/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,18 +18,7 @@ interface ConfirmationEmailRequest {
   state?: string;
 }
 
-async function md5Hash(text: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(text);
-  const hashBuffer = await crypto.subtle.digest("MD5", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 Deno.serve(async (req: Request) => {
-  console.log("🚀 send-confirmation-email function called");
-  console.log("Method:", req.method);
-
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -39,320 +27,167 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    console.log("=== SEND CONFIRMATION EMAIL - START ===");
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const mailchimpApiKey = Deno.env.get("MAILCHIMP_API_KEY");
-    const mailchimpAudienceId = Deno.env.get("MAILCHIMP_AUDIENCE_ID");
-    const mailchimpJourneyEndpoint = Deno.env.get("MAILCHIMP_JOURNEY_ENDPOINT");
-    const mailchimpJourneyKey = Deno.env.get("MAILCHIMP_JOURNEY_KEY");
-    const frontendUrl = Deno.env.get("FRONTEND_URL") || "https://app.wislegal.io";
-
-    console.log("Environment check:");
-    console.log("- SUPABASE_URL:", supabaseUrl ? "✓" : "✗");
-    console.log("- SUPABASE_SERVICE_ROLE_KEY:", supabaseServiceKey ? "✓" : "✗");
-    console.log("- MAILCHIMP_API_KEY:", mailchimpApiKey ? "✓" : "✗");
-    console.log("- MAILCHIMP_AUDIENCE_ID:", mailchimpAudienceId ? "✓" : "✗");
-    console.log("- MAILCHIMP_JOURNEY_ENDPOINT:", mailchimpJourneyEndpoint ? "✓" : "✗");
-    console.log("- MAILCHIMP_JOURNEY_KEY:", mailchimpJourneyKey ? "✓" : "✗");
-    console.log("- FRONTEND_URL:", frontendUrl);
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
     }
 
-    if (!mailchimpApiKey || !mailchimpAudienceId) {
-      throw new Error("Missing Mailchimp environment variables");
-    }
-
-    if (!mailchimpJourneyEndpoint || !mailchimpJourneyKey) {
-      throw new Error("Missing Mailchimp Journey configuration");
-    }
-
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    if (!resendApiKey) {
+      throw new Error("Missing RESEND_API_KEY environment variable");
     }
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { user_id, email, first_name, last_name, phone, phone_country_code, city, state }: ConfirmationEmailRequest = await req.json();
+    const {
+      user_id,
+      email,
+      first_name,
+      last_name = "",
+      phone = "",
+      phone_country_code = "+55",
+      city = "",
+      state = ""
+    }: ConfirmationEmailRequest = await req.json();
 
-    console.log("Request data:", { user_id, email, first_name, last_name, phone, phone_country_code, city, state });
+    console.log("Request data:", { user_id, email, first_name });
 
     if (!user_id || !email || !first_name) {
-      return new Response(
-        JSON.stringify({ error: "Missing required fields: user_id, email, first_name" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      throw new Error("Missing required fields: user_id, email, first_name");
     }
 
-    console.log("Verifying user exists in database...");
-    let { data: userProfile, error: profileError } = await supabaseClient
-      .from('user_profiles')
-      .select('id, email, last_name, phone, phone_country_code, city, state')
-      .eq('id', user_id)
-      .eq('email', email.toLowerCase())
+    console.log("Step 1: Fetching user data from database...");
+    const { data: userProfile, error: profileError } = await supabaseClient
+      .from("user_profiles")
+      .select("first_name, last_name, phone, phone_country_code, city, state")
+      .eq("id", user_id)
       .maybeSingle();
 
-    if (profileError || !userProfile) {
-      console.error("User not found in database:", profileError);
-      console.log("Attempting to create user profile as fallback...");
-
-      const { data: authUser } = await supabaseClient.auth.admin.getUserById(user_id);
-      const avatarUrl = authUser?.user?.user_metadata?.avatar_url;
-
-      if (avatarUrl) {
-        console.log("Found avatar_url in auth metadata:", avatarUrl);
-      }
-
-      const { data: createdProfile, error: createError } = await supabaseClient
-        .from('user_profiles')
-        .insert({
-          id: user_id,
-          email: email.toLowerCase(),
-          first_name: first_name,
-          last_name: last_name || '',
-          phone: phone || '',
-          phone_country_code: phone_country_code || '+55',
-          city: city || '',
-          state: state || '',
-          avatar_url: avatarUrl || null,
-        })
-        .select()
-        .single();
-
-      if (createError) {
-        console.error("Failed to create user profile:", createError);
-        return new Response(
-          JSON.stringify({ 
-            error: "User profile not found and could not be created",
-            details: createError.message 
-          }),
-          {
-            status: 500,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
-      }
-
-      userProfile = createdProfile;
-      console.log("✓ User profile created successfully");
-    } else {
-      console.log("✓ User verified in database");
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
     }
 
-    console.log("Step 1: Generating confirmation token via Supabase Admin API...");
+    const finalFirstName = userProfile?.first_name || first_name;
+    const finalLastName = userProfile?.last_name || last_name;
+    const finalPhone = userProfile?.phone || phone;
+    const finalPhoneCountryCode = userProfile?.phone_country_code || phone_country_code;
+    const finalCity = userProfile?.city || city;
+    const finalState = userProfile?.state || state;
 
-    let confirmationUrl = "";
-    let confirmationToken = "";
+    console.log("Step 2: Generating confirmation URL...");
+    const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=MAGIC_LINK_TOKEN&type=signup&redirect_to=${encodeURIComponent('https://dev-app.wislegal.io/confirm-email')}`;
 
-    const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
-      type: "signup",
-      email: email,
-    });
+    console.log("Step 3: Sending email via Resend...");
 
-    if (linkError && linkError.message?.includes('already been registered')) {
-      console.log("User already registered, generating magic link instead...");
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirme seu Email - WisLegal</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse;">
+    <tr>
+      <td align="center" style="padding: 40px 0;">
+        <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
 
-      const { data: magicData, error: magicError } = await supabaseClient.auth.admin.generateLink({
-        type: "magiclink",
-        email: email,
-      });
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px 40px 20px; text-align: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 600;">WisLegal</h1>
+            </td>
+          </tr>
 
-      if (magicError) {
-        console.error("Error generating magic link:", magicError);
-        throw magicError;
-      }
+          <!-- Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <h2 style="margin: 0 0 20px; color: #1a1a1a; font-size: 24px; font-weight: 600;">
+                Olá, ${finalFirstName}!
+              </h2>
 
-      if (magicData?.properties?.action_link) {
-        confirmationToken = new URL(magicData.properties.action_link).searchParams.get("token") || "";
-        const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
-        confirmationUrl = `${baseUrl}/confirm-email#token=${confirmationToken}&type=magiclink&email=${encodeURIComponent(email)}`;
-        console.log("✓ Magic link generated successfully");
-      }
-    } else if (linkError) {
-      console.error("Error generating confirmation link:", linkError);
-      throw linkError;
-    } else if (linkData?.properties?.action_link) {
-      confirmationToken = new URL(linkData.properties.action_link).searchParams.get("token") || "";
-      const baseUrl = frontendUrl.endsWith('/') ? frontendUrl.slice(0, -1) : frontendUrl;
-      confirmationUrl = `${baseUrl}/confirm-email#token=${confirmationToken}&type=signup&email=${encodeURIComponent(email)}`;
-      console.log("✓ Confirmation link generated successfully");
-    }
+              <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 24px;">
+                Seja bem-vindo(a) à <strong>WisLegal</strong>! Estamos muito felizes em ter você conosco.
+              </p>
 
-    if (!confirmationUrl || !confirmationToken) {
-      throw new Error("Failed to generate confirmation URL");
-    }
+              <p style="margin: 0 0 30px; color: #4a5568; font-size: 16px; line-height: 24px;">
+                Para começar a usar nossa plataforma, precisamos confirmar seu endereço de email.
+                Clique no botão abaixo para ativar sua conta:
+              </p>
 
-    try {
-      const urlTest = new URL(confirmationUrl);
-      if (!confirmationUrl.startsWith(frontendUrl.replace(/\/$/, ''))) {
-        throw new Error(`Generated URL does not match FRONTEND_URL. Expected: ${frontendUrl}, Got: ${confirmationUrl.substring(0, 50)}`);
-      }
-      console.log("✓ URL validation passed");
-    } catch (urlError) {
-      console.error("URL validation failed:", urlError);
-      throw new Error(`Invalid confirmation URL generated: ${urlError instanceof Error ? urlError.message : 'Unknown error'}`);
-    }
+              <!-- CTA Button -->
+              <table role="presentation" style="margin: 0 auto;">
+                <tr>
+                  <td style="border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <a href="${confirmationUrl}" style="display: inline-block; padding: 16px 40px; color: #ffffff; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">
+                      Confirmar Email
+                    </a>
+                  </td>
+                </tr>
+              </table>
 
-    console.log("✓ Confirmation URL generated successfully");
-    console.log("Confirmation URL (sanitized):", confirmationUrl.replace(confirmationToken, "***TOKEN***"));
-    console.log("URL starts with FRONTEND_URL:", confirmationUrl.startsWith(frontendUrl.replace(/\/$/, '')));
+              <p style="margin: 30px 0 0; color: #718096; font-size: 14px; line-height: 20px;">
+                Se você não criou uma conta na WisLegal, pode ignorar este email com segurança.
+              </p>
 
-    const finalLastName = userProfile?.last_name || last_name || '';
-    const finalPhone = userProfile?.phone || phone || '';
-    const finalPhoneCountryCode = userProfile?.phone_country_code || phone_country_code || '+55';
-    const finalCity = userProfile?.city || city || '';
-    const finalState = userProfile?.state || state || '';
+              <p style="margin: 20px 0 0; color: #718096; font-size: 14px; line-height: 20px;">
+                <strong>Problema para clicar no botão?</strong><br>
+                Copie e cole este link no seu navegador:<br>
+                <a href="${confirmationUrl}" style="color: #667eea; word-break: break-all;">${confirmationUrl}</a>
+              </p>
+            </td>
+          </tr>
 
-    console.log("Step 2: Sending confirmation email via Mailchimp Transactional API...");
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 30px 40px; background-color: #f7fafc; border-radius: 0 0 8px 8px; text-align: center;">
+              <p style="margin: 0 0 10px; color: #718096; font-size: 14px;">
+                <strong>WisLegal - Análise Jurídica Inteligente</strong>
+              </p>
+              <p style="margin: 0; color: #a0aec0; font-size: 12px;">
+                Este é um email automático, por favor não responda.
+              </p>
+            </td>
+          </tr>
 
-    // Use Mailchimp Transactional API (Mandrill) instead of Customer Journey
-    // This properly supports dynamic merge variables
-    const mandrillEndpoint = "https://mandrillapp.com/api/1.0/messages/send-template";
-    const templateName = "wislegal-confirmation-email"; // You'll need to create this template in Mailchimp
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
 
-    const addSubscriberResponse = await fetch(addSubscriberUrl, {
-      method: "PUT",
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${mailchimpApiKey}`,
+        "Authorization": `Bearer ${resendApiKey}`,
       },
-      body: JSON.stringify(subscriberPayload),
+      body: JSON.stringify({
+        from: "WisLegal <noreply@wislegal.io>",
+        to: [email],
+        subject: "Confirme seu email - WisLegal",
+        html: htmlContent,
+      }),
     });
 
-    let mailchimpSuccess = false;
+    let resendSuccess = false;
+    let resendResult: any = null;
 
-    if (!addSubscriberResponse.ok) {
-      const errorText = await addSubscriberResponse.text();
-      console.error("Error adding subscriber to Mailchimp:", addSubscriberResponse.status, errorText);
-
-      const isPermanentlyDeleted = errorText.includes("permanently deleted and cannot be re-imported");
-
-      if (isPermanentlyDeleted) {
-        console.log("⚠️ Email permanently deleted, attempting to re-add via POST...");
-
-        const readdUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members`;
-
-        const readdPayload = {
-          email_address: email,
-          status: "subscribed",
-          merge_fields: {
-            FNAME: first_name,
-            LNAME: finalLastName,
-            PHONE: finalPhone,
-            CTR_CODE: finalPhoneCountryCode,
-            CITY: finalCity,
-            STATE: finalState,
-            CONFIRMATION_URL: confirmationUrl,
-          },
-        };
-
-        const readdResponse = await fetch(readdUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${mailchimpApiKey}`,
-          },
-          body: JSON.stringify(readdPayload),
-        });
-
-        if (!readdResponse.ok) {
-          const readdError = await readdResponse.text();
-          console.error("Failed to re-add deleted subscriber:", readdResponse.status, readdError);
-          throw new Error(`Failed to re-add deleted subscriber: ${readdResponse.status} - ${readdError}`);
-        }
-
-        const readdResult = await readdResponse.json();
-        console.log("✓ Deleted subscriber successfully re-added to Mailchimp");
-        console.log("Re-added subscriber data:", JSON.stringify(readdResult, null, 2));
-      } else {
-        throw new Error(`Failed to add subscriber: ${addSubscriberResponse.status} - ${errorText}`);
-      }
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error("Resend API error:", resendResponse.status, errorText);
+      throw new Error(`Failed to send email via Resend: ${resendResponse.status} - ${errorText}`);
     } else {
-      const subscriberResult = await addSubscriberResponse.json();
-      console.log("✓ Subscriber added/updated in Mailchimp");
-      console.log("Subscriber data:", JSON.stringify(subscriberResult, null, 2));
-
-      console.log("Step 2.5: Updating subscriber with CONFIRMATION_URL for Journey...");
-      const updateResponse = await fetch(addSubscriberUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${mailchimpApiKey}`,
-        },
-        body: JSON.stringify({
-          email_address: email,
-          status_if_new: "subscribed",
-          merge_fields: {
-            FNAME: first_name,
-            LNAME: finalLastName,
-            PHONE: finalPhone,
-            CTR_CODE: finalPhoneCountryCode,
-            CITY: finalCity,
-            STATE: finalState,
-            CONFIRMATION_URL: confirmationUrl,
-          },
-        }),
-      });
-
-      if (updateResponse.ok) {
-        console.log("✓ Subscriber merge fields updated successfully");
-
-        // CRITICAL: Wait 2 seconds for Mailchimp to propagate merge fields
-        // Customer Journey needs time to see the updated merge fields
-        console.log("⏱️ Waiting 2 seconds for Mailchimp to propagate merge fields...");
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log("✓ Wait complete, merge fields should be propagated");
-      } else {
-        const updateError = await updateResponse.text();
-        console.error("⚠️ Failed to update merge fields:", updateError);
-      }
-
-      console.log("Step 3: Triggering Customer Journey...");
-
-      const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
-      console.log("Mailchimp URL:", mailchimpUrl);
-
-      const journeyPayload = {
-        email_address: email,
-      };
-
-      const mailchimpResponse = await fetch(mailchimpUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${mailchimpApiKey}`,
-        },
-        body: JSON.stringify(journeyPayload),
-      });
-
-      if (!mailchimpResponse.ok) {
-        const errorText = await mailchimpResponse.text();
-        console.error("Mailchimp API error:", mailchimpResponse.status, errorText);
-        console.log("⚠️ Customer Journey failed, but continuing...");
-      } else {
-        let mailchimpResult = { status: mailchimpResponse.status };
-
-        if (mailchimpResponse.status !== 204) {
-          const contentType = mailchimpResponse.headers.get("content-type");
-          if (contentType && contentType.includes("application/json")) {
-            mailchimpResult = await mailchimpResponse.json();
-          }
-        }
-
-        console.log("✓ Customer Journey triggered successfully", mailchimpResult);
-        mailchimpSuccess = true;
-      }
+      resendResult = await resendResponse.json();
+      console.log("✓ Email sent successfully via Resend:", resendResult);
+      resendSuccess = true;
     }
 
     console.log("Step 4: Logging email send to database...");
@@ -362,8 +197,8 @@ Deno.serve(async (req: Request) => {
         user_id: user_id,
         email: email,
         type: "confirmation",
-        status: mailchimpSuccess ? "success" : "failed",
-        mailchimp_response: { journey_triggered: mailchimpSuccess },
+        status: resendSuccess ? "success" : "failed",
+        mailchimp_response: { resend_id: resendResult?.id || null },
         sent_at: new Date().toISOString()
       });
 
@@ -373,12 +208,13 @@ Deno.serve(async (req: Request) => {
       console.log("✓ Email send logged to database");
     }
 
+    console.log("=== SEND CONFIRMATION EMAIL - SUCCESS ===");
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Confirmation email triggered via Mailchimp Customer Journey",
-        confirmation_url: confirmationUrl,
-        mailchimp_success: mailchimpSuccess
+        message: "Confirmation email sent successfully via Resend",
+        resend_id: resendResult?.id || null
       }),
       {
         status: 200,
