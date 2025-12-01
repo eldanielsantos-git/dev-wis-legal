@@ -73,14 +73,10 @@ Deno.serve(async (req: Request) => {
     }
 
     const finalFirstName = userProfile?.first_name || first_name;
-    const finalLastName = userProfile?.last_name || last_name;
-    const finalPhone = userProfile?.phone || phone;
-    const finalPhoneCountryCode = userProfile?.phone_country_code || phone_country_code;
-    const finalCity = userProfile?.city || city;
-    const finalState = userProfile?.state || state;
 
     console.log("Step 2: Generating confirmation URL...");
-    const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=MAGIC_LINK_TOKEN&type=signup&redirect_to=${encodeURIComponent('https://dev-app.wislegal.io/confirm-email')}`;
+    const redirectUrl = encodeURIComponent('https://dev-app.wislegal.io/confirm-email');
+    const confirmationUrl = `${supabaseUrl}/auth/v1/verify?token=MAGIC_LINK_TOKEN&type=signup&redirect_to=${redirectUrl}`;
 
     console.log("Step 3: Sending email via Resend...");
 
@@ -100,10 +96,12 @@ Deno.serve(async (req: Request) => {
           from: "Wis Legal <noreply@wislegal.io>",
           to: [email],
           subject: "Confirme seu email - Wis Legal",
-          react: resendTemplateId,
-          react_props: {
-            first_name: finalFirstName,
-            confirmation_url: confirmationUrl
+          template: {
+            id: resendTemplateId,
+            variables: {
+              first_name: finalFirstName,
+              confirmation_url: confirmationUrl
+            }
           }
         }),
       });
@@ -118,177 +116,8 @@ Deno.serve(async (req: Request) => {
         resendSuccess = true;
       }
     } else {
-      console.log("No template ID found, using inline HTML");
-
-      const htmlContent = `
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Confirmação de Email - Wis Legal</title>
-
-<style type="text/css">
-		body{
-			margin:0;
-			padding:0;
-			font-family:'Open Sans', Arial, sans-serif;
-			background-color:#ffffff;
-			-webkit-font-smoothing:antialiased;
-			-moz-osx-font-smoothing:grayscale;
-		}
-		table{
-			border-collapse:collapse;
-		}
-		img{
-			border:0;
-			display:block;
-			outline:none;
-			text-decoration:none;
-		}
-		.button{
-			background-color:#1D1C1B;
-			border-radius:6px;
-			color:#ffffff;
-			display:inline-block;
-			font-size:16px;
-			font-weight:600;
-			line-height:48px;
-			text-align:center;
-			text-decoration:none;
-			padding:0 32px;
-			-webkit-text-size-adjust:none;
-		}
-</style></head>
-<body style="margin: 0; padding: 0; background-color: #ffffff;">
-    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff;">
-        <tr>
-            <td align="center" style="padding: 40px 20px 0;">
-                <!-- Logo -->
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px;">
-                    <tr>
-                        <td align="center" style="padding-bottom: 32px;">
-                            <img src="https://zvlqcxiwsrziuodiotar.supabase.co/storage/v1/object/public/assets/img/mail_logo_lettering.jpg" alt="Wis Legal" width="180" style="display: block; max-width: 180px; height: auto;">
-                            <!--[if mso]>
-                            <div style="font-family: 'Open Sans', Arial, sans-serif; font-size: 28px; font-weight: 700; color: #1D1C1B; text-align: center;">Wis Legal</div>
-                            <![endif]-->
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Content Container -->
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #FAFAFA; border-radius: 12px;">
-                    <tr>
-                        <td style="padding: 48px 40px;">
-                            <!-- Greeting -->
-                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                <tr>
-                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 24px; font-weight: 600; line-height: 32px; padding-bottom: 24px;">
-                                        Olá ${finalFirstName}, estamos felizes em ter você aqui!
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 16px; line-height: 24px; padding-bottom: 32px;">
-                                        Para confirmar seu acesso e acessar nossa plataforma, confirme seu email clicando no botão abaixo.
-                                    </td>
-                                </tr>
-                                <!-- Button -->
-                                <tr>
-                                    <td align="center" style="padding-bottom: 32px;">
-                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
-                                                    <a href="${confirmationUrl}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 16px; font-weight: 600; line-height: 48px; text-align: center; text-decoration: none; padding: 0 32px; -webkit-text-size-adjust: none;">Confirmar Email</a>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 24px;">
-                                        Este link é válido por 60 minutos, esperamos por você!
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Signature -->
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px;">
-                    <tr>
-                        <td style="padding: 32px 0 24px;">
-                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                <tr>
-                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-                                        Atenciosamente,
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; font-weight: 600;">
-                                        Equipe Wis Legal
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-
-                <!-- Footer -->
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px;">
-                    <tr>
-                        <td style="padding-top: 24px; border-top: 1px solid #E5E7EB;">
-                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
-                                <tr>
-                                    <td align="center" style="padding-bottom: 16px;">
-                                        <p style="margin: 0; color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 12px; line-height: 18px;">
-                                            © 2025 Wis Legal. Todos os direitos reservados.
-                                        </p>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="center" style="padding-bottom: 40px;">
-                                        <img src="https://zvlqcxiwsrziuodiotar.supabase.co/storage/v1/object/public/assets/img/mail_logo_footer.jpg" alt="Wis Legal" width="60" style="display: block; max-width: 60px; height: auto;">
-                                        <!--[if mso]>
-                                        <div style="font-family: 'Open Sans', Arial, sans-serif; font-size: 16px; font-weight: 600; color: #1D1C1B; text-align: center; margin-top: 8px;">Wis Legal</div>
-                                        <![endif]-->
-                                    </td>
-                                </tr>
-                            </table>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
-      `;
-
-      const resendResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${resendApiKey}`,
-        },
-        body: JSON.stringify({
-          from: "Wis Legal <noreply@wislegal.io>",
-          to: [email],
-          subject: "Confirme seu email - Wis Legal",
-          html: htmlContent,
-        }),
-      });
-
-      if (!resendResponse.ok) {
-        const errorText = await resendResponse.text();
-        console.error("Resend API error:", resendResponse.status, errorText);
-        throw new Error(`Failed to send email via Resend: ${resendResponse.status} - ${errorText}`);
-      } else {
-        resendResult = await resendResponse.json();
-        console.log("✓ Email sent successfully via Resend:", resendResult);
-        resendSuccess = true;
-      }
+      console.log("No template ID configured");
+      throw new Error("Template ID not configured");
     }
 
     console.log("Step 4: Logging email send to database...");
