@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
     console.log("Step 1: Fetching user data from database...");
     const { data: userProfile, error: profileError } = await supabaseClient
       .from("user_profiles")
-      .select("first_name, last_name, phone, phone_country_code, city, state")
+      .select("first_name, last_name, phone, phone_country_code, city, state, avatar_url")
       .eq("id", user_id)
       .maybeSingle();
 
@@ -148,7 +148,8 @@ Deno.serve(async (req: Request) => {
           phone_country_code: userProfile?.phone_country_code || phone_country_code,
           phone: userProfile?.phone || phone,
           city: userProfile?.city || city,
-          state: userProfile?.state || state
+          state: userProfile?.state || state,
+          avatar_url: userProfile?.avatar_url || ''
         };
 
         console.log("Adding contact to audience:", contactData.email);
