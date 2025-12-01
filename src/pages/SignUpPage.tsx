@@ -40,6 +40,17 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
     hasNumber: false,
     hasSpecialChar: false
   });
+  const [loadingStep, setLoadingStep] = useState(0);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+
+  const loadingMessages = [
+    'Validando informações...',
+    'Criando sua conta...',
+    'Configurando seu perfil...',
+    'Preparando seu espaço de trabalho...',
+    'Enviando email de confirmação...',
+    'Finalizando cadastro...'
+  ];
 
   const validatePassword = (password: string) => {
     return {
@@ -381,6 +392,23 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
     }
   };
 
+  useEffect(() => {
+    if (success && !showSuccessMessage) {
+      const interval = setInterval(() => {
+        setLoadingStep((prev) => {
+          if (prev >= loadingMessages.length - 1) {
+            clearInterval(interval);
+            setTimeout(() => setShowSuccessMessage(true), 800);
+            return prev;
+          }
+          return prev + 1;
+        });
+      }, 1200);
+
+      return () => clearInterval(interval);
+    }
+  }, [success, showSuccessMessage]);
+
   if (success) {
     return (
       <div className="min-h-screen flex flex-col md:flex-row font-body">
@@ -392,31 +420,65 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         </div>
         <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
           <div className="max-w-md w-full text-center px-2 sm:px-0">
-            <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4 text-center">Conta criada!</h1>
-            <div className="mb-4 md:mb-6 text-center">
-              <p className="text-gray-900 text-sm font-semibold mb-2">Acesse a caixa de entrada de seu email informado no cadastro para fazer a verificação de sua conta.</p>
-              <p className="text-gray-500 text-sm">Se não localizar verifique a caixa de spam ou lixo eletrônico.</p>
-            </div>
-            {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
-            <div className="space-y-3">
-              <button onClick={onNavigateToSignIn} className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base">Ir para Login</button>
-              <button
-                onClick={handleResendEmail}
-                disabled={resendDisabled || resendLoading}
-                className="w-full bg-white text-gray-700 py-2.5 md:py-3 px-4 rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors font-medium text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {resendLoading ? (
-                  <>
-                    <Loader className="w-4 h-4 animate-spin mr-2" />
-                    Reenviando...
-                  </>
-                ) : resendDisabled ? (
-                  `Reenviar email (${resendCountdown}s)`
-                ) : (
-                  'Reenviar email de confirmação'
-                )}
-              </button>
-            </div>
+            {!showSuccessMessage ? (
+              <>
+                <Loader className="w-12 h-12 md:w-16 md:h-16 animate-spin mx-auto mb-4 md:mb-6 text-wis-dark" />
+                <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4">
+                  Criando sua conta
+                </h1>
+                <div className="mb-6">
+                  {loadingMessages.map((message, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-center gap-2 py-2 transition-all duration-500 ${
+                        index === loadingStep
+                          ? 'opacity-100 text-wis-dark font-semibold'
+                          : index < loadingStep
+                          ? 'opacity-50 text-green-600'
+                          : 'opacity-30 text-gray-400'
+                      }`}
+                    >
+                      {index < loadingStep && (
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      )}
+                      {index === loadingStep && (
+                        <Loader className="w-4 h-4 animate-spin text-wis-dark" />
+                      )}
+                      <span className="text-sm">{message}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 md:mb-6 text-green-600" />
+                <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-3 md:mb-4">Conta criada!</h1>
+                <div className="mb-4 md:mb-6 text-center">
+                  <p className="text-gray-900 text-sm font-semibold mb-2">Acesse a caixa de entrada de seu email informado no cadastro para fazer a verificação de sua conta.</p>
+                  <p className="text-gray-500 text-sm">Se não localizar, verifique a caixa de spam ou lixo eletrônico.</p>
+                </div>
+                {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+                <div className="space-y-3">
+                  <button onClick={onNavigateToSignIn} className="w-full bg-wis-dark text-white py-2.5 md:py-3 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-sm md:text-base">Ir para Login</button>
+                  <button
+                    onClick={handleResendEmail}
+                    disabled={resendDisabled || resendLoading}
+                    className="w-full bg-white text-gray-700 py-2.5 md:py-3 px-4 rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition-colors font-medium text-sm md:text-base disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {resendLoading ? (
+                      <>
+                        <Loader className="w-4 h-4 animate-spin mr-2" />
+                        Reenviando...
+                      </>
+                    ) : resendDisabled ? (
+                      `Reenviar email (${resendCountdown}s)`
+                    ) : (
+                      'Reenviar email de confirmação'
+                    )}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
