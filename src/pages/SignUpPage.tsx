@@ -131,7 +131,13 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   }, [resendCountdown, resendDisabled]);
 
   const handleResendEmail = async () => {
-    if (resendDisabled || !userEmail) return;
+    if (resendDisabled) return;
+
+    const emailToUse = userEmail || formData.email;
+    if (!emailToUse) {
+      setError('Email não encontrado. Por favor, recarregue a página e tente novamente.');
+      return;
+    }
 
     setResendLoading(true);
     setError(null);
@@ -141,12 +147,18 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('id, first_name, last_name, phone, phone_country_code')
-        .eq('email', userEmail.toLowerCase())
+        .select('id, first_name, last_name, phone, phone_country_code, email_verified')
+        .eq('email', emailToUse.toLowerCase())
         .maybeSingle();
 
       if (!profileData) {
         throw new Error('Usuário não encontrado');
+      }
+
+      if (profileData.email_verified) {
+        setError(null);
+        alert('Sua conta já está validada! Você pode fazer login.');
+        return;
       }
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
@@ -157,7 +169,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         },
         body: JSON.stringify({
           user_id: profileData.id,
-          email: userEmail,
+          email: emailToUse,
           first_name: profileData.first_name,
           last_name: profileData.last_name,
           phone: profileData.phone,
