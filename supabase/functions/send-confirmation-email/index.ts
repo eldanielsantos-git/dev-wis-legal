@@ -96,16 +96,39 @@ Deno.serve(async (req: Request) => {
     let resendSuccess = false;
     let resendResult: any = null;
 
+    const htmlFallback = `
+      <!DOCTYPE html>
+      <html>
+      <head><meta charset="utf-8"></head>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #1a56db; color: white; padding: 30px; text-align: center;">
+            <h1>Olá ${finalFirstName}, estamos felizes em ter você aqui!</h1>
+          </div>
+          <div style="padding: 30px; background: #f9f9f9;">
+            <p>Para confirmar seu acesso e acessar nossa plataforma, confirme seu email clicando no botão abaixo.</p>
+            <p style="text-align: center;">
+              <a href="${confirmationUrl}" style="display: inline-block; padding: 12px 30px; background: #1a56db; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">Confirmar Email</a>
+            </p>
+            <p>Este link é válido por 60 minutos, esperamos por você!</p>
+            <p>Atenciosamente,<br><strong>Equipe Wis Legal</strong></p>
+          </div>
+          <div style="padding: 20px; text-align: center; color: #666; font-size: 12px;">
+            <p>© ${new Date().getFullYear()} Wis Legal. Todos os direitos reservados.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
     const resendPayload: any = {
       from: "WisLegal <noreply@wislegal.io>",
       to: [email],
       subject: "Confirme seu email - WisLegal",
-      react: "email-confirmation",
-      first_name: finalFirstName,
-      confirmation_url: confirmationUrl
+      html: htmlFallback
     };
 
-    console.log("Sending email with template: email-confirmation");
+    console.log("Sending email with HTML content");
     console.log("Template data:", { first_name: finalFirstName, confirmation_url: confirmationUrl });
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
