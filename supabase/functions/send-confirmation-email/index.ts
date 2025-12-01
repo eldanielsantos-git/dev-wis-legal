@@ -304,6 +304,35 @@ Deno.serve(async (req: Request) => {
       console.log("✓ Subscriber added/updated in Mailchimp");
       console.log("Subscriber data:", JSON.stringify(subscriberResult, null, 2));
 
+      console.log("Step 2.5: Updating subscriber with CONFIRMATION_URL for Journey...");
+      const updateResponse = await fetch(addSubscriberUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${mailchimpApiKey}`,
+        },
+        body: JSON.stringify({
+          email_address: email,
+          status_if_new: "subscribed",
+          merge_fields: {
+            FNAME: first_name,
+            LNAME: finalLastName,
+            PHONE: finalPhone,
+            CTR_CODE: finalPhoneCountryCode,
+            CITY: finalCity,
+            STATE: finalState,
+            CONFIRMATION_URL: confirmationUrl,
+          },
+        }),
+      });
+
+      if (updateResponse.ok) {
+        console.log("✓ Subscriber merge fields updated successfully");
+      } else {
+        const updateError = await updateResponse.text();
+        console.error("⚠️ Failed to update merge fields:", updateError);
+      }
+
       console.log("Step 3: Triggering Customer Journey...");
 
       const mailchimpUrl = mailchimpJourneyEndpoint.replace("{step_id}", mailchimpJourneyKey).replace("{subscriber_hash}", subscriberHash);
@@ -311,15 +340,6 @@ Deno.serve(async (req: Request) => {
 
       const journeyPayload = {
         email_address: email,
-        merge_fields: {
-          FNAME: first_name,
-          LNAME: finalLastName,
-          PHONE: finalPhone,
-          CTR_CODE: finalPhoneCountryCode,
-          CITY: finalCity,
-          STATE: finalState,
-          CONFIRMATION_URL: confirmationUrl,
-        },
       };
 
       const mailchimpResponse = await fetch(mailchimpUrl, {
