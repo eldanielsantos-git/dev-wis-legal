@@ -299,7 +299,7 @@ Deno.serve(async (req: Request) => {
         email: email,
         type: "confirmation",
         status: resendSuccess ? "success" : "failed",
-        mailchimp_response: { resend_id: resendResult?.id || null },
+        email_provider_response: { resend_id: resendResult?.id || null },
         sent_at: new Date().toISOString()
       });
 
