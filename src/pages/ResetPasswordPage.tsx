@@ -56,23 +56,48 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
 
   useEffect(() => {
     const checkRecoveryToken = async () => {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const accessToken = hashParams.get('access_token');
-      const type = hashParams.get('type');
+      // Obter token da URL query string
+      const searchParams = new URLSearchParams(window.location.search);
+      const token = searchParams.get('token');
 
-      if (type === 'recovery' && accessToken) {
-        setHasValidToken(true);
+      if (!token) {
+        setError('Link de recuperação inválido. Por favor, solicite um novo link.');
         setCheckingToken(false);
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      try {
+        // Validar token com o backend
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('id, password_reset_token, password_reset_expires_at')
+          .eq('password_reset_token', token)
+          .maybeSingle();
+
+        if (error || !data) {
+          setError('Link de recuperação inválido. Por favor, solicite um novo link.');
+          setCheckingToken(false);
+          return;
+        }
+
+        // Verificar se o token expirou
+        const expiresAt = new Date(data.password_reset_expires_at);
+        const now = new Date();
+
+        if (now > expiresAt) {
+          setError('Link de recuperação expirado. Por favor, solicite um novo link.');
+          setCheckingToken(false);
+          return;
+        }
+
+        // Token válido
         setHasValidToken(true);
-      } else {
-        setError('Link de recuperação inválido ou expirado. Por favor, solicite um novo link.');
+        setCheckingToken(false);
+      } catch (err) {
+        console.error('Erro ao validar token:', err);
+        setError('Erro ao validar link de recuperação. Por favor, tente novamente.');
+        setCheckingToken(false);
       }
-      setCheckingToken(false);
     };
 
     checkRecoveryToken();
@@ -97,8 +122,35 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
     }
 
     try {
-      await updatePassword(formData.password);
-      await supabase.auth.signOut();
+      // Obter token da URL
+      const searchParams = new URLSearchParams(window.location.search);
+      const resetToken = searchParams.get('token');
+
+      if (!resetToken) {
+        throw new Error('Token de reset não encontrado');
+      }
+
+      // Chamar edge function para atualizar senha
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/update-user-password`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            resetToken: resetToken,
+            newPassword: formData.password
+          })
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao atualizar senha');
+      }
+
       setSuccess(true);
       setTimeout(() => {
         onNavigateToSignIn();
@@ -107,6 +159,8 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
       const errorMessage = err.message || 'Erro ao redefinir senha. Por favor, tente novamente.';
 
       const errorMap: Record<string, string> = {
+        'Token de reset inválido': 'Link de recuperação inválido',
+        'Token de reset expirado': 'Link de recuperação expirado. Solicite um novo link.',
         'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
         'Email link is invalid or has expired': 'Link de email inválido ou expirado',
         'Password should be at least 6 characters': 'A senha deve ter no mínimo 6 caracteres',

@@ -346,10 +346,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const resetPassword = async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    if (error) throw error;
+    logger.log('AuthContext', 'Sending password reset email via edge function...');
+
+    const response = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-reset-password-email`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email })
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      logger.error('AuthContext', 'Failed to send reset password email:', errorData);
+      throw new Error(errorData.error || 'Erro ao enviar email de redefinição');
+    }
+
+    logger.log('AuthContext', 'Password reset email sent successfully');
   };
 
   const updatePassword = async (newPassword: string) => {

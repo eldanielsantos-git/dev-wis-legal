@@ -25,11 +25,11 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    const { userId, newPassword } = await req.json();
+    const { userId, newPassword, resetToken } = await req.json();
 
-    if (!userId || !newPassword) {
+    if (!newPassword) {
       return new Response(
-        JSON.stringify({ error: 'userId e newPassword são obrigatórios' }),
+        JSON.stringify({ error: 'newPassword é obrigatório' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -37,48 +37,107 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Não autorizado' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    let targetUserId = userId;
+
+    // Se foi fornecido resetToken, validar e obter userId
+    if (resetToken) {
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .select('id, password_reset_token, password_reset_expires_at')
+        .eq('password_reset_token', resetToken)
+        .maybeSingle();
+
+      if (profileError || !profile) {
+        return new Response(
+          JSON.stringify({ error: 'Token de reset inválido' }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      // Verificar se o token expirou
+      const expiresAt = new Date(profile.password_reset_expires_at);
+      const now = new Date();
+
+      if (now > expiresAt) {
+        return new Response(
+          JSON.stringify({ error: 'Token de reset expirado' }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      targetUserId = profile.id;
+
+      // Limpar o token após uso
+      await supabaseAdmin
+        .from('user_profiles')
+        .update({
+          password_reset_token: null,
+          password_reset_expires_at: null
+        })
+        .eq('id', targetUserId);
+
+    } else {
+      // Fluxo de admin alterando senha de outro usuário
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader) {
+        return new Response(
+          JSON.stringify({ error: 'Não autorizado' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const token = authHeader.replace('Bearer ', '');
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+      if (userError || !user) {
+        return new Response(
+          JSON.stringify({ error: 'Usuário não autenticado' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const { data: profile, error: profileError } = await supabaseAdmin
+        .from('user_profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError || !profile?.is_admin) {
+        return new Response(
+          JSON.stringify({ error: 'Acesso negado. Apenas administradores podem executar esta ação.' }),
+          {
+            status: 403,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      if (!userId) {
+        return new Response(
+          JSON.stringify({ error: 'userId é obrigatório' }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Usuário não autenticado' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('user_profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError || !profile?.is_admin) {
-      return new Response(
-        JSON.stringify({ error: 'Acesso negado. Apenas administradores podem executar esta ação.' }),
-        {
-          status: 403,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
+    // Atualizar senha no Supabase Auth
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-      userId,
+      targetUserId,
       { password: newPassword }
     );
 
