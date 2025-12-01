@@ -14,12 +14,12 @@ export function RequireEmailVerification({
   onNavigateToSignIn,
   onNavigateToVerifyEmail
 }: RequireEmailVerificationProps) {
-  const { user, profile, loading, emailVerified } = useAuth();
+  const { user, profile, loading, emailVerified, isAdmin } = useAuth();
 
-  logger.log('RequireEmailVerification', 'RENDER - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified);
+  logger.log('RequireEmailVerification', 'RENDER - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified, 'isAdmin:', isAdmin);
 
   useEffect(() => {
-    logger.log('RequireEmailVerification', 'useEffect triggered - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified);
+    logger.log('RequireEmailVerification', 'useEffect triggered - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified, 'isAdmin:', isAdmin);
 
     if (loading) {
       logger.log('RequireEmailVerification', 'Still loading, waiting...');
@@ -37,14 +37,18 @@ export function RequireEmailVerification({
       return;
     }
 
-    if (!emailVerified) {
-      logger.log('RequireEmailVerification', 'Email not verified, redirecting to verify page');
+    if (!emailVerified && !isAdmin) {
+      logger.log('RequireEmailVerification', 'Email not verified and not admin, redirecting to verify page');
       onNavigateToVerifyEmail();
       return;
     }
 
+    if (isAdmin) {
+      logger.log('RequireEmailVerification', 'User is admin, bypassing email verification');
+    }
+
     logger.log('RequireEmailVerification', 'All checks passed! User can proceed.');
-  }, [user, profile, loading, emailVerified, onNavigateToSignIn, onNavigateToVerifyEmail]);
+  }, [user, profile, loading, emailVerified, isAdmin, onNavigateToSignIn, onNavigateToVerifyEmail]);
 
   if (loading) {
     logger.log('RequireEmailVerification', 'Showing loading spinner');
@@ -60,9 +64,13 @@ export function RequireEmailVerification({
     return null;
   }
 
-  if (!emailVerified) {
-    logger.log('RequireEmailVerification', 'Email not verified, returning null');
+  if (!emailVerified && !isAdmin) {
+    logger.log('RequireEmailVerification', 'Email not verified and not admin, returning null');
     return null;
+  }
+
+  if (isAdmin) {
+    logger.log('RequireEmailVerification', 'Admin user detected, allowing access');
   }
 
   logger.log('RequireEmailVerification', 'Rendering children (AppHomePage)');
