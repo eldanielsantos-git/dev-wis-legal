@@ -347,11 +347,18 @@ ${message}`;
 
     // Iniciar chat com Gemini
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
+
+    // Para gemini-2.5-pro e modelos similares, usar formato correto de systemInstruction
+    const model = genAI.getGenerativeModel({
+      model: modelName,
+      systemInstruction: {
+        role: 'system',
+        parts: [{ text: systemPrompt }]
+      }
+    });
 
     const chat = model.startChat({
       history: chatHistory,
-      systemInstruction: systemPrompt,
     });
 
     // Enviar mensagem
