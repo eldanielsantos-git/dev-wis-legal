@@ -179,7 +179,12 @@ await supabase.from('email_logs').insert({
 
 ## Template HTML do Email
 
-O template está implementado diretamente na edge function `send-reset-password-email/index.ts`.
+O template está configurado no **Resend** (não na edge function).
+
+### Configuração do Template no Resend
+
+**Nome do Template:** `reset-password`
+**Template ID:** `aa4008f0-7e91-451e-82ad-5b711f23eab3`
 
 ### Estrutura do Template
 
@@ -202,6 +207,30 @@ O template está implementado diretamente na edge function `send-reset-password-
   <li>Uso único</li>
   <li>Ignore se não solicitou</li>
 </ul>
+```
+
+### Como a Edge Function Usa o Template
+
+```typescript
+const resendResponse = await fetch("https://api.resend.com/emails", {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${resendApiKey}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    from: "Wis Legal <noreply@wislegal.io>",
+    to: email,
+    subject: "Redefinir Senha - Wis Legal",
+    react: {
+      template_id: "aa4008f0-7e91-451e-82ad-5b711f23eab3",
+      template_data: {
+        first_name: profileData.first_name,
+        reset_url: resetUrl
+      }
+    }
+  })
+});
 ```
 
 ## Configuração Necessária
