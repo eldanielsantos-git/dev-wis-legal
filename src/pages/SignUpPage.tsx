@@ -398,12 +398,12 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         setLoadingStep((prev) => {
           if (prev >= loadingMessages.length - 1) {
             clearInterval(interval);
-            setTimeout(() => setShowSuccessMessage(true), 800);
+            setTimeout(() => setShowSuccessMessage(true), 1000);
             return prev;
           }
           return prev + 1;
         });
-      }, 1200);
+      }, 1700);
 
       return () => clearInterval(interval);
     }
