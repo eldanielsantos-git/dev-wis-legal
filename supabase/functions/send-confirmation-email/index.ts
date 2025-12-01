@@ -92,57 +92,25 @@ Deno.serve(async (req: Request) => {
     const confirmationUrl = linkData.properties.action_link;
     console.log("Magic link generated successfully");
 
-    console.log("Step 3: Sending email via Resend...");
+    console.log("Step 3: Sending email via Resend with template...");
 
     let resendSuccess = false;
     let resendResult: any = null;
 
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: #1a56db; color: white; padding: 30px; text-align: center; }
-          .content { padding: 30px; background: #f9f9f9; }
-          .button { display: inline-block; padding: 12px 30px; background: #1a56db; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-          .footer { padding: 20px; text-align: center; color: #666; font-size: 12px; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <h1>WisLegal</h1>
-          </div>
-          <div class="content">
-            <h2>Olá, ${finalFirstName}!</h2>
-            <p>Bem-vindo à WisLegal. Para concluir seu cadastro, por favor confirme seu email clicando no botão abaixo:</p>
-            <p style="text-align: center;">
-              <a href="${confirmationUrl}" class="button">Confirmar Email</a>
-            </p>
-            <p>Ou copie e cole o link abaixo no seu navegador:</p>
-            <p style="word-break: break-all; font-size: 12px; color: #666;">${confirmationUrl}</p>
-            <p><strong>Este link expira em 24 horas.</strong></p>
-          </div>
-          <div class="footer">
-            <p>Se você não solicitou este email, pode ignorá-lo com segurança.</p>
-            <p>&copy; ${new Date().getFullYear()} WisLegal. Todos os direitos reservados.</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const resendPayload = {
+    const resendPayload: any = {
       from: "WisLegal <noreply@wislegal.io>",
       to: [email],
-      subject: "Confirme seu email - WisLegal",
-      html: htmlContent
+      react: {
+        template_name: "email-confirmation",
+        template_data: {
+          first_name: finalFirstName,
+          confirmation_url: confirmationUrl
+        }
+      }
     };
 
-    console.log("Sending email with HTML content (no template)");
+    console.log("Sending email with template: email-confirmation");
+    console.log("Template data:", { first_name: finalFirstName, confirmation_url: confirmationUrl });
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -159,7 +127,7 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to send email via Resend: ${resendResponse.status} - ${errorText}`);
     } else {
       resendResult = await resendResponse.json();
-      console.log("✓ Email sent successfully via Resend:", resendResult);
+      console.log("✓ Email sent successfully via Resend template:", resendResult);
       resendSuccess = true;
     }
 
