@@ -208,53 +208,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (data?.user) {
       logger.log('AuthContext', 'User created successfully, sending confirmation email via Mailchimp...');
 
-      // Send confirmation email (non-blocking, errors should not fail signup)
-      (async () => {
-        try {
-          // Use service role key (anon key) for edge function call
-          // User doesn't have session yet because email is unconfirmed
-          const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              user_id: data.user.id,
-              email: email,
-              first_name: profileData.first_name,
-              last_name: profileData.last_name || '',
-              phone: profileData.phone || '',
-              phone_country_code: profileData.phone_country_code || '',
-              city: profileData.city || '',
-              state: profileData.state || ''
-            })
-          });
-
+      // Send confirmation email - Fire and forget (errors logged but don't block signup)
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-confirmation-email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          user_id: data.user.id,
+          email: email,
+          first_name: profileData.first_name,
+          last_name: profileData.last_name || '',
+          phone: profileData.phone || '',
+          phone_country_code: profileData.phone_country_code || '',
+          city: profileData.city || '',
+          state: profileData.state || ''
+        })
+      })
+        .then(response => {
           if (!response.ok) {
-            const errorText = await response.text();
-            logger.error('AuthContext', 'Failed to send confirmation email:', errorText);
+            return response.text().then(errorText => {
+              logger.error('AuthContext', 'Failed to send confirmation email:', errorText);
+            });
           } else {
             logger.log('AuthContext', 'Confirmation email sent successfully via Mailchimp');
           }
-        } catch (emailError) {
+        })
+        .catch(emailError => {
           logger.error('AuthContext', 'Error sending confirmation email (non-blocking):', emailError);
-        }
-      })();
+        });
 
       // Force logout after signup to prevent automatic login
       // User must confirm email before accessing the app
       logger.log('AuthContext', 'User created as unconfirmed, forcing logout');
-      try {
-        await supabase.auth.signOut();
-      } catch (logoutError) {
-        logger.error('AuthContext', 'Error during forced logout (non-critical):', logoutError);
-      }
 
-      // Always clear state regardless of signOut success
+      // Clear state immediately (don't wait for signOut)
       setUser(null);
       setProfile(null);
       setSession(null);
+
+      // Sign out in background (errors don't matter since we already cleared state)
+      supabase.auth.signOut().catch(logoutError => {
+        logger.error('AuthContext', 'Error during forced logout (non-critical):', logoutError);
+      });
     }
   };
 

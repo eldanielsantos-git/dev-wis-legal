@@ -214,33 +214,12 @@ Deno.serve(async (req: Request) => {
     const finalCity = userProfile?.city || city || '';
     const finalState = userProfile?.state || state || '';
 
-    console.log("Step 2: Adding/updating subscriber in Mailchimp...");
-    const subscriberHash = await md5Hash(email.toLowerCase());
-    console.log("Subscriber hash:", subscriberHash);
+    console.log("Step 2: Sending confirmation email via Mailchimp Transactional API...");
 
-    const addSubscriberUrl = `https://us3.api.mailchimp.com/3.0/lists/${mailchimpAudienceId}/members/${subscriberHash}`;
-
-    const subscriberPayload = {
-      email_address: email,
-      status_if_new: "subscribed",
-      merge_fields: {
-        FNAME: first_name,
-        LNAME: finalLastName,
-        PHONE: finalPhone,
-        CTR_CODE: finalPhoneCountryCode,
-        CITY: finalCity,
-        STATE: finalState,
-        CONFIRMATION_URL: confirmationUrl,
-      },
-    };
-
-    console.log("Sending to Mailchimp (URL sanitized):", JSON.stringify({
-      ...subscriberPayload,
-      merge_fields: {
-        ...subscriberPayload.merge_fields,
-        CONFIRMATION_URL: confirmationUrl.substring(0, 50) + "..." + confirmationUrl.substring(confirmationUrl.length - 20)
-      }
-    }, null, 2));
+    // Use Mailchimp Transactional API (Mandrill) instead of Customer Journey
+    // This properly supports dynamic merge variables
+    const mandrillEndpoint = "https://mandrillapp.com/api/1.0/messages/send-template";
+    const templateName = "wislegal-confirmation-email"; // You'll need to create this template in Mailchimp
 
     const addSubscriberResponse = await fetch(addSubscriberUrl, {
       method: "PUT",
