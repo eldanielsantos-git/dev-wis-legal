@@ -4,6 +4,9 @@ import { logger } from './utils/logger';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { TokenBalanceProvider } from './contexts/TokenBalanceContext';
+
+// Log module loading
+logger.log('App.tsx', '🔥 MODULE LOADED - App.tsx is being imported');
 import { SignInPage } from './pages/SignInPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
@@ -536,8 +539,10 @@ function AppContent() {
     );
 }
 
+logger.log('App.tsx', '🔥 Defining App function component');
+
 function App() {
-  logger.log('App', 'Rendering App component');
+  logger.log('App', '🎯 FUNCTION App() CALLED - Starting render');
 
   // Test render - bypass all providers temporarily
   const isTestMode = window.location.search.includes('test=1');
@@ -599,4 +604,8 @@ function App() {
   }
 }
 
+logger.log('App.tsx', '🔥 Exporting App as default');
+
 export default App;
+
+logger.log('App.tsx', '🔥 MODULE FULLY LOADED');
