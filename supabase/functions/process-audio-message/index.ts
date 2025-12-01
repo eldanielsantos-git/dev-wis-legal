@@ -161,7 +161,7 @@ Deno.serve(async (req: Request) => {
       const timestamp = Date.now();
 
       const { data: modelConfig, error: modelError } = await supabase
-        .from('admin_system_models')
+        .from('admin_chat_models')
         .select('*')
         .eq('is_active', true)
         .order('priority', { ascending: true })
@@ -170,11 +170,11 @@ Deno.serve(async (req: Request) => {
 
       if (modelError || !modelConfig) {
         console.error('[process-audio-message] Model config error:', modelError);
-        throw new Error('No active model configuration found');
+        throw new Error('No active chat model configuration found');
       }
 
-      const modelId = modelConfig.system_model || modelConfig.model_id;
-      console.log('[process-audio-message] Using model:', modelId);
+      const modelId = modelConfig.system_model;
+      console.log('[process-audio-message] Using chat model:', modelConfig.model_name, '(', modelId, ')');
 
       const genAI = new GoogleGenerativeAI(geminiApiKey);
 
@@ -274,8 +274,19 @@ Deno.serve(async (req: Request) => {
 
       // Substituir variáveis no prompt
       let systemPrompt = audioPromptData.system_prompt;
-      systemPrompt = systemPrompt.replace('{processo_name}', processo.nome_processo || processo.file_name);
-      systemPrompt = systemPrompt.replace('{total_pages}', String(processo.total_pages || 0));
+
+      // Substituir data/hora atual
+      const now = new Date();
+      const saoPauloTime = new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        dateStyle: 'full',
+        timeStyle: 'long'
+      }).format(now);
+      systemPrompt = systemPrompt.replace(/\{\{DATA_HORA_ATUAL\}\}/g, saoPauloTime);
+
+      // Substituir outras variáveis
+      systemPrompt = systemPrompt.replace(/\{processo_name\}/g, processo.nome_processo || processo.file_name);
+      systemPrompt = systemPrompt.replace(/\{total_pages\}/g, String(processo.total_pages || 0));
 
       const contextPrompt = `${systemPrompt}
 
