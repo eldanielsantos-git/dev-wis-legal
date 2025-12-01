@@ -543,6 +543,7 @@ function App() {
   const isTestMode = window.location.search.includes('test=1');
 
   if (isTestMode) {
+    logger.log('App', 'Test mode active');
     return (
       <div style={{
         minHeight: '100vh',
@@ -562,17 +563,40 @@ function App() {
     );
   }
 
-  return (
-    <AuthProvider>
-      <ThemeProvider>
-        <NotificationProvider>
-          <TokenBalanceProvider>
-            <AppContent />
-          </TokenBalanceProvider>
-        </NotificationProvider>
-      </ThemeProvider>
-    </AuthProvider>
-  );
+  logger.log('App', 'Rendering with all providers');
+
+  try {
+    logger.log('App', 'About to render AuthProvider');
+    return (
+      <AuthProvider>
+        <ThemeProvider>
+          <NotificationProvider>
+            <TokenBalanceProvider>
+              <AppContent />
+            </TokenBalanceProvider>
+          </NotificationProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    );
+  } catch (error) {
+    logger.error('App', 'Error rendering providers:', error);
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#0F0E0D',
+        color: 'white',
+        fontFamily: 'sans-serif'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <h1 style={{ color: '#ff4444', marginBottom: '20px' }}>Erro ao Carregar</h1>
+          <pre style={{ fontSize: '12px', color: '#888' }}>{String(error)}</pre>
+        </div>
+      </div>
+    );
+  }
 }
 
 export default App;
