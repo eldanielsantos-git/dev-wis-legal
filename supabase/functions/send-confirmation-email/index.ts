@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
     console.log("Step 1: Fetching user data from database...");
     const { data: userProfile, error: profileError } = await supabaseClient
       .from("user_profiles")
-      .select("first_name, last_name, phone, phone_country_code, city, state, avatar_url")
+      .select("first_name, last_name, phone, phone_country_code, city, state")
       .eq("id", user_id)
       .maybeSingle();
 
@@ -149,19 +149,16 @@ Deno.serve(async (req: Request) => {
         const phoneValue = userProfile?.phone || phone;
         const cityValue = userProfile?.city || city;
         const stateValue = userProfile?.state || state;
-        const avatarValue = userProfile?.avatar_url || '';
 
         // Usar as chaves CORRETAS (em portugu\u00eas como foram criadas no Resend)
         // key: "Pais" -> phone_country_code
         // key: "Phone" -> phone
         // key: "Cidade" -> city
         // key: "Estado" -> state
-        // key: "Avatar" -> avatar_url
         if (phoneCountryCode) properties.Pais = phoneCountryCode;
         if (phoneValue) properties.Phone = phoneValue;
         if (cityValue) properties.Cidade = cityValue;
         if (stateValue) properties.Estado = stateValue;
-        if (avatarValue) properties.Avatar = avatarValue;
 
         const contactData = {
           email: email,
