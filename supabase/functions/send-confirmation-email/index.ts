@@ -328,6 +328,12 @@ Deno.serve(async (req: Request) => {
 
       if (updateResponse.ok) {
         console.log("✓ Subscriber merge fields updated successfully");
+
+        // CRITICAL: Wait 2 seconds for Mailchimp to propagate merge fields
+        // Customer Journey needs time to see the updated merge fields
+        console.log("⏱️ Waiting 2 seconds for Mailchimp to propagate merge fields...");
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log("✓ Wait complete, merge fields should be propagated");
       } else {
         const updateError = await updateResponse.text();
         console.error("⚠️ Failed to update merge fields:", updateError);
