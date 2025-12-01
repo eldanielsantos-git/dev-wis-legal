@@ -30,6 +30,8 @@ const LLM_PROVIDERS = [
   { value: 'Outro', label: 'Incluir novo' },
 ];
 
+type TabType = 'analysis' | 'chat';
+
 export function AdminSystemModelsPage({
   onBack,
   onNavigateToApp,
@@ -44,6 +46,7 @@ export function AdminSystemModelsPage({
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [activeTab, setActiveTab] = useState<TabType>('analysis');
   const [models, setModels] = useState<AdminSystemModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

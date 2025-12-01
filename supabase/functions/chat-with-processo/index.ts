@@ -310,17 +310,28 @@ ${message}`;
 
     console.log(`📝 Using prompt type: ${promptType}`);
 
-    // Buscar modelo ativo
+    // Buscar modelo ativo para chat
     const { data: priorityModel } = await supabase
-      .from('admin_system_models')
-      .select('system_model, priority')
+      .from('admin_chat_models')
+      .select('system_model, model_name, supports_system_instruction')
       .eq('is_active', true)
       .order('priority', { ascending: true })
       .limit(1)
       .maybeSingle();
 
-    const modelName = priorityModel?.system_model || 'gemini-2.0-flash-exp';
-    console.log(`📱 Using model: ${modelName}`);
+    if (!priorityModel) {
+      console.error('❌ No active chat model found');
+      return new Response(
+        JSON.stringify({
+          error: 'Modelo de chat não configurado',
+          details: 'Não há nenhum modelo de chat ativo. Configure um modelo na área administrativa.'
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const modelName = priorityModel.system_model;
+    console.log(`📱 Using chat model: ${priorityModel.model_name} (${modelName})`);
 
     // Salvar mensagem do usuário
     await supabase
