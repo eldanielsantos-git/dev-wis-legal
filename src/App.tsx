@@ -5,8 +5,9 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { TokenBalanceProvider } from './contexts/TokenBalanceContext';
 
-// Log module loading
-logger.log('App.tsx', '🔥 MODULE LOADED - App.tsx is being imported');
+// Log module loading with timestamp to detect cache issues
+const BUILD_TIMESTAMP = '2025-12-01T19:45:00Z';
+logger.log('App.tsx', `🔥🔥🔥 MODULE LOADED - BUILD: ${BUILD_TIMESTAMP} 🔥🔥🔥`);
 import { SignInPage } from './pages/SignInPage';
 import { SignUpPage } from './pages/SignUpPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
