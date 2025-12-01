@@ -56,8 +56,13 @@ export function ConfirmEmailPage() {
 
         logger.log('ConfirmEmail', 'Attempting to verify email with token, type:', type);
 
-        // Map token type for Supabase
-        const supabaseType = (type as 'signup' | 'email');
+        // For magiclink type, use 'magiclink', otherwise use 'signup' or 'email'
+        let supabaseType: 'signup' | 'email' | 'magiclink' = 'signup';
+        if (type === 'magiclink') {
+          supabaseType = 'magiclink';
+        } else if (type === 'email') {
+          supabaseType = 'email';
+        }
 
         const { data, error } = await supabase.auth.verifyOtp({
           token_hash: token,
@@ -114,7 +119,7 @@ export function ConfirmEmailPage() {
     };
 
     confirmEmail();
-  }, [searchParams, navigate]);
+  }, []);
 
   const handleResendEmail = async () => {
     if (!userEmail || isResending) return;
