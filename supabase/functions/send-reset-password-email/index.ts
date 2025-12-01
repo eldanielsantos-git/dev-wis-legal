@@ -97,24 +97,30 @@ Deno.serve(async (req: Request) => {
       throw new Error("RESEND_API_KEY não configurada");
     }
 
+    const templateId = "aa4008f0-7e91-451e-82ad-5b711f23eab3";
+
+    const resendPayload = {
+      from: "WisLegal <noreply@wislegal.io>",
+      to: [email],
+      template: {
+        id: templateId,
+        variables: {
+          first_name: profileData.first_name,
+          reset_url: resetUrl
+        }
+      }
+    };
+
+    console.log('[ResetPassword] Sending email with template ID:', templateId);
+    console.log('[ResetPassword] Template variables:', { first_name: profileData.first_name, reset_url: resetUrl });
+
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
         "Content-Type": "application/json",
+        "Authorization": `Bearer ${resendApiKey}`,
       },
-      body: JSON.stringify({
-        from: "Wis Legal <noreply@wislegal.io>",
-        to: email,
-        subject: "Redefinir Senha - Wis Legal",
-        react: {
-          template_id: "aa4008f0-7e91-451e-82ad-5b711f23eab3",
-          template_data: {
-            first_name: profileData.first_name,
-            reset_url: resetUrl
-          }
-        }
-      }),
+      body: JSON.stringify(resendPayload),
     });
 
     if (!resendResponse.ok) {
