@@ -157,7 +157,10 @@ function AppContent() {
 
   if (currentPath === '/workspace') {
     return (
-      <RequireEmailVerification>
+      <RequireEmailVerification
+        onNavigateToSignIn={() => navigate('/sign-in')}
+        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
+      >
         <WorkspacePage
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
@@ -175,7 +178,10 @@ function AppContent() {
 
   if (currentPath === '/chat') {
     return (
-      <RequireEmailVerification>
+      <RequireEmailVerification
+        onNavigateToSignIn={() => navigate('/sign-in')}
+        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
+      >
         <ChatProcessSelectionPage
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
@@ -197,7 +203,10 @@ function AppContent() {
   const chatPathMatch = currentPath.match(/^\/chat\/([a-f0-9-]+)$/);
   if (chatPathMatch) {
     return (
-      <RequireEmailVerification>
+      <RequireEmailVerification
+        onNavigateToSignIn={() => navigate('/sign-in')}
+        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
+      >
         <ChatPage
         processoId={chatPathMatch[1]}
         onNavigateToApp={() => navigate('/app')}
@@ -499,7 +508,10 @@ function AppContent() {
   }
 
     return (
-      <RequireEmailVerification>
+      <RequireEmailVerification
+        onNavigateToSignIn={() => navigate('/sign-in')}
+        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
+      >
         <AppHomePage
         onNavigateToDetail={(id) => navigate(`/lawsuits-detail/${id}`)}
         onNavigateToAdmin={() => navigate('/admin')}
