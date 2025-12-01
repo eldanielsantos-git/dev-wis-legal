@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Sidebar } from '../components/Sidebar';
 import { tokenService, type UserTokenQuota } from '../services/TokenService';
 import { Activity, Users, TrendingUp, Edit2, Save, X, Search } from 'lucide-react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserQuotaWithProfile extends UserTokenQuota {
   email: string;

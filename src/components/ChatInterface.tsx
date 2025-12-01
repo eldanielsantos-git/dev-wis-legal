@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Loader, FileText, Mic, ChevronLeft, Lightbulb } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { ChatMessageUser } from './ChatMessageUser';
 import { ChatMessageAssistant } from './ChatMessageAssistant';
 import { ChatLoadingDots } from './LoadingSpinner';

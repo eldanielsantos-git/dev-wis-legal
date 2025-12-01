@@ -1,7 +1,7 @@
 import React from 'react';
 import { SubscriptionStatus } from './subscription/SubscriptionStatus';
 import { TokenUsageCard } from './TokenUsageCard';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { LogOut, Settings, FileText } from 'lucide-react';
 
 export function Dashboard() {

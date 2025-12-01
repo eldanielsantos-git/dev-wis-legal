@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { Mail, Loader, AlertCircle } from 'lucide-react';
 import { logger } from '../utils/logger';
 import { supabase } from '../lib/supabase';

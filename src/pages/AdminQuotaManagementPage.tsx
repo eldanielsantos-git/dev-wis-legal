@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import {

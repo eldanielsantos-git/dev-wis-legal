@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { logger } from '../utils/logger';
 
 interface RequireEmailVerificationProps {
