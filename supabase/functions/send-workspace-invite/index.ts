@@ -17,14 +17,7 @@ interface WorkspaceInviteRequest {
 }
 
 Deno.serve(async (req: Request) => {
-  console.log("\ud83d\ude80 ==========================================");
-  console.log("\ud83d\ude80 send-workspace-invite function called!");
-  console.log("\ud83d\ude80 Method:", req.method);
-  console.log("\ud83d\ude80 URL:", req.url);
-  console.log("\ud83d\ude80 ==========================================");
-
   if (req.method === "OPTIONS") {
-    console.log("\u2705 Handling OPTIONS request");
     return new Response(null, {
       status: 200,
       headers: corsHeaders,
@@ -32,24 +25,22 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log("\ud83d\udd10 Step 1: Checking environment variables...");
+    console.log("=== SEND WORKSPACE INVITE - START ===");
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
-    console.log("\ud83d\udd10 Supabase URL:", supabaseUrl ? "\u2705 Present" : "\u274c Missing");
-    console.log("\ud83d\udd10 Service key:", supabaseServiceKey ? "\u2705 Present" : "\u274c Missing");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error("\u274c Missing Supabase environment variables");
       throw new Error("Missing Supabase environment variables");
     }
 
-    console.log("\ud83d\udd10 Step 2: Checking authorization header...");
-    const authHeader = req.headers.get("Authorization");
-    console.log("\ud83d\udd10 Auth header:", authHeader ? `\u2705 Present (${authHeader.substring(0, 20)}...)` : "\u274c Missing");
+    if (!resendApiKey) {
+      throw new Error("Missing RESEND_API_KEY environment variable");
+    }
 
+    const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      console.error("\u274c Missing authorization header");
       return new Response(
         JSON.stringify({ error: "Missing authorization header" }),
         {
@@ -59,24 +50,13 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("\ud83d\udd10 Step 3: Creating Supabase client...");
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    console.log("\ud83d\udd10 Step 4: Verifying user token...");
     const token = authHeader.replace("Bearer ", "");
     const {
       data: { user },
       error: userError,
     } = await supabaseClient.auth.getUser(token);
-
-    if (userError) {
-      console.error("\u274c User verification error:", userError);
-    }
-    if (!user) {
-      console.error("\u274c No user found");
-    } else {
-      console.log("\u2705 User verified:", user.id, user.email);
-    }
 
     if (userError || !user) {
       return new Response(
@@ -88,7 +68,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("\ud83d\udce5 Step 5: Parsing request body...");
     const {
       shareId,
       processoId,
@@ -98,7 +77,7 @@ Deno.serve(async (req: Request) => {
       userExists,
     }: WorkspaceInviteRequest = await req.json();
 
-    console.log("\ud83d\udce5 Received request data:", {
+    console.log("Request data:", {
       shareId,
       processoId,
       invitedEmail,
@@ -107,20 +86,17 @@ Deno.serve(async (req: Request) => {
       userExists
     });
 
-    console.log("\ud83d\udd0d Step 6: Looking for processo with ID:", processoId);
-
+    console.log("Step 1: Fetching processo details...");
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
       .select("file_name")
       .eq("id", processoId)
       .single();
 
-    console.log("\ud83d\udd0d Processo query result:", { processo, processoError });
-
     if (processoError || !processo) {
-      console.error("\u274c Processo not found. Error:", processoError);
+      console.error("Processo not found:", processoError);
       return new Response(
-        JSON.stringify({ error: "Processo not found", details: processoError?.message }),
+        JSON.stringify({ error: "Processo not found" }),
         {
           status: 404,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -128,25 +104,22 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("\u2705 Step 7: Processo found:", processo.file_name);
+    console.log("✓ Processo found:", processo.file_name);
 
+    console.log("Step 2: Fetching owner profile...");
     const { data: ownerProfile } = await supabaseClient
       .from("user_profiles")
       .select("first_name, last_name, email")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    const ownerName = ownerProfile
-      ? `${ownerProfile.first_name} ${ownerProfile.last_name}`
-      : "um colega";
+    const ownerFirstName = ownerProfile?.first_name || "um";
+    const ownerLastName = ownerProfile?.last_name || "colega";
 
-    console.log("\ud83d\udc64 Owner:", ownerName);
-
-    const permissionText =
-      permissionLevel === "read_only" ? "Somente Leitura" : "Editor";
+    console.log("Step 3: Creating notification for existing user (if applicable)...");
+    const permissionText = permissionLevel === "read_only" ? "Somente Leitura" : "Editor";
 
     if (userExists) {
-      console.log("\ud83d\udc65 Step 8: Creating notification for existing user...");
       const { data: invitedUserProfile } = await supabaseClient
         .from("user_profiles")
         .select("id")
@@ -158,62 +131,90 @@ Deno.serve(async (req: Request) => {
           user_id: invitedUserProfile.id,
           type: "workspace_share",
           title: "Novo processo compartilhado",
-          message: `${ownerName} compartilhou o processo \"${processo.file_name}\" com voc\u00ea (${permissionText})`,
+          message: `${ownerFirstName} ${ownerLastName} compartilhou o processo "${processo.file_name}" com voc\u00ea (${permissionText})`,
           link: `/lawsuits-detail/${processoId}`,
         });
 
-        console.log(`\u2705 Notification created for existing user: ${invitedEmail}`);
+        console.log("✓ Notification created for existing user");
       }
     }
 
-    console.log("\ud83d\udce7 Step 9: Sending invitation email...");
-    try {
-      const emailData = {
-        shared_by: user.id,
-        owner_name: ownerName,
-        share_id: shareId,
-        processo_id: processoId,
-        processo_name: processo.file_name,
-        permission_level: permissionLevel,
-        permission_text: permissionText,
-        invited_name: invitedName,
-        invitation_type: 'workspace_share',
-      };
+    console.log("Step 4: Sending invitation email via Resend...");
 
-      const redirectUrl = userExists
-        ? `${supabaseUrl}/lawsuits-detail/${processoId}`
-        : `${supabaseUrl}/workspace`;
+    const templateId = "06d6d862-a22e-4aee-9b3f-e891b61d61ba";
+    const signUpUrl = userExists
+      ? `https://dev-app.wislegal.io/lawsuits-detail/${processoId}`
+      : `https://dev-app.wislegal.io/sign-up?workspace=${shareId}`;
 
-      console.log(`\ud83d\udce7 Attempting to send email to: ${invitedEmail}`);
-      console.log(`\ud83d\udce7 User exists: ${userExists}`);
-      console.log(`\ud83d\udce7 Redirect URL: ${redirectUrl}`);
-      console.log(`\ud83d\udce7 Email data:`, JSON.stringify(emailData, null, 2));
-
-      const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
-        invitedEmail.toLowerCase(),
-        {
-          redirectTo: redirectUrl,
-          data: emailData,
+    const resendPayload = {
+      from: "WisLegal <noreply@wislegal.io>",
+      to: [invitedEmail.toLowerCase()],
+      template: {
+        id: templateId,
+        variables: {
+          shared_with_name: invitedName,
+          first_name: ownerFirstName,
+          last_name: ownerLastName,
+          file_name: processo.file_name,
+          signup_url: signUpUrl
         }
-      );
-
-      if (inviteError) {
-        console.error("\u274c Email not sent - Full error:", JSON.stringify(inviteError, null, 2));
-        console.error("\u274c Error message:", inviteError.message);
-        console.error("\u274c Error name:", inviteError.name);
-        console.log("\u26a0\ufe0f Workspace share created successfully without email");
-      } else {
-        console.log(`\u2705 SUCCESS: Email sent to: ${invitedEmail}`);
-        console.log(`\u2705 Email should arrive shortly`);
       }
-    } catch (emailError) {
-      console.error("\u26a0\ufe0f Email sending exception:", emailError);
-      console.log("\u26a0\ufe0f Workspace share created successfully without email");
+    };
+
+    console.log("Sending email with template ID:", templateId);
+    console.log("Template variables:", {
+      shared_with_name: invitedName,
+      first_name: ownerFirstName,
+      last_name: ownerLastName,
+      file_name: processo.file_name,
+      signup_url: signUpUrl
+    });
+
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify(resendPayload),
+    });
+
+    let resendSuccess = false;
+    let resendResult: any = null;
+
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error("Resend API error:", resendResponse.status, errorText);
+      console.error("⚠️ Email not sent, but workspace share was created successfully");
+    } else {
+      resendResult = await resendResponse.json();
+      console.log("✓ Email sent successfully via Resend template:", resendResult);
+      resendSuccess = true;
     }
 
-    console.log(`\u2705 Step 10: Process completed successfully`);
-    console.log(`Processo compartilhado: ${ownerName} -> ${invitedName} (${invitedEmail})`);
-    console.log(`Share ID: ${shareId}, Permiss\u00e3o: ${permissionText}`);
+    console.log("Step 5: Logging email send to database...");
+    const { error: logError } = await supabaseClient
+      .from("email_logs")
+      .insert({
+        user_id: user.id,
+        email: invitedEmail.toLowerCase(),
+        type: "workspace_invite",
+        status: resendSuccess ? "success" : "failed",
+        email_provider_response: {
+          resend_id: resendResult?.id || null,
+          share_id: shareId,
+          processo_id: processoId
+        },
+        sent_at: new Date().toISOString()
+      });
+
+    if (logError) {
+      console.error("Failed to log email:", logError);
+    } else {
+      console.log("✓ Email send logged to database");
+    }
+
+    console.log("=== SEND WORKSPACE INVITE - SUCCESS ===");
 
     return new Response(
       JSON.stringify({
@@ -228,11 +229,13 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("\ud83d\udca5 FATAL ERROR in send-workspace-invite function:", error);
-    console.error("\ud83d\udca5 Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error("💥 Error in send-workspace-invite function:", error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
+
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Erro desconhecido",
+        success: false
       }),
       {
         status: 500,
