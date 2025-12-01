@@ -101,16 +101,17 @@ Deno.serve(async (req: Request) => {
     const resendPayload: any = {
       from: "WisLegal <noreply@wislegal.io>",
       to: [email],
-      subject: "Confirme seu email - WisLegal",
-      template: templateId,
-      template_data: {
-        first_name: finalFirstName,
-        confirmation_url: confirmationUrl
+      template: {
+        id: templateId,
+        variables: {
+          first_name: finalFirstName,
+          confirmation_url: confirmationUrl
+        }
       }
     };
 
     console.log("Sending email with template ID:", templateId);
-    console.log("Template data:", { first_name: finalFirstName, confirmation_url: confirmationUrl });
+    console.log("Template variables:", { first_name: finalFirstName, confirmation_url: confirmationUrl });
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
