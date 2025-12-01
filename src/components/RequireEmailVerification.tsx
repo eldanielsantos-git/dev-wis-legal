@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { LoadingSpinner } from './LoadingSpinner';
+import { Loader } from 'lucide-react';
 import { logger } from '../utils/logger';
 
 interface RequireEmailVerificationProps {
@@ -15,7 +15,6 @@ export function RequireEmailVerification({
   onNavigateToVerifyEmail
 }: RequireEmailVerificationProps) {
   const { user, profile, loading, emailVerified } = useAuth();
-  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
     if (loading) {
@@ -38,19 +37,21 @@ export function RequireEmailVerification({
       onNavigateToVerifyEmail();
       return;
     }
-
-    setIsChecking(false);
   }, [user, profile, loading, emailVerified, onNavigateToSignIn, onNavigateToVerifyEmail]);
 
-  if (loading || isChecking) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <LoadingSpinner />
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
+        <Loader className="w-8 h-8 text-white animate-spin" />
       </div>
     );
   }
 
-  if (!user || !profile || !emailVerified) {
+  if (!user || !profile) {
+    return null;
+  }
+
+  if (!emailVerified) {
     return null;
   }
 
