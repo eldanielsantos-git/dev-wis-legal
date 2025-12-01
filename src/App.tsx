@@ -77,8 +77,10 @@ function AppContent() {
   }
 
   logger.log('AppContent', 'Not loading, continuing to render');
+  logger.log('AppContent', 'Checking routes - currentPath:', currentPath, 'user:', user?.id);
 
   if (currentPath === '/terms') {
+    logger.log('AppContent', 'Rendering TermsPage');
     return <TermsPage onBack={() => navigate(user ? '/app' : '/sign-in')} />;
   }
 
@@ -103,7 +105,9 @@ function AppContent() {
   }
 
   if (!user) {
+    logger.log('AppContent', 'No user, checking auth routes');
     if (currentPath === '/sign-up') {
+      logger.log('AppContent', 'Rendering SignUpPage');
       return (
         <SignUpPage
           onNavigateToSignIn={() => navigate('/sign-in')}
@@ -113,8 +117,10 @@ function AppContent() {
       );
     }
     if (currentPath === '/forgot-password') {
+      logger.log('AppContent', 'Rendering ForgotPasswordPage');
       return <ForgotPasswordPage onNavigateToSignIn={() => navigate('/sign-in')} />;
     }
+    logger.log('AppContent', 'Rendering SignInPage (default for non-authenticated)');
     return (
       <SignInPage
         onNavigateToSignUp={() => navigate('/sign-up')}
@@ -508,6 +514,7 @@ function AppContent() {
     );
   }
 
+    logger.log('AppContent', 'No route matched, rendering AppHomePage with RequireEmailVerification');
     return (
       <RequireEmailVerification
         onNavigateToSignIn={() => navigate('/sign-in')}
