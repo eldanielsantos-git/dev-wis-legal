@@ -107,9 +107,7 @@ Deno.serve(async (req: Request) => {
           "Authorization": `Bearer ${resendApiKey}`,
         },
         body: JSON.stringify({
-          from: "Wis Legal <noreply@wislegal.io>",
           to: [email],
-          subject: "Confirme seu email - Wis Legal",
           template: {
             id: resendTemplateId,
             variables: {
