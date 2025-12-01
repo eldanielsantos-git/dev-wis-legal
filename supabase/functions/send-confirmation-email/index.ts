@@ -100,22 +100,27 @@ Deno.serve(async (req: Request) => {
     if (resendTemplateId) {
       console.log("Using Resend template:", resendTemplateId);
 
+      // Resend API format for templates
+      const resendPayload = {
+        from: "WisLegal <noreply@wislegal.io>",
+        to: [email],
+        subject: "Confirme seu email - WisLegal",
+        template_id: resendTemplateId,
+        template_variables: {
+          first_name: finalFirstName,
+          confirmation_url: confirmationUrl
+        }
+      };
+
+      console.log("Resend payload:", JSON.stringify(resendPayload, null, 2));
+
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${resendApiKey}`,
         },
-        body: JSON.stringify({
-          to: [email],
-          template: {
-            id: resendTemplateId,
-            variables: {
-              first_name: finalFirstName,
-              confirmation_url: confirmationUrl
-            }
-          }
-        }),
+        body: JSON.stringify(resendPayload),
       });
 
       if (!resendResponse.ok) {
