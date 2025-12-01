@@ -194,7 +194,8 @@ Deno.serve(async (req: Request) => {
       .eq("id", user.id)
       .maybeSingle();
 
-    const inviterFirstName = inviterProfile?.first_name || "um colega";
+    const inviterFirstName = inviterProfile?.first_name || "um";
+    const inviterLastName = inviterProfile?.last_name || "colega";
 
     console.log("Step 5: Sending invitation email via Resend...");
 
@@ -209,6 +210,7 @@ Deno.serve(async (req: Request) => {
         variables: {
           invited_name: invitedName,
           first_name: inviterFirstName,
+          last_name: inviterLastName,
           signup_url: signUpUrl
         }
       }
@@ -218,6 +220,7 @@ Deno.serve(async (req: Request) => {
     console.log("Template variables:", {
       invited_name: invitedName,
       first_name: inviterFirstName,
+      last_name: inviterLastName,
       signup_url: signUpUrl
     });
 
