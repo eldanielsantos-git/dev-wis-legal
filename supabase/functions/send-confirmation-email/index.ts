@@ -132,22 +132,10 @@ Deno.serve(async (req: Request) => {
       resendSuccess = true;
     }
 
-    console.log("Step 3.4: Listing all contact properties...");
-    const listPropsResponse = await fetch("https://api.resend.com/contact-properties", {
-      method: "GET",
-      headers: {
-        "Authorization": `Bearer ${resendApiKey}`,
-      },
-    });
-
-    if (listPropsResponse.ok) {
-      const propsList = await listPropsResponse.json();
-      console.log("ALL AVAILABLE PROPERTIES:", JSON.stringify(propsList, null, 2));
-    } else {
-      console.error("Failed to list properties:", await listPropsResponse.text());
-    }
-
     console.log("Step 3.5: Adding contact to Resend Audience...");
+
+    // Adicionar delay para respeitar rate limit do Resend (2 req/sec)
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
       const audienceId = Deno.env.get("RESEND_AUDIENCE_ID");
@@ -155,86 +143,59 @@ Deno.serve(async (req: Request) => {
       if (!audienceId) {
         console.warn("RESEND_AUDIENCE_ID not set, skipping audience addition");
       } else {
-        // TESTE 1: Criar contato SEM propriedades personalizadas
-        const basicContactData = {
+        const properties: any = {};
+
+        const phoneCountryCode = userProfile?.phone_country_code || phone_country_code;
+        const phoneValue = userProfile?.phone || phone;
+        const cityValue = userProfile?.city || city;
+        const stateValue = userProfile?.state || state;
+        const avatarValue = userProfile?.avatar_url || '';
+
+        // Usar as chaves CORRETAS (em portugu\u00eas como foram criadas no Resend)
+        // key: "Pais" -> phone_country_code
+        // key: "Phone" -> phone
+        // key: "Cidade" -> city
+        // key: "Estado" -> state
+        // key: "Avatar" -> avatar_url
+        if (phoneCountryCode) properties.Pais = phoneCountryCode;
+        if (phoneValue) properties.Phone = phoneValue;
+        if (cityValue) properties.Cidade = cityValue;
+        if (stateValue) properties.Estado = stateValue;
+        if (avatarValue) properties.Avatar = avatarValue;
+
+        const contactData = {
           email: email,
           firstName: finalFirstName,
           lastName: userProfile?.last_name || last_name || "",
           unsubscribed: false,
-          audienceId: audienceId
+          audienceId: audienceId,
+          properties: properties
         };
 
-        console.log("TEST 1: Creating contact WITHOUT custom properties...");
-        console.log("Basic contact data:", JSON.stringify(basicContactData, null, 2));
+        console.log("Creating contact with properties:", JSON.stringify(contactData, null, 2));
 
-        const basicContactResponse = await fetch("https://api.resend.com/contacts", {
+        const resendContactResponse = await fetch("https://api.resend.com/contacts", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${resendApiKey}`,
           },
-          body: JSON.stringify(basicContactData),
+          body: JSON.stringify(contactData),
         });
 
-        const basicResponseText = await basicContactResponse.text();
-        console.log("Basic contact response status:", basicContactResponse.status);
-        console.log("Basic contact response body:", basicResponseText);
+        const responseText = await resendContactResponse.text();
+        console.log("Contact creation response status:", resendContactResponse.status);
+        console.log("Contact creation response body:", responseText);
 
-        if (basicContactResponse.ok) {
-          const basicResult = JSON.parse(basicResponseText);
-          console.log("✓ Basic contact created successfully:", basicResult);
-
-          // TESTE 2: Agora tentar atualizar com propriedades personalizadas
-          console.log("TEST 2: Updating contact WITH custom properties...");
-
-          const properties: any = {};
-          const phoneCountryCode = userProfile?.phone_country_code || phone_country_code;
-          const phoneValue = userProfile?.phone || phone;
-          const cityValue = userProfile?.city || city;
-          const stateValue = userProfile?.state || state;
-          const avatarValue = userProfile?.avatar_url || '';
-
-          if (phoneCountryCode) properties.phone_country_code = phoneCountryCode;
-          if (phoneValue) properties.phone = phoneValue;
-          if (cityValue) properties.city = cityValue;
-          if (stateValue) properties.state = stateValue;
-          if (avatarValue) properties.avatar_url = avatarValue;
-
-          console.log("Properties to update:", JSON.stringify(properties, null, 2));
-
-          if (Object.keys(properties).length > 0) {
-            const updateData = {
-              id: basicResult.id,
-              properties: properties
-            };
-
-            const updateResponse = await fetch(`https://api.resend.com/contacts/${basicResult.id}`, {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${resendApiKey}`,
-              },
-              body: JSON.stringify(updateData),
-            });
-
-            const updateResponseText = await updateResponse.text();
-            console.log("Update response status:", updateResponse.status);
-            console.log("Update response body:", updateResponseText);
-
-            if (updateResponse.ok) {
-              console.log("✓ Contact properties updated successfully");
-            } else {
-              console.error("Failed to update contact properties:", updateResponseText);
-            }
-          } else {
-            console.log("No custom properties to update");
-          }
+        if (!resendContactResponse.ok) {
+          console.error("Failed to add contact to audience:", resendContactResponse.status, responseText);
         } else {
-          console.error("Failed to create basic contact:", basicResponseText);
+          const contactResult = JSON.parse(responseText);
+          console.log("✓ Contact added to Resend audience successfully:", contactResult);
         }
       }
     } catch (audienceError) {
-      console.error("Error in contact creation:", audienceError);
+      console.error("Error adding contact to audience:", audienceError);
       console.error("Stack trace:", audienceError instanceof Error ? audienceError.stack : "No stack");
     }
 
