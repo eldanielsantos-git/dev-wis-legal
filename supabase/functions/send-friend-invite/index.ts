@@ -110,53 +110,82 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("Step 2: Checking for existing pending invite...");
+    console.log("Step 2: Checking for existing invite...");
     const { data: existingInvite, error: checkInviteError } = await supabaseClient
       .from("invite_friend")
       .select("id, status")
       .eq("inviter_user_id", user.id)
       .eq("invited_email", invitedEmail.toLowerCase())
-      .eq("status", "pending")
       .maybeSingle();
 
     if (checkInviteError) {
       console.error("Error checking existing invite:", checkInviteError);
     }
 
+    let invite: any;
+
     if (existingInvite) {
-      return new Response(
-        JSON.stringify({ error: "Voc\u00ea j\u00e1 enviou um convite para este email" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+      if (existingInvite.status === "accepted") {
+        return new Response(
+          JSON.stringify({ error: "Este convite j\u00e1 foi aceito. O usu\u00e1rio j\u00e1 est\u00e1 cadastrado na plataforma." }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      console.log("Step 3: Updating existing pending/expired invite...");
+      const { data: updatedInvite, error: updateError } = await supabaseClient
+        .from("invite_friend")
+        .update({
+          invited_name: invitedName,
+          status: "pending"
+        })
+        .eq("id", existingInvite.id)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error("Error updating invite:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Erro ao atualizar convite" }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      invite = updatedInvite;
+      console.log("✓ Existing invite updated successfully:", invite.id);
+    } else {
+      console.log("Step 3: Creating new invite in database...");
+      const { data: newInvite, error: insertError } = await supabaseClient
+        .from("invite_friend")
+        .insert({
+          inviter_user_id: user.id,
+          invited_name: invitedName,
+          invited_email: invitedEmail.toLowerCase(),
+          status: "pending",
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("Error inserting invite:", insertError);
+        return new Response(
+          JSON.stringify({ error: "Erro ao salvar convite" }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      invite = newInvite;
+      console.log("✓ New invite created successfully:", invite.id);
     }
-
-    console.log("Step 3: Saving invite to database...");
-    const { data: invite, error: insertError } = await supabaseClient
-      .from("invite_friend")
-      .insert({
-        inviter_user_id: user.id,
-        invited_name: invitedName,
-        invited_email: invitedEmail.toLowerCase(),
-        status: "pending",
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("Error inserting invite:", insertError);
-      return new Response(
-        JSON.stringify({ error: "Erro ao salvar convite" }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    console.log("✓ Invite saved successfully:", invite.id);
 
     console.log("Step 4: Fetching inviter profile...");
     const { data: inviterProfile } = await supabaseClient
