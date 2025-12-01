@@ -134,28 +134,14 @@ Deno.serve(async (req: Request) => {
 
     console.log("Step 3.5: Adding contact to Resend Audience...");
 
+    await new Promise(resolve => setTimeout(resolve, 600));
+
     try {
       const audienceId = Deno.env.get("RESEND_AUDIENCE_ID");
 
       if (!audienceId) {
         console.warn("RESEND_AUDIENCE_ID not set, skipping audience addition");
       } else {
-        // Primeiro, vamos listar as propriedades disponíveis
-        console.log("Fetching available contact properties...");
-        const propertiesListResponse = await fetch("https://api.resend.com/contact-properties", {
-          method: "GET",
-          headers: {
-            "Authorization": `Bearer ${resendApiKey}`,
-          },
-        });
-
-        if (propertiesListResponse.ok) {
-          const propertiesList = await propertiesListResponse.json();
-          console.log("Available properties:", JSON.stringify(propertiesList, null, 2));
-        } else {
-          console.error("Failed to fetch properties:", await propertiesListResponse.text());
-        }
-
         // Preparar dados do contato
         const contactData: any = {
           email: email,
@@ -174,14 +160,6 @@ Deno.serve(async (req: Request) => {
         const stateValue = userProfile?.state || state;
         const avatarValue = userProfile?.avatar_url || '';
 
-        console.log("Property values to add:", {
-          phone_country_code: phoneCountryCode,
-          phone: phoneValue,
-          city: cityValue,
-          state: stateValue,
-          avatar_url: avatarValue
-        });
-
         if (phoneCountryCode) properties.phone_country_code = phoneCountryCode;
         if (phoneValue) properties.phone = phoneValue;
         if (cityValue) properties.city = cityValue;
@@ -193,7 +171,7 @@ Deno.serve(async (req: Request) => {
           contactData.properties = properties;
         }
 
-        console.log("Final contact data to send:", JSON.stringify(contactData, null, 2));
+        console.log("Adding contact to audience with", Object.keys(properties).length, "properties");
 
         const resendContactResponse = await fetch("https://api.resend.com/contacts", {
           method: "POST",
@@ -204,15 +182,12 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify(contactData),
         });
 
-        const responseText = await resendContactResponse.text();
-        console.log("Resend API response status:", resendContactResponse.status);
-        console.log("Resend API response body:", responseText);
-
         if (!resendContactResponse.ok) {
-          console.error("Failed to add contact to Resend audience:", resendContactResponse.status, responseText);
+          const errorText = await resendContactResponse.text();
+          console.error("Failed to add contact to Resend audience:", resendContactResponse.status, errorText);
         } else {
-          const contactResult = JSON.parse(responseText);
-          console.log("✓ Contact added to Resend audience:", contactResult);
+          const contactResult = await resendContactResponse.json();
+          console.log("✓ Contact added to Resend audience successfully");
         }
       }
     } catch (audienceError) {
