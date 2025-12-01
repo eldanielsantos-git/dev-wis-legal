@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { Loader } from 'lucide-react';
 import { logger } from '../utils/logger';
 
 interface RequireEmailVerificationProps {
@@ -50,17 +49,8 @@ export function RequireEmailVerification({
     logger.log('RequireEmailVerification', 'All checks passed! User can proceed.');
   }, [user, profile, loading, emailVerified, isAdmin, onNavigateToSignIn, onNavigateToVerifyEmail]);
 
-  if (loading) {
-    logger.log('RequireEmailVerification', 'Showing loading spinner');
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
-        <Loader className="w-8 h-8 text-white animate-spin" />
-      </div>
-    );
-  }
-
-  if (!user || !profile) {
-    logger.log('RequireEmailVerification', 'No user or profile, returning null');
+  if (loading || !user || !profile) {
+    logger.log('RequireEmailVerification', 'Loading, no user, or no profile - returning null (App.tsx handles loading)');
     return null;
   }
 
