@@ -100,11 +100,9 @@ Deno.serve(async (req: Request) => {
           from: "Wis Legal <noreply@wislegal.io>",
           to: [email],
           subject: "Confirme seu email - Wis Legal",
-          react: resendTemplateId,
-          params: {
-            first_name: finalFirstName,
-            confirmation_url: confirmationUrl
-          }
+          html: `{{>${resendTemplateId}}}`,
+          first_name: finalFirstName,
+          confirmation_url: confirmationUrl
         }),
       });
 
