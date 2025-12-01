@@ -81,6 +81,23 @@ async function addModelAttempt(
     .eq('id', processoId);
 }
 
+function replaceSystemPromptVariables(systemPrompt: string | null | undefined): string | undefined {
+  if (!systemPrompt) return undefined;
+
+  let processedPrompt = systemPrompt;
+
+  // Substituir data/hora atual
+  const now = new Date();
+  const saoPauloTime = new Intl.DateTimeFormat('pt-BR', {
+    timeZone: 'America/Sao_Paulo',
+    dateStyle: 'full',
+    timeStyle: 'long'
+  }).format(now);
+  processedPrompt = processedPrompt.replace(/\{\{DATA_HORA_ATUAL\}\}/g, saoPauloTime);
+
+  return processedPrompt;
+}
+
 async function recordExecution(
   supabase: any,
   processoId: string,
@@ -474,7 +491,7 @@ Deno.serve(async (req: Request) => {
 
                 const chunkResult = await geminiModel.generateContent({
                   contents: [{ role: 'user', parts: chunkParts }],
-                  systemInstruction: nextResult.system_prompt || undefined,
+                  systemInstruction: replaceSystemPromptVariables(nextResult.system_prompt),
                   generationConfig: {
                     temperature,
                     maxOutputTokens: maxTokens,
@@ -628,7 +645,7 @@ Deno.serve(async (req: Request) => {
 
           const result = await geminiModel.generateContent({
             contents: [{ role: 'user', parts }],
-            systemInstruction: nextResult.system_prompt || undefined,
+            systemInstruction: replaceSystemPromptVariables(nextResult.system_prompt),
             generationConfig: {
               temperature,
               maxOutputTokens: maxTokens,
@@ -819,7 +836,7 @@ Deno.serve(async (req: Request) => {
                 ],
               },
             ],
-            systemInstruction: nextResult.system_prompt || undefined,
+            systemInstruction: replaceSystemPromptVariables(nextResult.system_prompt),
             generationConfig: {
               temperature,
               maxOutputTokens: maxTokens,
