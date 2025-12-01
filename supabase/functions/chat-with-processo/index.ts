@@ -293,9 +293,20 @@ ${message}`;
 
     // Substituir variáveis no prompt
     let systemPrompt = systemPromptData.system_prompt;
-    systemPrompt = systemPrompt.replace('{processo_name}', processo.nome_processo || processo.file_name);
-    systemPrompt = systemPrompt.replace('{total_pages}', String(processo.total_pages || 0));
-    systemPrompt = systemPrompt.replace('{chunks_count}', String(processo.total_chunks_count || 0));
+
+    // Substituir data/hora atual
+    const now = new Date();
+    const saoPauloTime = new Intl.DateTimeFormat('pt-BR', {
+      timeZone: 'America/Sao_Paulo',
+      dateStyle: 'full',
+      timeStyle: 'long'
+    }).format(now);
+    systemPrompt = systemPrompt.replace(/\{\{DATA_HORA_ATUAL\}\}/g, saoPauloTime);
+
+    // Substituir outras variáveis
+    systemPrompt = systemPrompt.replace(/\{processo_name\}/g, processo.nome_processo || processo.file_name);
+    systemPrompt = systemPrompt.replace(/\{total_pages\}/g, String(processo.total_pages || 0));
+    systemPrompt = systemPrompt.replace(/\{chunks_count\}/g, String(processo.total_chunks_count || 0));
 
     console.log(`📝 Using prompt type: ${promptType}`);
 
