@@ -142,19 +142,22 @@ Deno.serve(async (req: Request) => {
       } else {
         const contactData = {
           email: email,
-          first_name: finalFirstName,
-          last_name: userProfile?.last_name || last_name,
+          firstName: finalFirstName,
+          lastName: userProfile?.last_name || last_name,
           unsubscribed: false,
-          phone_country_code: userProfile?.phone_country_code || phone_country_code,
-          phone: userProfile?.phone || phone,
-          city: userProfile?.city || city,
-          state: userProfile?.state || state,
-          avatar_url: userProfile?.avatar_url || ''
+          audienceId: audienceId,
+          properties: {
+            phone_country_code: userProfile?.phone_country_code || phone_country_code,
+            phone: userProfile?.phone || phone,
+            city: userProfile?.city || city,
+            state: userProfile?.state || state,
+            avatar_url: userProfile?.avatar_url || ''
+          }
         };
 
-        console.log("Adding contact to audience:", contactData.email);
+        console.log("Adding contact to audience with properties:", JSON.stringify(contactData, null, 2));
 
-        const resendContactResponse = await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+        const resendContactResponse = await fetch("https://api.resend.com/contacts", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
