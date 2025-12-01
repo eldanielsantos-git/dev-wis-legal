@@ -73,10 +73,10 @@ Deno.serve(async (req: Request) => {
 
     const finalFirstName = userProfile?.first_name || first_name;
 
-    console.log("Step 2: Generating magic link with Supabase...");
+    console.log("Step 2: Generating email confirmation link with Supabase...");
 
     const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
-      type: 'magiclink',
+      type: 'signup',
       email: email,
       options: {
         redirectTo: 'https://dev-app.wislegal.io/confirm-email'
@@ -84,12 +84,12 @@ Deno.serve(async (req: Request) => {
     });
 
     if (linkError || !linkData) {
-      console.error("Failed to generate magic link:", linkError);
+      console.error("Failed to generate confirmation link:", linkError);
       throw new Error(`Failed to generate confirmation link: ${linkError?.message || 'Unknown error'}`);
     }
 
     const confirmationUrl = linkData.properties.action_link;
-    console.log("Magic link generated successfully");
+    console.log("Email confirmation link generated successfully");
 
     console.log("Step 3: Sending email via Resend with template...");
 
