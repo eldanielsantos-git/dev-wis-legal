@@ -42,42 +42,41 @@ import { Loader } from 'lucide-react';
 function AppContent() {
   logger.log('AppContent', 'Rendering AppContent');
 
-  try {
-    const { user, loading } = useAuth();
-    logger.log('AppContent', 'User:', user?.id, 'Loading:', loading);
-    const [currentPath, setCurrentPath] = useState(window.location.pathname);
-    logger.log('AppContent', 'Current path:', currentPath);
+  const { user, loading } = useAuth();
+  logger.log('AppContent', 'User:', user?.id, 'Loading:', loading);
+  const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  logger.log('AppContent', 'Current path:', currentPath);
 
-    const navigate = (path: string) => {
-      window.history.pushState({}, '', path);
-      setCurrentPath(path);
+  const navigate = (path: string) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+  };
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
     };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
-    useEffect(() => {
-      const handlePopState = () => {
-        setCurrentPath(window.location.pathname);
-      };
-      window.addEventListener('popstate', handlePopState);
-      return () => window.removeEventListener('popstate', handlePopState);
-    }, []);
-
-    useEffect(() => {
-      if (currentPath === '/admin') {
-        window.history.replaceState({}, '', '/admin-settings');
-        setCurrentPath('/admin-settings');
-      }
-    }, [currentPath]);
-
-    if (loading) {
-      logger.log('AppContent', 'Showing loading spinner');
-      return (
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
-          <Loader className="w-8 h-8 text-white animate-spin" />
-        </div>
-      );
+  useEffect(() => {
+    if (currentPath === '/admin') {
+      window.history.replaceState({}, '', '/admin-settings');
+      setCurrentPath('/admin-settings');
     }
+  }, [currentPath]);
 
-    logger.log('AppContent', 'Not loading, continuing to render');
+  if (loading) {
+    logger.log('AppContent', 'Showing loading spinner');
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
+        <Loader className="w-8 h-8 text-white animate-spin" />
+      </div>
+    );
+  }
+
+  logger.log('AppContent', 'Not loading, continuing to render');
 
   if (currentPath === '/terms') {
     return <TermsPage onBack={() => navigate(user ? '/app' : '/sign-in')} />;
@@ -528,20 +527,6 @@ function AppContent() {
       />
       </RequireEmailVerification>
     );
-  } catch (error) {
-    logger.error('AppContent', 'Error in AppContent:', error);
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D', color: 'white' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h1>Erro ao carregar</h1>
-          <p>Por favor, recarregue a página</p>
-          <pre style={{ fontSize: '12px', color: '#888', marginTop: '20px' }}>
-            {String(error)}
-          </pre>
-        </div>
-      </div>
-    );
-  }
 }
 
 function App() {
