@@ -21,11 +21,18 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    console.log("=== SEND FRIEND INVITE - START ===");
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
+    }
+
+    if (!resendApiKey) {
+      throw new Error("Missing RESEND_API_KEY environment variable");
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -59,6 +66,8 @@ Deno.serve(async (req: Request) => {
 
     const { invitedName, invitedEmail }: InviteRequest = await req.json();
 
+    console.log("Request data:", { invitedName, invitedEmail, inviter_id: user.id });
+
     if (!invitedName || !invitedEmail) {
       return new Response(
         JSON.stringify({ error: "Nome e email s\u00e3o obrigat\u00f3rios" }),
@@ -80,6 +89,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("Step 1: Checking if email is already registered...");
     const { data: existingUser, error: checkUserError } = await supabaseClient
       .from("user_profiles")
       .select("email")
@@ -100,6 +110,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("Step 2: Checking for existing pending invite...");
     const { data: existingInvite, error: checkInviteError } = await supabaseClient
       .from("invite_friend")
       .select("id, status")
@@ -122,6 +133,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("Step 3: Saving invite to database...");
     const { data: invite, error: insertError } = await supabaseClient
       .from("invite_friend")
       .insert({
@@ -144,43 +156,83 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("✓ Invite saved successfully:", invite.id);
+
+    console.log("Step 4: Fetching inviter profile...");
     const { data: inviterProfile } = await supabaseClient
       .from("user_profiles")
       .select("first_name, last_name")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
 
-    const inviterName = inviterProfile
-      ? `${inviterProfile.first_name} ${inviterProfile.last_name}`
-      : "um colega";
+    const inviterFirstName = inviterProfile?.first_name || "um colega";
 
-    // Try to send invitation email via Supabase Auth
-    // If it fails (SMTP not configured), invitation is still saved successfully
-    try {
-      const { error: inviteError } = await supabaseClient.auth.admin.inviteUserByEmail(
-        invitedEmail.toLowerCase(),
-        {
-          redirectTo: `${supabaseUrl}/sign-up`,
-          data: {
-            invited_by: user.id,
-            inviter_name: inviterName,
-            invited_name: invitedName,
-            invite_id: invite.id,
-            invitation_type: 'friend_invite',
-          },
+    console.log("Step 5: Sending invitation email via Resend...");
+
+    const templateId = "35d5eb17-4f31-4787-bb3b-c344eeb00693";
+    const signUpUrl = `https://dev-app.wislegal.io/sign-up?invite=${invite.id}`;
+
+    const resendPayload = {
+      from: "WisLegal <noreply@wislegal.io>",
+      to: [invitedEmail.toLowerCase()],
+      template: {
+        id: templateId,
+        variables: {
+          invited_name: invitedName,
+          first_name: inviterFirstName,
+          signup_url: signUpUrl
         }
-      );
-
-      if (inviteError) {
-        console.error("\u26a0\ufe0f Email not sent (SMTP may not be configured):", inviteError.message);
-        console.log("\u2705 Invitation saved successfully without email");
-      } else {
-        console.log("\u2705 Invitation email sent successfully to:", invitedEmail);
       }
-    } catch (emailError) {
-      console.error("\u26a0\ufe0f Email sending failed (SMTP may not be configured):", emailError);
-      console.log("\u2705 Invitation saved successfully without email");
+    };
+
+    console.log("Sending email with template ID:", templateId);
+    console.log("Template variables:", {
+      invited_name: invitedName,
+      first_name: inviterFirstName,
+      signup_url: signUpUrl
+    });
+
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify(resendPayload),
+    });
+
+    let resendSuccess = false;
+    let resendResult: any = null;
+
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error("Resend API error:", resendResponse.status, errorText);
+      console.error("⚠️ Email not sent, but invite was saved successfully");
+    } else {
+      resendResult = await resendResponse.json();
+      console.log("✓ Email sent successfully via Resend template:", resendResult);
+      resendSuccess = true;
     }
+
+    console.log("Step 6: Logging email send to database...");
+    const { error: logError } = await supabaseClient
+      .from("email_logs")
+      .insert({
+        user_id: user.id,
+        email: invitedEmail.toLowerCase(),
+        type: "friend_invite",
+        status: resendSuccess ? "success" : "failed",
+        email_provider_response: { resend_id: resendResult?.id || null, invite_id: invite.id },
+        sent_at: new Date().toISOString()
+      });
+
+    if (logError) {
+      console.error("Failed to log email:", logError);
+    } else {
+      console.log("✓ Email send logged to database");
+    }
+
+    console.log("=== SEND FRIEND INVITE - SUCCESS ===");
 
     return new Response(
       JSON.stringify({
@@ -199,10 +251,13 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("Error in send-friend-invite function:", error);
+    console.error("💥 Error in send-friend-invite function:", error);
+    console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
+
     return new Response(
       JSON.stringify({
-        error: error instanceof Error ? error.message : "Erro desconhecido"
+        error: error instanceof Error ? error.message : "Erro desconhecido",
+        success: false
       }),
       {
         status: 500,

@@ -24,6 +24,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
   const [userEmail, setUserEmail] = useState('');
+  const [inviteId, setInviteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phoneCountryCode: '+55', phone: '', password: '', confirmPassword: '',
     oab: '', city: '', state: '', termsAccepted: false
@@ -31,6 +32,15 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const invite = urlParams.get('invite');
+    if (invite) {
+      setInviteId(invite);
+      console.log('[SignUp] Invite ID detected:', invite);
+    }
+  }, []);
 
   const [selectedState, setSelectedState] = useState<State | null>(null);
   const [passwordValidation, setPasswordValidation] = useState({
@@ -367,6 +377,26 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         state: formData.state,
         avatar_url: avatarUrl
       });
+
+      if (inviteId) {
+        try {
+          console.log('[SignUp] Updating invite status to accepted:', inviteId);
+          const { supabase } = await import('../lib/supabase');
+          const { error: updateError } = await supabase
+            .from('invite_friend')
+            .update({ status: 'accepted' })
+            .eq('id', inviteId);
+
+          if (updateError) {
+            console.error('[SignUp] Error updating invite status:', updateError);
+          } else {
+            console.log('[SignUp] Invite status updated successfully');
+          }
+        } catch (inviteErr) {
+          console.error('[SignUp] Exception updating invite:', inviteErr);
+        }
+      }
+
       setUserEmail(formData.email);
       setSuccess(true);
       setResendDisabled(true);
