@@ -97,44 +97,70 @@ Deno.serve(async (req: Request) => {
     let resendSuccess = false;
     let resendResult: any = null;
 
-    if (resendTemplateId) {
-      console.log("Using Resend template:", resendTemplateId);
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: #1a56db; color: white; padding: 30px; text-align: center; }
+          .content { padding: 30px; background: #f9f9f9; }
+          .button { display: inline-block; padding: 12px 30px; background: #1a56db; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }
+          .footer { padding: 20px; text-align: center; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>WisLegal</h1>
+          </div>
+          <div class="content">
+            <h2>Olá, ${finalFirstName}!</h2>
+            <p>Bem-vindo à WisLegal. Para concluir seu cadastro, por favor confirme seu email clicando no botão abaixo:</p>
+            <p style="text-align: center;">
+              <a href="${confirmationUrl}" class="button">Confirmar Email</a>
+            </p>
+            <p>Ou copie e cole o link abaixo no seu navegador:</p>
+            <p style="word-break: break-all; font-size: 12px; color: #666;">${confirmationUrl}</p>
+            <p><strong>Este link expira em 24 horas.</strong></p>
+          </div>
+          <div class="footer">
+            <p>Se você não solicitou este email, pode ignorá-lo com segurança.</p>
+            <p>&copy; ${new Date().getFullYear()} WisLegal. Todos os direitos reservados.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-      // Resend API format for templates
-      const resendPayload = {
-        from: "WisLegal <noreply@wislegal.io>",
-        to: [email],
-        subject: "Confirme seu email - WisLegal",
-        template_id: resendTemplateId,
-        template_variables: {
-          first_name: finalFirstName,
-          confirmation_url: confirmationUrl
-        }
-      };
+    const resendPayload = {
+      from: "WisLegal <noreply@wislegal.io>",
+      to: [email],
+      subject: "Confirme seu email - WisLegal",
+      html: htmlContent
+    };
 
-      console.log("Resend payload:", JSON.stringify(resendPayload, null, 2));
+    console.log("Sending email with HTML content (no template)");
 
-      const resendResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${resendApiKey}`,
-        },
-        body: JSON.stringify(resendPayload),
-      });
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${resendApiKey}`,
+      },
+      body: JSON.stringify(resendPayload),
+    });
 
-      if (!resendResponse.ok) {
-        const errorText = await resendResponse.text();
-        console.error("Resend API error:", resendResponse.status, errorText);
-        throw new Error(`Failed to send email via Resend template: ${resendResponse.status} - ${errorText}`);
-      } else {
-        resendResult = await resendResponse.json();
-        console.log("✓ Email sent successfully via Resend template:", resendResult);
-        resendSuccess = true;
-      }
+    if (!resendResponse.ok) {
+      const errorText = await resendResponse.text();
+      console.error("Resend API error:", resendResponse.status, errorText);
+      throw new Error(`Failed to send email via Resend: ${resendResponse.status} - ${errorText}`);
     } else {
-      console.log("No template ID configured");
-      throw new Error("Template ID not configured");
+      resendResult = await resendResponse.json();
+      console.log("✓ Email sent successfully via Resend:", resendResult);
+      resendSuccess = true;
     }
 
     console.log("Step 4: Logging email send to database...");
