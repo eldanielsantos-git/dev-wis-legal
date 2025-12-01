@@ -435,26 +435,46 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       setIsEmailLoading(true);
       setMessage(null);
 
-      const { data, error: updateError } = await supabase.auth.updateUser({
-        email: newEmail,
-      });
+      // Chamar nossa edge function para enviar o email de confirmação
+      const { data: { session } } = await supabase.auth.getSession();
 
-      if (updateError) {
-        throw updateError;
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-change-email`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            user_id: user.id,
+            old_email: user.email,
+            new_email: newEmail,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao enviar email de confirmação');
       }
 
-      if (!data.user) {
-        throw new Error('Erro ao atualizar email');
-      }
+      const result = await response.json();
+      console.log('Email change confirmation sent:', result);
 
       setNewEmail('');
       setIsEditingEmail(false);
-      setShowEmailSuccessModal(true);
+      setMessage({
+        type: 'success',
+        text: 'Email de confirmação enviado! Verifique sua caixa de entrada do email atual.'
+      });
+
       setTimeout(() => {
-        setShowEmailSuccessModal(false);
-      }, 3000);
+        setMessage(null);
+      }, 5000);
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar email' });
+      console.error('Error sending email change confirmation:', error);
+      setMessage({ type: 'error', text: error.message || 'Erro ao enviar confirmação de troca de email' });
     } finally {
       setIsEmailLoading(false);
     }
