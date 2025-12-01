@@ -44,11 +44,14 @@ import { RequireEmailVerification } from './components/RequireEmailVerification'
 import { Loader } from 'lucide-react';
 
 function AppContent() {
+  console.log('🎬 [AppContent] RENDERING AppContent');
   logger.log('AppContent', 'Rendering AppContent');
 
   const { user, loading } = useAuth();
+  console.log('🔑 [AppContent] Auth state:', { userId: user?.id, loading });
   logger.log('AppContent', 'User:', user?.id, 'Loading:', loading);
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+  console.log('🛣️ [AppContent] Current path:', currentPath);
   logger.log('AppContent', 'Current path:', currentPath);
 
   const navigate = (path: string) => {
@@ -72,6 +75,7 @@ function AppContent() {
   }, [currentPath]);
 
   if (loading) {
+    console.log('⏳ [AppContent] Still loading, showing spinner');
     logger.log('AppContent', 'Showing loading spinner');
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
@@ -80,6 +84,7 @@ function AppContent() {
     );
   }
 
+  console.log('✅ [AppContent] Loading complete, checking routes');
   logger.log('AppContent', 'Not loading, continuing to render');
   logger.log('AppContent', 'Checking routes - currentPath:', currentPath, 'user:', user?.id);
 
