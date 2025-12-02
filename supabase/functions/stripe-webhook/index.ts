@@ -290,7 +290,7 @@ async function processOneTimePayment(eventId: string, customerId: string, sessio
 
     console.info(`${logPrefix} Extracted price ID: ${priceId}`);
 
-    const tokensToAdd = getTokenPackageAmount(priceId);
+    const tokensToAdd = await getTokenPackageAmount(priceId);
 
     if (tokensToAdd === 0) {
       console.info(`${logPrefix} Price ID ${priceId} is not a token package, skipping token credit`);
@@ -502,13 +502,30 @@ async function creditTokensToSubscription(
   }
 }
 
-function getTokenPackageAmount(priceId: string): number {
-  const tokenPackages: Record<string, number> = {
-    'price_1SG44PJrr43cGTt4SX4jYSaB': 1000000,
-    'price_1SG45HJrr43cGTt4sP0VfNsz': 2000000,
-  };
+async function getTokenPackageAmount(priceId: string): Promise<number> {
+  try {
+    const { data: tokenPackage, error } = await supabase
+      .from('token_packages')
+      .select('tokens_amount')
+      .eq('stripe_price_id', priceId)
+      .eq('is_active', true)
+      .maybeSingle();
 
-  return tokenPackages[priceId] || 0;
+    if (error) {
+      console.error(`[getTokenPackageAmount] Error fetching token package for price_id ${priceId}:`, error);
+      return 0;
+    }
+
+    if (!tokenPackage) {
+      console.warn(`[getTokenPackageAmount] No token package found for price_id ${priceId}`);
+      return 0;
+    }
+
+    return tokenPackage.tokens_amount || 0;
+  } catch (error: any) {
+    console.error(`[getTokenPackageAmount] Error:`, error);
+    return 0;
+  }
 }
 
 async function syncCustomerFromStripe(customerId: string, eventId: string) {
