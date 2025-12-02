@@ -233,9 +233,19 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }
 
   // Calcular tokens disponíveis totais (considera tanto assinatura quanto balance geral)
-  const totalAvailableTokens = balance
-    ? (balance.plan_tokens + balance.extra_tokens - (balance.tokens_used || 0))
+  const totalAvailableTokens = (balance && !balance.loading)
+    ? balance.tokensRemaining
     : subscriptionStatus.tokensRemaining;
+
+  // Debug logs
+  console.log('[FileUpload] Debug:', {
+    hasBalance: !!balance,
+    balanceLoading: balance?.loading,
+    balanceTokensRemaining: balance?.tokensRemaining,
+    subscriptionTokensRemaining: subscriptionStatus.tokensRemaining,
+    totalAvailableTokens: totalAvailableTokens,
+    calculatedPages: Math.round(totalAvailableTokens / 5500)
+  });
 
   if (!subscriptionStatus.hasSubscription && totalAvailableTokens === 0 && !loading && !processingStatus) {
     return (

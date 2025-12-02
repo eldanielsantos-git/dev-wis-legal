@@ -145,6 +145,56 @@ export class TokenValidationService {
     planName: string;
   }> {
     try {
+      // Buscar do user_token_balance que considera plan_tokens + extra_tokens
+      const { data: balanceData, error: balanceError } = await supabase
+        .from('user_token_balance')
+        .select('plan_tokens, extra_tokens, tokens_total, tokens_used')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (balanceError) {
+        console.error('[TokenValidationService] Error fetching user_token_balance:', balanceError);
+      }
+
+      if (balanceData) {
+        const tokensTotal = balanceData.tokens_total || 0;
+        const tokensUsed = balanceData.tokens_used || 0;
+        const tokensRemaining = Math.max(tokensTotal - tokensUsed, 0);
+        const pagesRemaining = this.calculatePagesFromTokens(tokensRemaining);
+
+        // Tentar identificar o plano a partir da assinatura
+        const { data: customerData } = await supabase
+          .from('stripe_customers')
+          .select('customer_id')
+          .eq('user_id', userId)
+          .is('deleted_at', null)
+          .maybeSingle();
+
+        let planName = 'Tokens Disponíveis';
+
+        if (customerData) {
+          const { data: subscriptionData } = await supabase
+            .from('stripe_subscriptions')
+            .select('price_id, status')
+            .eq('customer_id', customerData.customer_id)
+            .is('deleted_at', null)
+            .maybeSingle();
+
+          if (subscriptionData && subscriptionData.price_id) {
+            planName = PLAN_NAMES[subscriptionData.price_id] || 'Plano Ativo';
+          }
+        }
+
+        return {
+          tokensTotal,
+          tokensUsed,
+          tokensRemaining,
+          pagesRemaining,
+          planName,
+        };
+      }
+
+      // Fallback: buscar da assinatura Stripe (comportamento antigo)
       const { data: customerData, error: customerError } = await supabase
         .from('stripe_customers')
         .select('customer_id')
