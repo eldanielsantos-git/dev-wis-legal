@@ -672,6 +672,15 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           remaining_preserved: remainingPlanTokens,
         },
       });
+
+      console.info(`${logPrefix} Sending upgrade email for plan change`);
+      await sendSubscriptionUpgradeEmail(
+        eventId,
+        subscription.id,
+        existingSub?.price_id || '',
+        priceId,
+        remainingPlanTokens
+      );
     } else if (isNewBillingPeriod) {
       console.info(`${logPrefix} New billing period detected - resetting tokens_used to 0`);
       finalTokensUsed = 0;
@@ -793,5 +802,52 @@ async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId
 
   } catch (error: any) {
     console.error(`${logPrefix} Error sending subscription confirmation email:`, error);
+  }
+}
+
+async function sendSubscriptionUpgradeEmail(
+  eventId: string,
+  subscriptionId: string,
+  oldPriceId: string,
+  newPriceId: string,
+  tokensPreserved: number
+) {
+  const logPrefix = `[${eventId}]`;
+
+  try {
+    console.info(`${logPrefix} Calling edge function to send subscription upgrade email`);
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-subscription-upgrade-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        subscription_id: subscriptionId,
+        old_price_id: oldPriceId,
+        new_price_id: newPriceId,
+        tokens_preserved: tokensPreserved
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`${logPrefix} Failed to send subscription upgrade email:`, response.status, errorText);
+      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.info(`${logPrefix} Subscription upgrade email sent successfully:`, result);
+
+  } catch (error: any) {
+    console.error(`${logPrefix} Error sending subscription upgrade email:`, error);
   }
 }
