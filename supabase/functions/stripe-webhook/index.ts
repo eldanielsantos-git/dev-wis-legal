@@ -575,6 +575,9 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
             },
           });
 
+          console.info(`${logPrefix} Sending cancellation email`);
+          await sendSubscriptionCancellationEmail(eventId, customerId);
+
           return;
         } else {
           console.info(`${logPrefix} Subscription period expired (${periodEndDate.toISOString()}), zeroing tokens`);
@@ -912,5 +915,57 @@ async function sendSubscriptionDowngradeEmail(
 
   } catch (error: any) {
     console.error(`${logPrefix} Error sending subscription downgrade email:`, error);
+  }
+}
+
+async function sendSubscriptionCancellationEmail(
+  eventId: string,
+  customerId: string
+) {
+  const logPrefix = `[${eventId}]`;
+
+  try {
+    console.info(`${logPrefix} Calling edge function to send subscription cancellation email`);
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const { data: subscriptionData } = await supabase
+      .from('stripe_subscriptions')
+      .select('subscription_id')
+      .eq('customer_id', customerId)
+      .maybeSingle();
+
+    if (!subscriptionData?.subscription_id) {
+      console.warn(`${logPrefix} No subscription_id found for customer ${customerId}`);
+      return;
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-subscription-cancellation-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        subscription_id: subscriptionData.subscription_id
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`${logPrefix} Failed to send subscription cancellation email:`, response.status, errorText);
+      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.info(`${logPrefix} Subscription cancellation email sent successfully:`, result);
+
+  } catch (error: any) {
+    console.error(`${logPrefix} Error sending subscription cancellation email:`, error);
   }
 }
