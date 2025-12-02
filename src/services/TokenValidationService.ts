@@ -37,80 +37,69 @@ export class TokenValidationService {
     try {
       const tokensRequired = this.calculateTokensFromPages(pageCount);
 
-      const { data: customerData, error: customerError } = await supabase
+      // Buscar do user_token_balance que considera plan_tokens + extra_tokens
+      const { data: balanceData, error: balanceError } = await supabase
+        .from('user_token_balance')
+        .select('plan_tokens, extra_tokens, tokens_total, tokens_used')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (balanceError) {
+        console.error('[TokenValidationService] Error fetching user_token_balance:', balanceError);
+        throw balanceError;
+      }
+
+      // Se não tem dados na view, significa que não tem tokens disponíveis
+      if (!balanceData) {
+        return {
+          hasSubscription: false,
+          hasSufficientTokens: false,
+          tokensRemaining: 0,
+          tokensTotal: 0,
+          tokensUsed: 0,
+          tokensRequired,
+          pagesRemaining: 0,
+          message: 'Você não tem tokens disponíveis. Adquira tokens ou assine um plano para começar.',
+        };
+      }
+
+      const tokensTotal = balanceData.tokens_total || 0;
+      const tokensUsed = balanceData.tokens_used || 0;
+      const tokensRemaining = Math.max(tokensTotal - tokensUsed, 0);
+      const hasSufficientTokens = tokensRemaining >= tokensRequired;
+      const pagesRemaining = this.calculatePagesFromTokens(tokensRemaining);
+
+      // Verificar se tem assinatura ativa (para informação, não bloqueia)
+      const { data: customerData } = await supabase
         .from('stripe_customers')
         .select('customer_id')
         .eq('user_id', userId)
         .is('deleted_at', null)
         .maybeSingle();
 
-      if (customerError) {
-        console.error('Error fetching customer:', customerError);
-        throw customerError;
+      let hasSubscription = false;
+      let planName = 'Tokens Avulsos';
+
+      if (customerData) {
+        const { data: subscriptionData } = await supabase
+          .from('stripe_subscriptions')
+          .select('price_id, status, current_period_end')
+          .eq('customer_id', customerData.customer_id)
+          .is('deleted_at', null)
+          .maybeSingle();
+
+        if (subscriptionData) {
+          const isActiveStatus = ['active', 'trialing'].includes(subscriptionData.status);
+          const isCanceledButValid = subscriptionData.status === 'canceled' &&
+            subscriptionData.current_period_end &&
+            new Date(subscriptionData.current_period_end * 1000) > new Date();
+
+          if (isActiveStatus || isCanceledButValid) {
+            hasSubscription = true;
+            planName = PLAN_NAMES[subscriptionData.price_id] || 'Plano Ativo';
+          }
+        }
       }
-
-      if (!customerData) {
-        return {
-          hasSubscription: false,
-          hasSufficientTokens: false,
-          tokensRemaining: 0,
-          tokensTotal: 0,
-          tokensUsed: 0,
-          tokensRequired,
-          pagesRemaining: 0,
-          message: 'Nenhuma assinatura ativa encontrada. Assine um plano para começar.',
-        };
-      }
-
-      const { data: subscriptionData, error: subscriptionError } = await supabase
-        .from('stripe_subscriptions')
-        .select('tokens_total, tokens_used, price_id, status, current_period_end')
-        .eq('customer_id', customerData.customer_id)
-        .is('deleted_at', null)
-        .maybeSingle();
-
-      if (subscriptionError) {
-        console.error('Error fetching subscription:', subscriptionError);
-        throw subscriptionError;
-      }
-
-      if (!subscriptionData) {
-        return {
-          hasSubscription: false,
-          hasSufficientTokens: false,
-          tokensRemaining: 0,
-          tokensTotal: 0,
-          tokensUsed: 0,
-          tokensRequired,
-          pagesRemaining: 0,
-          message: 'Nenhuma assinatura encontrada. Assine um plano para processar documentos.',
-        };
-      }
-
-      const isActiveStatus = ['active', 'trialing'].includes(subscriptionData.status);
-      const isCanceledButValid = subscriptionData.status === 'canceled' &&
-        subscriptionData.current_period_end &&
-        new Date(subscriptionData.current_period_end * 1000) > new Date();
-
-      if (!isActiveStatus && !isCanceledButValid) {
-        return {
-          hasSubscription: false,
-          hasSufficientTokens: false,
-          tokensRemaining: 0,
-          tokensTotal: 0,
-          tokensUsed: 0,
-          tokensRequired,
-          pagesRemaining: 0,
-          message: 'Nenhuma assinatura ativa. Assine um plano para processar documentos.',
-        };
-      }
-
-      const tokensTotal = subscriptionData.tokens_total || 0;
-      const tokensUsed = subscriptionData.tokens_used || 0;
-      const tokensRemaining = Math.max(tokensTotal - tokensUsed, 0);
-      const hasSufficientTokens = tokensRemaining >= tokensRequired;
-      const pagesRemaining = this.calculatePagesFromTokens(tokensRemaining);
-      const planName = PLAN_NAMES[subscriptionData.price_id] || 'Plano Ativo';
 
       let message = '';
       if (hasSufficientTokens) {
@@ -121,7 +110,7 @@ export class TokenValidationService {
       }
 
       return {
-        hasSubscription: true,
+        hasSubscription,
         hasSufficientTokens,
         tokensRemaining,
         tokensTotal,

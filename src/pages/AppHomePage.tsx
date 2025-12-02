@@ -307,19 +307,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
         const tokenCheck = await TokenValidationService.checkTokensBeforeUpload(user.id, pageCount);
 
-        if (!tokenCheck.hasSubscription) {
-          setLoading(false);
-          setUpgradeModal({
-            isOpen: true,
-            tokensRequired: tokenCheck.tokensRequired,
-            tokensAvailable: 0,
-            pagesRequired: pageCount,
-            pagesAvailable: 0,
-            reason: 'no_subscription',
-          });
-          return;
-        }
-
+        // Apenas verificar se tem tokens suficientes, independente de ter assinatura
         if (!tokenCheck.hasSufficientTokens) {
           setLoading(false);
           setUpgradeModal({

@@ -237,16 +237,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     ? balance.tokensRemaining
     : subscriptionStatus.tokensRemaining;
 
-  // Debug logs
-  console.log('[FileUpload] Debug:', {
-    hasBalance: !!balance,
-    balanceLoading: balance?.loading,
-    balanceTokensRemaining: balance?.tokensRemaining,
-    subscriptionTokensRemaining: subscriptionStatus.tokensRemaining,
-    totalAvailableTokens: totalAvailableTokens,
-    calculatedPages: Math.round(totalAvailableTokens / 5500)
-  });
-
   if (!subscriptionStatus.hasSubscription && totalAvailableTokens === 0 && !loading && !processingStatus) {
     return (
       <div className="w-full">
