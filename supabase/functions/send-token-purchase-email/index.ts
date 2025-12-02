@@ -61,30 +61,58 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: tokenBalance, error: balanceError } = await supabase
-      .from('user_token_balance')
-      .select('subscription_tokens, extra_tokens, total_tokens')
+    // Buscar customer_id do usuário
+    const { data: customer, error: customerError } = await supabase
+      .from('stripe_customers')
+      .select('customer_id')
       .eq('user_id', user_id)
+      .is('deleted_at', null)
       .maybeSingle();
 
-    if (balanceError) {
-      console.error('[send-token-purchase-email] Error fetching token balance:', balanceError);
+    if (customerError) {
+      console.error('[send-token-purchase-email] Error fetching customer:', customerError);
     }
 
-    const { data: subscription, error: subError } = await supabase
-      .from('stripe_user_subscriptions')
-      .select('plan_name')
-      .eq('user_id', user_id)
-      .maybeSingle();
+    let planName = 'Gratuito';
+    let planTokens = '0';
+    let extraTokens = '0';
+    let totalTokens = '0';
 
-    if (subError) {
-      console.error('[send-token-purchase-email] Error fetching subscription:', subError);
+    if (customer?.customer_id) {
+      // Buscar dados REAIS da assinatura
+      const { data: subscription, error: subError } = await supabase
+        .from('stripe_subscriptions')
+        .select('plan_tokens, extra_tokens, tokens_total, price_id')
+        .eq('customer_id', customer.customer_id)
+        .eq('status', 'active')
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (subError) {
+        console.error('[send-token-purchase-email] Error fetching subscription:', subError);
+      }
+
+      if (subscription) {
+        // Buscar nome do plano pelo price_id
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('name')
+          .eq('stripe_price_id', subscription.price_id)
+          .maybeSingle();
+
+        planName = plan?.name || 'Premium';
+        planTokens = formatNumber(subscription.plan_tokens || 0);
+        extraTokens = formatNumber(subscription.extra_tokens || 0);
+        totalTokens = formatNumber(subscription.tokens_total || 0);
+
+        console.log('[send-token-purchase-email] Token balance:', {
+          planName,
+          planTokens,
+          extraTokens,
+          totalTokens
+        });
+      }
     }
-
-    const planName = subscription?.plan_name || 'Gratuito';
-    const planTokens = formatNumber(tokenBalance?.subscription_tokens || 0);
-    const extraTokens = formatNumber(tokenBalance?.extra_tokens || 0);
-    const totalTokens = formatNumber(tokenBalance?.total_tokens || 0);
     const formattedTokensPurchased = formatNumber(tokens_purchased);
 
     const currentDate = new Date().toLocaleDateString('pt-BR', {
