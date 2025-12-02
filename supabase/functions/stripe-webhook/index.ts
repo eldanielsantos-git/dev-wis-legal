@@ -99,23 +99,19 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
-  if (event.type === 'setup_intent.created') {
-    console.info(`[${event.id}] Setup intent created: ${stripeData.id}`);
-    return;
-  }
-
-  if (event.type === 'v1.billing.meter.error_report_triggered') {
-    console.warn(`[${event.id}] Billing meter error triggered: ${JSON.stringify(stripeData)}`);
-    return;
-  }
-
   const informationalEvents = [
-    'invoice.upcoming',
+    'charge.succeeded',
+    'charge.updated',
+    'payment_intent.created',
+    'payment_intent.processing',
+    'customer.updated',
     'invoice.created',
     'invoice.finalized',
-    'invoice.payment_action_required',
-    'customer.created',
-    'customer.updated',
+    'invoice.paid',
+    'invoice.payment_succeeded',
+    'invoice.upcoming',
+    'customer.source.created',
+    'customer.source.updated',
     'payment_method.attached',
     'payment_method.detached',
   ];
@@ -460,8 +456,8 @@ async function creditTokensToSubscription(
       status: 'failed',
       error_message: updateError.message,
       subscription_found: true,
-      previous_extra_tokens: previousExtraTokens,
-      new_extra_tokens: newExtraTokens,
+      before_extra_tokens: previousExtraTokens,
+      after_extra_tokens: newExtraTokens,
       processing_time_ms: Date.now() - operationStartTime,
       metadata: {
         target_customer_id: targetCustomerId,
@@ -483,8 +479,8 @@ async function creditTokensToSubscription(
     operation: 'credit_tokens',
     status: 'success',
     subscription_found: true,
-    previous_extra_tokens: previousExtraTokens,
-    new_extra_tokens: newExtraTokens,
+    before_extra_tokens: previousExtraTokens,
+    after_extra_tokens: newExtraTokens,
     processing_time_ms: Date.now() - operationStartTime,
     metadata: {
       target_customer_id: targetCustomerId,
@@ -507,76 +503,70 @@ async function creditTokensToSubscription(
 }
 
 function getTokenPackageAmount(priceId: string): number {
-  const tokenPackages: { [key: string]: number } = {
-    'price_1SGGa8Jrr43cGTt40LYw4F9X': 1200000,
-    'price_1SGGb1Jrr43cGTt4oSjKhLHo': 2000000,
-    'price_1SGAQHJrr43cGTt4dKkvB9lD': 2000000,
-    'price_1SGAPJJrr43cGTt4r7k4qYZe': 1200000,
+  const tokenPackages: Record<string, number> = {
+    'price_1SG44PJrr43cGTt4SX4jYSaB': 1000000,
+    'price_1SG45HJrr43cGTt4sP0VfNsz': 2000000,
   };
 
   return tokenPackages[priceId] || 0;
 }
 
-async function logTokenCreditAudit(auditData: any) {
-  try {
-    const { error } = await supabase.from('token_credits_audit').insert(auditData);
-    if (error) {
-      console.error('[Audit Log] Failed to insert audit record:', error);
-    }
-  } catch (error: any) {
-    console.error('[Audit Log] Exception while inserting audit record:', error);
-  }
-}
-
 async function syncCustomerFromStripe(customerId: string, eventId: string) {
   const logPrefix = `[${eventId}]`;
+
   try {
-    console.info(`${logPrefix} Fetching subscriptions for customer: ${customerId}`);
+    console.info(`${logPrefix} Syncing subscription for customer ${customerId}`);
+
+    const { data: existingSub } = await supabase
+      .from('stripe_subscriptions')
+      .select('*')
+      .eq('customer_id', customerId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    let lastPlanChangeAt = null;
 
     const subscriptions = await stripe.subscriptions.list({
       customer: customerId,
-      limit: 1,
       status: 'all',
-      expand: ['data.default_payment_method'],
+      limit: 100,
     });
 
+    console.info(`${logPrefix} Found ${subscriptions.data.length} subscriptions for customer ${customerId}`);
+
     if (subscriptions.data.length === 0) {
-      console.info(`${logPrefix} No subscriptions found for customer: ${customerId}`);
+      console.info(`${logPrefix} No subscriptions found for customer ${customerId}`);
 
-      const { data: existingSub } = await supabase
-        .from('stripe_subscriptions')
-        .select('plan_tokens, extra_tokens, tokens_used, tokens_total, current_period_end, status')
-        .eq('customer_id', customerId)
-        .maybeSingle();
-
-      if (existingSub && existingSub.current_period_end) {
-        const periodEndDate = new Date(existingSub.current_period_end * 1000);
+      if (existingSub && existingSub.status !== 'canceled') {
+        const currentPeriodEnd = existingSub.current_period_end;
+        const periodEndDate = new Date(currentPeriodEnd * 1000);
         const now = new Date();
-        const isWithinValidPeriod = periodEndDate > now;
 
-        if (isWithinValidPeriod) {
-          console.info(`${logPrefix} Canceled subscription still within valid period (until ${periodEndDate.toISOString()})`);
-          console.info(`${logPrefix} Preserving tokens: ${existingSub.tokens_total} total, ${existingSub.tokens_used} used`);
+        if (periodEndDate > now) {
+          console.info(`${logPrefix} Subscription period still valid until ${periodEndDate.toISOString()}, marking as canceled`);
 
-          const { error: updateError } = await supabase
+          const { error: cancelError } = await supabase
             .from('stripe_subscriptions')
             .update({
               status: 'canceled',
+              cancel_at_period_end: false,
               updated_at: new Date().toISOString(),
             })
-            .eq('customer_id', customerId);
+            .eq('customer_id', customerId)
+            .is('deleted_at', null);
 
-          if (updateError) {
-            console.error(`${logPrefix} Error updating canceled subscription:`, updateError);
-            throw updateError;
+          if (cancelError) {
+            console.error(`${logPrefix} Error marking subscription as canceled:`, cancelError);
+            throw cancelError;
           }
 
           await logTokenCreditAudit({
             event_id: eventId,
-            event_type: 'subscription_canceled_preserve_tokens',
+            event_type: 'customer.subscription.deleted',
             customer_id: customerId,
-            operation: 'preserve_tokens_within_period',
+            operation: 'mark_subscription_canceled',
             status: 'success',
+            subscription_found: true,
             tokens_amount: existingSub.tokens_total - existingSub.tokens_used,
             processing_time_ms: 0,
             metadata: {
@@ -628,114 +618,55 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     const priceId = subscription.items?.data[0]?.price?.id;
     const planTokens = await getPlanTokensFromPriceId(priceId || '');
 
-    console.info(`${logPrefix} Price ID: ${priceId}, Plan tokens: ${planTokens}`);
+    console.info(`${logPrefix} Plan tokens for price ${priceId}: ${planTokens}`);
 
-    const { data: existingSub } = await supabase
-      .from('stripe_subscriptions')
-      .select('extra_tokens, plan_tokens, tokens_used, price_id, current_period_start, tokens_carried_forward, cancel_at_period_end')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
+    let finalPlanTokens = planTokens;
     let finalExtraTokens = existingSub?.extra_tokens || 0;
-    let finalTokensUsed = existingSub?.tokens_used || 0;
-    let tokensCarriedForward = existingSub?.tokens_carried_forward || 0;
-    let lastPlanChangeAt = null;
+    let finalTokensUsed = 0;
+    let tokensCarriedForward = 0;
 
-    const isNewBillingPeriod = existingSub && existingSub.current_period_start !== subscription.current_period_start;
-    const isPlanChange = existingSub && existingSub.price_id && existingSub.price_id !== priceId;
+    if (existingSub) {
+      const oldPriceId = existingSub.price_id;
 
-    console.info(`${logPrefix} Existing subscription analysis:`);
-    console.info(`${logPrefix} - isNewBillingPeriod: ${isNewBillingPeriod}`);
-    console.info(`${logPrefix} - isPlanChange: ${isPlanChange}`);
-    console.info(`${logPrefix} - Current plan_tokens: ${existingSub?.plan_tokens || 0}`);
-    console.info(`${logPrefix} - Current extra_tokens: ${existingSub?.extra_tokens || 0}`);
-    console.info(`${logPrefix} - Current tokens_used: ${existingSub?.tokens_used || 0}`);
+      if (priceId !== oldPriceId) {
+        console.info(`${logPrefix} Plan change detected: ${oldPriceId} -> ${priceId}`);
+        lastPlanChangeAt = new Date().toISOString();
 
-    if (isPlanChange) {
-      const oldPlanTokens = existingSub?.plan_tokens || 0;
-      const tokensUsed = existingSub?.tokens_used || 0;
-      const remainingPlanTokens = Math.max(0, oldPlanTokens - tokensUsed);
+        const remainingTokens = existingSub.tokens_total - existingSub.tokens_used;
 
-      const isUpgrade = planTokens > oldPlanTokens;
-      const isDowngrade = planTokens < oldPlanTokens;
+        if (remainingTokens > 0) {
+          tokensCarriedForward = remainingTokens;
+          finalExtraTokens += remainingTokens;
+          console.info(`${logPrefix} Carrying forward ${remainingTokens} unused tokens as extra_tokens`);
+        }
 
-      console.info(`${logPrefix} Plan change detected (${isUpgrade ? 'UPGRADE' : isDowngrade ? 'DOWNGRADE' : 'LATERAL'}):`);
-      console.info(`${logPrefix} - Old plan: ${existingSub?.price_id} -> New plan: ${priceId}`);
-      console.info(`${logPrefix} - Old plan tokens: ${oldPlanTokens}`);
-      console.info(`${logPrefix} - New plan tokens: ${planTokens}`);
-      console.info(`${logPrefix} - Tokens used from old plan: ${tokensUsed}`);
-      console.info(`${logPrefix} - Remaining plan tokens to preserve: ${remainingPlanTokens}`);
+        finalTokensUsed = 0;
 
-      finalExtraTokens = (existingSub?.extra_tokens || 0) + remainingPlanTokens;
-      finalTokensUsed = 0;
-      tokensCarriedForward = (existingSub?.tokens_carried_forward || 0) + remainingPlanTokens;
-      lastPlanChangeAt = new Date().toISOString();
-
-      console.info(`${logPrefix} - New extra_tokens (with carried forward): ${finalExtraTokens}`);
-      console.info(`${logPrefix} - Tokens_used reset to 0 (new plan starts fresh)`);
-      console.info(`${logPrefix} - Total tokens_carried_forward: ${tokensCarriedForward}`);
-      console.info(`${logPrefix} - Total available: ${planTokens + finalExtraTokens}`);
-
-      await logTokenCreditAudit({
-        event_id: eventId,
-        event_type: 'plan_change',
-        customer_id: customerId,
-        operation: 'preserve_remaining_tokens',
-        status: 'success',
-        tokens_amount: remainingPlanTokens,
-        previous_extra_tokens: existingSub?.extra_tokens || 0,
-        new_extra_tokens: finalExtraTokens,
-        processing_time_ms: 0,
-        metadata: {
-          old_price_id: existingSub?.price_id,
-          new_price_id: priceId,
-          old_plan_tokens: oldPlanTokens,
-          new_plan_tokens: planTokens,
-          tokens_used: tokensUsed,
-          remaining_preserved: remainingPlanTokens,
-          change_type: isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'lateral',
-        },
-      });
-
-      if (isUpgrade) {
-        console.info(`${logPrefix} Sending upgrade email for plan change`);
-        await sendSubscriptionUpgradeEmail(
-          eventId,
-          subscription.id,
-          existingSub?.price_id || '',
-          priceId,
-          remainingPlanTokens
-        );
-      } else if (isDowngrade) {
-        console.info(`${logPrefix} Sending downgrade email for plan change`);
-        await sendSubscriptionDowngradeEmail(
-          eventId,
-          subscription.id,
-          existingSub?.price_id || '',
-          priceId,
-          remainingPlanTokens
-        );
+        await logTokenCreditAudit({
+          event_id: eventId,
+          event_type: 'plan_change',
+          customer_id: customerId,
+          price_id: priceId,
+          operation: 'plan_change_carry_forward',
+          status: 'success',
+          subscription_found: true,
+          before_plan_tokens: existingSub.plan_tokens,
+          before_extra_tokens: existingSub.extra_tokens,
+          before_tokens_total: existingSub.tokens_total,
+          after_plan_tokens: finalPlanTokens,
+          after_extra_tokens: finalExtraTokens,
+          after_tokens_total: finalPlanTokens + finalExtraTokens,
+          tokens_amount: tokensCarriedForward,
+          processing_time_ms: 0,
+          metadata: {
+            old_price_id: oldPriceId,
+            new_price_id: priceId,
+            tokens_carried_forward: tokensCarriedForward,
+          },
+        });
+      } else {
+        finalTokensUsed = existingSub.tokens_used || 0;
       }
-    } else if (isNewBillingPeriod) {
-      console.info(`${logPrefix} New billing period detected - resetting tokens_used to 0`);
-      finalTokensUsed = 0;
-
-      await logTokenCreditAudit({
-        event_id: eventId,
-        event_type: 'billing_period_renewed',
-        customer_id: customerId,
-        operation: 'reset_tokens_used',
-        status: 'success',
-        tokens_amount: planTokens,
-        processing_time_ms: 0,
-        metadata: {
-          previous_tokens_used: existingSub?.tokens_used || 0,
-          plan_tokens: planTokens,
-          extra_tokens: finalExtraTokens,
-        },
-      });
-    } else {
-      console.info(`${logPrefix} No plan change or billing period change - preserving existing state`);
     }
 
     const subscriptionData: any = {
@@ -745,8 +676,14 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       status: subscription.status,
       current_period_start: subscription.current_period_start,
       current_period_end: subscription.current_period_end,
-      cancel_at_period_end: subscription.cancel_at_period_end,
-      plan_tokens: planTokens,
+      cancel_at_period_end: subscription.cancel_at_period_end || false,
+      payment_method_brand: subscription.default_payment_method
+        ? ((await stripe.paymentMethods.retrieve(subscription.default_payment_method as string)).card?.brand || null)
+        : null,
+      payment_method_last4: subscription.default_payment_method
+        ? ((await stripe.paymentMethods.retrieve(subscription.default_payment_method as string)).card?.last4 || null)
+        : null,
+      plan_tokens: finalPlanTokens,
       extra_tokens: finalExtraTokens,
       tokens_used: finalTokensUsed,
       tokens_carried_forward: tokensCarriedForward,
@@ -757,7 +694,11 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       subscriptionData.last_plan_change_at = lastPlanChangeAt;
     }
 
-    const wasCanceled = existingSub && !existingSub.cancel_at_period_end && subscription.cancel_at_period_end;
+    const wasCanceledAtPeriodEnd = existingSub && !existingSub.cancel_at_period_end && subscription.cancel_at_period_end;
+    const wasImmediatelyCanceled = existingSub &&
+      existingSub.status === 'active' &&
+      subscription.status === 'canceled' &&
+      !subscription.cancel_at_period_end;
 
     console.info(`${logPrefix} Upserting subscription data for customer: ${customerId}`);
 
@@ -770,8 +711,11 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       throw upsertError;
     }
 
-    if (wasCanceled) {
+    if (wasCanceledAtPeriodEnd) {
       console.info(`${logPrefix} Subscription was canceled (cancel_at_period_end set to true), sending cancellation email`);
+      await sendSubscriptionCancellationEmail(eventId, customerId);
+    } else if (wasImmediatelyCanceled) {
+      console.info(`${logPrefix} Subscription was immediately canceled (status: active → canceled), sending cancellation email`);
       await sendSubscriptionCancellationEmail(eventId, customerId);
     }
 
@@ -797,19 +741,52 @@ async function getPlanTokensFromPriceId(priceId: string): Promise<number> {
     }
 
     if (!plan) {
-      console.warn(`[getPlanTokensFromPriceId] No active plan found for price_id ${priceId}, returning 0 tokens`);
+      console.warn(`[getPlanTokensFromPriceId] No plan found for price_id ${priceId}`);
       return 0;
     }
 
-    console.log(`[getPlanTokensFromPriceId] Found plan with ${plan.tokens_included} tokens for price_id ${priceId}`);
-    return Number(plan.tokens_included) || 0;
-  } catch (err) {
-    console.error(`[getPlanTokensFromPriceId] Exception fetching plan tokens for price_id ${priceId}:`, err);
+    return plan.tokens_included || 0;
+  } catch (error: any) {
+    console.error(`[getPlanTokensFromPriceId] Error:`, error);
     return 0;
   }
 }
 
-async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId: string) {
+async function logTokenCreditAudit(auditData: {
+  event_id: string;
+  event_type?: string;
+  customer_id: string;
+  checkout_session_id?: string;
+  price_id?: string;
+  tokens_amount?: number;
+  operation: string;
+  status: string;
+  error_message?: string;
+  subscription_found?: boolean;
+  before_plan_tokens?: number;
+  before_extra_tokens?: number;
+  before_tokens_total?: number;
+  after_plan_tokens?: number;
+  after_extra_tokens?: number;
+  after_tokens_total?: number;
+  processing_time_ms: number;
+  metadata?: any;
+}) {
+  try {
+    const { error } = await supabase.from('token_credits_audit').insert(auditData);
+
+    if (error) {
+      console.error(`[${auditData.event_id}] Failed to log token credit audit:`, error);
+    }
+  } catch (error: any) {
+    console.error(`[${auditData.event_id}] Error logging token credit audit:`, error);
+  }
+}
+
+async function sendSubscriptionConfirmationEmail(
+  eventId: string,
+  subscriptionId: string
+) {
   const logPrefix = `[${eventId}]`;
 
   try {
@@ -847,100 +824,6 @@ async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId
   }
 }
 
-async function sendSubscriptionUpgradeEmail(
-  eventId: string,
-  subscriptionId: string,
-  oldPriceId: string,
-  newPriceId: string,
-  tokensPreserved: number
-) {
-  const logPrefix = `[${eventId}]`;
-
-  try {
-    console.info(`${logPrefix} Calling edge function to send subscription upgrade email`);
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/send-subscription-upgrade-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify({
-        subscription_id: subscriptionId,
-        old_price_id: oldPriceId,
-        new_price_id: newPriceId,
-        tokens_preserved: tokensPreserved
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`${logPrefix} Failed to send subscription upgrade email:`, response.status, errorText);
-      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.info(`${logPrefix} Subscription upgrade email sent successfully:`, result);
-
-  } catch (error: any) {
-    console.error(`${logPrefix} Error sending subscription upgrade email:`, error);
-  }
-}
-
-async function sendSubscriptionDowngradeEmail(
-  eventId: string,
-  subscriptionId: string,
-  oldPriceId: string,
-  newPriceId: string,
-  tokensPreserved: number
-) {
-  const logPrefix = `[${eventId}]`;
-
-  try {
-    console.info(`${logPrefix} Calling edge function to send subscription downgrade email`);
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/send-subscription-downgrade-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify({
-        subscription_id: subscriptionId,
-        old_price_id: oldPriceId,
-        new_price_id: newPriceId,
-        tokens_preserved: tokensPreserved
-      })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`${logPrefix} Failed to send subscription downgrade email:`, response.status, errorText);
-      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
-    }
-
-    const result = await response.json();
-    console.info(`${logPrefix} Subscription downgrade email sent successfully:`, result);
-
-  } catch (error: any) {
-    console.error(`${logPrefix} Error sending subscription downgrade email:`, error);
-  }
-}
-
 async function sendSubscriptionCancellationEmail(
   eventId: string,
   customerId: string
@@ -957,17 +840,6 @@ async function sendSubscriptionCancellationEmail(
       throw new Error('Missing Supabase environment variables');
     }
 
-    const { data: subscriptionData } = await supabase
-      .from('stripe_subscriptions')
-      .select('subscription_id')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (!subscriptionData?.subscription_id) {
-      console.warn(`${logPrefix} No subscription_id found for customer ${customerId}`);
-      return;
-    }
-
     const response = await fetch(`${supabaseUrl}/functions/v1/send-subscription-cancellation-email`, {
       method: 'POST',
       headers: {
@@ -975,7 +847,7 @@ async function sendSubscriptionCancellationEmail(
         'Authorization': `Bearer ${supabaseAnonKey}`,
       },
       body: JSON.stringify({
-        subscription_id: subscriptionData.subscription_id
+        customer_id: customerId
       })
     });
 
