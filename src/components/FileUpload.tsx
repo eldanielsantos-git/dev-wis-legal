@@ -319,11 +319,11 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <p className="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-2">
               Limite: 200MB • Apenas arquivos PDF
             </p>
-            {subscriptionStatus.hasSubscription && subscriptionStatus.tokensRemaining > 0 && (
+            {totalAvailableTokens > 0 && (
               <div className="mt-2">
                 <TokenAvailabilityInfo
-                  tokensRemaining={subscriptionStatus.tokensRemaining}
-                  pagesRemaining={subscriptionStatus.pagesRemaining}
+                  tokensRemaining={totalAvailableTokens}
+                  pagesRemaining={Math.round(totalAvailableTokens / 5500)}
                   className="text-gray-500"
                 />
               </div>
