@@ -1,0 +1,44 @@
+name: Monitor Stuck Processes
+
+on:
+  schedule:
+    # Executa a cada 1 minuto para detectar e reiniciar processos travados rapidamente
+    - cron: '*/1 * * * *'
+  # Permite execução manual
+  workflow_dispatch:
+
+jobs:
+  monitor-processes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for stuck processes
+        run: |
+          echo "🔍 Verificando processos travados..."
+          response=$(curl -w "%{http_code}" -s -o /tmp/response.json -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/process-stuck-processos" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+
+          echo "📊 HTTP Status: $response"
+          echo "📄 Response:"
+          cat /tmp/response.json | jq '.' || cat /tmp/response.json
+
+          if [ "$response" != "200" ]; then
+            echo "❌ Falha ao verificar processos travados"
+            exit 1
+          fi
+
+          # Extrair contadores
+          restarted=$(cat /tmp/response.json | jq -r '.restarted_count // 0')
+          stuck=$(cat /tmp/response.json | jq -r '.stuck_count // 0')
+          completed=$(cat /tmp/response.json | jq -r '.completed_count // 0')
+
+          echo "📈 Resumo:"
+          echo "  ✅ Completados: $completed"
+          echo "  🔄 Reiniciados: $restarted"
+          echo "  ⚠️ Ainda travados: $stuck"
+
+          if [ "$restarted" -gt 0 ]; then
+            echo "🎉 $restarted processo(s) foram reiniciados automaticamente!"
+          fi
+        continue-on-error: true
