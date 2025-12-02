@@ -179,6 +179,20 @@ async function handleEvent(event: Stripe.Event) {
     if (isSubscription) {
       console.info(`[${event.id}] Starting subscription sync for customer: ${customerId}`);
       await syncCustomerFromStripe(customerId, event.id);
+
+      if (event.type === 'checkout.session.completed') {
+        const session = stripeData as Stripe.Checkout.Session;
+        const subscriptionId = typeof session.subscription === 'string'
+          ? session.subscription
+          : session.subscription?.id;
+
+        if (subscriptionId) {
+          console.info(`[${event.id}] Sending subscription confirmation email for subscription: ${subscriptionId}`);
+          await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
+        } else {
+          console.warn(`[${event.id}] No subscription ID found in checkout session`);
+        }
+      }
     } else if (mode === 'payment' && payment_status === 'paid') {
       await processOneTimePayment(event.id, customerId, stripeData as Stripe.Checkout.Session);
     }
@@ -741,5 +755,43 @@ async function getPlanTokensFromPriceId(priceId: string): Promise<number> {
   } catch (err) {
     console.error(`[getPlanTokensFromPriceId] Exception fetching plan tokens for price_id ${priceId}:`, err);
     return 0;
+  }
+}
+
+async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId: string) {
+  const logPrefix = `[${eventId}]`;
+
+  try {
+    console.info(`${logPrefix} Calling edge function to send subscription confirmation email`);
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-subscription-confirmation-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        subscription_id: subscriptionId
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`${logPrefix} Failed to send subscription confirmation email:`, response.status, errorText);
+      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.info(`${logPrefix} Subscription confirmation email sent successfully:`, result);
+
+  } catch (error: any) {
+    console.error(`${logPrefix} Error sending subscription confirmation email:`, error);
   }
 }
