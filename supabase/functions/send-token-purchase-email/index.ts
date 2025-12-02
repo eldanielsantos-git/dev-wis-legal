@@ -96,9 +96,9 @@ Deno.serve(async (req: Request) => {
     const baseUrl = Deno.env.get('FRONTEND_URL') || 'https://dev-app.wislegal.io';
     const tokensUrl = `${baseUrl}/tokens`;
 
-    const emailProviderApiKey = Deno.env.get('EMAIL_PROVIDER_API_KEY');
-    if (!emailProviderApiKey) {
-      console.error('[send-token-purchase-email] EMAIL_PROVIDER_API_KEY not configured');
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (!resendApiKey) {
+      console.error('[send-token-purchase-email] RESEND_API_KEY not configured');
 
       await supabase.from('email_logs').insert({
         user_id,
@@ -109,7 +109,7 @@ Deno.serve(async (req: Request) => {
           package_name,
           tokens_purchased: formattedTokensPurchased,
           amount_paid,
-          reason: 'EMAIL_PROVIDER_API_KEY not configured',
+          reason: 'RESEND_API_KEY not configured',
         },
       });
 
@@ -127,41 +127,49 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[send-token-purchase-email] Sending email to: ${profile.email}`);
 
-    const emailResponse = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const templateId = '9fbb8652-2299-41b5-91ea-7aaeb716f139';
+
+    const templateVariables = {
+      first_name: profile.first_name || 'Usuário',
+      package_name,
+      tokens_purchased: formattedTokensPurchased,
+      amount_paid,
+      purchase_date: currentDate,
+      plan_name: planName,
+      plan_tokens: planTokens,
+      extra_tokens: extraTokens,
+      total_tokens_available: totalTokens,
+      tokens_url: tokensUrl,
+    };
+
+    const resendPayload = {
+      from: 'WisLegal <noreply@wislegal.io>',
+      to: [profile.email],
+      template: {
+        id: templateId,
+        variables: templateVariables
+      }
+    };
+
+    const emailResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'api-key': emailProviderApiKey,
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`,
       },
-      body: JSON.stringify({
-        to: [{ email: profile.email, name: profile.first_name }],
-        templateId: 9,
-        params: {
-          first_name: profile.first_name || 'Usuário',
-          package_name,
-          tokens_purchased: formattedTokensPurchased,
-          amount_paid,
-          purchase_date: currentDate,
-          plan_name: planName,
-          plan_tokens: planTokens,
-          extra_tokens: extraTokens,
-          total_tokens_available: totalTokens,
-          tokens_url: tokensUrl,
-        },
-      }),
+      body: JSON.stringify(resendPayload),
     });
 
-    const emailResult = await emailResponse.json();
-
     if (!emailResponse.ok) {
-      console.error('[send-token-purchase-email] Email provider error:', emailResult);
+      const errorText = await emailResponse.text();
+      console.error('[send-token-purchase-email] Resend API error:', emailResponse.status, errorText);
 
       await supabase.from('email_logs').insert({
         user_id,
         email: profile.email,
         type: 'token_purchase',
         status: 'failed',
-        email_provider_response: emailResult,
+        email_provider_response: { error: errorText, status: emailResponse.status },
         metadata: {
           package_name,
           tokens_purchased: formattedTokensPurchased,
@@ -170,7 +178,7 @@ Deno.serve(async (req: Request) => {
       });
 
       return new Response(
-        JSON.stringify({ error: 'Failed to send email', details: emailResult }),
+        JSON.stringify({ error: 'Failed to send email', details: errorText }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -178,12 +186,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const emailResult = await emailResponse.json();
+
     await supabase.from('email_logs').insert({
       user_id,
       email: profile.email,
       type: 'token_purchase',
-      status: 'sent',
-      email_provider_response: emailResult,
+      status: 'success',
+      email_provider_response: {
+        resend_id: emailResult.id,
+        package_name,
+        tokens_purchased: formattedTokensPurchased,
+      },
       sent_at: new Date().toISOString(),
       metadata: {
         package_name,
@@ -200,7 +214,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         message: 'Token purchase email sent successfully',
-        messageId: emailResult.messageId
+        resend_id: emailResult.id
       }),
       {
         status: 200,

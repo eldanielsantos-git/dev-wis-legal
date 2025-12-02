@@ -594,6 +594,9 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           return;
         } else {
           console.info(`${logPrefix} Subscription period expired (${periodEndDate.toISOString()}), zeroing tokens`);
+
+          console.info(`${logPrefix} Sending cancellation email for expired subscription`);
+          await sendSubscriptionCancellationEmail(eventId, customerId);
         }
       }
 
