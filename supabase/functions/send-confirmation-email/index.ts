@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
         const cityValue = userProfile?.city || city;
         const stateValue = userProfile?.state || state;
 
-        // Usar as chaves CORRETAS (em portugu\u00eas como foram criadas no Resend)
+        // Usar as chaves CORRETAS (em português como foram criadas no Resend)
         // key: "Pais" -> phone_country_code
         // key: "Phone" -> phone
         // key: "Cidade" -> city
@@ -162,10 +162,10 @@ Deno.serve(async (req: Request) => {
 
         const contactData = {
           email: email,
-          firstName: finalFirstName,
-          lastName: userProfile?.last_name || last_name || "",
+          first_name: finalFirstName,
+          last_name: userProfile?.last_name || last_name || "",
           unsubscribed: false,
-          audienceId: audienceId,
+          audience_id: audienceId,
           properties: properties
         };
 
