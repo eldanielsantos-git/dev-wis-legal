@@ -110,10 +110,19 @@ function MyProcessDetailPageInner({
           currentPrompt: updatedProcesso.current_prompt_number,
           totalPrompts: updatedProcesso.total_prompts
         });
+
+        const wasAnalyzing = processo?.status === 'analyzing';
+        const isNowCompleted = updatedProcesso.status === 'completed';
+
         setProcesso(updatedProcesso);
 
-        // Removido: Reloads escalonados que causavam loop infinito
-        // O polling já cuida de atualizar os resultados periodicamente
+        // Quando o processo é concluído, força reload final dos resultados
+        if (wasAnalyzing && isNowCompleted) {
+          console.log('✅ Processo concluído - carregando resultados finais');
+          setTimeout(() => {
+            loadAnalysisResults();
+          }, 1000);
+        }
       }
     );
 
