@@ -138,7 +138,7 @@ Deno.serve(async (req: Request) => {
     console.log("✓ Email sent successfully via Resend template:", resendResult);
 
     console.log("Step 5: Logging email send to database...");
-    const { error: logError } = await supabaseClient
+    const { data: logData, error: logError } = await supabaseClient
       .from("email_logs")
       .insert({
         user_id: processo.user_id,
@@ -147,12 +147,15 @@ Deno.serve(async (req: Request) => {
         status: "success",
         email_provider_response: { resend_id: resendResult.id, processo_id: processo.id },
         sent_at: new Date().toISOString()
-      });
+      })
+      .select();
 
     if (logError) {
-      console.error("Failed to log email:", logError);
+      console.error("❌ Failed to log email:", logError);
+      console.error("Error details:", JSON.stringify(logError, null, 2));
     } else {
-      console.log("✓ Email send logged to database");
+      console.log("✓ Email send logged to database successfully");
+      console.log("Log data:", logData);
     }
 
     console.log("=== SEND PROCESS COMPLETED EMAIL - SUCCESS ===");
