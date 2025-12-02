@@ -60,12 +60,12 @@ Deno.serve(async (req: Request) => {
         price_id,
         current_period_start,
         current_period_end,
-        canceled_at,
-        cancel_at,
+        cancel_at_period_end,
         plan_tokens,
         extra_tokens,
         tokens_used,
-        created_at
+        created_at,
+        updated_at
       `)
       .eq("subscription_id", subscription_id)
       .maybeSingle();
@@ -158,8 +158,12 @@ Deno.serve(async (req: Request) => {
       return `${day}/${month}/${year}`;
     };
 
-    const cancelDate = subscriptionData.canceled_at
-      ? formatDate(subscriptionData.canceled_at)
+    const cancelDate = subscriptionData.updated_at
+      ? new Date(subscriptionData.updated_at).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
       : formatDate(Math.floor(Date.now() / 1000));
 
     const accessUntilDate = formatDate(subscriptionData.current_period_end);
