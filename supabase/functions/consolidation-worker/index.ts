@@ -153,7 +153,7 @@ Deno.serve(async (req: Request) => {
 
       const startTime = Date.now();
 
-      const consolidationPrompt = `PROMPT ORIGINAL:\n${analysisResult.prompt_content}\n\nANÁLISES PARCIAIS DOS CHUNKS:\n${allSummaries}\n\nINSTRUÇÕES DE CONSOLIDAÇÃO:\n1. Combine as informações de todos os ${chunks.length} chunks em uma análise unificada\n2. Remova duplicações e contradições\n3. Garanta consistência e coerência no resultado final\n4. Siga estritamente o formato e estrutura solicitados no prompt original\n5. Considere todo o contexto do documento completo\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado solicitado no prompt original. NÃO inclua texto introdutório, explicações ou observações antes ou depois do conteúdo. Inicie sua resposta diretamente com o formato esperado.`;
+      const consolidationPrompt = `PROMPT ORIGINAL:\n${analysisResult.prompt_content}\n\nANÁLISES PARCIAIS DOS CHUNKS:\n${allSummaries}\n\nINSTRUÇÕES DE CONSOLIDAÇÃO:\n1. Combine as informações de todos os ${chunks.length} chunks em uma análise unificada\n2. Remova duplicações e contradições\n3. Garanta consistência e coerência no resultado final\n4. Siga estritamente o formato e estrutura solicitados no prompt original\n5. Considere todo o contexto do documento completo\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado solicitado no prompt original. NÃO inclua texto introduçtório, explicações ou observações antes ou depois do conteúdo. Inicie sua resposta diretamente com o formato esperado.`;
 
       await supabase
         .from('analysis_results')
@@ -172,14 +172,14 @@ Deno.serve(async (req: Request) => {
       const response = await result.response;
       let text = response.text().trim();
 
-      if (text.startsWith('\`\`\`json')) {
-        text = text.replace(/^\`\`\`json\n?/, '');
+      if (text.startsWith('```json')) {
+        text = text.replace(/^```json\n?/, '');
       }
-      if (text.startsWith('\`\`\`')) {
-        text = text.replace(/^\`\`\`\n?/, '');
+      if (text.startsWith('```')) {
+        text = text.replace(/^```\n?/, '');
       }
-      if (text.endsWith('\`\`\`')) {
-        text = text.replace(/\n?\`\`\`$/, '');
+      if (text.endsWith('```')) {
+        text = text.replace(/\n?```$/, '');
       }
       text = text.trim();
 
@@ -269,6 +269,28 @@ Deno.serve(async (req: Request) => {
           });
 
         console.log(`[${workerId}] 📬 Notificação enviada ao usuário`);
+
+        console.log(`[${workerId}] 📧 Enviando email de processo concluído...`);
+        try {
+          const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({ processo_id }),
+          });
+
+          if (emailResponse.ok) {
+            const emailResult = await emailResponse.json();
+            console.log(`[${workerId}] ✅ Email enviado com sucesso:`, emailResult.resend_id);
+          } else {
+            const errorText = await emailResponse.text();
+            console.error(`[${workerId}] ❌ Falha ao enviar email:`, errorText);
+          }
+        } catch (emailError) {
+          console.error(`[${workerId}] ❌ Erro ao chamar edge function de email:`, emailError);
+        }
       }
     }
 
