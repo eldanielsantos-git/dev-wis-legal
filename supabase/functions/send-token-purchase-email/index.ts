@@ -133,7 +133,7 @@ Deno.serve(async (req: Request) => {
         email: profile.email,
         type: 'token_purchase',
         status: 'pending_manual',
-        metadata: {
+        email_provider_response: {
           package_name,
           tokens_purchased: formattedTokensPurchased,
           amount_paid,
@@ -197,8 +197,9 @@ Deno.serve(async (req: Request) => {
         email: profile.email,
         type: 'token_purchase',
         status: 'failed',
-        email_provider_response: { error: errorText, status: emailResponse.status },
-        metadata: {
+        email_provider_response: {
+          error: errorText,
+          status: emailResponse.status,
           package_name,
           tokens_purchased: formattedTokensPurchased,
           amount_paid,
@@ -225,15 +226,11 @@ Deno.serve(async (req: Request) => {
         resend_id: emailResult.id,
         package_name,
         tokens_purchased: formattedTokensPurchased,
-      },
-      sent_at: new Date().toISOString(),
-      metadata: {
-        package_name,
-        tokens_purchased: formattedTokensPurchased,
         amount_paid,
         plan_name: planName,
         total_tokens: totalTokens,
       },
+      sent_at: new Date().toISOString(),
     });
 
     console.log(`[send-token-purchase-email] Email sent successfully to ${profile.email}`);
