@@ -13,7 +13,7 @@ const path = require('path');
 const https = require('https');
 
 // Configuração
-const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zvlqcxiwsrziuodiotar.supabase.co';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://rslpleprodloodfsaext.supabase.co';
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_SERVICE_ROLE_KEY) {

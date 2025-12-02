@@ -12,8 +12,8 @@
 const fs = require('fs');
 const https = require('https');
 
-const SUPABASE_URL = 'https://zvlqcxiwsrziuodiotar.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2bHFjeGl3c3J6aXVvZGlvdGFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg5MDQzMTksImV4cCI6MjA3NDQ4MDMxOX0.9i_lZReUMXqA11dg8jinP_-ksbMu5mLtP_TCxCEa_PE';
+const SUPABASE_URL = 'https://rslpleprodloodfsaext.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJzbHBsZXByb2RsbG9vZGZzYWV4dCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzU4OTA0MjgzLCJleHAiOjIwNzQ0ODAyODN9.YeW_8xSIPjFqHCEyVwfzjHRl47eD-w8W3dPq3vX1R-k';
 
 // Função para fazer requisição HTTPS
 function httpsRequest(url, options, data = null) {
