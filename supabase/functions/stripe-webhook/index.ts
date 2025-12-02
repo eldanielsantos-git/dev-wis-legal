@@ -491,6 +491,19 @@ async function creditTokensToSubscription(
       matched_by_email: targetCustomerId !== customerId,
     },
   });
+
+  const { data: customer } = await supabase
+    .from('stripe_customers')
+    .select('user_id')
+    .eq('customer_id', targetCustomerId)
+    .maybeSingle();
+
+  if (customer?.user_id) {
+    console.info(`${logPrefix} Sending token purchase email to user: ${customer.user_id}`);
+    await sendTokenPurchaseEmail(eventId, customer.user_id, priceId, tokensToAdd);
+  } else {
+    console.warn(`${logPrefix} Could not find user_id for customer ${targetCustomerId}, skipping email`);
+  }
 }
 
 function getTokenPackageAmount(priceId: string): number {
@@ -974,5 +987,65 @@ async function sendSubscriptionCancellationEmail(
 
   } catch (error: any) {
     console.error(`${logPrefix} Error sending subscription cancellation email:`, error);
+  }
+}
+
+async function sendTokenPurchaseEmail(
+  eventId: string,
+  userId: string,
+  priceId: string,
+  tokensAmount: number
+) {
+  const logPrefix = `[${eventId}]`;
+
+  try {
+    console.info(`${logPrefix} Calling edge function to send token purchase email`);
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const { data: tokenPackage } = await supabase
+      .from('token_packages')
+      .select('name, price_brl')
+      .eq('stripe_price_id', priceId)
+      .maybeSingle();
+
+    if (!tokenPackage) {
+      console.warn(`${logPrefix} No token package found for price_id ${priceId}`);
+      return;
+    }
+
+    const packageName = tokenPackage.name;
+    const amountPaid = `R$ ${parseFloat(tokenPackage.price_brl).toFixed(2).replace('.', ',')}`;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-token-purchase-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        package_name: packageName,
+        tokens_purchased: tokensAmount,
+        amount_paid: amountPaid
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`${logPrefix} Failed to send token purchase email:`, response.status, errorText);
+      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.info(`${logPrefix} Token purchase email sent successfully:`, result);
+
+  } catch (error: any) {
+    console.error(`${logPrefix} Error sending token purchase email:`, error);
   }
 }
