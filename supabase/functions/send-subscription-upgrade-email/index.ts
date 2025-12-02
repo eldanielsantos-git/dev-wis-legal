@@ -167,13 +167,37 @@ Deno.serve(async (req: Request) => {
       return `${day}/${month}/${year}`;
     };
 
+    console.log("Step 5.1: Fetching updated token balance after upgrade...");
+
+    const { data: updatedSub, error: updatedSubError } = await supabaseClient
+      .from('stripe_subscriptions')
+      .select('plan_tokens, extra_tokens, tokens_total')
+      .eq('subscription_id', subscription_id)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (updatedSubError || !updatedSub) {
+      console.error('Error fetching updated subscription:', updatedSubError);
+    }
+
+    const actualExtraTokens = updatedSub?.extra_tokens || 0;
+    const actualTotalTokens = updatedSub?.tokens_total || 0;
+
+    console.log("Updated subscription balance:", {
+      plan_tokens: updatedSub?.plan_tokens,
+      extra_tokens: actualExtraTokens,
+      total_tokens: actualTotalTokens,
+      tokens_preserved_param: tokens_preserved
+    });
+
     const templateVariables = {
       first_name: userProfile.first_name || "Usuário",
       old_plan_name: oldPlanData.name,
       new_plan_name: newPlanData.name,
       new_plan_price: formatPrice(newPlanData.price_brl),
       new_plan_tokens: formatTokens(newPlanData.tokens_included),
-      tokens_preserved: formatTokens(tokens_preserved || 0),
+      tokens_preserved: formatTokens(actualExtraTokens),
+      total_tokens_available: formatTokens(actualTotalTokens),
       current_period_end: formatDate(subscriptionData.current_period_end),
       app_url: appUrl
     };
