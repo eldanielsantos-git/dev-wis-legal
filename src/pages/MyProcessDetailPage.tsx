@@ -136,7 +136,7 @@ function MyProcessDetailPageInner({
 
     // Inicia polling a cada 3 segundos
     pollIntervalRef.current = setInterval(() => {
-      loadProcesso(); // Atualiza o processo para pegar current_prompt_number
+      refreshProcesso(); // Atualiza o processo silenciosamente (sem loading)
       loadAnalysisResults();
       loadShares();
     }, 3000);
@@ -200,6 +200,17 @@ function MyProcessDetailPageInner({
       if (retryCount === 0) {
         setLoading(false);
       }
+    }
+  };
+
+  const refreshProcesso = async () => {
+    try {
+      const data = await ProcessosService.getProcessoById(processoId);
+      if (data) {
+        setProcesso(data);
+      }
+    } catch (err) {
+      console.error('Erro ao atualizar processo:', err);
     }
   };
 
