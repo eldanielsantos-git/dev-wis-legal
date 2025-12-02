@@ -637,9 +637,13 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       const tokensUsed = existingSub?.tokens_used || 0;
       const remainingPlanTokens = Math.max(0, oldPlanTokens - tokensUsed);
 
-      console.info(`${logPrefix} Plan change detected (upgrade/downgrade):`);
+      const isUpgrade = planTokens > oldPlanTokens;
+      const isDowngrade = planTokens < oldPlanTokens;
+
+      console.info(`${logPrefix} Plan change detected (${isUpgrade ? 'UPGRADE' : isDowngrade ? 'DOWNGRADE' : 'LATERAL'}):`);
       console.info(`${logPrefix} - Old plan: ${existingSub?.price_id} -> New plan: ${priceId}`);
       console.info(`${logPrefix} - Old plan tokens: ${oldPlanTokens}`);
+      console.info(`${logPrefix} - New plan tokens: ${planTokens}`);
       console.info(`${logPrefix} - Tokens used from old plan: ${tokensUsed}`);
       console.info(`${logPrefix} - Remaining plan tokens to preserve: ${remainingPlanTokens}`);
 
@@ -670,17 +674,29 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           new_plan_tokens: planTokens,
           tokens_used: tokensUsed,
           remaining_preserved: remainingPlanTokens,
+          change_type: isUpgrade ? 'upgrade' : isDowngrade ? 'downgrade' : 'lateral',
         },
       });
 
-      console.info(`${logPrefix} Sending upgrade email for plan change`);
-      await sendSubscriptionUpgradeEmail(
-        eventId,
-        subscription.id,
-        existingSub?.price_id || '',
-        priceId,
-        remainingPlanTokens
-      );
+      if (isUpgrade) {
+        console.info(`${logPrefix} Sending upgrade email for plan change`);
+        await sendSubscriptionUpgradeEmail(
+          eventId,
+          subscription.id,
+          existingSub?.price_id || '',
+          priceId,
+          remainingPlanTokens
+        );
+      } else if (isDowngrade) {
+        console.info(`${logPrefix} Sending downgrade email for plan change`);
+        await sendSubscriptionDowngradeEmail(
+          eventId,
+          subscription.id,
+          existingSub?.price_id || '',
+          priceId,
+          remainingPlanTokens
+        );
+      }
     } else if (isNewBillingPeriod) {
       console.info(`${logPrefix} New billing period detected - resetting tokens_used to 0`);
       finalTokensUsed = 0;
@@ -849,5 +865,52 @@ async function sendSubscriptionUpgradeEmail(
 
   } catch (error: any) {
     console.error(`${logPrefix} Error sending subscription upgrade email:`, error);
+  }
+}
+
+async function sendSubscriptionDowngradeEmail(
+  eventId: string,
+  subscriptionId: string,
+  oldPriceId: string,
+  newPriceId: string,
+  tokensPreserved: number
+) {
+  const logPrefix = `[${eventId}]`;
+
+  try {
+    console.info(`${logPrefix} Calling edge function to send subscription downgrade email`);
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-subscription-downgrade-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        subscription_id: subscriptionId,
+        old_price_id: oldPriceId,
+        new_price_id: newPriceId,
+        tokens_preserved: tokensPreserved
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`${logPrefix} Failed to send subscription downgrade email:`, response.status, errorText);
+      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.info(`${logPrefix} Subscription downgrade email sent successfully:`, result);
+
+  } catch (error: any) {
+    console.error(`${logPrefix} Error sending subscription downgrade email:`, error);
   }
 }
