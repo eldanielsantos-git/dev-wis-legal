@@ -232,7 +232,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     );
   }
 
-  if (!subscriptionStatus.hasSubscription && subscriptionStatus.tokensRemaining === 0 && !loading && !processingStatus) {
+  // Calcular tokens disponíveis totais (considera tanto assinatura quanto balance geral)
+  const totalAvailableTokens = balance
+    ? (balance.plan_tokens + balance.extra_tokens - (balance.tokens_used || 0))
+    : subscriptionStatus.tokensRemaining;
+
+  if (!subscriptionStatus.hasSubscription && totalAvailableTokens === 0 && !loading && !processingStatus) {
     return (
       <div className="w-full">
         <div
@@ -297,7 +302,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           accept=".pdf"
           onChange={handleChange}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          disabled={!subscriptionStatus.hasSubscription}
+          disabled={totalAvailableTokens === 0}
         />
 
         <div className="flex flex-col items-center space-y-2 sm:space-y-4">
