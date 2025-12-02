@@ -616,7 +616,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
     const { data: existingSub } = await supabase
       .from('stripe_subscriptions')
-      .select('extra_tokens, plan_tokens, tokens_used, price_id, current_period_start, tokens_carried_forward')
+      .select('extra_tokens, plan_tokens, tokens_used, price_id, current_period_start, tokens_carried_forward, cancel_at_period_end')
       .eq('customer_id', customerId)
       .maybeSingle();
 
@@ -741,6 +741,8 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       subscriptionData.last_plan_change_at = lastPlanChangeAt;
     }
 
+    const wasCanceled = existingSub && !existingSub.cancel_at_period_end && subscription.cancel_at_period_end;
+
     console.info(`${logPrefix} Upserting subscription data for customer: ${customerId}`);
 
     const { error: upsertError } = await supabase.from('stripe_subscriptions').upsert(subscriptionData, {
@@ -750,6 +752,11 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     if (upsertError) {
       console.error(`${logPrefix} Error upserting subscription:`, upsertError);
       throw upsertError;
+    }
+
+    if (wasCanceled) {
+      console.info(`${logPrefix} Subscription was canceled (cancel_at_period_end set to true), sending cancellation email`);
+      await sendSubscriptionCancellationEmail(eventId, customerId);
     }
 
     console.info(`${logPrefix} Successfully synced subscription for customer: ${customerId}`);
