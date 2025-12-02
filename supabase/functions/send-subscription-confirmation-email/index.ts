@@ -157,7 +157,6 @@ Deno.serve(async (req: Request) => {
     const resendPayload = {
       from: "WisLegal <noreply@wislegal.io>",
       to: [userProfile.email],
-      subject: `Bem-vindo ao ${planData.name} - Sua assinatura foi confirmada!`,
       template: {
         id: templateId,
         variables: templateVariables
