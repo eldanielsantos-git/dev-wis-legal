@@ -691,32 +691,6 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
               .eq('id', processo_id);
 
             console.log('✅ Processo finalizado com sucesso!');
-
-            // Chamar consolidation-worker para consolidar as análises
-            console.log('📋 Chamando consolidation-worker...');
-            fetch(`${supabaseUrl}/functions/v1/consolidation-worker`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao chamar consolidation-worker:', err?.message);
-            });
-
-            // Enviar email de análise concluída
-            console.log('📧 Enviando email de análise concluída...');
-            fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao enviar email:', err?.message);
-            });
           }
 
           return new Response(
@@ -905,32 +879,6 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
               .eq('id', processo_id);
 
             console.log('✅ Processo finalizado com sucesso!');
-
-            // Chamar consolidation-worker para consolidar as análises
-            console.log('📋 Chamando consolidation-worker...');
-            fetch(`${supabaseUrl}/functions/v1/consolidation-worker`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao chamar consolidation-worker:', err?.message);
-            });
-
-            // Enviar email de análise concluída
-            console.log('📧 Enviando email de análise concluída...');
-            fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao enviar email:', err?.message);
-            });
           }
 
           return new Response(
