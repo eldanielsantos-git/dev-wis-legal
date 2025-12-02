@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 interface SubscriptionCancellationRequest {
-  subscription_id: string;
+  subscription_id?: string;
+  customer_id?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -38,20 +39,22 @@ Deno.serve(async (req: Request) => {
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const {
-      subscription_id
+      subscription_id,
+      customer_id
     }: SubscriptionCancellationRequest = await req.json();
 
     console.log("Request data:", {
-      subscription_id
+      subscription_id,
+      customer_id
     });
 
-    if (!subscription_id) {
-      throw new Error("Missing required field: subscription_id");
+    if (!subscription_id && !customer_id) {
+      throw new Error("Missing required field: subscription_id or customer_id");
     }
 
     console.log("Step 1: Fetching subscription data from database...");
 
-    const { data: subscriptionData, error: subscriptionError } = await supabaseClient
+    let subscriptionQuery = supabaseClient
       .from("stripe_subscriptions")
       .select(`
         subscription_id,
@@ -66,13 +69,19 @@ Deno.serve(async (req: Request) => {
         tokens_used,
         created_at,
         updated_at
-      `)
-      .eq("subscription_id", subscription_id)
-      .maybeSingle();
+      `);
+
+    if (subscription_id) {
+      subscriptionQuery = subscriptionQuery.eq("subscription_id", subscription_id);
+    } else if (customer_id) {
+      subscriptionQuery = subscriptionQuery.eq("customer_id", customer_id);
+    }
+
+    const { data: subscriptionData, error: subscriptionError } = await subscriptionQuery.maybeSingle();
 
     if (subscriptionError || !subscriptionData) {
       console.error("Error fetching subscription:", subscriptionError);
-      throw new Error(`Subscription not found: ${subscription_id}`);
+      throw new Error(`Subscription not found for: ${subscription_id || customer_id}`);
     }
 
     console.log("Subscription found:", subscriptionData);
@@ -224,7 +233,7 @@ Deno.serve(async (req: Request) => {
         status: "success",
         email_provider_response: {
           resend_id: resendResult.id,
-          subscription_id: subscription_id,
+          subscription_id: subscriptionData.subscription_id,
           plan_name: planData.name,
           tokens_remaining: tokensRemaining,
           access_until_date: accessUntilDate,
