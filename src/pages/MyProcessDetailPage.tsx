@@ -136,6 +136,7 @@ function MyProcessDetailPageInner({
 
     // Inicia polling a cada 3 segundos
     pollIntervalRef.current = setInterval(() => {
+      loadProcesso(); // Atualiza o processo para pegar current_prompt_number
       loadAnalysisResults();
       loadShares();
     }, 3000);
