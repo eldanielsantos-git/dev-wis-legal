@@ -1454,14 +1454,14 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 </div>
               )}
 
-              <div className="rounded-lg p-6 shadow-lg border-2" style={{ backgroundColor: colors.bgSecondary, borderColor: '#FCA5A5' }}>
-                <div className="flex items-start gap-3 mb-4">
-                  <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#F87171' }} />
+              <div className="rounded-lg p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="flex items-start gap-2 mb-3">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#F87171' }} />
                   <div>
-                    <h2 className="text-xl font-bold mb-2" style={{ color: colors.textPrimary }}>
+                    <h2 className="text-lg font-bold mb-1" style={{ color: colors.textPrimary }}>
                       Zona de Perigo
                     </h2>
-                    <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+                    <p className="text-xs mb-3" style={{ color: colors.textSecondary }}>
                       Esta ação é irreversível. Todos os seus dados serão permanentemente excluídos.
                     </p>
                   </div>
@@ -1470,13 +1470,13 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   disabled={isDeleting}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm transition-colors disabled:opacity-50"
                   style={{
-                    backgroundColor: '#F87171',
+                    backgroundColor: theme === 'dark' ? '#4B5563' : '#9CA3AF',
                     color: '#FFFFFF'
                   }}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                   <span>Deletar Minha Conta</span>
                 </button>
               </div>
