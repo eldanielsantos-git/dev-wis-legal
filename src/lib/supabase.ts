@@ -4,9 +4,6 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('[supabase.ts] Missing Supabase credentials!');
-  console.error('[supabase.ts] Available env vars:', Object.keys(import.meta.env));
-
   // Show user-friendly error
   const errorDiv = document.createElement('div');
   errorDiv.style.cssText = `

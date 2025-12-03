@@ -5,7 +5,6 @@ import './index.css';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
-  console.error('[main.tsx] Root element not found!');
   throw new Error('Root element not found');
 }
 
@@ -16,7 +15,6 @@ try {
     </StrictMode>
   );
 } catch (error) {
-  console.error('[main.tsx] Error rendering app:', error);
   rootElement.innerHTML = `
     <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #0F0E0D; color: white; font-family: sans-serif;">
       <div style="text-align: center;">
