@@ -100,38 +100,28 @@ export class WorkspaceService {
         };
       }
 
-      // Check if process can be shared
-      const canShareResult = await this.canShare(request.processoId);
-      if (!canShareResult.canShare) {
-        return {
-          success: false,
-          error: canShareResult.reason
-        };
-      }
-
-      // Check if already shared with this email
-      const { data: existingShare } = await supabase
-        .from('workspace_shares')
-        .select('id')
-        .eq('processo_id', request.processoId)
-        .eq('shared_with_email', request.email.toLowerCase())
+      // Verificar se o usuário é dono do processo
+      const { data: processo } = await supabase
+        .from('processos')
+        .select('user_id')
+        .eq('id', request.processoId)
         .maybeSingle();
 
-      if (existingShare) {
+      if (!processo || processo.user_id !== user.id) {
         return {
           success: false,
-          error: 'Este processo já foi compartilhado com este usuário'
+          error: 'Você não tem permissão para compartilhar este processo'
         };
       }
 
-      // Check if invited user already has an account
+      // Check if invited user already has an account (sem bloquear se já existir)
       const { data: invitedUser } = await supabase
         .from('user_profiles')
         .select('id, email')
         .eq('email', request.email.toLowerCase())
         .maybeSingle();
 
-      // Create the share
+      // Create the share (sem validar se já existe - permitir múltiplos convites)
       const { data: share, error } = await supabase
         .from('workspace_shares')
         .insert({
