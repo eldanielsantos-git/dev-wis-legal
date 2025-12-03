@@ -61,57 +61,72 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Buscar customer_id do usuário
-    const { data: customer, error: customerError } = await supabase
-      .from('stripe_customers')
-      .select('customer_id')
+    // Buscar saldo REAL e ATUALIZADO do usuário
+    const { data: tokenBalance, error: tokenError } = await supabase
+      .from('user_token_balance')
+      .select('*')
       .eq('user_id', user_id)
-      .is('deleted_at', null)
       .maybeSingle();
 
-    if (customerError) {
-      console.error('[send-token-purchase-email] Error fetching customer:', customerError);
+    if (tokenError) {
+      console.error('[send-token-purchase-email] Error fetching token balance:', tokenError);
     }
 
     let planName = 'Gratuito';
-    let planTokens = '0';
-    let extraTokens = '0';
-    let totalTokens = '0';
+    let planTokens = 0;
+    let extraTokens = 0;
+    let totalTokens = 0;
 
-    if (customer?.customer_id) {
-      // Buscar dados REAIS da assinatura
-      const { data: subscription, error: subError } = await supabase
-        .from('stripe_subscriptions')
-        .select('plan_tokens, extra_tokens, tokens_total, price_id')
-        .eq('customer_id', customer.customer_id)
-        .eq('status', 'active')
+    if (tokenBalance) {
+      planName = tokenBalance.current_plan || 'Gratuito';
+      planTokens = tokenBalance.plan_tokens_remaining || 0;
+      extraTokens = tokenBalance.extra_tokens_remaining || 0;
+      totalTokens = tokenBalance.total_tokens_available || 0;
+
+      console.log('[send-token-purchase-email] Token balance from view:', {
+        planName,
+        planTokens,
+        extraTokens,
+        totalTokens
+      });
+    } else {
+      // Fallback: buscar diretamente das tabelas se a view falhar
+      const { data: customer } = await supabase
+        .from('stripe_customers')
+        .select('customer_id')
+        .eq('user_id', user_id)
         .is('deleted_at', null)
         .maybeSingle();
 
-      if (subError) {
-        console.error('[send-token-purchase-email] Error fetching subscription:', subError);
-      }
-
-      if (subscription) {
-        // Buscar nome do plano pelo price_id
-        const { data: plan } = await supabase
-          .from('subscription_plans')
-          .select('name')
-          .eq('stripe_price_id', subscription.price_id)
+      if (customer?.customer_id) {
+        const { data: subscription } = await supabase
+          .from('stripe_subscriptions')
+          .select('plan_tokens, extra_tokens, tokens_total, price_id')
+          .eq('customer_id', customer.customer_id)
+          .eq('status', 'active')
+          .is('deleted_at', null)
           .maybeSingle();
 
-        planName = plan?.name || 'Premium';
-        planTokens = formatNumber(subscription.plan_tokens || 0);
-        extraTokens = formatNumber(subscription.extra_tokens || 0);
-        totalTokens = formatNumber(subscription.tokens_total || 0);
+        if (subscription) {
+          const { data: plan } = await supabase
+            .from('subscription_plans')
+            .select('name')
+            .eq('stripe_price_id', subscription.price_id)
+            .maybeSingle();
 
-        console.log('[send-token-purchase-email] Token balance:', {
-          planName,
-          planTokens,
-          extraTokens,
-          totalTokens
-        });
+          planName = plan?.name || 'Premium';
+          planTokens = subscription.plan_tokens || 0;
+          extraTokens = subscription.extra_tokens || 0;
+          totalTokens = subscription.tokens_total || 0;
+        }
       }
+
+      console.log('[send-token-purchase-email] Token balance from fallback:', {
+        planName,
+        planTokens,
+        extraTokens,
+        totalTokens
+      });
     }
     const formattedTokensPurchased = formatNumber(tokens_purchased);
 
@@ -122,7 +137,7 @@ Deno.serve(async (req: Request) => {
     });
 
     const baseUrl = Deno.env.get('FRONTEND_URL') || 'https://dev-app.wislegal.io';
-    const tokensUrl = `${baseUrl}/tokens`;
+    const tokensUrl = baseUrl.endsWith('/') ? `${baseUrl}tokens` : `${baseUrl}/tokens`;
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
@@ -164,9 +179,9 @@ Deno.serve(async (req: Request) => {
       amount_paid,
       purchase_date: currentDate,
       plan_name: planName,
-      plan_tokens: planTokens,
-      extra_tokens: extraTokens,
-      total_tokens_available: totalTokens,
+      plan_tokens: formatNumber(planTokens),
+      extra_tokens: formatNumber(extraTokens),
+      total_tokens_available: formatNumber(totalTokens),
       tokens_url: tokensUrl,
     };
 
