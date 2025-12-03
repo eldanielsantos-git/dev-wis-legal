@@ -732,19 +732,8 @@ function MyProcessDetailPageInner({
                     onTagsChange={loadProcessoTags}
                   />
                 ) : (
-                  <div className="flex items-center justify-between">
-                    <div className="text-xs italic" style={{ color: colors.textSecondary }}>
-                      Nenhuma tag atribuída a este processo
-                    </div>
-                    {canEditTags && (
-                      <button
-                        onClick={() => setIsTagsPopupOpen(true)}
-                        className="text-xs px-3 py-1.5 rounded hover:opacity-80 transition-opacity font-medium"
-                        style={{ backgroundColor: '#1C9BF1', color: '#FFFFFF' }}
-                      >
-                        Criar Tag
-                      </button>
-                    )}
+                  <div className="text-xs italic" style={{ color: colors.textSecondary }}>
+                    Nenhuma tag atribuída a este processo
                   </div>
                 )}
               </div>
