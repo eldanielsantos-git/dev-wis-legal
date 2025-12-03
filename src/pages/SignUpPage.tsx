@@ -791,7 +791,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
                 type="text"
                 value={formData.oab}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20);
+                  const value = e.target.value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 20);
                   setFormData({ ...formData, oab: value });
                 }}
                 placeholder="Digite o número da OAB"
