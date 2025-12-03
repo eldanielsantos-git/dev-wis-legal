@@ -122,7 +122,7 @@ function MyProcessDetailPageInner({
   };
 
   const cleanupSubscriptionsAndPolling = () => {
-    console.log('🛑 Limpando todas as subscriptions e polling');
+    console.log('Check last subscriptions e polling');
 
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
