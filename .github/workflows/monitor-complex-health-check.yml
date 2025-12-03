@@ -1,0 +1,30 @@
+name: Monitor Complex Health Check
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call health-check-worker
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/health-check-worker" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Health check failed with status $http_code"
+            exit 1
+          fi
+
+          echo "✅ Health check completed successfully"
