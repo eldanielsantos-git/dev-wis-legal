@@ -14,8 +14,7 @@ interface TokenBalance {
   lastUpdated: Date;
 }
 
-interface TokenBalanceContextType {
-  balance: TokenBalance;
+interface TokenBalanceContextType extends TokenBalance {
   refreshBalance: () => Promise<void>;
   isRefreshing: boolean;
 }
@@ -176,7 +175,7 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
   }, [user, fetchBalance]);
 
   return (
-    <TokenBalanceContext.Provider value={{ balance, refreshBalance, isRefreshing }}>
+    <TokenBalanceContext.Provider value={{ ...balance, refreshBalance, isRefreshing }}>
       {children}
     </TokenBalanceContext.Provider>
   );

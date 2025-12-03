@@ -24,7 +24,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { balance } = useTokenBalance();
+  const { tokensRemaining, loading: tokenLoading } = useTokenBalance();
   const subscriptionStatus = useSubscriptionStatus(user?.id);
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -233,8 +233,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   }
 
   // Calcular tokens disponíveis totais (considera tanto assinatura quanto balance geral)
-  const totalAvailableTokens = (balance && !balance.loading)
-    ? balance.tokensRemaining
+  const totalAvailableTokens = !tokenLoading
+    ? tokensRemaining
     : subscriptionStatus.tokensRemaining;
 
   if (!subscriptionStatus.hasSubscription && totalAvailableTokens === 0 && !loading && !processingStatus) {
@@ -390,23 +390,23 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-blue-700">Seu saldo atual</span>
                       <span className="font-semibold text-blue-900">
-                        {TokenValidationService.formatTokenCount(balance.tokensRemaining)}
+                        {TokenValidationService.formatTokenCount(tokensRemaining)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-blue-700">Saldo após análise</span>
-                      <span className={`font-semibold ${balance.tokensRemaining - estimatedTokens < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {TokenValidationService.formatTokenCount(Math.max(0, balance.tokensRemaining - estimatedTokens))}
+                      <span className={`font-semibold ${tokensRemaining - estimatedTokens < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {TokenValidationService.formatTokenCount(Math.max(0, tokensRemaining - estimatedTokens))}
                       </span>
                     </div>
                   </div>
                 </div>
-                {balance.tokensRemaining < estimatedTokens && (
+                {tokensRemaining < estimatedTokens && (
                   <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800">
                     ⚠️ Tokens insuficientes! Você precisará adicionar mais tokens ou reduzir o tamanho do arquivo.
                   </div>
                 )}
-                {balance.tokensRemaining >= estimatedTokens && (balance.tokensRemaining - estimatedTokens) < (balance.tokensRemaining * 0.2) && (
+                {tokensRemaining >= estimatedTokens && (tokensRemaining - estimatedTokens) < (tokensRemaining * 0.2) && (
                   <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-800">
                     💡 Após esta análise, você terá menos de 20% dos seus tokens disponíveis.
                   </div>

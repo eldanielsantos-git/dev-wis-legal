@@ -10,12 +10,12 @@ interface ChatTokenCounterProps {
 export function ChatTokenCounter({ className = '' }: ChatTokenCounterProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const { balance } = useTokenBalance();
+  const { tokensRemaining, loading } = useTokenBalance();
 
   return (
     <AnimatedTokenCounter
-      tokens={balance.tokensRemaining}
-      loading={balance.loading}
+      tokens={tokensRemaining}
+      loading={loading}
       textColor={colors.textPrimary}
       iconColor={theme === 'dark' ? '#EDEDED' : '#255886'}
       backgroundColor={colors.bgSecondary}
