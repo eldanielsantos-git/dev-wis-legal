@@ -5,7 +5,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ProcessContentSearch } from '../components/ProcessContentSearch';
 import { ProcessosService } from '../services/ProcessosService';
 import { AnalysisResultsService, type AnalysisResult } from '../services/AnalysisResultsService';
-import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, Edit3, Trash2 } from 'lucide-react';
+import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, Edit3, Trash2, Tag } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
@@ -18,6 +18,11 @@ import { ShareProcessModal } from '../components/ShareProcessModal';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import { WorkspaceService, WorkspaceShare } from '../services/WorkspaceService';
 import { useAuth } from '../contexts/AuthContext';
+import { ProcessoTagsService } from '../services/ProcessoTagsService';
+import { ProcessoTagAssignmentsService } from '../services/ProcessoTagAssignmentsService';
+import { ProcessoTagsList } from '../components/tags/ProcessoTagsList';
+import { ProcessoTagsPopup } from '../components/tags/ProcessoTagsPopup';
+import type { ProcessoTag } from '../lib/supabase';
 
 interface MyProcessDetailPageProps {
   processoId: string;
@@ -91,6 +96,10 @@ function MyProcessDetailPageInner({
   const [showSharesSection, setShowSharesSection] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [processoTags, setProcessoTags] = useState<ProcessoTag[]>([]);
+  const [isLoadingTags, setIsLoadingTags] = useState(true);
+  const [isTagsPopupOpen, setIsTagsPopupOpen] = useState(false);
+  const [canEditTags, setCanEditTags] = useState(false);
   const { user } = useAuth();
   const isLoadingResultsRef = React.useRef(false);
   const processoChannelRef = React.useRef<(() => void) | null>(null);
@@ -147,6 +156,8 @@ function MyProcessDetailPageInner({
     loadAnalysisResults();
     loadShares();
     checkCanShare();
+    loadProcessoTags();
+    checkEditPermission();
 
     const setupRealtimeAndPolling = async () => {
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -382,6 +393,26 @@ function MyProcessDetailPageInner({
       console.error('Error checking if can share:', error);
       setCanShare(false);
     }
+  };
+
+  const loadProcessoTags = async () => {
+    setIsLoadingTags(true);
+    try {
+      const tags = await ProcessoTagAssignmentsService.getTagsByProcessoId(processoId);
+      setProcessoTags(tags);
+    } catch (error) {
+      console.error('Erro ao carregar tags:', error);
+    } finally {
+      setIsLoadingTags(false);
+    }
+  };
+
+  const checkEditPermission = () => {
+    if (!processo || !user) {
+      setCanEditTags(false);
+      return;
+    }
+    setCanEditTags(processo.user_id === user.id);
   };
 
   const handleShareClick = () => {
@@ -661,6 +692,52 @@ function MyProcessDetailPageInner({
                 </button>
               </div>
             </div>
+
+            {/* Seção de Tags do Processo */}
+            {!isLoadingTags && (
+              <div className="mb-6 px-4 py-3 rounded-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-medium flex items-center gap-2" style={{ color: colors.textSecondary }}>
+                    <Tag size={16} />
+                    Tags do Processo
+                  </h3>
+                  {canEditTags && (
+                    <button
+                      onClick={() => setIsTagsPopupOpen(true)}
+                      className="text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary }}
+                    >
+                      Gerenciar Tags
+                    </button>
+                  )}
+                </div>
+
+                {processoTags.length > 0 ? (
+                  <ProcessoTagsList
+                    processoId={processoId}
+                    tags={processoTags}
+                    maxVisible={5}
+                    editable={canEditTags}
+                    onTagsChange={loadProcessoTags}
+                  />
+                ) : (
+                  <div className="text-xs italic" style={{ color: colors.textSecondary }}>
+                    Nenhuma tag atribuída a este processo
+                  </div>
+                )}
+              </div>
+            )}
+
+            <ProcessoTagsPopup
+              isOpen={isTagsPopupOpen}
+              onClose={() => {
+                setIsTagsPopupOpen(false);
+                loadProcessoTags();
+              }}
+              tags={processoTags}
+              processoId={canEditTags ? processoId : undefined}
+              onTagsUpdated={loadProcessoTags}
+            />
 
             {/* Título Áreas de Análise */}
             {(analysisResults.length > 0 || totalPrompts > 0) && (

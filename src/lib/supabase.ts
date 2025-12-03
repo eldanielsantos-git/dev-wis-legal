@@ -187,6 +187,7 @@ export interface Processo {
   gemini_file_uploaded_at?: string | null;
   gemini_file_expires_at?: string | null;
   use_file_api?: boolean;
+  tags?: ProcessoTag[];
 }
 
 export interface AdminSystemModel {
@@ -220,4 +221,61 @@ export interface AnalysisExecution {
   tokens_used: number | null;
   started_at: string;
   completed_at: string | null;
+}
+
+export interface ProcessoTag {
+  id: string;
+  name: string;
+  slug: string;
+  color: string;
+  description: string | null;
+  is_active: boolean;
+  display_order: number;
+  usage_count: number;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProcessoTagAssignment {
+  id: string;
+  processo_id: string;
+  tag_id: string;
+  assigned_by: string | null;
+  assigned_at: string;
+  tag?: ProcessoTag;
+}
+
+export interface CreateTagInput {
+  name: string;
+  slug?: string;
+  color: string;
+  description?: string;
+  is_active?: boolean;
+  display_order?: number;
+}
+
+export interface UpdateTagInput {
+  name?: string;
+  slug?: string;
+  color?: string;
+  description?: string;
+  is_active?: boolean;
+  display_order?: number;
+}
+
+export interface TagStatistics {
+  tag_id: string;
+  tag_name: string;
+  tag_color: string;
+  usage_count: number;
+  last_used_at: string | null;
+  most_recent_processo: string | null;
+}
+
+export interface TagColor {
+  name: string;
+  light: string;
+  dark: string;
+  category: 'primary' | 'success' | 'danger' | 'warning' | 'info' | 'neutral';
 }
