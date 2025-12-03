@@ -109,14 +109,13 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
           hasSyncedSubscription.current = true;
         }
       } catch (err) {
-        console.error('[AppHomePage] ❌ Erro ao sincronizar:', err);
+        // Silently handle sync errors
       } finally {
         setSyncingSubscription(false);
       }
     };
 
     syncAndLoadData().catch(err => {
-      console.error('[AppHomePage] ❌ Erro crítico no syncAndLoadData:', err);
       setSyncingSubscription(false);
     });
     if (!hasLoadedProcessos.current) {
@@ -196,15 +195,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
       const data = await ProcessosService.getProcessos();
       setProcessos(data);
     } catch (err: any) {
-      logger.error('AppHomePage', 'Erro ao carregar processos:', err);
-      console.error('[AppHomePage] Erro ao carregar processos:', err);
-      console.error('[AppHomePage] Detalhes do erro:', {
-        message: err?.message,
-        code: err?.code,
-        details: err?.details,
-        hint: err?.hint,
-        stack: err?.stack
-      });
       setErrorModal({
         isOpen: true,
         title: 'Erro ao carregar processos',
