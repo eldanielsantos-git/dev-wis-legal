@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { FileText, Trash2, CheckCircle, Coins, Users, Calendar, Lock, Edit3 } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { ProcessStatusIndicator } from './ProcessStatusIndicator';
 import { TokenValidationService } from '../services/TokenValidationService';
+import { supabase } from '../lib/supabase';
 
 interface ProcessoCardProps {
   processo: Processo;
@@ -39,6 +40,44 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
   const { theme } = useTheme();
   const totalPrompts = processo.total_prompts || 9;
   const currentPrompt = processo.current_prompt_number || 0;
+  const errorNotifiedRef = useRef<Set<string>>(new Set());
+
+  // Detectar processos em erro e notificar admins automaticamente
+  useEffect(() => {
+    const notifyAdminOnError = async () => {
+      // Só notifica se for erro e ainda não foi notificado nesta sessão
+      if (processo.status === 'error' && !errorNotifiedRef.current.has(processo.id)) {
+        try {
+          console.log(`🚨 Processo em erro detectado: ${processo.id}`);
+
+          // Marcar como notificado para não disparar múltiplas vezes
+          errorNotifiedRef.current.add(processo.id);
+
+          // Chamar edge function para verificar e notificar
+          const response = await fetch(
+            `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-failed-processes`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            console.log(`✅ Notificação de erro processada para ${processo.id}`);
+          } else {
+            console.error(`❌ Falha ao notificar erro de ${processo.id}`);
+          }
+        } catch (error) {
+          console.error('Erro ao notificar admin:', error);
+        }
+      }
+    };
+
+    notifyAdminOnError();
+  }, [processo.id, processo.status]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -176,24 +215,24 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
 
         {workspaceInfo && (
           <div
-            className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t space-y-2"
+            className="mt-3 sm:mt-4 max-h-[785px]:mt-2 max-h-[785px]:sm:mt-3 pt-3 sm:pt-4 max-h-[785px]:pt-2 max-h-[785px]:sm:pt-3 border-t space-y-2 max-h-[785px]:space-y-1.5"
             style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
           >
             {workspaceInfo.sharedWith && (
-              <div className="flex items-center text-xs" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                <Users className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+              <div className="flex items-center text-xs max-h-[785px]:text-[10px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Users className="w-3.5 h-3.5 max-h-[785px]:w-3 max-h-[785px]:h-3 mr-2 max-h-[785px]:mr-1.5 flex-shrink-0" />
                 <span>Compartilhado com {workspaceInfo.sharedWith}</span>
               </div>
             )}
             {workspaceInfo.sharedBy && (
-              <div className="flex items-center text-xs" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                <Users className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+              <div className="flex items-center text-xs max-h-[785px]:text-[10px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Users className="w-3.5 h-3.5 max-h-[785px]:w-3 max-h-[785px]:h-3 mr-2 max-h-[785px]:mr-1.5 flex-shrink-0" />
                 <span>Compartilhado por {workspaceInfo.sharedBy}</span>
               </div>
             )}
             {workspaceInfo.sharedAt && (
-              <div className="flex items-center text-xs" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                <Calendar className="w-3.5 h-3.5 mr-2 flex-shrink-0" />
+              <div className="flex items-center text-xs max-h-[785px]:text-[10px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Calendar className="w-3.5 h-3.5 max-h-[785px]:w-3 max-h-[785px]:h-3 mr-2 max-h-[785px]:mr-1.5 flex-shrink-0" />
                 <span>
                   Compartilhado em {new Date(workspaceInfo.sharedAt).toLocaleDateString('pt-BR', {
                     day: '2-digit',
@@ -210,7 +249,7 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                     e.stopPropagation();
                     workspaceInfo.onManageShares?.();
                   }}
-                  className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                  className="inline-flex items-center space-x-2 max-h-[785px]:space-x-1.5 px-3 max-h-[785px]:px-2 py-1.5 max-h-[785px]:py-1 rounded-full text-xs max-h-[785px]:text-[10px] font-medium transition-all"
                   style={{
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     color: '#3b82f6'
@@ -223,12 +262,12 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                   }}
                   title="Clique para gerenciar compartilhamentos"
                 >
-                  <Users className="w-3 h-3" />
+                  <Users className="w-3 h-3 max-h-[785px]:w-2.5 max-h-[785px]:h-2.5" />
                   <span>Gerenciar compartilhamento</span>
                 </button>
               ) : (
                 <div
-                  className="inline-flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium"
+                  className="inline-flex items-center space-x-2 max-h-[785px]:space-x-1.5 px-3 max-h-[785px]:px-2 py-1.5 max-h-[785px]:py-1 rounded-full text-xs max-h-[785px]:text-[10px] font-medium"
                   style={{
                     backgroundColor: workspaceInfo.permissionLevel === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
                     color: workspaceInfo.permissionLevel === 'read_only' ? '#f59e0b' : '#3b82f6'
@@ -236,12 +275,12 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                 >
                   {workspaceInfo.permissionLevel === 'read_only' ? (
                     <>
-                      <Lock className="w-3 h-3" />
+                      <Lock className="w-3 h-3 max-h-[785px]:w-2.5 max-h-[785px]:h-2.5" />
                       <span>Somente Leitura</span>
                     </>
                   ) : (
                     <>
-                      <Edit3 className="w-3 h-3" />
+                      <Edit3 className="w-3 h-3 max-h-[785px]:w-2.5 max-h-[785px]:h-2.5" />
                       <span>Editor</span>
                     </>
                   )}
@@ -253,11 +292,11 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
 
         {(userInfo || processo.user_profile) && (
           <div
-            className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t"
+            className="mt-3 sm:mt-4 max-h-[785px]:mt-2 max-h-[785px]:sm:mt-3 pt-3 sm:pt-4 max-h-[785px]:pt-2 max-h-[785px]:sm:pt-3 border-t"
             style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
           >
             <div
-              className="space-y-1.5 text-xs"
+              className="space-y-1.5 max-h-[785px]:space-y-1 text-xs max-h-[785px]:text-[10px]"
               style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
             >
               <div className="flex justify-between gap-2">
@@ -288,19 +327,19 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
 
         {processo.status === 'completed' && (
           <div
-            className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t"
+            className="mt-3 sm:mt-4 max-h-[785px]:mt-2 max-h-[785px]:sm:mt-3 pt-3 sm:pt-4 max-h-[785px]:pt-2 max-h-[785px]:sm:pt-3 border-t"
             style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
           >
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-3 gap-3 max-h-[785px]:gap-2 text-center">
               <div>
                 <p
-                  className="text-lg font-bold"
+                  className="text-lg max-h-[785px]:text-base font-bold"
                   style={{ color: theme === 'dark' ? '#FFFFFF' : '#141312' }}
                 >
                   {processo.transcricao?.totalPages || 0}
                 </p>
                 <p
-                  className="text-xs"
+                  className="text-xs max-h-[785px]:text-[10px]"
                   style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
                 >
                   Páginas
@@ -308,27 +347,27 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
               </div>
               <div>
                 <p
-                  className="text-lg font-bold"
+                  className="text-lg max-h-[785px]:text-base font-bold"
                   style={{ color: theme === 'dark' ? '#FFFFFF' : '#141312' }}
                 >
                   {TokenValidationService.formatTokenCount(processo.tokens_consumed || 0)}
                 </p>
                 <p
-                  className="text-xs"
+                  className="text-xs max-h-[785px]:text-[10px]"
                   style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
                 >
                   Tokens
                 </p>
               </div>
               <div>
-                <p className="text-lg font-bold">
+                <p className="text-lg max-h-[785px]:text-base font-bold">
                   <CheckCircle
-                    className="w-6 h-6 inline"
+                    className="w-6 h-6 max-h-[785px]:w-5 max-h-[785px]:h-5 inline"
                     style={{ color: theme === 'dark' ? '#FFFFFF' : '#141312' }}
                   />
                 </p>
                 <p
-                  className="text-xs"
+                  className="text-xs max-h-[785px]:text-[10px]"
                   style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
                 >
                   Completo
