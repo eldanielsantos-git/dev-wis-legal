@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { validatePasswordCharacters, validatePasswordStrict, sanitizePassword } from '../utils/passwordValidation';
 
 interface ResetPasswordPageProps {
   onNavigateToSignIn: () => void;
@@ -19,40 +20,14 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
   const [formData, setFormData] = useState({ password: '', confirmPassword: '' });
   const [passwordValidation, setPasswordValidation] = useState({
     minLength: false,
+    maxLength: true,
     hasUppercase: false,
     hasLowercase: false,
     hasNumber: false,
-    hasSpecialChar: false
+    hasSpecialChar: false,
+    isSafe: true
   });
 
-  const validatePassword = (password: string) => {
-    return {
-      minLength: password.length >= 6,
-      hasUppercase: /[A-Z]/.test(password),
-      hasLowercase: /[a-z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
-      hasSpecialChar: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)
-    };
-  };
-
-  const validatePasswordStrict = (password: string): { valid: boolean; message?: string } => {
-    if (password.length < 6) {
-      return { valid: false, message: 'A senha deve ter no mínimo 6 caracteres' };
-    }
-    if (!/[a-z]/.test(password)) {
-      return { valid: false, message: 'A senha deve conter pelo menos uma letra minúscula' };
-    }
-    if (!/[A-Z]/.test(password)) {
-      return { valid: false, message: 'A senha deve conter pelo menos uma letra maiúscula' };
-    }
-    if (!/[0-9]/.test(password)) {
-      return { valid: false, message: 'A senha deve conter pelo menos um número' };
-    }
-    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-      return { valid: false, message: 'A senha deve conter pelo menos um caractere especial' };
-    }
-    return { valid: true };
-  };
 
   useEffect(() => {
     const checkRecoveryToken = async () => {
@@ -271,16 +246,17 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
                   required
                   value={formData.password}
                   onChange={(e) => {
-                    const newPassword = e.target.value;
-                    setFormData({ ...formData, password: newPassword });
-                    setPasswordValidation(validatePassword(newPassword));
-                    if (formData.confirmPassword && newPassword !== formData.confirmPassword) {
+                    const sanitized = sanitizePassword(e.target.value);
+                    setFormData({ ...formData, password: sanitized });
+                    setPasswordValidation(validatePasswordCharacters(sanitized));
+                    if (formData.confirmPassword && sanitized !== formData.confirmPassword) {
                       setError('As senhas não coincidem');
-                    } else if (newPassword === formData.confirmPassword) {
+                    } else if (sanitized === formData.confirmPassword) {
                       setError(null);
                     }
                   }}
                   minLength={6}
+                  maxLength={24}
                   className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
                 />
                 <button
@@ -300,6 +276,16 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
                   )}
                   <span className={passwordValidation.minLength ? 'text-green-600' : 'text-gray-500'}>
                     Mínimo de 6 caracteres
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  {passwordValidation.maxLength ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-red-600" />
+                  )}
+                  <span className={passwordValidation.maxLength ? 'text-green-600' : 'text-red-600'}>
+                    Máximo de 24 caracteres
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
@@ -342,6 +328,14 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
                     Caractere especial (!@#$%...)
                   </span>
                 </div>
+                {!passwordValidation.isSafe && (
+                  <div className="flex items-center gap-2 text-xs mt-2 p-2 bg-red-50 rounded-lg border border-red-200">
+                    <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                    <span className="text-red-600">
+                      Senha contém padrões não permitidos. Use apenas letras, números e caracteres especiais comuns.
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
             <div>
@@ -352,15 +346,16 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
                   required
                   value={formData.confirmPassword}
                   onChange={(e) => {
-                    const newConfirmPassword = e.target.value;
-                    setFormData({ ...formData, confirmPassword: newConfirmPassword });
-                    if (newConfirmPassword && formData.password !== newConfirmPassword) {
+                    const sanitized = sanitizePassword(e.target.value);
+                    setFormData({ ...formData, confirmPassword: sanitized });
+                    if (sanitized && formData.password !== sanitized) {
                       setError('As senhas não coincidem');
-                    } else if (formData.password === newConfirmPassword) {
+                    } else if (formData.password === sanitized) {
                       setError(null);
                     }
                   }}
                   minLength={6}
+                  maxLength={24}
                   className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
                 />
                 <button

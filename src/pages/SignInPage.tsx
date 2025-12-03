@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader, Eye, EyeOff } from 'lucide-react';
+import { sanitizePassword } from '../utils/passwordValidation';
 
 interface SignInPageProps {
   onNavigateToSignUp: () => void;
@@ -76,7 +77,8 @@ export function SignInPage({ onNavigateToSignUp, onNavigateToForgotPassword, onN
                   type={showPassword ? "text" : "password"}
                   required
                   value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, password: sanitizePassword(e.target.value) })}
+                  maxLength={24}
                   className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
                 />
                 <button
