@@ -264,7 +264,6 @@ export function AdminTagsManagementPage({
                     <tr style={{ backgroundColor: colors.bgTertiary }}>
                       <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Preview</th>
                       <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Nome</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Descrição</th>
                       <th className="px-4 py-3 text-center text-xs font-medium" style={{ color: colors.textSecondary }}>Processos</th>
                       <th className="px-4 py-3 text-center text-xs font-medium" style={{ color: colors.textSecondary }}>Status</th>
                       <th className="px-4 py-3 text-right text-xs font-medium" style={{ color: colors.textSecondary }}>Ações</th>
@@ -283,11 +282,6 @@ export function AdminTagsManagementPage({
                         <td className="px-4 py-3">
                           <span className="font-medium" style={{ color: colors.textPrimary }}>{tag.name}</span>
                           <div className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>{tag.slug}</div>
-                        </td>
-                        <td className="px-4 py-3 max-w-xs">
-                          <span className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
-                            {tag.description || '-'}
-                          </span>
                         </td>
                         <td className="px-4 py-3 text-center">
                           <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: colors.bgTertiary, color: colors.textPrimary }}>
