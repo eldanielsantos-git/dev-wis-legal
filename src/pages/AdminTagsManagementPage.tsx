@@ -193,34 +193,52 @@ export function AdminTagsManagementPage({
 
       <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+          <button
+            onClick={onNavigateToAdmin}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-6xl"
+            style={{
+              backgroundColor: colors.bgSecondary,
+              color: colors.textPrimary
+            }}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Voltar ao Painel</span>
+          </button>
+
           <div className="max-w-6xl mx-auto">
-            <button
-              onClick={onNavigateToAdmin}
-              className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 transition-opacity"
-              style={{ color: colors.textSecondary }}
-            >
-              <ChevronLeft size={16} />
-              Voltar para Administração
-            </button>
-
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 rounded-lg" style={{ backgroundColor: colors.bgSecondary }}>
-                  <Tag className="w-6 h-6" style={{ color: '#8B5CF6' }} />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
-                    Gestão de Tags
-                  </h1>
-                  <p className="text-sm" style={{ color: colors.textSecondary }}>
-                    Crie e gerencie tags para classificar processos
-                  </p>
-                </div>
+            <div className="flex flex-col items-center mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
+                <Tag className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#8B5CF6' }} />
               </div>
+              <div className="text-center">
+                <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
+                  Gestão de Tags
+                </h1>
+                <p className="text-xs sm:text-sm mt-1 px-4" style={{ color: colors.textSecondary }}>
+                  Crie e gerencie tags para classificar processos
+                </p>
+              </div>
+            </div>
 
+            <div className="flex flex-col sm:flex-row items-center gap-3 mb-4 sm:mb-6">
+              <div className="relative flex-1 w-full">
+                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
+                <input
+                  type="text"
+                  placeholder="Buscar tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    borderColor: theme === 'dark' ? '#4B5563' : '#D1D5DB',
+                    color: colors.textPrimary
+                  }}
+                />
+              </div>
               <button
                 onClick={handleOpenCreateModal}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-opacity hover:opacity-80"
+                className="flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-opacity hover:opacity-80 w-full sm:w-auto whitespace-nowrap"
                 style={{ backgroundColor: '#8B5CF6', color: '#FFFFFF' }}
               >
                 <Plus size={18} />
@@ -228,27 +246,19 @@ export function AdminTagsManagementPage({
               </button>
             </div>
 
-            <div className="mb-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: colors.textSecondary }} />
-                <input
-                  type="text"
-                  placeholder="Buscar tags..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
-                  style={{
-                    backgroundColor: colors.bgSecondary,
-                    borderColor: colors.border,
-                    color: colors.textPrimary
-                  }}
-                />
-              </div>
-            </div>
+            {!loading && filteredTags.length > 0 && (
+              <p className="text-xs sm:text-sm mb-3 sm:mb-4" style={{ color: colors.textSecondary }}>
+                {searchQuery ? (
+                  <>Mostrando {filteredTags.length} {filteredTags.length === 1 ? 'tag' : 'tags'}</>
+                ) : (
+                  <>Total de {filteredTags.length} {filteredTags.length === 1 ? 'tag cadastrada' : 'tags cadastradas'}</>
+                )}
+              </p>
+            )}
 
             {loading ? (
-              <div className="text-center py-12" style={{ color: colors.textSecondary }}>
-                Carregando tags...
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 border-4 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#3B82F6', borderTopColor: 'transparent' }} />
               </div>
             ) : filteredTags.length === 0 ? (
               <div className="text-center py-12 rounded-lg" style={{ backgroundColor: colors.bgSecondary }}>
