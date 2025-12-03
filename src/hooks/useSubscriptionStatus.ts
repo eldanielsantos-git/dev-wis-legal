@@ -56,7 +56,7 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
             'Authorization': `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ customer_id: customerId }),
+          body: JSON.stringify({}),
         });
 
         if (response.ok) {
