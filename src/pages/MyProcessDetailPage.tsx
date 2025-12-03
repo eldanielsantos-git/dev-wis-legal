@@ -96,13 +96,27 @@ function MyProcessDetailPageInner({
   const processoChannelRef = React.useRef<(() => void) | null>(null);
   const resultsChannelRef = React.useRef<(() => void) | null>(null);
   const isFullyCompletedRef = React.useRef(false);
+  const processoRef = React.useRef<Processo | null>(null);
+  const analysisResultsRef = React.useRef<AnalysisResult[]>([]);
 
   const shouldStopPolling = (currentProcesso: Processo | null, currentResults: AnalysisResult[]): boolean => {
-    if (!currentProcesso) return false;
+    if (!currentProcesso) {
+      console.log('⚠️ shouldStopPolling: processo is null');
+      return false;
+    }
 
     const processoFinished = ['completed', 'error'].includes(currentProcesso.status);
     const hasResults = currentResults.length > 0;
     const allResultsFinished = currentResults.every(r => r.status === 'completed' || r.status === 'failed');
+
+    console.log('🔍 shouldStopPolling check:', {
+      processoStatus: currentProcesso.status,
+      processoFinished,
+      hasResults,
+      resultsCount: currentResults.length,
+      allResultsFinished,
+      shouldStop: processoFinished && hasResults && allResultsFinished
+    });
 
     return processoFinished && hasResults && allResultsFinished;
   };
@@ -145,7 +159,10 @@ function MyProcessDetailPageInner({
       processoChannelRef.current = ProcessosService.subscribeToProcessoChanges(
         processoId,
         (updatedProcesso) => {
-          if (isFullyCompletedRef.current) return;
+          if (isFullyCompletedRef.current) {
+            console.log('⏭️ Realtime ignorado - processo já finalizado');
+            return;
+          }
 
           console.log('🔄 Realtime: Processo updated:', {
             id: updatedProcesso.id,
@@ -154,10 +171,11 @@ function MyProcessDetailPageInner({
             totalPrompts: updatedProcesso.total_prompts
           });
 
-          const wasAnalyzing = processo?.status === 'analyzing';
+          const wasAnalyzing = processoRef.current?.status === 'analyzing';
           const isNowCompleted = updatedProcesso.status === 'completed';
 
           setProcesso(updatedProcesso);
+          processoRef.current = updatedProcesso;
 
           if (wasAnalyzing && isNowCompleted) {
             console.log('✅ Processo concluído - carregando resultados finais');
@@ -165,13 +183,25 @@ function MyProcessDetailPageInner({
               loadAnalysisResults();
             }, 1000);
           }
+
+          // Verificar se deve parar após update
+          if (shouldStopPolling(updatedProcesso, analysisResultsRef.current)) {
+            console.log('✅ Processo completo detectado via Realtime - parando tudo');
+            cleanupSubscriptionsAndPolling();
+          }
         }
       );
 
       resultsChannelRef.current = AnalysisResultsService.subscribeToResultsChanges(
         processoId,
         () => {
-          if (isFullyCompletedRef.current || isLoadingResultsRef.current) return;
+          if (isFullyCompletedRef.current || isLoadingResultsRef.current) {
+            console.log('⏭️ Realtime results ignorado:', {
+              isCompleted: isFullyCompletedRef.current,
+              isLoading: isLoadingResultsRef.current
+            });
+            return;
+          }
 
           console.log('🔄 Realtime: Analysis results updated - recarregando...');
           loadAnalysisResults();
@@ -216,16 +246,25 @@ function MyProcessDetailPageInner({
           .single();
 
         if (fallbackData) {
-          setProcesso(fallbackData as any);
+          const processoData = fallbackData as any;
+          setProcesso(processoData);
+          processoRef.current = processoData;
         }
         return;
       }
 
       setProcesso(data);
+      processoRef.current = data;
 
       // Verificar se processo já está completo na carga inicial
       if (['completed', 'error'].includes(data.status)) {
         console.log('ℹ️ Processo já está em status final:', data.status);
+
+        // Verificar se deve parar o polling imediatamente
+        if (shouldStopPolling(data, analysisResultsRef.current)) {
+          console.log('✅ Processo já completo na carga - não iniciará polling/subscriptions');
+          isFullyCompletedRef.current = true;
+        }
       }
     } catch (err: any) {
       console.error('Erro ao carregar processo:', err);
@@ -245,7 +284,9 @@ function MyProcessDetailPageInner({
           .single();
 
         if (fallbackData) {
-          setProcesso(fallbackData as any);
+          const processoData = fallbackData as any;
+          setProcesso(processoData);
+          processoRef.current = processoData;
         }
       } catch (fallbackErr) {
         console.error('Erro no fallback:', fallbackErr);
@@ -264,9 +305,10 @@ function MyProcessDetailPageInner({
       const data = await ProcessosService.getProcessoById(processoId);
       if (data) {
         setProcesso(data);
+        processoRef.current = data;
 
         // Verificar se deve parar polling após refresh
-        if (shouldStopPolling(data, analysisResults)) {
+        if (shouldStopPolling(data, analysisResultsRef.current)) {
           console.log('✅ Processo completo detectado no refresh - parando polling');
           cleanupSubscriptionsAndPolling();
         }
@@ -278,6 +320,10 @@ function MyProcessDetailPageInner({
 
   const loadAnalysisResults = async () => {
     if (isLoadingResultsRef.current || isFullyCompletedRef.current) {
+      console.log('⏭️ Skipping loadAnalysisResults:', {
+        isLoading: isLoadingResultsRef.current,
+        isCompleted: isFullyCompletedRef.current
+      });
       return;
     }
 
@@ -302,8 +348,10 @@ function MyProcessDetailPageInner({
       });
 
       setAnalysisResults(results);
+      analysisResultsRef.current = results;
 
-      if (shouldStopPolling(processo, results)) {
+      // Usa o ref para pegar o processo mais atualizado
+      if (shouldStopPolling(processoRef.current, results)) {
         console.log('✅ Processo completamente finalizado - parando polling e subscriptions');
         cleanupSubscriptionsAndPolling();
       }
