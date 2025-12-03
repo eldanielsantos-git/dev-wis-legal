@@ -70,6 +70,36 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("Step 1.5: Checking if email was already sent...");
+    const { data: existingEmail, error: emailCheckError } = await supabaseClient
+      .from("email_logs")
+      .select("id, created_at")
+      .eq("type", "process_completed")
+      .eq("user_id", processo.user_id)
+      .eq("status", "success")
+      .contains("email_provider_response", { processo_id: processo_id })
+      .maybeSingle();
+
+    if (emailCheckError) {
+      console.error("Error checking for existing email:", emailCheckError);
+    }
+
+    if (existingEmail) {
+      console.warn(`Email already sent for processo ${processo_id} at ${existingEmail.created_at}. Skipping duplicate.`);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Email already sent for this processo",
+          existing_email_id: existingEmail.id,
+          sent_at: existingEmail.created_at
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     console.log("Step 2: Fetching user profile data...");
     const { data: userProfile, error: profileError } = await supabaseClient
       .from("user_profiles")
