@@ -32,6 +32,7 @@ import { AdminQuotaManagementPage } from './pages/AdminQuotaManagementPage';
 import { AdminStripeDiagnosticPage } from './pages/AdminStripeDiagnosticPage';
 import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
+import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
@@ -253,6 +254,22 @@ function AppContent() {
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
         onNavigateToAdmin={() => navigate('/admin')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
+  }
+
+  if (currentPath === '/admin-tags') {
+    return (
+      <AdminTagsManagementPage
+        onNavigateToAdmin={() => navigate('/admin')}
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}

@@ -7,12 +7,16 @@ import { WorkspaceService } from '../services/WorkspaceService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { FileText, Loader, LayoutGrid, List, Users } from 'lucide-react';
+import { FileText, Loader, LayoutGrid, List, Users, Tag } from 'lucide-react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
 import { supabase } from '../lib/supabase';
-import type { Processo } from '../lib/supabase';
+import type { Processo, ProcessoTag } from '../lib/supabase';
+import { ProcessoTagsService } from '../services/ProcessoTagsService';
+import { ProcessoTagAssignmentsService } from '../services/ProcessoTagAssignmentsService';
+import { TagFilterPanel } from '../components/tags/TagFilterPanel';
+import { ProcessoTagComponent } from '../components/tags/ProcessoTag';
 
 interface MyProcessesPageProps {
   onNavigateToDetail: (processoId: string) => void;
@@ -42,9 +46,13 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [processoToDelete, setProcessoToDelete] = useState<Processo | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [filterMode, setFilterMode] = useState<'all' | 'shared'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'shared' | 'tags'>('all');
   const [sharedProcessIds, setSharedProcessIds] = useState<Set<string>>(new Set());
   const [shareCountByProcesso, setShareCountByProcesso] = useState<Map<string, number>>(new Map());
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [isTagFilterPanelOpen, setIsTagFilterPanelOpen] = useState(false);
+  const [availableTags, setAvailableTags] = useState<ProcessoTag[]>([]);
+  const [tagCounts, setTagCounts] = useState<Map<string, number>>(new Map());
 
   const loadProcessos = useCallback(async (isInitialLoad = false) => {
     try {
@@ -52,8 +60,16 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
 
       const allProcessos = await ProcessosService.getProcessos();
 
+      // Load tags for each processo
+      const processosWithTags = await Promise.all(
+        allProcessos.map(async (processo) => {
+          const tags = await ProcessoTagAssignmentsService.getTagsByProcessoId(processo.id);
+          return { ...processo, tags };
+        })
+      );
+
       // Sort by created_at descending (most recent first)
-      const sortedProcessos = allProcessos.sort((a, b) =>
+      const sortedProcessos = processosWithTags.sort((a, b) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
@@ -70,6 +86,7 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
   useEffect(() => {
     loadProcessos(true);
     loadSharedProcessIds();
+    loadAvailableTags();
   }, [loadProcessos]);
 
   const loadSharedProcessIds = async () => {
@@ -87,6 +104,22 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
       setShareCountByProcesso(countMap);
     } catch (error) {
       console.error('Error loading shared process IDs:', error);
+    }
+  };
+
+  const loadAvailableTags = async () => {
+    try {
+      const tags = await ProcessoTagsService.getAllTags();
+      setAvailableTags(tags);
+
+      const counts = new Map<string, number>();
+      for (const tag of tags) {
+        const count = await ProcessoTagAssignmentsService.getProcessosCountByTag(tag.id);
+        counts.set(tag.id, count);
+      }
+      setTagCounts(counts);
+    } catch (error) {
+      console.error('Error loading tags:', error);
     }
   };
 
@@ -219,7 +252,10 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                 <div className="flex justify-center mt-6 mb-4">
                   <div className="inline-flex rounded-lg p-1" style={{ backgroundColor: colors.bgSecondary }}>
                     <button
-                      onClick={() => setFilterMode('all')}
+                      onClick={() => {
+                        setFilterMode('all');
+                        setSelectedTagIds([]);
+                      }}
                       className="px-6 py-2 rounded-lg text-sm font-medium transition-all"
                       style={{
                         backgroundColor: filterMode === 'all' ? colors.bgPrimary : 'transparent',
@@ -232,7 +268,10 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                       </span>
                     </button>
                     <button
-                      onClick={() => setFilterMode('shared')}
+                      onClick={() => {
+                        setFilterMode('shared');
+                        setSelectedTagIds([]);
+                      }}
                       className="px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2"
                       style={{
                         backgroundColor: filterMode === 'shared' ? colors.bgPrimary : 'transparent',
@@ -245,12 +284,59 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                         {sharedProcessIds.size}
                       </span>
                     </button>
+                    <button
+                      onClick={() => {
+                        setFilterMode('tags');
+                        setIsTagFilterPanelOpen(true);
+                      }}
+                      className="px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2"
+                      style={{
+                        backgroundColor: filterMode === 'tags' ? colors.bgPrimary : 'transparent',
+                        color: filterMode === 'tags' ? colors.textPrimary : colors.textSecondary
+                      }}
+                    >
+                      <Tag className="w-4 h-4" />
+                      <span>Tags</span>
+                      {selectedTagIds.length > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.accent }}>
+                          {selectedTagIds.length}
+                        </span>
+                      )}
+                    </button>
                   </div>
                 </div>
+                {filterMode === 'tags' && selectedTagIds.length > 0 && (
+                  <div className="flex flex-wrap gap-2 justify-center mb-4">
+                    {selectedTagIds.map(tagId => {
+                      const tag = availableTags.find(t => t.id === tagId);
+                      if (!tag) return null;
+                      return (
+                        <ProcessoTagComponent
+                          key={tag.id}
+                          tag={tag}
+                          size="sm"
+                          removable
+                          onRemove={() => {
+                            setSelectedTagIds(prev => prev.filter(id => id !== tagId));
+                          }}
+                        />
+                      );
+                    })}
+                    <button
+                      onClick={() => setSelectedTagIds([])}
+                      className="text-xs px-3 py-1 rounded-full hover:opacity-80"
+                      style={{ backgroundColor: colors.bgSecondary, color: colors.textSecondary }}
+                    >
+                      Limpar filtros
+                    </button>
+                  </div>
+                )}
                 <p className="text-sm sm:text-base font-body mt-2 text-center" style={{ color: colors.textTertiary }}>
                   {filterMode === 'all'
                     ? `Você tem ${processos.length} ${processos.length === 1 ? 'processo' : 'processos'}`
-                    : `Você compartilhou ${sharedProcessIds.size} ${sharedProcessIds.size === 1 ? 'processo' : 'processos'}`
+                    : filterMode === 'shared'
+                    ? `Você compartilhou ${sharedProcessIds.size} ${sharedProcessIds.size === 1 ? 'processo' : 'processos'}`
+                    : `Filtrando por ${selectedTagIds.length} ${selectedTagIds.length === 1 ? 'tag' : 'tags'}`
                   }
                 </p>
               </>
@@ -282,9 +368,18 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
           ) : (
             <>
               {(() => {
-                const filteredProcessos = filterMode === 'shared'
-                  ? processos.filter(p => sharedProcessIds.has(p.id))
-                  : processos;
+                let filteredProcessos = processos;
+
+                if (filterMode === 'shared') {
+                  filteredProcessos = processos.filter(p => sharedProcessIds.has(p.id));
+                } else if (filterMode === 'tags' && selectedTagIds.length > 0) {
+                  filteredProcessos = processos.filter(processo => {
+                    if (!processo.tags || processo.tags.length === 0) return false;
+                    return selectedTagIds.some(tagId =>
+                      processo.tags!.some(tag => tag.id === tagId)
+                    );
+                  });
+                }
 
                 if (filteredProcessos.length === 0 && filterMode === 'shared') {
                   return (
@@ -296,6 +391,24 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                         <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>Você ainda não compartilhou nenhum processo</h3>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
                           Compartilhe seus processos analisados com colegas para colaborar de forma mais eficiente
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (filteredProcessos.length === 0 && filterMode === 'tags') {
+                  return (
+                    <div className="rounded-xl border p-12 text-center" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}>
+                      <div className="max-w-sm mx-auto">
+                        <div className="p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: colors.bgTertiary }}>
+                          <Tag className="w-7 h-7" style={{ color: colors.textSecondary }} strokeWidth={1.5} />
+                        </div>
+                        <h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>
+                          Nenhum processo encontrado com {selectedTagIds.length === 1 ? 'esta tag' : 'estas tags'}
+                        </h3>
+                        <p className="text-sm" style={{ color: colors.textSecondary }}>
+                          Tente selecionar outras tags ou adicione tags aos seus processos
                         </p>
                       </div>
                     </div>
@@ -380,6 +493,14 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
         fileName={processoToDelete?.file_name || ''}
         onConfirm={confirmDeleteProcesso}
         onCancel={cancelDeleteProcesso}
+      />
+      <TagFilterPanel
+        isOpen={isTagFilterPanelOpen}
+        availableTags={availableTags}
+        selectedTagIds={selectedTagIds}
+        onTagsChange={setSelectedTagIds}
+        onClose={() => setIsTagFilterPanelOpen(false)}
+        tagCounts={tagCounts}
       />
     </div>
   );
