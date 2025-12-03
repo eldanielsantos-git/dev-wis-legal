@@ -3,12 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('[supabase.ts] Initializing Supabase client');
-console.log('[supabase.ts] Build time env check:');
-console.log('[supabase.ts] - VITE_SUPABASE_URL:', supabaseUrl);
-console.log('[supabase.ts] - Key exists:', !!supabaseAnonKey);
-console.log('[supabase.ts] - import.meta.env:', import.meta.env);
-
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[supabase.ts] Missing Supabase credentials!');
   console.error('[supabase.ts] Available env vars:', Object.keys(import.meta.env));
@@ -94,7 +88,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
-console.log('[supabase.ts] Supabase client created successfully');
 
 export type ProcessoStatus = 'created' | 'analyzing' | 'completed' | 'error';
 

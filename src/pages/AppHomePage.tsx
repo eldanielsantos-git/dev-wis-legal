@@ -76,35 +76,24 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
   useEffectOnce(() => {
     const syncAndLoadData = async () => {
-      console.log('[AppHomePage] 🔄 Iniciando syncAndLoadData');
-
       if (hasSyncedSubscription.current) {
-        logger.log('AppHomePage', 'Subscription already synced, skipping');
-        console.log('[AppHomePage] ✅ Subscription já sincronizada');
         setSyncingSubscription(false);
         return;
       }
 
       try {
-        console.log('[AppHomePage] 🔍 Verificando parâmetros da URL');
         const urlParams = new URLSearchParams(window.location.search);
         const fromStripe = urlParams.get('from_stripe');
         const sessionId = urlParams.get('session_id');
 
         if (fromStripe === 'success' && sessionId) {
-          logger.log('AppHomePage', 'Retorno do Stripe detectado, forçando refresh...');
-          console.log('[AppHomePage] 💳 Retorno do Stripe detectado');
           const newUrl = window.location.pathname;
           window.history.replaceState({}, document.title, newUrl);
         }
 
-        logger.log('AppHomePage', 'Sincronizando assinatura com Stripe...');
-        console.log('[AppHomePage] 🔐 Obtendo sessão do usuário');
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('[AppHomePage] ✅ Sessão obtida:', !!session);
 
         if (session) {
-          console.log('[AppHomePage] 🔄 Sincronizando com Stripe...');
           const syncResponse = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-stripe-subscription`,
             {
@@ -116,27 +105,16 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
             }
           );
 
-          if (!syncResponse.ok) {
-            logger.warn('AppHomePage', 'Falha ao sincronizar assinatura:', await syncResponse.text());
-            console.log('[AppHomePage] ⚠️ Falha ao sincronizar assinatura');
-          } else {
-            logger.log('AppHomePage', 'Assinatura sincronizada com sucesso');
-            console.log('[AppHomePage] ✅ Assinatura sincronizada com sucesso');
-          }
-
           await new Promise(resolve => setTimeout(resolve, 500));
           hasSyncedSubscription.current = true;
         }
       } catch (err) {
-        logger.error('AppHomePage', 'Erro ao sincronizar assinatura:', err);
         console.error('[AppHomePage] ❌ Erro ao sincronizar:', err);
       } finally {
-        console.log('[AppHomePage] 🏁 Finalizando sincronização, setSyncingSubscription(false)');
         setSyncingSubscription(false);
       }
     };
 
-    console.log('[AppHomePage] 🚀 Executando syncAndLoadData...');
     syncAndLoadData().catch(err => {
       console.error('[AppHomePage] ❌ Erro crítico no syncAndLoadData:', err);
       setSyncingSubscription(false);
@@ -215,12 +193,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
   const loadProcessos = useCallback(async () => {
     try {
-      logger.log('AppHomePage', 'Carregando processos...');
-      console.log('[AppHomePage] Iniciando carregamento de processos...');
       const data = await ProcessosService.getProcessos();
-      logger.log('AppHomePage', 'Processos carregados:', data.length);
-      console.log('[AppHomePage] Processos carregados:', data?.length || 0);
-      console.log('[AppHomePage] Primeiros 2 processos:', data?.slice(0, 2));
       setProcessos(data);
     } catch (err: any) {
       logger.error('AppHomePage', 'Erro ao carregar processos:', err);
@@ -319,7 +292,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         if (file.type !== 'application/pdf') throw new Error('Apenas PDF');
 
         const pageCount = await ProcessosService.countPdfPages(file);
-        console.log(`[AppHomePage] PDF tem ${pageCount} páginas`);
 
         const tokenCheck = await TokenValidationService.checkTokensBeforeUpload(user.id, pageCount);
 
@@ -343,8 +315,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         let processoId: string;
 
         if (pageCount >= 1000) {
-          console.log(`[AppHomePage] 🚀 PDF complexo detectado (${pageCount} páginas) - usando processamento distribuído`);
-
           processoId = await ProcessosService.uploadAndStartComplexProcessing(
             file,
             pageCount,
@@ -355,8 +325,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
             }
           );
         } else {
-          console.log(`[AppHomePage] 📄 PDF normal (${pageCount} páginas) - usando fluxo padrão`);
-
           processoId = await ProcessosService.uploadAndStartProcessing(
             file,
             (id) => {
@@ -370,7 +338,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         setProcessingStatus('analyzing');
 
         if (processoId) {
-          console.log('[AppHomePage] Redirecionando para página de detalhes:', processoId);
           showSuccess('Upload concluído! Redirecionando...');
           setTimeout(() => {
             onNavigateToDetail(processoId);

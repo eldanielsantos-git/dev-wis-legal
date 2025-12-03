@@ -63,16 +63,13 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
           const result = await response.json();
 
           if (result.hasSubscription === false) {
-            console.log('[useSubscriptionStatus] No active subscription found in Stripe');
             return false;
           }
 
-          console.log('[useSubscriptionStatus] Subscription synced successfully');
           return true;
         }
 
         if (response.status === 403 || response.status === 404) {
-          console.log('[useSubscriptionStatus] No active subscription found in Stripe');
           return false;
         }
 
@@ -85,8 +82,6 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
 
     const loadSubscriptionStatus = async () => {
       try {
-        console.log('[useSubscriptionStatus] Loading for userId:', userId);
-
         const { data: customerData } = await supabase
           .from('stripe_customers')
           .select('customer_id')
@@ -94,10 +89,7 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
           .is('deleted_at', null)
           .maybeSingle();
 
-        console.log('[useSubscriptionStatus] Customer data:', customerData);
-
         if (!customerData?.customer_id) {
-          console.log('[useSubscriptionStatus] No customer found, setting hasSubscription=false');
           if (isMounted) {
             setStatus({
               hasSubscription: false,
@@ -125,10 +117,7 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
 
         if (subError) throw subError;
 
-        console.log('[useSubscriptionStatus] Subscription data:', subscriptionData);
-
         if (!subscriptionData || !subscriptionData.subscription_id || subscriptionData.status === 'not_started') {
-          console.log('[useSubscriptionStatus] Detected inconsistent subscription data, syncing...');
           const synced = await syncSubscription(customerData.customer_id);
 
           if (synced) {
@@ -188,14 +177,6 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
           const pagesLimit = Math.round(tokensTotal / 5500);
           const planName = getPlanNameFromPriceId(subscriptionData.price_id || '');
 
-          console.log('[useSubscriptionStatus] Setting hasSubscription=true, tokens:', {
-            total: tokensTotal,
-            used: tokensUsed,
-            remaining: tokensRemaining,
-            planName: planName,
-            status: subscriptionData.status,
-          });
-
           if (isMounted) {
             setStatus({
               hasSubscription: true,
@@ -210,7 +191,6 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
             });
           }
         } else {
-          console.log('[useSubscriptionStatus] Setting hasSubscription=false, status:', subscriptionData?.status);
           if (isMounted) {
             setStatus({
               hasSubscription: false,
