@@ -191,9 +191,9 @@ export function AdminTagsManagementPage({
         setIsCollapsed={setIsSidebarCollapsed}
       />
 
-      <div className={`flex-1 transition-all duration-300 ${isSidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-        <main className="container mx-auto px-4 py-8 max-w-7xl">
-          <div className="mb-6">
+      <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+          <div className="max-w-6xl mx-auto">
             <button
               onClick={onNavigateToAdmin}
               className="flex items-center gap-2 text-sm mb-4 hover:opacity-70 transition-opacity"
@@ -203,7 +203,7 @@ export function AdminTagsManagementPage({
               Voltar para Administração
             </button>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-3 rounded-lg" style={{ backgroundColor: colors.bgSecondary }}>
                   <Tag className="w-6 h-6" style={{ color: '#8B5CF6' }} />
@@ -227,120 +227,120 @@ export function AdminTagsManagementPage({
                 Nova Tag
               </button>
             </div>
-          </div>
 
-          <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: colors.textSecondary }} />
-              <input
-                type="text"
-                placeholder="Buscar tags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
-                style={{
-                  backgroundColor: colors.bgSecondary,
-                  borderColor: colors.border,
-                  color: colors.textPrimary
-                }}
-              />
+            <div className="mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5" style={{ color: colors.textSecondary }} />
+                <input
+                  type="text"
+                  placeholder="Buscar tags..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    borderColor: colors.border,
+                    color: colors.textPrimary
+                  }}
+                />
+              </div>
             </div>
-          </div>
 
-          {loading ? (
-            <div className="text-center py-12" style={{ color: colors.textSecondary }}>
-              Carregando tags...
-            </div>
-          ) : filteredTags.length === 0 ? (
-            <div className="text-center py-12 rounded-lg" style={{ backgroundColor: colors.bgSecondary }}>
-              <Tag className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textSecondary }} />
-              <p style={{ color: colors.textSecondary }}>
-                {searchQuery ? 'Nenhuma tag encontrada' : 'Nenhuma tag cadastrada'}
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-lg border overflow-hidden" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}>
-              <table className="w-full">
-                <thead>
-                  <tr style={{ backgroundColor: colors.bgTertiary }}>
-                    <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Preview</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Nome</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Descrição</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium" style={{ color: colors.textSecondary }}>Processos</th>
-                    <th className="px-4 py-3 text-center text-xs font-medium" style={{ color: colors.textSecondary }}>Status</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium" style={{ color: colors.textSecondary }}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredTags.map((tag, index) => (
-                    <tr
-                      key={tag.id}
-                      className="border-t transition-colors hover:bg-opacity-50"
-                      style={{ borderColor: colors.border, backgroundColor: index % 2 === 0 ? 'transparent' : colors.bgTertiary }}
-                    >
-                      <td className="px-4 py-3">
-                        <ProcessoTagComponent tag={tag} size="sm" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-medium" style={{ color: colors.textPrimary }}>{tag.name}</span>
-                        <div className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>{tag.slug}</div>
-                      </td>
-                      <td className="px-4 py-3 max-w-xs">
-                        <span className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
-                          {tag.description || '-'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: colors.bgTertiary, color: colors.textPrimary }}>
-                          {tag.usage_count}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleToggleActive(tag)}
-                          className="px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80"
-                          style={{
-                            backgroundColor: tag.is_active ? '#10B981' : '#6B7280',
-                            color: '#FFFFFF'
-                          }}
-                        >
-                          {tag.is_active ? 'Ativo' : 'Inativo'}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
-                          <button
-                            onClick={() => handleOpenEditModal(tag)}
-                            className="p-2 rounded-lg transition-opacity hover:opacity-70"
-                            style={{ backgroundColor: colors.bgTertiary }}
-                            title="Editar"
-                          >
-                            <Edit3 size={16} style={{ color: colors.textPrimary }} />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(tag)}
-                            className="p-2 rounded-lg transition-opacity hover:opacity-70"
-                            style={{ backgroundColor: colors.bgTertiary }}
-                            title="Excluir"
-                          >
-                            <Trash2 size={16} style={{ color: '#EF4444' }} />
-                          </button>
-                        </div>
-                      </td>
+            {loading ? (
+              <div className="text-center py-12" style={{ color: colors.textSecondary }}>
+                Carregando tags...
+              </div>
+            ) : filteredTags.length === 0 ? (
+              <div className="text-center py-12 rounded-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <Tag className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textSecondary }} />
+                <p style={{ color: colors.textSecondary }}>
+                  {searchQuery ? 'Nenhuma tag encontrada' : 'Nenhuma tag cadastrada'}
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg border overflow-hidden" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}>
+                <table className="w-full">
+                  <thead>
+                    <tr style={{ backgroundColor: colors.bgTertiary }}>
+                      <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Preview</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Nome</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Descrição</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium" style={{ color: colors.textSecondary }}>Processos</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium" style={{ color: colors.textSecondary }}>Status</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium" style={{ color: colors.textSecondary }}>Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </main>
+                  </thead>
+                  <tbody>
+                    {filteredTags.map((tag, index) => (
+                      <tr
+                        key={tag.id}
+                        className="border-t transition-colors hover:bg-opacity-50"
+                        style={{ borderColor: colors.border, backgroundColor: index % 2 === 0 ? 'transparent' : colors.bgTertiary }}
+                      >
+                        <td className="px-4 py-3">
+                          <ProcessoTagComponent tag={tag} size="sm" />
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="font-medium" style={{ color: colors.textPrimary }}>{tag.name}</span>
+                          <div className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>{tag.slug}</div>
+                        </td>
+                        <td className="px-4 py-3 max-w-xs">
+                          <span className="text-sm line-clamp-2" style={{ color: colors.textSecondary }}>
+                            {tag.description || '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <span className="px-2 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: colors.bgTertiary, color: colors.textPrimary }}>
+                            {tag.usage_count}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <button
+                            onClick={() => handleToggleActive(tag)}
+                            className="px-3 py-1 rounded-full text-xs font-medium transition-opacity hover:opacity-80"
+                            style={{
+                              backgroundColor: tag.is_active ? '#10B981' : '#6B7280',
+                              color: '#FFFFFF'
+                            }}
+                          >
+                            {tag.is_active ? 'Ativo' : 'Inativo'}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => handleOpenEditModal(tag)}
+                              className="p-2 rounded-lg transition-opacity hover:opacity-70"
+                              style={{ backgroundColor: colors.bgTertiary }}
+                              title="Editar"
+                            >
+                              <Edit3 size={16} style={{ color: colors.textPrimary }} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(tag)}
+                              className="p-2 rounded-lg transition-opacity hover:opacity-70"
+                              style={{ backgroundColor: colors.bgTertiary }}
+                              title="Excluir"
+                            >
+                              <Trash2 size={16} style={{ color: '#EF4444' }} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
 
         <FooterWis
           onNavigateToTerms={onNavigateToTerms}
           onNavigateToPrivacy={onNavigateToPrivacy}
           onNavigateToCookies={onNavigateToCookies}
         />
-      </div>
+      </main>
 
       {isFormModalOpen && (
         <div
