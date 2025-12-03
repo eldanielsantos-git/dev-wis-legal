@@ -79,15 +79,16 @@ Deno.serve(async (req: Request) => {
 
     if (tokenBalance) {
       planName = tokenBalance.current_plan || 'Gratuito';
-      planTokens = tokenBalance.plan_tokens_remaining || 0;
-      extraTokens = tokenBalance.extra_tokens_remaining || 0;
-      totalTokens = tokenBalance.total_tokens_available || 0;
+      planTokens = tokenBalance.available_plan_tokens || 0;
+      extraTokens = tokenBalance.available_extra_tokens || 0;
+      totalTokens = tokenBalance.total_available_tokens || 0;
 
       console.log('[send-token-purchase-email] Token balance from view:', {
         planName,
         planTokens,
         extraTokens,
-        totalTokens
+        totalTokens,
+        raw: tokenBalance
       });
     } else {
       // Fallback: buscar diretamente das tabelas se a view falhar
