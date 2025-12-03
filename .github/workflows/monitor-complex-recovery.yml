@@ -1,0 +1,30 @@
+name: Monitor Complex Recovery
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  recover-stuck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call recover-stuck-processes
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/recover-stuck-processes" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Recovery check failed with status $http_code"
+            exit 1
+          fi
+
+          echo "✅ Recovery check completed successfully"
