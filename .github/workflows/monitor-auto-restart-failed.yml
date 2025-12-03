@@ -1,0 +1,30 @@
+name: Monitor Auto Restart Failed Chunks
+
+on:
+  schedule:
+    - cron: '*/3 * * * *'
+  workflow_dispatch:
+
+jobs:
+  auto-restart:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call auto-restart-failed-chunks
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/auto-restart-failed-chunks" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Auto-restart failed with status $http_code"
+            exit 1
+          fi
+
+          echo "✅ Auto-restart check completed successfully"
