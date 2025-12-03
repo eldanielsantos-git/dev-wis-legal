@@ -193,18 +193,19 @@ export function AdminTagsManagementPage({
 
       <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+          <button
+            onClick={onNavigateToAdmin}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-6xl"
+            style={{
+              backgroundColor: colors.bgSecondary,
+              color: colors.textPrimary
+            }}
+          >
+            <ChevronLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Voltar ao Painel</span>
+          </button>
+
           <div className="max-w-6xl mx-auto">
-            <button
-              onClick={onNavigateToAdmin}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80"
-              style={{
-                backgroundColor: colors.bgSecondary,
-                color: colors.textPrimary
-              }}
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span className="text-sm font-medium">Voltar ao Painel</span>
-            </button>
             <div className="flex flex-col items-center mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
                 <Tag className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#8B5CF6' }} />
