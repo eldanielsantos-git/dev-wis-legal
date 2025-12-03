@@ -184,6 +184,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           last_name: profileData.last_name,
           phone: profileData.phone,
           phone_country_code: profileData.phone_country_code,
+          cpf: profileData.cpf,
           oab: profileData.oab,
           city: profileData.city,
           state: profileData.state,
