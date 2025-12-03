@@ -67,7 +67,7 @@ export function NoTokensModal({ isOpen, onClose, onNavigateToSubscription, onNav
             Você não possui assinatura ativa ou tokens disponíveis para utilizar o chat.
           </p>
           <p className="text-sm" style={{ color: textSecondary }}>
-            Para continuar conversando com a IA sobre seus processos, você precisa:
+            Para continuar conversando sobre seus processos, você precisa:
           </p>
           <ul className="space-y-2 text-sm" style={{ color: textSecondary }}>
             <li className="flex items-start gap-2">
