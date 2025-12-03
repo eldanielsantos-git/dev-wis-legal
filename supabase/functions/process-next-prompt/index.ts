@@ -415,7 +415,20 @@ Deno.serve(async (req: Request) => {
                   throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
                 }
 
-                console.log(`📄 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
+                // ⚠️ VALIDAÇÃO CRÍTICA: Token limit check ANTES de enviar para LLM
+                if (chunk.token_validation_status === 'exceeded') {
+                  const errorMsg = `Chunk ${chunk.chunk_index} excede limite: ${chunk.estimated_tokens} tokens (máx: 850k). SUBDIVIDIR NECESSÁRIO.`;
+                  console.error(`🚫 ${errorMsg}`);
+                  throw new Error(errorMsg);
+                }
+
+                if (!chunk.estimated_tokens || chunk.estimated_tokens > 850000) {
+                  const errorMsg = `Chunk ${chunk.chunk_index} sem validação de tokens ou excede limite. estimated_tokens: ${chunk.estimated_tokens}`;
+                  console.error(`❌ ${errorMsg}`);
+                  throw new Error(errorMsg);
+                }
+
+                console.log(`📄 Processando chunk ${chunk.chunk_index}/${chunks.length} (~${chunk.estimated_tokens.toLocaleString()} tokens - SAFE)...`);
 
                 const chunkParts = [
                   {
@@ -562,7 +575,12 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
                 throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
               }
 
-              console.log(`📄 Adicionando chunk ${chunk.chunk_index}: ${chunk.gemini_file_uri}`);
+              // ⚠️ VALIDAÇÃO CRÍTICA: Token limit check
+              if (chunk.token_validation_status === 'exceeded' || (chunk.estimated_tokens && chunk.estimated_tokens > 850000)) {
+                throw new Error(`Chunk ${chunk.chunk_index} excede limite de tokens: ${chunk.estimated_tokens}. Subdividir necessário.`);
+              }
+
+              console.log(`📄 Adicionando chunk ${chunk.chunk_index}: ${chunk.gemini_file_uri} (~${chunk.estimated_tokens?.toLocaleString() || '?'} tokens)`);
 
               parts.push({
                 fileData: {
