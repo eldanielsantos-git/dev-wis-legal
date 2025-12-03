@@ -406,26 +406,43 @@ async function creditTokensToSubscription(
   }
 
   if (!subscription) {
-    console.warn(`${logPrefix} No active subscription found for customer ${customerId} to credit tokens`);
-    console.warn(`${logPrefix} Customer may need to create a subscription first before purchasing token packages`);
-    await logTokenCreditAudit({
-      event_id: eventId,
-      event_type: 'checkout.session.completed',
-      customer_id: customerId,
-      checkout_session_id: checkoutSessionId,
-      price_id: priceId,
-      tokens_amount: tokensToAdd,
-      operation: 'credit_tokens',
-      status: 'failed',
-      error_message: 'No active subscription found for customer',
-      subscription_found: false,
-      processing_time_ms: Date.now() - operationStartTime,
-      metadata: {
-        suggestion: 'User needs to subscribe to a plan before purchasing token packages',
-        searched_email: customerEmail,
-      },
-    });
-    return;
+    console.info(`${logPrefix} No active subscription found for customer ${customerId}, creating token-only subscription`);
+
+    const { data: newSub, error: createError } = await supabase
+      .from('stripe_subscriptions')
+      .insert({
+        customer_id: targetCustomerId,
+        subscription_id: null,
+        price_id: null,
+        status: 'not_started',
+        plan_tokens: 0,
+        extra_tokens: 0,
+        tokens_total: 0,
+        tokens_used: 0,
+      })
+      .select('customer_id, plan_tokens, extra_tokens, tokens_total, tokens_used, status')
+      .single();
+
+    if (createError) {
+      console.error(`${logPrefix} Error creating token-only subscription:`, createError);
+      await logTokenCreditAudit({
+        event_id: eventId,
+        event_type: 'checkout.session.completed',
+        customer_id: customerId,
+        checkout_session_id: checkoutSessionId,
+        price_id: priceId,
+        tokens_amount: tokensToAdd,
+        operation: 'create_token_only_subscription',
+        status: 'failed',
+        error_message: createError.message,
+        subscription_found: false,
+        processing_time_ms: Date.now() - operationStartTime,
+      });
+      throw new Error(`Failed to create token-only subscription: ${createError.message}`);
+    }
+
+    subscription = newSub;
+    console.info(`${logPrefix} Successfully created token-only subscription for customer ${targetCustomerId}`);
   }
 
   const previousExtraTokens = subscription.extra_tokens || 0;

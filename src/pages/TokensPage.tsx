@@ -294,20 +294,20 @@ export function TokensPage({
                     </div>
                   )}
 
-                  {balance.tokensTotal > 0 && (
-                    <div className="mb-6">
-                      <AddTokensSection
-                        onPurchaseComplete={() => {
-                          console.log('Compra concluída, atualizando saldo...');
-                          refreshBalance();
-                        }}
-                        onPurchaseError={(error) => {
-                          console.error('Erro na compra:', error);
-                          alert(`Erro ao processar compra: ${error}`);
-                        }}
-                      />
-                    </div>
-                  )}
+                  <div className="mb-6">
+                    <AddTokensSection
+                      title={balance.tokensTotal === 0 ? 'Compre tokens para começar' : 'Adicione mais tokens em sua assinatura'}
+                      description={balance.tokensTotal === 0 ? 'Compre um pacote de tokens e comece a usar a plataforma:' : 'Escolha uma das opções abaixo:'}
+                      onPurchaseComplete={() => {
+                        console.log('Compra concluída, atualizando saldo...');
+                        refreshBalance();
+                      }}
+                      onPurchaseError={(error) => {
+                        console.error('Erro na compra:', error);
+                        alert(`Erro ao processar compra: ${error}`);
+                      }}
+                    />
+                  </div>
 
                   {processHistory.length > 0 && (
                     <div
