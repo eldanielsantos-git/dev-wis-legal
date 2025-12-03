@@ -201,7 +201,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   {getStatusMessage(processingStatus)}
                 </p>
                 <p className="text-sm mb-6" style={{ color: theme === 'dark' ? '#808080' : '#6B7280' }}>
-                  Aguarde enquanto processamos seu documento
+                  Aguarde enquanto processamos seu documento, arquivos grandes podem levar alguns minutos.
                 </p>
               </div>
             </div>
