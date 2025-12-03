@@ -614,6 +614,67 @@ IMPORTANTE: Este é o chunk ${chunk.chunk_index + 1} de ${chunk.total_chunks} do
       } catch (unregErr) {
         console.error(`[${workerId}] ❌ Erro ao desregistrar worker:`, unregErr);
       }
+
+      // Registrar erro na tabela complex_analysis_errors
+      try {
+        console.log(`[${workerId}] 📝 Registrando erro complexo na base de dados...`);
+
+        const { data: processo } = await supabase
+          .from('processos')
+          .select('user_id, file_name, total_chunks_count')
+          .eq('id', processoId)
+          .single();
+
+        const errorData: any = {
+          processo_id: processoId,
+          user_id: processo?.user_id || null,
+          error_type: error?.name || 'UnknownError',
+          error_category: error?.code || 'processing_error',
+          error_message: error?.message || 'Erro desconhecido no processamento',
+          error_details: {
+            worker_id: workerId,
+            stack: error?.stack || null,
+            error_object: JSON.stringify(error, Object.getOwnPropertyNames(error)),
+          },
+          severity: 'critical',
+          stack_trace: error?.stack || null,
+          current_phase: 'complex_processing',
+          worker_id: workerId,
+          total_chunks: processo?.total_chunks_count || 0,
+          admin_notified: false,
+          occurred_at: new Date().toISOString(),
+        };
+
+        const { data: errorRecord, error: insertError } = await supabase
+          .from('complex_analysis_errors')
+          .insert(errorData)
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error(`[${workerId}] ❌ Erro ao inserir registro de erro:`, insertError);
+        } else {
+          console.log(`[${workerId}] ✅ Erro registrado com ID: ${errorRecord.id}`);
+
+          // Enviar email para administradores
+          console.log(`[${workerId}] 📧 Enviando email de notificação para administradores...`);
+
+          fetch(`${supabaseUrl}/functions/v1/send-admin-complex-analysis-error`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({ error_id: errorRecord.id }),
+          }).catch(emailErr => {
+            console.error(`[${workerId}] ❌ Erro ao enviar email de notificação:`, emailErr?.message);
+          });
+
+          console.log(`[${workerId}] ✅ Email de notificação disparado`);
+        }
+      } catch (errorLogErr) {
+        console.error(`[${workerId}] ❌ Erro ao registrar erro complexo:`, errorLogErr);
+      }
     }
 
     return new Response(
