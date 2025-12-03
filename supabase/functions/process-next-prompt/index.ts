@@ -1,6 +1,9 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
 
+// 🔍 VERSION CHECK: 2025-12-03T03:10:00Z - TOKEN VALIDATION ACTIVE
+const FUNCTION_VERSION = '2025-12-03T03:10:00Z';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -169,7 +172,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const callId = crypto.randomUUID().slice(0, 8);
-    console.log(`\n[${callId}] 🔄 Iniciando processamento do próximo prompt para processo ${processo_id}`);
+    console.log(`\n🔍 FUNCTION VERSION: ${FUNCTION_VERSION} - TOKEN VALIDATION ACTIVE`);
+    console.log(`[${callId}] 🔄 Iniciando processamento do próximo prompt para processo ${processo_id}`);
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
