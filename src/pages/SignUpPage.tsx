@@ -27,7 +27,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   const [inviteId, setInviteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phoneCountryCode: '+55', phone: '', password: '', confirmPassword: '',
-    oab: '', city: '', state: '', termsAccepted: false
+    cpf: '', oab: '', city: '', state: '', termsAccepted: false
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -101,6 +101,20 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
     const formattedNumbers = numbers.replace(/(\d{1,3})(?=(\d{3})+(?!\d))/g, '$1.');
     return formattedNumbers + letters;
+  };
+
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 11);
+    if (numbers.length <= 3) {
+      return numbers;
+    }
+    if (numbers.length <= 6) {
+      return numbers.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+    }
+    if (numbers.length <= 9) {
+      return numbers.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    }
+    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
   };
 
   const countryCodes = [
@@ -372,6 +386,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         last_name: formData.lastName,
         phone: formData.phone,
         phone_country_code: formData.phoneCountryCode,
+        cpf: formData.cpf ? formData.cpf.replace(/\D/g, '') : undefined,
         oab: formData.oab || undefined,
         city: formData.city,
         state: formData.state,
@@ -749,6 +764,21 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                CPF <span className="text-gray-400 text-xs">(opcional)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.cpf}
+                onChange={(e) => {
+                  const formatted = formatCPF(e.target.value);
+                  setFormData({ ...formData, cpf: formatted });
+                }}
+                placeholder="000.000.000-00"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -12,6 +12,7 @@ interface ConfirmationEmailRequest {
   email: string;
   first_name: string;
   last_name?: string;
+  cpf?: string;
   phone?: string;
   phone_country_code?: string;
   city?: string;
@@ -48,6 +49,7 @@ Deno.serve(async (req: Request) => {
       email,
       first_name,
       last_name = "",
+      cpf = "",
       phone = "",
       phone_country_code = "+55",
       city = "",
@@ -63,7 +65,7 @@ Deno.serve(async (req: Request) => {
     console.log("Step 1: Fetching user data from database...");
     const { data: userProfile, error: profileError } = await supabaseClient
       .from("user_profiles")
-      .select("first_name, last_name, phone, phone_country_code, city, state")
+      .select("first_name, last_name, cpf, phone, phone_country_code, city, state")
       .eq("id", user_id)
       .maybeSingle();
 
@@ -146,16 +148,28 @@ Deno.serve(async (req: Request) => {
         const properties: any = {};
 
         const phoneCountryCode = userProfile?.phone_country_code || phone_country_code;
+        const cpfValue = userProfile?.cpf || cpf;
         const phoneValue = userProfile?.phone || phone;
         const cityValue = userProfile?.city || city;
         const stateValue = userProfile?.state || state;
 
+        // Função para formatar CPF (000.000.000-00)
+        const formatCPF = (cpf: string) => {
+          const numbers = cpf.replace(/\D/g, '');
+          if (numbers.length === 11) {
+            return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+          }
+          return cpf;
+        };
+
         // Usar as chaves CORRETAS (em português como foram criadas no Resend)
         // key: "Pais" -> phone_country_code
+        // key: "CPF" -> cpf (formatado)
         // key: "Phone" -> phone
         // key: "Cidade" -> city
         // key: "Estado" -> state
         if (phoneCountryCode) properties.Pais = phoneCountryCode;
+        if (cpfValue) properties.CPF = formatCPF(cpfValue);
         if (phoneValue) properties.Phone = phoneValue;
         if (cityValue) properties.Cidade = cityValue;
         if (stateValue) properties.Estado = stateValue;

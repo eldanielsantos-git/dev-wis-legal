@@ -79,6 +79,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     last_name: '',
     phone: '',
     phoneCountryCode: '+55',
+    cpf: '',
     oab: '',
     city: '',
     state: '',
@@ -156,6 +157,20 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     return formattedNumbers + letters;
   };
 
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 11);
+    if (numbers.length <= 3) {
+      return numbers;
+    }
+    if (numbers.length <= 6) {
+      return numbers.replace(/(\d{3})(\d{0,3})/, '$1.$2');
+    }
+    if (numbers.length <= 9) {
+      return numbers.replace(/(\d{3})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    }
+    return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
+  };
+
   const validatePassword = (password: string) => {
     return {
       minLength: password.length >= 6,
@@ -214,6 +229,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         last_name: profile.last_name || '',
         phone: phoneNumber,
         phoneCountryCode: countryCode,
+        cpf: profile.cpf || '',
         oab: profile.oab || '',
         city: profile.city || '',
         state: stateValue,
@@ -307,6 +323,10 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
     if (name === 'city') {
       newValue = value.replace(/[0-9]/g, '');
+    }
+
+    if (name === 'cpf') {
+      newValue = formatCPF(value);
     }
 
     if (name === 'oab') {
@@ -532,6 +552,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
           last_name: formData.last_name,
           phone: fullPhone,
           phone_country_code: formData.phoneCountryCode,
+          cpf: formData.cpf ? formData.cpf.replace(/\D/g, '') : null,
           oab: formData.oab || null,
           city: formData.city,
           state: formData.state,
@@ -908,6 +929,22 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                     style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
                   />
                 </div>
+              </div>
+
+              <div className="mb-6">
+                <label htmlFor="cpf" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                  CPF <span className="text-xs opacity-60">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  id="cpf"
+                  name="cpf"
+                  value={formData.cpf}
+                  onChange={handleInputChange}
+                  placeholder="000.000.000-00"
+                  className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                  style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                />
               </div>
 
               <div className="mb-6">
