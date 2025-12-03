@@ -1454,9 +1454,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 </div>
               )}
 
-              <div className="rounded-lg p-6 shadow-lg border-2 border-red-500" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="rounded-lg p-6 shadow-lg border-2" style={{ backgroundColor: colors.bgSecondary, borderColor: '#FCA5A5' }}>
                 <div className="flex items-start gap-3 mb-4">
-                  <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
+                  <AlertTriangle className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#F87171' }} />
                   <div>
                     <h2 className="text-xl font-bold mb-2" style={{ color: colors.textPrimary }}>
                       Zona de Perigo
@@ -1472,7 +1472,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                   disabled={isDeleting}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                   style={{
-                    backgroundColor: '#DC2626',
+                    backgroundColor: '#F87171',
                     color: '#FFFFFF'
                   }}
                 >
