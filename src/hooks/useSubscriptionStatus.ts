@@ -75,7 +75,6 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
 
         return false;
       } catch (err) {
-        console.error('[useSubscriptionStatus] Error syncing subscription:', err);
         return false;
       }
     };
@@ -206,7 +205,6 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
           }
         }
       } catch (err) {
-        console.error('[useSubscriptionStatus] Erro ao carregar status:', err);
         if (isMounted) {
           setStatus(prev => ({
             ...prev,

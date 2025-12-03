@@ -148,7 +148,7 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
           )
           .subscribe();
       } catch (error) {
-        console.error('Error setting up realtime subscription:', error);
+        // Silently handle realtime subscription errors
       }
     };
 
