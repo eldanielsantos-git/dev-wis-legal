@@ -112,7 +112,7 @@ Deno.serve(async (req: Request) => {
     });
 
     if (subscriptions.data.length === 0) {
-      return new Response(JSON.stringify({ message: 'No subscription found in Stripe' }), {
+      return new Response(JSON.stringify({ message: 'No subscription found in Stripe', hasSubscription: false }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
