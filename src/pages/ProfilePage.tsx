@@ -1380,9 +1380,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           {passwordValidation.minLength ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-red-500" />
+                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
                           )}
-                          <span style={{ color: passwordValidation.minLength ? '#10B981' : '#EF4444' }}>
+                          <span style={{ color: passwordValidation.minLength ? '#10B981' : colors.textSecondary }}>
                             Mínimo de 8 caracteres
                           </span>
                         </div>
@@ -1390,9 +1390,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           {passwordValidation.hasUppercase ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-red-500" />
+                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
                           )}
-                          <span style={{ color: passwordValidation.hasUppercase ? '#10B981' : '#EF4444' }}>
+                          <span style={{ color: passwordValidation.hasUppercase ? '#10B981' : colors.textSecondary }}>
                             Letra maiúscula
                           </span>
                         </div>
@@ -1400,9 +1400,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           {passwordValidation.hasLowercase ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-red-500" />
+                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
                           )}
-                          <span style={{ color: passwordValidation.hasLowercase ? '#10B981' : '#EF4444' }}>
+                          <span style={{ color: passwordValidation.hasLowercase ? '#10B981' : colors.textSecondary }}>
                             Letra minúscula
                           </span>
                         </div>
@@ -1410,9 +1410,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           {passwordValidation.hasNumber ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-red-500" />
+                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
                           )}
-                          <span style={{ color: passwordValidation.hasNumber ? '#10B981' : '#EF4444' }}>
+                          <span style={{ color: passwordValidation.hasNumber ? '#10B981' : colors.textSecondary }}>
                             Número
                           </span>
                         </div>
@@ -1420,9 +1420,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           {passwordValidation.hasSpecialChar ? (
                             <CheckCircle2 className="w-4 h-4 text-green-500" />
                           ) : (
-                            <XCircle className="w-4 h-4 text-red-500" />
+                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
                           )}
-                          <span style={{ color: passwordValidation.hasSpecialChar ? '#10B981' : '#EF4444' }}>
+                          <span style={{ color: passwordValidation.hasSpecialChar ? '#10B981' : colors.textSecondary }}>
                             Caractere especial
                           </span>
                         </div>
