@@ -215,24 +215,24 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
 
         {workspaceInfo && (
           <div
-            className="mt-3 sm:mt-4 max-h-[785px]:mt-2 max-h-[785px]:sm:mt-3 pt-3 sm:pt-4 max-h-[785px]:pt-2 max-h-[785px]:sm:pt-3 border-t space-y-2 max-h-[785px]:space-y-1.5"
+            className="mt-3 sm:mt-4 max-h-[790px]:mt-2 max-h-[790px]:sm:mt-2.5 pt-3 sm:pt-4 max-h-[790px]:pt-2 max-h-[790px]:sm:pt-2.5 border-t space-y-2 max-h-[790px]:space-y-1"
             style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
           >
             {workspaceInfo.sharedWith && (
-              <div className="flex items-center text-xs max-h-[785px]:text-[10px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                <Users className="w-3.5 h-3.5 max-h-[785px]:w-3 max-h-[785px]:h-3 mr-2 max-h-[785px]:mr-1.5 flex-shrink-0" />
+              <div className="flex items-center text-xs max-h-[790px]:text-[9px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Users className="w-3.5 h-3.5 max-h-[790px]:w-2.5 max-h-[790px]:h-2.5 mr-2 max-h-[790px]:mr-1 flex-shrink-0" />
                 <span>Compartilhado com {workspaceInfo.sharedWith}</span>
               </div>
             )}
             {workspaceInfo.sharedBy && (
-              <div className="flex items-center text-xs max-h-[785px]:text-[10px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                <Users className="w-3.5 h-3.5 max-h-[785px]:w-3 max-h-[785px]:h-3 mr-2 max-h-[785px]:mr-1.5 flex-shrink-0" />
+              <div className="flex items-center text-xs max-h-[790px]:text-[9px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Users className="w-3.5 h-3.5 max-h-[790px]:w-2.5 max-h-[790px]:h-2.5 mr-2 max-h-[790px]:mr-1 flex-shrink-0" />
                 <span>Compartilhado por {workspaceInfo.sharedBy}</span>
               </div>
             )}
             {workspaceInfo.sharedAt && (
-              <div className="flex items-center text-xs max-h-[785px]:text-[10px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                <Calendar className="w-3.5 h-3.5 max-h-[785px]:w-3 max-h-[785px]:h-3 mr-2 max-h-[785px]:mr-1.5 flex-shrink-0" />
+              <div className="flex items-center text-xs max-h-[790px]:text-[9px]" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
+                <Calendar className="w-3.5 h-3.5 max-h-[790px]:w-2.5 max-h-[790px]:h-2.5 mr-2 max-h-[790px]:mr-1 flex-shrink-0" />
                 <span>
                   Compartilhado em {new Date(workspaceInfo.sharedAt).toLocaleDateString('pt-BR', {
                     day: '2-digit',
@@ -249,7 +249,7 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                     e.stopPropagation();
                     workspaceInfo.onManageShares?.();
                   }}
-                  className="inline-flex items-center space-x-2 max-h-[785px]:space-x-1.5 px-3 max-h-[785px]:px-2 py-1.5 max-h-[785px]:py-1 rounded-full text-xs max-h-[785px]:text-[10px] font-medium transition-all"
+                  className="inline-flex items-center space-x-2 max-h-[790px]:space-x-1 px-3 max-h-[790px]:px-2 py-1.5 max-h-[790px]:py-0.5 rounded-full text-xs max-h-[790px]:text-[9px] font-medium transition-all"
                   style={{
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     color: '#3b82f6'
@@ -262,12 +262,12 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                   }}
                   title="Clique para gerenciar compartilhamentos"
                 >
-                  <Users className="w-3 h-3 max-h-[785px]:w-2.5 max-h-[785px]:h-2.5" />
+                  <Users className="w-3 h-3 max-h-[790px]:w-2 max-h-[790px]:h-2" />
                   <span>Gerenciar compartilhamento</span>
                 </button>
               ) : (
                 <div
-                  className="inline-flex items-center space-x-2 max-h-[785px]:space-x-1.5 px-3 max-h-[785px]:px-2 py-1.5 max-h-[785px]:py-1 rounded-full text-xs max-h-[785px]:text-[10px] font-medium"
+                  className="inline-flex items-center space-x-2 max-h-[790px]:space-x-1 px-3 max-h-[790px]:px-2 py-1.5 max-h-[790px]:py-0.5 rounded-full text-xs max-h-[790px]:text-[9px] font-medium"
                   style={{
                     backgroundColor: workspaceInfo.permissionLevel === 'read_only' ? 'rgba(251, 191, 36, 0.1)' : 'rgba(59, 130, 246, 0.1)',
                     color: workspaceInfo.permissionLevel === 'read_only' ? '#f59e0b' : '#3b82f6'
@@ -275,12 +275,12 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                 >
                   {workspaceInfo.permissionLevel === 'read_only' ? (
                     <>
-                      <Lock className="w-3 h-3 max-h-[785px]:w-2.5 max-h-[785px]:h-2.5" />
+                      <Lock className="w-3 h-3 max-h-[790px]:w-2 max-h-[790px]:h-2" />
                       <span>Somente Leitura</span>
                     </>
                   ) : (
                     <>
-                      <Edit3 className="w-3 h-3 max-h-[785px]:w-2.5 max-h-[785px]:h-2.5" />
+                      <Edit3 className="w-3 h-3 max-h-[790px]:w-2 max-h-[790px]:h-2" />
                       <span>Editor</span>
                     </>
                   )}
@@ -292,11 +292,11 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
 
         {(userInfo || processo.user_profile) && (
           <div
-            className="mt-3 sm:mt-4 max-h-[785px]:mt-2 max-h-[785px]:sm:mt-3 pt-3 sm:pt-4 max-h-[785px]:pt-2 max-h-[785px]:sm:pt-3 border-t"
+            className="mt-3 sm:mt-4 max-h-[790px]:mt-2 max-h-[790px]:sm:mt-2.5 pt-3 sm:pt-4 max-h-[790px]:pt-2 max-h-[790px]:sm:pt-2.5 border-t"
             style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
           >
             <div
-              className="space-y-1.5 max-h-[785px]:space-y-1 text-xs max-h-[785px]:text-[10px]"
+              className="space-y-1.5 max-h-[790px]:space-y-0.5 text-xs max-h-[790px]:text-[9px]"
               style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
             >
               <div className="flex justify-between gap-2">
@@ -327,19 +327,19 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
 
         {processo.status === 'completed' && (
           <div
-            className="mt-3 sm:mt-4 max-h-[785px]:mt-2 max-h-[785px]:sm:mt-3 pt-3 sm:pt-4 max-h-[785px]:pt-2 max-h-[785px]:sm:pt-3 border-t"
+            className="mt-3 sm:mt-4 max-h-[790px]:mt-2 max-h-[790px]:sm:mt-2.5 pt-3 sm:pt-4 max-h-[790px]:pt-2 max-h-[790px]:sm:pt-2.5 border-t"
             style={{ borderColor: theme === 'dark' ? 'rgba(200, 200, 200, 0.1)' : 'rgba(229, 231, 235, 0.8)' }}
           >
-            <div className="grid grid-cols-3 gap-3 max-h-[785px]:gap-2 text-center">
+            <div className="grid grid-cols-3 gap-3 max-h-[790px]:gap-1.5 text-center">
               <div>
                 <p
-                  className="text-lg max-h-[785px]:text-base font-bold"
+                  className="text-lg max-h-[790px]:text-sm font-bold"
                   style={{ color: theme === 'dark' ? '#FFFFFF' : '#141312' }}
                 >
                   {processo.transcricao?.totalPages || 0}
                 </p>
                 <p
-                  className="text-xs max-h-[785px]:text-[10px]"
+                  className="text-xs max-h-[790px]:text-[9px]"
                   style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
                 >
                   Páginas
@@ -347,27 +347,27 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
               </div>
               <div>
                 <p
-                  className="text-lg max-h-[785px]:text-base font-bold"
+                  className="text-lg max-h-[790px]:text-sm font-bold"
                   style={{ color: theme === 'dark' ? '#FFFFFF' : '#141312' }}
                 >
                   {TokenValidationService.formatTokenCount(processo.tokens_consumed || 0)}
                 </p>
                 <p
-                  className="text-xs max-h-[785px]:text-[10px]"
+                  className="text-xs max-h-[790px]:text-[9px]"
                   style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
                 >
                   Tokens
                 </p>
               </div>
               <div>
-                <p className="text-lg max-h-[785px]:text-base font-bold">
+                <p className="text-lg max-h-[790px]:text-sm font-bold">
                   <CheckCircle
-                    className="w-6 h-6 max-h-[785px]:w-5 max-h-[785px]:h-5 inline"
+                    className="w-6 h-6 max-h-[790px]:w-4 max-h-[790px]:h-4 inline"
                     style={{ color: theme === 'dark' ? '#FFFFFF' : '#141312' }}
                   />
                 </p>
                 <p
-                  className="text-xs max-h-[785px]:text-[10px]"
+                  className="text-xs max-h-[790px]:text-[9px]"
                   style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
                 >
                   Completo

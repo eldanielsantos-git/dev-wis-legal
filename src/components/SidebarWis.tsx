@@ -267,16 +267,16 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
       </aside>
 
       <aside className={`hidden lg:flex ${isCollapsed ? 'w-20' : 'w-64'} h-screen fixed left-0 top-0 flex-col font-body transition-[width] duration-300 ease-in-out`} style={{ backgroundColor: colors.bgPrimary, borderRight: `1px solid ${colors.border}` }}>
-        <div className="p-6 flex flex-col items-center justify-center">
+        <div className="p-6 max-h-[790px]:p-4 flex flex-col items-center justify-center">
           <button
             onClick={onNavigateToApp}
-            className="hover:opacity-80 transition-opacity w-10 h-10 flex items-center justify-center"
+            className="hover:opacity-80 transition-opacity w-10 h-10 max-h-[790px]:w-7 max-h-[790px]:h-7 flex items-center justify-center"
             title="Ir para página inicial"
           >
             <img
               src={colors.logo}
               alt="Wis Legal"
-              className="h-10 w-10 object-contain"
+              className="h-10 w-10 max-h-[790px]:h-7 max-h-[790px]:w-7 object-contain"
             />
           </button>
         </div>
@@ -285,25 +285,25 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
           <div className="space-y-1">
             <button
               onClick={handleToggleCollapse}
-              className={`w-full flex items-center py-3 rounded-lg transition-colors mb-2 ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center py-3 max-h-[790px]:py-2 rounded-lg transition-colors mb-2 max-h-[790px]:mb-1.5 ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={{ color: colors.textPrimary }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               title={isCollapsed ? "Expandir menu" : "Retrair menu"}
             >
-              {isCollapsed ? <Menu className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+              {isCollapsed ? <Menu className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4" /> : <ChevronLeft className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4" />}
             </button>
 
             <button
               onClick={() => onSearchClick?.()}
-              className={`w-full flex items-center py-3 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center py-3 max-h-[790px]:py-2 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={{ color: colors.textPrimary }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               title="Busca"
             >
-              <Search className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">Busca</span>}
+              <Search className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">Busca</span>}
             </button>
 
             <button
@@ -311,38 +311,38 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
                 console.log('[SidebarWis Desktop] Botão + clicado');
                 onNavigateToApp();
               }}
-              className={`w-full flex items-center py-3 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center py-3 max-h-[790px]:py-2 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={getButtonStyle('home')}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'home' ? activeBg : 'transparent'}
               title="Novo processo"
             >
-              <Plus className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">Novo processo</span>}
+              <Plus className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">Novo processo</span>}
             </button>
 
             <button
               onClick={onNavigateToMyProcess}
-              className={`w-full flex items-center py-3 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center py-3 max-h-[790px]:py-2 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={getButtonStyle('myProcesses')}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'myProcesses' ? activeBg : 'transparent'}
               title="Meus processos"
             >
-              <FileText className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">Meus processos</span>}
+              <FileText className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">Meus processos</span>}
             </button>
 
             <button
               onClick={() => onNavigateToChat?.()}
-              className={`w-full flex items-center py-3 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center py-3 max-h-[790px]:py-2 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={getButtonStyle('chat')}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'chat' ? activeBg : 'transparent'}
               title="Chat"
             >
-              <MessageSquare className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">Chat</span>}
+              <MessageSquare className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">Chat</span>}
             </button>
 
             <button
@@ -354,30 +354,30 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
                   console.error('onNavigateToWorkspace is undefined!');
                 }
               }}
-              className={`w-full flex items-center py-3 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center py-3 max-h-[790px]:py-2 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={getButtonStyle('workspace')}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'workspace' ? activeBg : 'transparent'}
               title="Meu workspace"
             >
-              <Users className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">Meu workspace</span>}
+              <Users className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">Meu workspace</span>}
             </button>
           </div>
 
           <div className="flex-1"></div>
 
-          <div className={`space-y-2 ${isCollapsed ? '' : 'pt-4'}`} style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
+          <div className={`space-y-2 max-h-[790px]:space-y-1 ${isCollapsed ? '' : 'pt-4 max-h-[790px]:pt-3'}`} style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
             <button
               onClick={toggleTheme}
-              className={`w-full flex items-center rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={{ color: colors.textPrimary, paddingTop: '1.125rem', paddingBottom: '1.125rem' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
             >
-              {theme === 'dark' ? <Sun className="w-5 h-5 flex-shrink-0" /> : <Moon className="w-5 h-5 flex-shrink-0" />}
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">{theme === 'dark' ? 'Modo claro' : 'Modo escuro'}</span>}
+              {theme === 'dark' ? <Sun className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" /> : <Moon className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />}
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">{theme === 'dark' ? 'Modo claro' : 'Modo escuro'}</span>}
             </button>
 
             <NotificationBadge
@@ -388,32 +388,32 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
 
             <button
               onClick={() => onNavigateToTokens?.()}
-              className={`w-full flex items-center rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={{ ...getButtonStyle('tokens'), paddingTop: '1.125rem', paddingBottom: '1.125rem' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'tokens' ? activeBg : 'transparent'}
               title="Tokens"
             >
-              <Coins className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">Tokens</span>}
+              <Coins className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">Tokens</span>}
             </button>
 
             <button
               onClick={() => setIsInviteModalOpen(true)}
-              className={`w-full flex items-center rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4'}`}
+              className={`w-full flex items-center rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-3'}`}
               style={{ color: colors.textPrimary, paddingTop: '1.125rem', paddingBottom: '1.125rem' }}
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               title="Enviar convite"
             >
-              <UserPlus className="w-5 h-5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 text-sm font-medium">Enviar convite</span>}
+              <UserPlus className="w-5 h-5 max-h-[790px]:w-4 max-h-[790px]:h-4 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-2 text-sm max-h-[790px]:text-xs font-medium">Enviar convite</span>}
             </button>
 
           </div>
         </nav>
 
-        <div className="p-3" style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
+        <div className="p-3 max-h-[790px]:p-2" style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
           {isCollapsed ? (
             <div className="flex items-center py-3 justify-center">
               <UserAvatarMenu
