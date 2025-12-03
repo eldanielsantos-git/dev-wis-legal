@@ -13,9 +13,9 @@ export function UserAvatar({ avatarUrl, firstName, lastName, size = 'md', classN
   const { theme } = useTheme();
 
   const sizeClasses = {
-    sm: 'w-9 h-9 text-xs',
-    md: 'w-10 h-10 text-sm',
-    lg: 'w-16 h-16 text-xl'
+    sm: 'w-9 h-9 max-h-[790px]:w-6 max-h-[790px]:h-6 text-xs max-h-[790px]:text-[8px]',
+    md: 'w-10 h-10 max-h-[790px]:w-7 max-h-[790px]:h-7 text-sm max-h-[790px]:text-[10px]',
+    lg: 'w-16 h-16 max-h-[790px]:w-12 max-h-[790px]:h-12 text-xl max-h-[790px]:text-base'
   };
 
   const getInitials = () => {
