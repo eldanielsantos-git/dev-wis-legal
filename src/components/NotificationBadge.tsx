@@ -119,24 +119,24 @@ export function NotificationBadge({ onClick, isCollapsed, isActive }: Notificati
         onClick={onClick}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className={`w-full flex items-center py-3 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4'}`}
+        className={`w-full flex items-center py-[18px] max-h-[790px]:py-1.5 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-2.5'}`}
         style={{ color: colors.textPrimary, backgroundColor: isActive ? activeBg : 'transparent' }}
         onMouseEnterCapture={(e: any) => e.currentTarget.style.backgroundColor = hoverBg}
         onMouseLeaveCapture={(e: any) => e.currentTarget.style.backgroundColor = isActive ? activeBg : 'transparent'}
         title={isCollapsed ? "Notificações" : undefined}
       >
         <div className="relative">
-          <Bell className={`w-5 h-5 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
+          <Bell className={`w-5 h-5 max-h-[790px]:w-3.5 max-h-[790px]:h-3.5 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
           {hasUnread && (
             <span
-              className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-white text-xs flex items-center justify-center font-bold"
+              className="absolute -top-1 -right-1 w-4 h-4 max-h-[790px]:w-3 max-h-[790px]:h-3 rounded-full text-white text-xs max-h-[790px]:text-[9px] flex items-center justify-center font-bold"
               style={{ backgroundColor: getBadgeColor(), fontSize: '10px' }}
             >
               {unreadCounts.total > 9 ? '9+' : unreadCounts.total}
             </span>
           )}
         </div>
-        {!isCollapsed && <span className="ml-3 text-sm font-medium">Notificações</span>}
+        {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-1.5 text-sm max-h-[790px]:text-[11px] font-medium">Notificações</span>}
       </button>
 
       {tooltipContent && createPortal(tooltipContent, document.body)}
