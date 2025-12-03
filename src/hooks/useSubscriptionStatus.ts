@@ -60,9 +60,22 @@ export function useSubscriptionStatus(userId: string | undefined): SubscriptionS
         });
 
         if (response.ok) {
+          const result = await response.json();
+
+          if (result.hasSubscription === false) {
+            console.log('[useSubscriptionStatus] No active subscription found in Stripe');
+            return false;
+          }
+
           console.log('[useSubscriptionStatus] Subscription synced successfully');
           return true;
         }
+
+        if (response.status === 403 || response.status === 404) {
+          console.log('[useSubscriptionStatus] No active subscription found in Stripe');
+          return false;
+        }
+
         return false;
       } catch (err) {
         console.error('[useSubscriptionStatus] Error syncing subscription:', err);

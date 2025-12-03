@@ -95,8 +95,8 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (!customerData) {
-        return new Response(JSON.stringify({ error: 'No customer found' }), {
-          status: 404,
+        return new Response(JSON.stringify({ message: 'No customer found', hasSubscription: false }), {
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
