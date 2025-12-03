@@ -205,7 +205,7 @@ function AppContent() {
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToNotifications={() => navigate('/notifications')}
         onNavigateToTokens={() => navigate('/tokens')}
-        onNavigateToSubscription={() => navigate('/profile#subscription')}
+        onNavigateToSubscription={() => navigate('/signature')}
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
@@ -231,7 +231,7 @@ function AppContent() {
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToNotifications={() => navigate('/notifications')}
         onNavigateToTokens={() => navigate('/tokens')}
-        onNavigateToSubscription={() => navigate('/profile#subscription')}
+        onNavigateToSubscription={() => navigate('/signature')}
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
