@@ -54,7 +54,7 @@ export function TokensPage({
 }: TokensPageProps) {
   const { user } = useAuth();
   const { theme } = useTheme();
-  const { balance, refreshBalance, isRefreshing } = useTokenBalance();
+  const { tokensTotal, tokensUsed, tokensRemaining, pagesRemaining, planName, loading, refreshBalance, isRefreshing } = useTokenBalance();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -150,8 +150,8 @@ export function TokensPage({
   };
 
   const calculatePercentage = (): number => {
-    if (balance.tokensTotal === 0) return 0;
-    return Math.min((balance.tokensRemaining / balance.tokensTotal) * 100, 100);
+    if (tokensTotal === 0) return 0;
+    return Math.min((tokensRemaining / tokensTotal) * 100, 100);
   };
 
   return (
@@ -196,7 +196,7 @@ export function TokensPage({
               </p>
             </div>
 
-            {balance.loading ? (
+            {loading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader className="w-8 h-8 animate-spin" style={{ color: colors.textSecondary }} />
               </div>
@@ -214,7 +214,7 @@ export function TokensPage({
                           Uso de Tokens
                         </h2>
                         <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                          Plano: {balance.planName}
+                          Plano: {planName}
                         </p>
                       </div>
                     </div>
@@ -232,10 +232,10 @@ export function TokensPage({
                   <div className="mb-4 sm:mb-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-3 gap-1">
                       <p className="text-base sm:text-lg font-medium" style={{ color: colors.textPrimary }}>
-                        Você tem <span className="text-xl sm:text-2xl font-bold">{formatNumber(balance.tokensRemaining)}</span> tokens
+                        Você tem <span className="text-xl sm:text-2xl font-bold">{formatNumber(tokensRemaining)}</span> tokens
                       </p>
                       <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                        de {formatNumber(balance.tokensTotal)} tokens
+                        de {formatNumber(tokensTotal)} tokens
                       </p>
                     </div>
 
@@ -251,7 +251,7 @@ export function TokensPage({
 
                     <div className="flex justify-between items-center mt-2">
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
-                        {formatNumber(balance.tokensUsed)} tokens usados
+                        {formatNumber(tokensUsed)} tokens usados
                       </p>
                       <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
                         {calculatePercentage().toFixed(1)}%
@@ -259,7 +259,7 @@ export function TokensPage({
                     </div>
                   </div>
 
-                  {balance.tokensTotal === 0 && (
+                  {tokensTotal === 0 && (
                     <div
                       className="p-4 rounded-lg mb-6"
                       style={{ backgroundColor: colors.bgSecondary }}
@@ -270,7 +270,7 @@ export function TokensPage({
                     </div>
                   )}
 
-                  {balance.tokensTotal > 0 && (
+                  {tokensTotal > 0 && (
                     <div
                       className="p-4 rounded-lg mb-6"
                       style={{ backgroundColor: theme === 'dark' ? colors.bgTertiary : '#EFF6FF' }}
@@ -284,7 +284,7 @@ export function TokensPage({
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
                         Com os tokens restantes, você pode processar aproximadamente{' '}
                         <span className="font-bold" style={{ color: colors.textPrimary }}>
-                          {formatNumber(balance.pagesRemaining)} páginas
+                          {formatNumber(pagesRemaining)} páginas
                         </span>{' '}
                         de documentos.
                       </p>
@@ -296,8 +296,8 @@ export function TokensPage({
 
                   <div className="mb-6">
                     <AddTokensSection
-                      title={balance.tokensTotal === 0 ? 'Compre tokens para começar' : 'Adicione mais tokens em sua assinatura'}
-                      description={balance.tokensTotal === 0 ? 'Compre um pacote de tokens e comece a usar a plataforma:' : 'Escolha uma das opções abaixo:'}
+                      title={tokensTotal === 0 ? 'Compre tokens para começar' : 'Adicione mais tokens em sua assinatura'}
+                      description={tokensTotal === 0 ? 'Compre um pacote de tokens e comece a usar a plataforma:' : 'Escolha uma das opções abaixo:'}
                       onPurchaseComplete={() => {
                         console.log('Compra concluída, atualizando saldo...');
                         refreshBalance();
