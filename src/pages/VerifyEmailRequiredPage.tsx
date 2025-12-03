@@ -46,6 +46,7 @@ export function VerifyEmailRequiredPage() {
           email: user.email,
           first_name: profile.first_name,
           last_name: profile.last_name,
+          cpf: profile.cpf,
           phone: profile.phone,
           phone_country_code: profile.phone_country_code,
           city: profile.city,

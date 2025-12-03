@@ -171,7 +171,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
       const { data: profileData } = await supabase
         .from('user_profiles')
-        .select('id, first_name, last_name, phone, phone_country_code, email_verified')
+        .select('id, first_name, last_name, cpf, phone, phone_country_code, city, state, email_verified')
         .eq('email', emailToUse.toLowerCase())
         .maybeSingle();
 
@@ -196,8 +196,11 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
           email: emailToUse,
           first_name: profileData.first_name,
           last_name: profileData.last_name,
+          cpf: profileData.cpf,
           phone: profileData.phone,
-          phone_country_code: profileData.phone_country_code
+          phone_country_code: profileData.phone_country_code,
+          city: profileData.city,
+          state: profileData.state
         })
       });
 

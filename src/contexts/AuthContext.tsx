@@ -231,6 +231,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           email: email,
           first_name: profileData.first_name,
           last_name: profileData.last_name || '',
+          cpf: profileData.cpf || '',
           phone: profileData.phone || '',
           phone_country_code: profileData.phone_country_code || '',
           city: profileData.city || '',
