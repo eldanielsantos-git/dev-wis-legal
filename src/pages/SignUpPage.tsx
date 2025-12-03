@@ -767,7 +767,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                CPF <span className="text-gray-400 text-xs">(opcional)</span>
+                CPF
               </label>
               <input
                 type="text"
