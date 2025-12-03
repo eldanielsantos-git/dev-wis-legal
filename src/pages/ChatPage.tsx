@@ -330,6 +330,8 @@ export function ChatPage({
               onAddOptimisticMessage={handleAddOptimisticMessage}
               onUpdateMessage={handleUpdateMessage}
               isSidebarCollapsed={isSidebarCollapsed}
+              onNavigateToSubscription={onNavigateToSubscription}
+              onNavigateToTokens={onNavigateToTokens}
             />
           </main>
         )}

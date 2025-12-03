@@ -8,6 +8,7 @@ import { ChatMessageAssistant } from './ChatMessageAssistant';
 import { ChatLoadingDots } from './LoadingSpinner';
 import { AudioRecordingAnimation } from './AudioRecordingAnimation';
 import { ChatTokenCounter } from './ChatTokenCounter';
+import { NoTokensModal } from './NoTokensModal';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { supabase } from '../lib/supabase';
 import { playMessageSendSound, playMessageReceivedSound } from '../utils/notificationSound';
@@ -34,18 +35,21 @@ interface ChatInterfaceProps {
   onAddOptimisticMessage?: (message: Message) => void;
   onUpdateMessage?: (messageId: string, updates: Partial<Message>) => void;
   isSidebarCollapsed?: boolean;
+  onNavigateToSubscription?: () => void;
+  onNavigateToTokens?: () => void;
 }
 
-export function ChatInterface({ processoId, processoName, messages, onSendMessage, isLoading, onAddOptimisticMessage, onUpdateMessage, isSidebarCollapsed = true }: ChatInterfaceProps) {
+export function ChatInterface({ processoId, processoName, messages, onSendMessage, isLoading, onAddOptimisticMessage, onUpdateMessage, isSidebarCollapsed = true, onNavigateToSubscription, onNavigateToTokens }: ChatInterfaceProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { profile } = useAuth();
-  const { refreshBalance } = useTokenBalance();
+  const { tokensRemaining, refreshBalance } = useTokenBalance();
   const [inputValue, setInputValue] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isProcessingAudio, setIsProcessingAudio] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showPromptTips, setShowPromptTips] = useState(false);
+  const [showNoTokensModal, setShowNoTokensModal] = useState(false);
   const [previousMessageCount, setPreviousMessageCount] = useState(0);
   const [chatIntroPrompts, setChatIntroPrompts] = useState<ChatIntroPrompt[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -121,6 +125,12 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
     e.preventDefault();
     if (!inputValue.trim() || isSending || !processoId) return;
 
+    // Verificar se tem tokens disponíveis
+    if (tokensRemaining <= 0) {
+      setShowNoTokensModal(true);
+      return;
+    }
+
     const messageToSend = inputValue.trim();
     setInputValue('');
     setIsSending(true);
@@ -156,6 +166,13 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
 
   const handleStopRecording = async () => {
     if (!processoId) return;
+
+    // Verificar se tem tokens disponíveis
+    if (tokensRemaining <= 0) {
+      audioRecorder.cancelRecording();
+      setShowNoTokensModal(true);
+      return;
+    }
 
     setIsSending(true);
     playMessageSendSound();
@@ -380,6 +397,11 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                 <button
                   key={prompt.id}
                   onClick={() => {
+                    // Verificar se tem tokens disponíveis
+                    if (tokensRemaining <= 0) {
+                      setShowNoTokensModal(true);
+                      return;
+                    }
                     onSendMessage(prompt.prompt_text);
                   }}
                   disabled={isSending}
@@ -556,6 +578,16 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
         </div>
       </div>
 
+      {/* Modal de Falta de Tokens */}
+      {showNoTokensModal && onNavigateToSubscription && onNavigateToTokens && (
+        <NoTokensModal
+          isOpen={showNoTokensModal}
+          onClose={() => setShowNoTokensModal(false)}
+          onNavigateToSubscription={onNavigateToSubscription}
+          onNavigateToTokens={onNavigateToTokens}
+        />
+      )}
+
       {/* Modal de Dicas de Prompts */}
       {showPromptTips && (
         <div
@@ -606,6 +638,11 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                           key={prompt.id}
                           onClick={async () => {
                             setShowPromptTips(false);
+                            // Verificar se tem tokens disponíveis
+                            if (tokensRemaining <= 0) {
+                              setShowNoTokensModal(true);
+                              return;
+                            }
                             await onSendMessage(prompt.prompt_text);
                           }}
                           className="w-full text-left p-3 rounded-lg transition-colors text-sm"
@@ -640,6 +677,11 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                         key={index}
                         onClick={async () => {
                           setShowPromptTips(false);
+                          // Verificar se tem tokens disponíveis
+                          if (tokensRemaining <= 0) {
+                            setShowNoTokensModal(true);
+                            return;
+                          }
                           await onSendMessage(prompt);
                         }}
                         className="w-full text-left p-3 rounded-lg transition-colors text-sm"
@@ -673,6 +715,11 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                         key={index}
                         onClick={async () => {
                           setShowPromptTips(false);
+                          // Verificar se tem tokens disponíveis
+                          if (tokensRemaining <= 0) {
+                            setShowNoTokensModal(true);
+                            return;
+                          }
                           await onSendMessage(prompt);
                         }}
                         className="w-full text-left p-3 rounded-lg transition-colors text-sm"
@@ -706,6 +753,11 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                         key={index}
                         onClick={async () => {
                           setShowPromptTips(false);
+                          // Verificar se tem tokens disponíveis
+                          if (tokensRemaining <= 0) {
+                            setShowNoTokensModal(true);
+                            return;
+                          }
                           await onSendMessage(prompt);
                         }}
                         className="w-full text-left p-3 rounded-lg transition-colors text-sm"
