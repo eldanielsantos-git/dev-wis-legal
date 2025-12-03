@@ -722,7 +722,17 @@ function MyProcessDetailPageInner({
                   <ComplexProcessingProgress
                     processoId={processoId}
                     onStatusChange={(newStatus) => {
+                      // Não atualiza se já está concluído
+                      if (isFullyCompletedRef.current) {
+                        console.log('⏭️ onStatusChange ignorado - processo já finalizado');
+                        return;
+                      }
+
                       if (processo.status !== newStatus) {
+                        console.log('🔄 Status mudou, recarregando processo:', {
+                          old: processo.status,
+                          new: newStatus
+                        });
                         loadProcesso();
                       }
                     }}

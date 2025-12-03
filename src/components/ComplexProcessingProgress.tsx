@@ -69,7 +69,16 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
   const [stageProgressHistory, setStageProgressHistory] = useState<Map<string, {progress: number, timestamp: number}>>(new Map());
 
   useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+    const isCompletedRef = { current: false };
+
     const fetchProgress = async () => {
+      // Se já está completo, não faz mais nada
+      if (isCompletedRef.current) {
+        console.log('⏭️ ComplexProcessingProgress: Processo já completo, ignorando fetch');
+        return;
+      }
+
       try {
         const { data: processo, error: processoError } = await supabase
           .from('processos')
@@ -78,6 +87,18 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
           .single();
 
         if (processoError) throw processoError;
+
+        // Verifica se processo está completo ou em erro
+        if (processo?.status === 'completed' || processo?.status === 'error') {
+          console.log('✅ ComplexProcessingProgress: Processo finalizado, parando interval', {
+            status: processo.status
+          });
+          isCompletedRef.current = true;
+          if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
+          }
+        }
 
         if (processo?.is_chunked) {
           const { data: complexData } = await supabase
@@ -222,10 +243,27 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
       }
     };
 
+    // Primeira execução
     fetchProgress();
-    const interval = setInterval(fetchProgress, 5000);
 
-    return () => clearInterval(interval);
+    // Só inicia o interval se não estiver completo
+    intervalId = setInterval(() => {
+      if (!isCompletedRef.current) {
+        fetchProgress();
+      } else {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+      }
+    }, 5000);
+
+    return () => {
+      console.log('🧹 ComplexProcessingProgress: Limpando interval no unmount');
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
   }, [processoId, onStatusChange]);
 
   const getPhaseLabel = (phase: string) => {
