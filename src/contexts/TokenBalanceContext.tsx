@@ -50,13 +50,7 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
     }
 
     try {
-      console.log('[TokenBalance] Fetching balance for user:', user.id);
       const data = await TokenValidationService.getTokenBalance(user.id);
-      console.log('[TokenBalance] Balance fetched:', {
-        tokensTotal: data.tokensTotal,
-        tokensUsed: data.tokensUsed,
-        tokensRemaining: data.tokensRemaining,
-      });
 
       const newBalance = {
         tokensTotal: data.tokensTotal,
@@ -114,8 +108,6 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
 
         if (!customer?.customer_id) return;
 
-        console.log(`[TokenBalance] Setting up realtime for user ${user.id}, customer ${customer.customer_id}`);
-
         channel = supabase
           .channel(`token-balance-${user.id}`)
           .on(
@@ -127,7 +119,6 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
               filter: `customer_id=eq.${customer.customer_id}`,
             },
             (payload) => {
-              console.log('🔄 [TokenBalance] Subscription updated:', payload);
               fetchBalance();
             }
           )
@@ -140,7 +131,6 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
               filter: `user_id=eq.${user.id}`,
             },
             (payload) => {
-              console.log('🪙 [TokenBalance] Token usage detected (history):', payload);
               fetchBalance();
             }
           )
@@ -153,13 +143,10 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
               filter: `user_id=eq.${user.id}`,
             },
             (payload) => {
-              console.log('🪙 [TokenBalance] Token usage detected (logs):', payload);
               fetchBalance();
             }
           )
-          .subscribe((status) => {
-            console.log(`[TokenBalance] Realtime subscription status: ${status}`);
-          });
+          .subscribe();
       } catch (error) {
         console.error('Error setting up realtime subscription:', error);
       }

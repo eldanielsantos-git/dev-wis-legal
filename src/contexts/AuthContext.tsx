@@ -87,44 +87,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const loadProfile = async (userId: string) => {
-    console.log('🔍 [AuthContext] loadProfile START - userId:', userId);
-
     if (isLoadingProfile.current) {
-      console.log('⚠️ [AuthContext] Profile already loading, skipping duplicate call');
-      logger.log('AuthContext', 'Profile already loading, skipping duplicate call');
       return;
     }
 
     if (hasLoadedProfile.current === userId) {
-      console.log('⚠️ [AuthContext] Profile already loaded for this user, skipping');
-      logger.log('AuthContext', 'Profile already loaded for this user, skipping');
       setLoading(false);
       return;
     }
 
     isLoadingProfile.current = true;
-    console.log('🔄 [AuthContext] Setting isLoadingProfile to true');
-    logger.log('AuthContext', 'loadProfile called for userId:', userId);
 
     try {
-      console.log('📡 [AuthContext] Fetching profile from database...');
-      logger.log('AuthContext', 'Carregando perfil do usuário:', userId);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
-      console.log('📦 [AuthContext] Query result:', { data, error });
-
       if (error) {
         console.error('❌ [AuthContext] Error loading profile:', error);
-        logger.error('AuthContext', 'Erro ao carregar perfil:', error);
         throw error;
       }
-
-      console.log('✅ [AuthContext] Profile loaded successfully:', data);
-      logger.log('AuthContext', 'Perfil carregado:', data ? 'Sucesso' : 'Sem dados');
       setProfile(data);
       hasLoadedProfile.current = userId;
 
@@ -147,11 +131,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     } catch (error) {
-      logger.error('AuthContext', 'Erro ao carregar perfil (catch):', error);
       setProfile(null);
     } finally {
-      console.log('🏁 [AuthContext] loadProfile FINISHED, setting loading to false');
-      logger.log('AuthContext', 'loadProfile finished, setting loading to false');
       isLoadingProfile.current = false;
       setLoading(false);
     }

@@ -15,15 +15,6 @@ export function RequireEmailVerification({
 }: RequireEmailVerificationProps) {
   const { user, profile, loading, emailVerified, isAdmin } = useAuth();
 
-  console.log('🔐 [RequireEmailVerification] RENDER', {
-    loading,
-    userId: user?.id,
-    hasProfile: !!profile,
-    emailVerified,
-    isAdmin
-  });
-  logger.log('RequireEmailVerification', 'RENDER - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified, 'isAdmin:', isAdmin);
-
   useEffect(() => {
     logger.log('RequireEmailVerification', 'useEffect triggered - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified, 'isAdmin:', isAdmin);
 
@@ -57,23 +48,12 @@ export function RequireEmailVerification({
   }, [user, profile, loading, emailVerified, isAdmin, onNavigateToSignIn, onNavigateToVerifyEmail]);
 
   if (loading || !user || !profile) {
-    console.log('⏸️ [RequireEmailVerification] Returning null:', { loading, hasUser: !!user, hasProfile: !!profile });
-    logger.log('RequireEmailVerification', 'Loading, no user, or no profile - returning null (App.tsx handles loading)');
     return null;
   }
 
   if (!emailVerified && !isAdmin) {
-    console.log('📧 [RequireEmailVerification] Email not verified and not admin, returning null');
-    logger.log('RequireEmailVerification', 'Email not verified and not admin, returning null');
     return null;
   }
 
-  if (isAdmin) {
-    console.log('👑 [RequireEmailVerification] Admin user detected, allowing access');
-    logger.log('RequireEmailVerification', 'Admin user detected, allowing access');
-  }
-
-  console.log('🎉 [RequireEmailVerification] All checks passed! Rendering children');
-  logger.log('RequireEmailVerification', 'Rendering children (AppHomePage)');
   return <>{children}</>;
 }
