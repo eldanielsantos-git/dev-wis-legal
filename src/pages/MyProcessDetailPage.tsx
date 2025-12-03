@@ -92,8 +92,41 @@ function MyProcessDetailPageInner({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const { user } = useAuth();
+  const isLoadingResultsRef = React.useRef(false);
+  const processoChannelRef = React.useRef<(() => void) | null>(null);
+  const resultsChannelRef = React.useRef<(() => void) | null>(null);
+  const isFullyCompletedRef = React.useRef(false);
 
-  // Removido: useEffect que causava reloads infinitos quando processo?.status mudava
+  const shouldStopPolling = (currentProcesso: Processo | null, currentResults: AnalysisResult[]): boolean => {
+    if (!currentProcesso) return false;
+
+    const processoFinished = ['completed', 'error'].includes(currentProcesso.status);
+    const hasResults = currentResults.length > 0;
+    const allResultsFinished = currentResults.every(r => r.status === 'completed' || r.status === 'failed');
+
+    return processoFinished && hasResults && allResultsFinished;
+  };
+
+  const cleanupSubscriptionsAndPolling = () => {
+    console.log('🛑 Limpando todas as subscriptions e polling');
+
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+
+    if (processoChannelRef.current) {
+      processoChannelRef.current();
+      processoChannelRef.current = null;
+    }
+
+    if (resultsChannelRef.current) {
+      resultsChannelRef.current();
+      resultsChannelRef.current = null;
+    }
+
+    isFullyCompletedRef.current = true;
+  };
 
   useEffect(() => {
     loadProcesso();
@@ -101,54 +134,70 @@ function MyProcessDetailPageInner({
     loadShares();
     checkCanShare();
 
-    const processoChannel = ProcessosService.subscribeToProcessoChanges(
-      processoId,
-      (updatedProcesso) => {
-        console.log('🔄 Realtime: Processo updated:', {
-          id: updatedProcesso.id,
-          status: updatedProcesso.status,
-          currentPrompt: updatedProcesso.current_prompt_number,
-          totalPrompts: updatedProcesso.total_prompts
-        });
+    const setupRealtimeAndPolling = async () => {
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-        const wasAnalyzing = processo?.status === 'analyzing';
-        const isNowCompleted = updatedProcesso.status === 'completed';
+      if (isFullyCompletedRef.current) {
+        console.log('✅ Processo já finalizado, não configurando polling/subscriptions');
+        return;
+      }
 
-        setProcesso(updatedProcesso);
+      processoChannelRef.current = ProcessosService.subscribeToProcessoChanges(
+        processoId,
+        (updatedProcesso) => {
+          if (isFullyCompletedRef.current) return;
 
-        // Quando o processo é concluído, força reload final dos resultados
-        if (wasAnalyzing && isNowCompleted) {
-          console.log('✅ Processo concluído - carregando resultados finais');
-          setTimeout(() => {
-            loadAnalysisResults();
-          }, 1000);
+          console.log('🔄 Realtime: Processo updated:', {
+            id: updatedProcesso.id,
+            status: updatedProcesso.status,
+            currentPrompt: updatedProcesso.current_prompt_number,
+            totalPrompts: updatedProcesso.total_prompts
+          });
+
+          const wasAnalyzing = processo?.status === 'analyzing';
+          const isNowCompleted = updatedProcesso.status === 'completed';
+
+          setProcesso(updatedProcesso);
+
+          if (wasAnalyzing && isNowCompleted) {
+            console.log('✅ Processo concluído - carregando resultados finais');
+            setTimeout(() => {
+              loadAnalysisResults();
+            }, 1000);
+          }
         }
-      }
-    );
+      );
 
-    const resultsChannel = AnalysisResultsService.subscribeToResultsChanges(
-      processoId,
-      () => {
-        console.log('🔄 Realtime: Analysis results updated - recarregando...');
+      resultsChannelRef.current = AnalysisResultsService.subscribeToResultsChanges(
+        processoId,
+        () => {
+          if (isFullyCompletedRef.current || isLoadingResultsRef.current) return;
+
+          console.log('🔄 Realtime: Analysis results updated - recarregando...');
+          loadAnalysisResults();
+        }
+      );
+
+      pollIntervalRef.current = setInterval(() => {
+        if (isFullyCompletedRef.current) {
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current);
+            pollIntervalRef.current = null;
+          }
+          return;
+        }
+
+        refreshProcesso();
         loadAnalysisResults();
-      }
-    );
+        loadShares();
+      }, 3000);
+    };
 
-    // Inicia polling a cada 3 segundos
-    pollIntervalRef.current = setInterval(() => {
-      refreshProcesso(); // Atualiza o processo silenciosamente (sem loading)
-      loadAnalysisResults();
-      loadShares();
-    }, 3000);
+    setupRealtimeAndPolling();
 
     return () => {
-      console.log('🛡️ Limpando subscriptions e polling');
-      processoChannel();
-      resultsChannel();
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-        pollIntervalRef.current = null;
-      }
+      console.log('🛡️ Limpando subscriptions e polling no unmount');
+      cleanupSubscriptionsAndPolling();
     };
   }, [processoId]);
 
@@ -173,6 +222,11 @@ function MyProcessDetailPageInner({
       }
 
       setProcesso(data);
+
+      // Verificar se processo já está completo na carga inicial
+      if (['completed', 'error'].includes(data.status)) {
+        console.log('ℹ️ Processo já está em status final:', data.status);
+      }
     } catch (err: any) {
       console.error('Erro ao carregar processo:', err);
 
@@ -204,10 +258,18 @@ function MyProcessDetailPageInner({
   };
 
   const refreshProcesso = async () => {
+    if (isFullyCompletedRef.current) return;
+
     try {
       const data = await ProcessosService.getProcessoById(processoId);
       if (data) {
         setProcesso(data);
+
+        // Verificar se deve parar polling após refresh
+        if (shouldStopPolling(data, analysisResults)) {
+          console.log('✅ Processo completo detectado no refresh - parando polling');
+          cleanupSubscriptionsAndPolling();
+        }
       }
     } catch (err) {
       console.error('Erro ao atualizar processo:', err);
@@ -215,7 +277,12 @@ function MyProcessDetailPageInner({
   };
 
   const loadAnalysisResults = async () => {
+    if (isLoadingResultsRef.current || isFullyCompletedRef.current) {
+      return;
+    }
+
     try {
+      isLoadingResultsRef.current = true;
       console.log('📄 Carregando resultados de análise para processo:', processoId);
       const results = await AnalysisResultsService.getResultsByProcessoId(processoId);
 
@@ -236,18 +303,14 @@ function MyProcessDetailPageInner({
 
       setAnalysisResults(results);
 
-      // Para o polling quando todos os resultados estiverem finalizados
-      if (results.length > 0 && results.every(r => r.status === 'completed' || r.status === 'failed')) {
-        if (processo?.status === 'completed') {
-          console.log('✅ Todos os resultados finalizados - parando polling');
-          if (pollIntervalRef.current) {
-            clearInterval(pollIntervalRef.current);
-            pollIntervalRef.current = null;
-          }
-        }
+      if (shouldStopPolling(processo, results)) {
+        console.log('✅ Processo completamente finalizado - parando polling e subscriptions');
+        cleanupSubscriptionsAndPolling();
       }
     } catch (err) {
       console.error('❌ Erro ao carregar resultados:', err);
+    } finally {
+      isLoadingResultsRef.current = false;
     }
   };
 
