@@ -162,23 +162,20 @@ Deno.serve(async (req: Request) => {
 
     const buildPaymentDescription = (): string => {
       const formattedAmount = formatPrice(requestData.amount, requestData.currency);
-      const productName = requestData.product_name || 'não especificado';
 
       switch (requestData.payment_type) {
         case 'assinatura_nova':
-          return `A compra de sua assinatura <strong>${productName}</strong> no valor de <strong>${formattedAmount}</strong> não foi concluída.`;
+          return `A compra no valor de <strong>${formattedAmount}</strong> não foi concluída.`;
         case 'renovacao_assinatura':
-          return `A renovação de sua assinatura <strong>${productName}</strong> no valor de <strong>${formattedAmount}</strong> não foi concluída.`;
+          return `A renovação no valor de <strong>${formattedAmount}</strong> não foi concluída.`;
         case 'compra_tokens':
-          return `A compra de tokens <strong>${productName}</strong> no valor de <strong>${formattedAmount}</strong> não foi concluída.`;
+          return `A compra no valor de <strong>${formattedAmount}</strong> não foi concluída.`;
         default:
           return `A transação no valor de <strong>${formattedAmount}</strong> não foi concluída.`;
       }
     };
 
-    const retryUrl = requestData.payment_type === 'compra_tokens'
-      ? `${appUrl}/tokens`
-      : `${appUrl}/subscription`;
+    const retryUrl = `${appUrl}/signature`;
 
     const templateVariables = {
       first_name: userProfile.first_name || "Usuário",
