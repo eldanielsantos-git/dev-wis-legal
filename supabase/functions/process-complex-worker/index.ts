@@ -478,10 +478,11 @@ IMPORTANTE: Este é o chunk ${chunk.chunk_index + 1} de ${chunk.total_chunks} do
         .eq('prompt_id', queueItem.prompt_id);
 
       if (queueStatsForPrompt) {
-        const allCompleted = queueStatsForPrompt.every(q => q.status === 'completed');
-        const hasRunning = queueStatsForPrompt.some(q => q.status === 'processing');
+        const hasIncomplete = queueStatsForPrompt.some(q =>
+          q.status === 'pending' || q.status === 'retry' || q.status === 'failed' || q.status === 'processing'
+        );
 
-        if (allCompleted && !hasRunning) {
+        if (!hasIncomplete) {
           console.log(`[${workerId}] ✅ Todos os chunks do prompt '${queueItem.prompt_title}' completos!`);
           console.log(`[${workerId}] 🔄 Disparando consolidação para este prompt...`);
 
@@ -498,6 +499,12 @@ IMPORTANTE: Este é o chunk ${chunk.chunk_index + 1} de ${chunk.total_chunks} do
           }).catch(err => {
             console.error(`[${workerId}] ❌ Erro ao disparar consolidação do prompt:`, err);
           });
+        } else {
+          const statusCounts = queueStatsForPrompt.reduce((acc, q) => {
+            acc[q.status] = (acc[q.status] || 0) + 1;
+            return acc;
+          }, {} as Record<string, number>);
+          console.log(`[${workerId}] ⏳ Prompt '${queueItem.prompt_title}' ainda tem chunks incompletos:`, statusCounts);
         }
       }
 
@@ -615,7 +622,6 @@ IMPORTANTE: Este é o chunk ${chunk.chunk_index + 1} de ${chunk.total_chunks} do
         console.error(`[${workerId}] ❌ Erro ao desregistrar worker:`, unregErr);
       }
 
-      // Registrar erro na tabela complex_analysis_errors
       try {
         console.log(`[${workerId}] 📝 Registrando erro complexo na base de dados...`);
 
@@ -656,7 +662,6 @@ IMPORTANTE: Este é o chunk ${chunk.chunk_index + 1} de ${chunk.total_chunks} do
         } else {
           console.log(`[${workerId}] ✅ Erro registrado com ID: ${errorRecord.id}`);
 
-          // Enviar email para administradores
           console.log(`[${workerId}] 📧 Enviando email de notificação para administradores...`);
 
           fetch(`${supabaseUrl}/functions/v1/send-admin-complex-analysis-error`, {
