@@ -103,7 +103,8 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
   const modalTextSecondary = theme === 'dark' ? '#4B5563' : '#9CA3AF';
   const modalBorder = theme === 'dark' ? '#E5E7EB' : '#374151';
   const modalBgSecondary = theme === 'dark' ? '#F3F4F6' : '#2d2d2d';
-  const modalCancelBg = theme === 'dark' ? '#F3F4F6' : '#374151';
+  const modalCancelBg = theme === 'dark' ? '#E5E7EB' : '#4B5563';
+  const modalCancelText = theme === 'dark' ? '#374151' : '#F3F4F6';
 
   return (
     <div
@@ -182,7 +183,7 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
               className="px-4 py-2 rounded-lg font-medium transition-opacity hover:opacity-80"
               style={{
                 backgroundColor: modalCancelBg,
-                color: modalTextPrimary
+                color: modalCancelText
               }}
               disabled={saving}
             >
