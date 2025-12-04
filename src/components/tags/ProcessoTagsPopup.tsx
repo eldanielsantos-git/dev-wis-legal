@@ -98,6 +98,13 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
 
   if (!isOpen) return null;
 
+  const modalBg = theme === 'dark' ? '#FFFFFF' : '#1a1a1a';
+  const modalTextPrimary = theme === 'dark' ? '#1a1a1a' : '#FFFFFF';
+  const modalTextSecondary = theme === 'dark' ? '#4B5563' : '#9CA3AF';
+  const modalBorder = theme === 'dark' ? '#E5E7EB' : '#374151';
+  const modalBgSecondary = theme === 'dark' ? '#F3F4F6' : '#2d2d2d';
+  const modalCancelBg = theme === 'dark' ? '#F3F4F6' : '#374151';
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -106,20 +113,20 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
     >
       <div
         className="rounded-lg shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
-        style={{ backgroundColor: colors.bgPrimary }}
+        style={{ backgroundColor: modalBg }}
         onClick={(e) => e.stopPropagation()}
       >
         <div
           className="flex items-center justify-between p-4 border-b"
-          style={{ borderColor: colors.border }}
+          style={{ borderColor: modalBorder }}
         >
-          <h2 className="text-lg font-bold" style={{ color: colors.textPrimary }}>
+          <h2 className="text-lg font-bold" style={{ color: modalTextPrimary }}>
             Tags do Processo
           </h2>
           <button
             onClick={onClose}
             className="p-1 rounded hover:opacity-70 transition-opacity"
-            style={{ color: colors.textSecondary }}
+            style={{ color: modalTextSecondary }}
           >
             <X size={20} />
           </button>
@@ -127,11 +134,11 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
 
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="text-center py-8" style={{ color: colors.textSecondary }}>
+            <div className="text-center py-8" style={{ color: modalTextSecondary }}>
               Carregando tags...
             </div>
           ) : availableTags.length === 0 ? (
-            <div className="text-center py-8" style={{ color: colors.textSecondary }}>
+            <div className="text-center py-8" style={{ color: modalTextSecondary }}>
               Nenhuma tag disponível
             </div>
           ) : (
@@ -144,7 +151,7 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
                     ${isEditable ? 'cursor-pointer hover:opacity-80' : ''}
                   `}
                   style={{
-                    backgroundColor: colors.bgSecondary,
+                    backgroundColor: modalBgSecondary,
                     borderColor: selectedTagIds.has(tag.id) ? tag.color : 'transparent'
                   }}
                   onClick={() => toggleTag(tag.id)}
@@ -168,14 +175,14 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
         {isEditable && (
           <div
             className="flex items-center justify-end gap-3 p-4 border-t"
-            style={{ borderColor: colors.border }}
+            style={{ borderColor: modalBorder }}
           >
             <button
               onClick={onClose}
               className="px-4 py-2 rounded-lg font-medium transition-opacity hover:opacity-80"
               style={{
-                backgroundColor: colors.bgSecondary,
-                color: colors.textPrimary
+                backgroundColor: modalCancelBg,
+                color: modalTextPrimary
               }}
               disabled={saving}
             >
