@@ -114,6 +114,41 @@ Deno.serve(async (req: Request) => {
         'generic_decline': 'Pagamento recusado'
       };
 
+      if (errorMessage) {
+        const messageLower = errorMessage.toLowerCase();
+
+        if (messageLower.includes('insufficient funds') || messageLower.includes('insufficient_funds')) {
+          return 'Saldo insuficiente no cartão';
+        }
+        if (messageLower.includes('expired')) {
+          return 'Cartão expirado';
+        }
+        if (messageLower.includes('incorrect') && (messageLower.includes('cvc') || messageLower.includes('cvv') || messageLower.includes('security code'))) {
+          return 'Código de segurança (CVV) incorreto';
+        }
+        if (messageLower.includes('lost') || messageLower.includes('stolen')) {
+          return 'Cartão reportado como perdido ou roubado';
+        }
+        if (messageLower.includes('do not honor') || messageLower.includes('do_not_honor')) {
+          return 'Transação não autorizada pelo banco';
+        }
+        if (messageLower.includes('authentication') || messageLower.includes('3d secure')) {
+          return 'Autenticação adicional necessária';
+        }
+        if (messageLower.includes('processing error')) {
+          return 'Erro ao processar o pagamento';
+        }
+        if (messageLower.includes('invalid number') || messageLower.includes('incorrect number')) {
+          return 'Número do cartão inválido';
+        }
+        if (messageLower.includes('postal code') || messageLower.includes('zip')) {
+          return 'CEP não corresponde ao do cartão';
+        }
+        if (messageLower.includes('velocity') || messageLower.includes('rate limit')) {
+          return 'Limite de transações excedido';
+        }
+      }
+
       if (errorCode && errorMap[errorCode]) {
         return errorMap[errorCode];
       }
