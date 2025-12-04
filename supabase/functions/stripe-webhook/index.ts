@@ -1055,29 +1055,40 @@ async function handlePaymentFailure(event: Stripe.Event) {
       }
     } else {
       const metadata = paymentIntent.metadata || {};
+
       if (metadata.price_id) {
         priceId = metadata.price_id;
+      }
 
-        const { data: plan } = await supabase
-          .from('subscription_plans')
+      const { data: plan } = await supabase
+        .from('subscription_plans')
+        .select('name, stripe_price_id')
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const { data: allPlans } = await supabase
+        .from('subscription_plans')
+        .select('name, stripe_price_id')
+        .eq('is_active', true);
+
+      let matchedPlan = null;
+      if (priceId && allPlans) {
+        matchedPlan = allPlans.find(p => p.stripe_price_id === priceId);
+      }
+
+      if (matchedPlan) {
+        productName = matchedPlan.name;
+        paymentType = 'assinatura_nova';
+      } else {
+        const { data: tokenPackage } = await supabase
+          .from('token_packages')
           .select('name')
-          .eq('stripe_price_id', priceId)
+          .eq('stripe_price_id', priceId || '')
           .maybeSingle();
 
-        if (plan) {
-          productName = plan.name;
-          paymentType = 'assinatura_nova';
-        } else {
-          const { data: tokenPackage } = await supabase
-            .from('token_packages')
-            .select('name')
-            .eq('stripe_price_id', priceId)
-            .maybeSingle();
-
-          if (tokenPackage) {
-            productName = tokenPackage.name;
-            paymentType = 'compra_tokens';
-          }
+        if (tokenPackage) {
+          productName = tokenPackage.name;
+          paymentType = 'compra_tokens';
         }
       }
     }
