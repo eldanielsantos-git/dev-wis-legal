@@ -192,7 +192,7 @@ export function AdminTagsManagementPage({
       />
 
       <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-x-hidden">
           <button
             onClick={onNavigateToAdmin}
             className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-6xl"
@@ -220,30 +220,32 @@ export function AdminTagsManagementPage({
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center gap-3 mb-4 sm:mb-6">
-              <div className="relative flex-1 w-full">
-                <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
-                <input
-                  type="text"
-                  placeholder="Buscar tags..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
-                  style={{
-                    backgroundColor: colors.bgSecondary,
-                    borderColor: theme === 'dark' ? '#4B5563' : '#D1D5DB',
-                    color: colors.textPrimary
-                  }}
-                />
+            <div className="mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row items-stretch gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
+                  <input
+                    type="text"
+                    placeholder="Buscar tags..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+                    style={{
+                      backgroundColor: colors.bgSecondary,
+                      borderColor: theme === 'dark' ? '#4B5563' : '#D1D5DB',
+                      color: colors.textPrimary
+                    }}
+                  />
+                </div>
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-opacity hover:opacity-80 sm:w-auto whitespace-nowrap text-sm sm:text-base"
+                  style={{ backgroundColor: '#8B5CF6', color: '#FFFFFF' }}
+                >
+                  <Plus size={18} />
+                  <span>Nova Tag</span>
+                </button>
               </div>
-              <button
-                onClick={handleOpenCreateModal}
-                className="flex items-center gap-2 px-4 py-2.5 sm:py-3 rounded-lg font-medium transition-opacity hover:opacity-80 w-full sm:w-auto whitespace-nowrap"
-                style={{ backgroundColor: '#8B5CF6', color: '#FFFFFF' }}
-              >
-                <Plus size={18} />
-                Nova Tag
-              </button>
             </div>
 
             {!loading && filteredTags.length > 0 && (
@@ -268,8 +270,8 @@ export function AdminTagsManagementPage({
                 </p>
               </div>
             ) : (
-              <div className="rounded-lg border overflow-hidden" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}>
-                <table className="w-full">
+              <div className="rounded-lg border overflow-x-auto" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}>
+                <table className="w-full min-w-[640px]">
                   <thead>
                     <tr style={{ backgroundColor: colors.bgTertiary }}>
                       <th className="px-4 py-3 text-left text-xs font-medium" style={{ color: colors.textSecondary }}>Preview</th>
