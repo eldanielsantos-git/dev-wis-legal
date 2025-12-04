@@ -118,7 +118,7 @@ BEGIN
   INTO v_pending_count
   FROM processing_queue
   WHERE processo_id = p_processo_id
-    AND status = 'pending';
+    AND status IN ('pending', 'retry');
 
   RETURN v_current_workers < v_max_workers AND v_pending_count > 0;
 END;
