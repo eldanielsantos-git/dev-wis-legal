@@ -1060,38 +1060,54 @@ async function handlePaymentFailure(event: Stripe.Event) {
         priceId = metadata.price_id;
       }
 
-      const { data: plan } = await supabase
-        .from('subscription_plans')
-        .select('name, stripe_price_id')
-        .eq('is_active', true)
-        .maybeSingle();
+      console.info(`${logPrefix} Extracted price_id from metadata: ${priceId}`);
 
-      const { data: allPlans } = await supabase
+      const { data: allPlans, error: plansError } = await supabase
         .from('subscription_plans')
         .select('name, stripe_price_id')
         .eq('is_active', true);
 
+      if (plansError) {
+        console.error(`${logPrefix} Error fetching subscription plans:`, plansError);
+      }
+
+      console.info(`${logPrefix} Found ${allPlans?.length || 0} active subscription plans`);
+      if (allPlans && allPlans.length > 0) {
+        console.info(`${logPrefix} Plans:`, allPlans.map(p => ({ name: p.name, price_id: p.stripe_price_id })));
+      }
+
       let matchedPlan = null;
       if (priceId && allPlans) {
         matchedPlan = allPlans.find(p => p.stripe_price_id === priceId);
+        console.info(`${logPrefix} Matched plan for price_id ${priceId}:`, matchedPlan ? matchedPlan.name : 'NONE');
       }
 
       if (matchedPlan) {
         productName = matchedPlan.name;
         paymentType = 'assinatura_nova';
+        console.info(`${logPrefix} Identified as subscription: ${productName}`);
       } else {
-        const { data: tokenPackage } = await supabase
+        const { data: tokenPackage, error: tokenError } = await supabase
           .from('token_packages')
           .select('name')
           .eq('stripe_price_id', priceId || '')
           .maybeSingle();
 
+        if (tokenError) {
+          console.error(`${logPrefix} Error fetching token package:`, tokenError);
+        }
+
         if (tokenPackage) {
           productName = tokenPackage.name;
           paymentType = 'compra_tokens';
+          console.info(`${logPrefix} Identified as token package: ${productName}`);
+        } else {
+          console.warn(`${logPrefix} Could not identify product for price_id: ${priceId}`);
         }
       }
     }
+
+    console.info(`${logPrefix} Final payment type: ${paymentType}, product: ${productName}`);
 
     const lastPaymentError = paymentIntent.last_payment_error;
     const errorCode = lastPaymentError?.code;
