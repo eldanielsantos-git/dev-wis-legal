@@ -9,6 +9,7 @@ interface ProcessStatusIndicatorProps {
   currentModelName?: string;
   errorMessage?: string;
   size?: 'sm' | 'md' | 'lg';
+  isAdmin?: boolean;
 }
 
 interface StatusConfig {
@@ -133,6 +134,7 @@ export const ProcessStatusIndicator: React.FC<ProcessStatusIndicatorProps> = ({
   currentModelName,
   errorMessage,
   size = 'md',
+  isAdmin = false,
 }) => {
   const { theme } = useTheme();
   const config = getStatusConfig(status, currentPromptNumber, totalPrompts, currentModelName);
@@ -223,7 +225,7 @@ export const ProcessStatusIndicator: React.FC<ProcessStatusIndicatorProps> = ({
               <div className="w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
             </div>
           </div>
-          {currentModelName && (
+          {currentModelName && isAdmin && (
             <div
               className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-md border transition-all duration-200"
               style={{

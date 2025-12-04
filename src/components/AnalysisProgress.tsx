@@ -11,9 +11,10 @@ interface AnalysisProgressProps {
   llmModelName?: string | null;
   isModelSwitching?: boolean;
   switchReason?: string | null;
+  isAdmin?: boolean;
 }
 
-export function AnalysisProgress({ currentPrompt, totalPrompts, status, className = '', llmModelName, isModelSwitching, switchReason }: AnalysisProgressProps) {
+export function AnalysisProgress({ currentPrompt, totalPrompts, status, className = '', llmModelName, isModelSwitching, switchReason, isAdmin = false }: AnalysisProgressProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
@@ -163,7 +164,7 @@ export function AnalysisProgress({ currentPrompt, totalPrompts, status, classNam
           </div>
         )}
 
-        {llmModelName && !isModelSwitching && !isCompleted && (
+        {llmModelName && !isModelSwitching && !isCompleted && isAdmin && (
           <div
             className="flex items-center space-x-2 px-3 py-2 rounded-lg"
             style={{

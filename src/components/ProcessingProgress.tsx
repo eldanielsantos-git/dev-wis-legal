@@ -7,12 +7,14 @@ interface ProcessingProgressProps {
   processoId: string;
   currentStatus: string;
   onStatusChange?: (status: string) => void;
+  isAdmin?: boolean;
 }
 
 export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
   processoId,
   currentStatus,
-  onStatusChange
+  onStatusChange,
+  isAdmin = false
 }) => {
   const { theme } = useTheme();
   const [progressData, setProgressData] = useState<any>(null);
@@ -199,7 +201,7 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
                 </span>
               )}
             </div>
-            {progressData?.current_llm_model_name && (
+            {progressData?.current_llm_model_name && isAdmin && (
               <div className="flex items-center space-x-1 text-xs">
                 <span style={{ color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>
                   Modelo:

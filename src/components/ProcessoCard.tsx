@@ -125,6 +125,7 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
               currentModelName={processo.current_llm_model_name}
               errorMessage={processo.last_error_type}
               size="md"
+              isAdmin={isAdmin}
             />
           </div>
 

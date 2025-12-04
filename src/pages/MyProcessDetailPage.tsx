@@ -100,7 +100,7 @@ function MyProcessDetailPageInner({
   const [isLoadingTags, setIsLoadingTags] = useState(true);
   const [isTagsPopupOpen, setIsTagsPopupOpen] = useState(false);
   const [canEditTags, setCanEditTags] = useState(false);
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const isLoadingResultsRef = React.useRef(false);
   const processoChannelRef = React.useRef<(() => void) | null>(null);
   const resultsChannelRef = React.useRef<(() => void) | null>(null);
@@ -827,6 +827,7 @@ function MyProcessDetailPageInner({
                     onStageClick={handleSelectResult}
                     selectedResultId={selectedResultId}
                     showCompletedCards={true}
+                    isAdmin={isAdmin}
                   />
                 ) : (
                   <AnalysisProgress
@@ -835,6 +836,7 @@ function MyProcessDetailPageInner({
                     status={processo.status as any}
                     llmModelName={llmModelName}
                     isModelSwitching={isModelSwitching}
+                    isAdmin={isAdmin}
                   />
                 )}
               </div>

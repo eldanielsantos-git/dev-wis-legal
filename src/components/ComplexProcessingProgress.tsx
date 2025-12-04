@@ -27,6 +27,7 @@ interface ComplexProcessingProgressProps {
   onStageClick?: (resultId: string) => void;
   selectedResultId?: string | null;
   showCompletedCards?: boolean;
+  isAdmin?: boolean;
 }
 
 interface PromptStage {
@@ -59,7 +60,8 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
   onStatusChange,
   onStageClick,
   selectedResultId,
-  showCompletedCards = false
+  showCompletedCards = false,
+  isAdmin = false
 }) => {
   const { theme } = useTheme();
   const [stages, setStages] = useState<PromptStage[]>([]);
@@ -465,7 +467,7 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
               <p className="text-sm mt-0.5" style={{ color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>
                 {getPhaseLabel(complexStatus.current_phase)}
                 {complexStatus.total_chunks && ` • ${complexStatus.total_chunks} lotes`}
-                {complexStatus.metadata?.current_model && (
+                {complexStatus.metadata?.current_model && isAdmin && (
                   <span className="ml-1">
                     {' • '}
                     <span className="font-medium" style={{ color: '#3B82F6' }}>
@@ -539,7 +541,7 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
         )}
 
         {/* Informação do modelo atual ou busca de novo modelo */}
-        {complexStatus?.metadata && complexStatus.current_phase !== 'completed' && complexStatus.current_phase !== 'consolidating' && (
+        {isAdmin && complexStatus?.metadata && complexStatus.current_phase !== 'completed' && complexStatus.current_phase !== 'consolidating' && (
           <>
             {complexStatus.metadata.searching_new_model ? (
               <div
