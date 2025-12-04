@@ -121,6 +121,20 @@ async function handleEvent(event: Stripe.Event) {
     return;
   }
 
+  const paymentFailureEvents = [
+    'payment_intent.payment_failed',
+    'invoice.payment_failed',
+    'charge.failed',
+  ];
+
+  if (paymentFailureEvents.includes(event.type)) {
+    console.info(`[${event.id}] Payment failure event received: ${event.type}`);
+    await handlePaymentFailure(event);
+    const elapsed = Date.now() - startTime;
+    console.info(`[${event.id}] Payment failure event processed in ${elapsed}ms`);
+    return;
+  }
+
   const subscriptionEvents = [
     'customer.subscription.created',
     'customer.subscription.updated',
@@ -956,5 +970,176 @@ async function sendTokenPurchaseEmail(
 
   } catch (error: any) {
     console.error(`${logPrefix} Error sending token purchase email:`, error);
+  }
+}
+
+async function handlePaymentFailure(event: Stripe.Event) {
+  const logPrefix = `[${event.id}]`;
+
+  try {
+    console.info(`${logPrefix} Processing payment failure event: ${event.type}`);
+
+    let paymentIntent: Stripe.PaymentIntent | null = null;
+    let invoice: Stripe.Invoice | null = null;
+    let charge: Stripe.Charge | null = null;
+
+    if (event.type === 'payment_intent.payment_failed') {
+      paymentIntent = event.data.object as Stripe.PaymentIntent;
+    } else if (event.type === 'invoice.payment_failed') {
+      invoice = event.data.object as Stripe.Invoice;
+      if (invoice.payment_intent && typeof invoice.payment_intent === 'string') {
+        paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent);
+      }
+    } else if (event.type === 'charge.failed') {
+      charge = event.data.object as Stripe.Charge;
+      if (charge.payment_intent && typeof charge.payment_intent === 'string') {
+        paymentIntent = await stripe.paymentIntents.retrieve(charge.payment_intent);
+      }
+    }
+
+    if (!paymentIntent) {
+      console.warn(`${logPrefix} Could not retrieve payment intent for failed payment`);
+      return;
+    }
+
+    const customerId = typeof paymentIntent.customer === 'string'
+      ? paymentIntent.customer
+      : paymentIntent.customer?.id;
+
+    if (!customerId) {
+      console.warn(`${logPrefix} No customer ID found in payment intent`);
+      return;
+    }
+
+    const { data: customer } = await supabase
+      .from('stripe_customers')
+      .select('user_id')
+      .eq('customer_id', customerId)
+      .maybeSingle();
+
+    if (!customer?.user_id) {
+      console.warn(`${logPrefix} No user found for customer ${customerId}`);
+      return;
+    }
+
+    let paymentType: 'assinatura_nova' | 'renovacao_assinatura' | 'compra_tokens' = 'compra_tokens';
+    let productName = 'Produto';
+    let priceId: string | null = null;
+
+    if (invoice) {
+      const subscriptionId = typeof invoice.subscription === 'string'
+        ? invoice.subscription
+        : invoice.subscription?.id;
+
+      if (subscriptionId) {
+        const { data: existingSub } = await supabase
+          .from('stripe_subscriptions')
+          .select('subscription_id')
+          .eq('subscription_id', subscriptionId)
+          .maybeSingle();
+
+        paymentType = existingSub ? 'renovacao_assinatura' : 'assinatura_nova';
+
+        if (invoice.lines?.data?.[0]?.price?.id) {
+          priceId = invoice.lines.data[0].price.id;
+          const { data: plan } = await supabase
+            .from('subscription_plans')
+            .select('name')
+            .eq('stripe_price_id', priceId)
+            .maybeSingle();
+
+          if (plan) {
+            productName = plan.name;
+          }
+        }
+      }
+    } else {
+      const metadata = paymentIntent.metadata || {};
+      if (metadata.price_id) {
+        priceId = metadata.price_id;
+
+        const { data: plan } = await supabase
+          .from('subscription_plans')
+          .select('name')
+          .eq('stripe_price_id', priceId)
+          .maybeSingle();
+
+        if (plan) {
+          productName = plan.name;
+          paymentType = 'assinatura_nova';
+        } else {
+          const { data: tokenPackage } = await supabase
+            .from('token_packages')
+            .select('name')
+            .eq('stripe_price_id', priceId)
+            .maybeSingle();
+
+          if (tokenPackage) {
+            productName = tokenPackage.name;
+            paymentType = 'compra_tokens';
+          }
+        }
+      }
+    }
+
+    const lastPaymentError = paymentIntent.last_payment_error;
+    const errorCode = lastPaymentError?.code;
+    const errorMessage = lastPaymentError?.message;
+
+    const latestCharge = paymentIntent.latest_charge;
+    let cardBrand: string | undefined;
+    let cardLast4: string | undefined;
+
+    if (latestCharge && typeof latestCharge === 'string') {
+      const chargeDetails = await stripe.charges.retrieve(latestCharge);
+      cardBrand = chargeDetails.payment_method_details?.card?.brand;
+      cardLast4 = chargeDetails.payment_method_details?.card?.last4;
+    } else if (paymentIntent.payment_method && typeof paymentIntent.payment_method === 'string') {
+      const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
+      cardBrand = paymentMethod.card?.brand;
+      cardLast4 = paymentMethod.card?.last4;
+    }
+
+    console.info(`${logPrefix} Sending payment failure email to user ${customer.user_id}`);
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing Supabase environment variables');
+    }
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-payment-failure-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        user_id: customer.user_id,
+        payment_intent_id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        currency: paymentIntent.currency,
+        error_code: errorCode,
+        error_message: errorMessage,
+        card_brand: cardBrand,
+        card_last4: cardLast4,
+        payment_type: paymentType,
+        product_name: productName,
+        price_id: priceId
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`${logPrefix} Failed to send payment failure email:`, response.status, errorText);
+      throw new Error(`Email send failed: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.info(`${logPrefix} Payment failure email sent successfully:`, result);
+
+  } catch (error: any) {
+    console.error(`${logPrefix} Error handling payment failure:`, error);
   }
 }
