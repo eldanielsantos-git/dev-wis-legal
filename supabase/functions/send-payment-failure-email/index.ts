@@ -91,11 +91,12 @@ Deno.serve(async (req: Request) => {
     };
 
     const formatDate = (date: Date = new Date()): string => {
-      const day = String(date.getDate()).padStart(2, '0');
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const year = date.getFullYear();
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const saoPauloDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+      const day = String(saoPauloDate.getDate()).padStart(2, '0');
+      const month = String(saoPauloDate.getMonth() + 1).padStart(2, '0');
+      const year = saoPauloDate.getFullYear();
+      const hours = String(saoPauloDate.getHours()).padStart(2, '0');
+      const minutes = String(saoPauloDate.getMinutes()).padStart(2, '0');
       return `${day}/${month}/${year} às ${hours}:${minutes}`;
     };
 
