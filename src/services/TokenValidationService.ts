@@ -218,26 +218,24 @@ export class TokenValidationService {
         };
       }
 
+      // IMPORTANTE: Não bloquear baseado em status da assinatura!
+      // Usuários podem ter tokens extras (comprados ou transferidos) mesmo sem assinatura ativa.
+      // O que importa é se eles têm tokens disponíveis (tokens_total - tokens_used > 0).
+      const tokensTotal = subscriptionData.tokens_total || 0;
+      const tokensUsed = subscriptionData.tokens_used || 0;
+      const tokensRemaining = Math.max(tokensTotal - tokensUsed, 0);
+      const pagesRemaining = this.calculatePagesFromTokens(tokensRemaining);
+
+      // Determinar o nome do plano baseado no status
+      let planName = 'Tokens Disponíveis';
       const isActiveStatus = ['active', 'trialing'].includes(subscriptionData.status);
       const isCanceledButValid = subscriptionData.status === 'canceled' &&
         subscriptionData.current_period_end &&
         new Date(subscriptionData.current_period_end * 1000) > new Date();
 
-      if (!isActiveStatus && !isCanceledButValid) {
-        return {
-          tokensTotal: 0,
-          tokensUsed: 0,
-          tokensRemaining: 0,
-          pagesRemaining: 0,
-          planName: 'Nenhum plano',
-        };
+      if (isActiveStatus || isCanceledButValid) {
+        planName = PLAN_NAMES[subscriptionData.price_id] || 'Plano Ativo';
       }
-
-      const tokensTotal = subscriptionData.tokens_total || 0;
-      const tokensUsed = subscriptionData.tokens_used || 0;
-      const tokensRemaining = Math.max(tokensTotal - tokensUsed, 0);
-      const pagesRemaining = this.calculatePagesFromTokens(tokensRemaining);
-      const planName = PLAN_NAMES[subscriptionData.price_id] || 'Plano Ativo';
 
       return {
         tokensTotal,
