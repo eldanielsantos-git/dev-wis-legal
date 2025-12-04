@@ -98,16 +98,16 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
 
   if (!isOpen) return null;
 
-  const modalBg = theme === 'dark' ? '#FFFFFF' : '#1a1a1a';
-  const modalTextPrimary = theme === 'dark' ? '#1a1a1a' : '#FFFFFF';
-  const modalTextSecondary = theme === 'dark' ? '#4B5563' : '#9CA3AF';
-  const modalBorder = theme === 'dark' ? '#E5E7EB' : '#374151';
-  const modalBgSecondary = theme === 'dark' ? '#F3F4F6' : '#2d2d2d';
-  const modalCancelBg = theme === 'dark' ? 'transparent' : 'transparent';
-  const modalCancelText = theme === 'dark' ? '#6B7280' : '#9CA3AF';
-  const modalCancelBorder = theme === 'dark' ? '#D1D5DB' : '#4B5563';
-  const modalSaveBg = theme === 'dark' ? '#1F2937' : '#F9FAFB';
-  const modalSaveText = theme === 'dark' ? '#FFFFFF' : '#111827';
+  const modalBg = theme === 'light' ? '#FFFFFF' : '#1F2937';
+  const modalTextPrimary = theme === 'light' ? '#111827' : '#F9FAFB';
+  const modalTextSecondary = theme === 'light' ? '#6B7280' : '#9CA3AF';
+  const modalBorder = theme === 'light' ? '#E5E7EB' : '#374151';
+  const modalBgSecondary = theme === 'light' ? '#F9FAFB' : '#111827';
+  const modalCancelBg = 'transparent';
+  const modalCancelText = theme === 'light' ? '#6B7280' : '#9CA3AF';
+  const modalCancelBorder = theme === 'light' ? '#D1D5DB' : '#4B5563';
+  const modalSaveBg = theme === 'light' ? '#111827' : '#F9FAFB';
+  const modalSaveText = theme === 'light' ? '#FFFFFF' : '#111827';
 
   return (
     <div
