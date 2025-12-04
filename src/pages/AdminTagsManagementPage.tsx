@@ -179,16 +179,27 @@ export function AdminTagsManagementPage({
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: colors.bgPrimary }}>
+    <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
       <SidebarWis
-        onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
-        isCollapsed={isSidebarCollapsed}
-        setIsCollapsed={setIsSidebarCollapsed}
+        onNavigateToNotifications={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToTokens={() => {
+          window.history.pushState({}, '', '/tokens');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToSubscription={() => {
+          window.history.pushState({}, '', '/signature');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onCollapsedChange={setIsSidebarCollapsed}
       />
 
       <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
