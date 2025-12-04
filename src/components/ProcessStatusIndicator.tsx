@@ -55,7 +55,8 @@ const getStatusConfig = (
   status: string,
   currentPromptNumber?: number,
   totalPrompts?: number,
-  currentModelName?: string
+  currentModelName?: string,
+  isAdmin?: boolean
 ): StatusConfig => {
   const configs: Record<string, StatusConfig> = {
     uploading: {
@@ -79,7 +80,7 @@ const getStatusConfig = (
       animated: true,
     },
     analyzing: {
-      label: currentModelName
+      label: currentModelName && isAdmin
         ? `Analisando com ${currentModelName}`
         : 'Analisando documento',
       icon: <Brain className="w-4 h-4" />,
@@ -91,7 +92,7 @@ const getStatusConfig = (
       animated: true,
     },
     processing_forensic: {
-      label: currentModelName
+      label: currentModelName && isAdmin
         ? `Análise forense com ${currentModelName}`
         : 'Processando análise forense',
       icon: <Sparkles className="w-4 h-4" />,
@@ -137,7 +138,7 @@ export const ProcessStatusIndicator: React.FC<ProcessStatusIndicatorProps> = ({
   isAdmin = false,
 }) => {
   const { theme } = useTheme();
-  const config = getStatusConfig(status, currentPromptNumber, totalPrompts, currentModelName);
+  const config = getStatusConfig(status, currentPromptNumber, totalPrompts, currentModelName, isAdmin);
 
   const getEffectiveCurrentStep = (): number => {
     if (status === 'uploading') {

@@ -11,6 +11,7 @@ import { ProcessoCard } from '../components/ProcessoCard';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+import { useAuth } from '../contexts/AuthContext';
 
 interface WorkspacePageProps {
   onNavigateToApp: () => void;
@@ -37,6 +38,7 @@ export function WorkspacePage({
 }: WorkspacePageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
+  const { isAdmin } = useAuth();
   const [sharedWithMe, setSharedWithMe] = useState<WorkspaceShare[]>([]);
   const [myShares, setMyShares] = useState<WorkspaceShare[]>([]);
   const [loading, setLoading] = useState(true);
@@ -303,6 +305,7 @@ export function WorkspacePage({
                     processo={processoData}
                     onViewDetails={() => handleNavigateToDetail(share.processo_id)}
                     onDelete={canDelete ? (processo) => setDeleteModal({ isOpen: true, processo }) : undefined}
+                    isAdmin={isAdmin}
                     workspaceInfo={{
                       sharedWith: activeTab === 'shared' ? share.shared_with_name : undefined,
                       sharedBy: activeTab === 'received'

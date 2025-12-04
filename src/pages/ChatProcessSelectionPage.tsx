@@ -149,6 +149,7 @@ export function ChatProcessSelectionPage({
                   key={processo.id}
                   processo={processo}
                   onViewDetails={handleProcessoClick}
+                  isAdmin={isAdmin}
                   isShared={sharedProcessIds.has(processo.id)}
                   shareCount={shareCountByProcesso.get(processo.id) || 0}
                 />
