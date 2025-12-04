@@ -351,8 +351,9 @@ ${message}`;
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
+    // Converter role 'assistant' para 'model' (formato esperado pelo Gemini)
     const chatHistory = previousMessages?.map(msg => ({
-      role: msg.role as 'user' | 'model',
+      role: msg.role === 'assistant' ? 'model' : msg.role as 'user' | 'model',
       parts: [{ text: msg.content }]
     })) || [];
 
