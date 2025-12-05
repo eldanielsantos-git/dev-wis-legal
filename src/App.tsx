@@ -34,6 +34,7 @@ import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import AdminFeatureFlagsPage from './pages/AdminFeatureFlagsPage';
+import AdminTierMonitoringPage from './pages/AdminTierMonitoringPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
@@ -445,6 +446,10 @@ function AppContent() {
 
   if (currentPath === '/admin-feature-flags') {
     return <AdminFeatureFlagsPage />;
+  }
+
+  if (currentPath === '/admin-tier-monitoring') {
+    return <AdminTierMonitoringPage />;
   }
 
   if (currentPath === '/admin-settings') {
