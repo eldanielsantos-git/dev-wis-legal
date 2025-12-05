@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
-import LoadingSpinner from '../components/LoadingSpinner';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Flag, Users, TrendingUp, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 interface FeatureFlag {
