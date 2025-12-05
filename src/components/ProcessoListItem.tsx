@@ -3,6 +3,7 @@ import { FileText, Trash2, CheckCircle, Loader, Clock, AlertCircle, Eye } from '
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+import TierBadge from './TierBadge';
 
 interface ProcessoListItemProps {
   processo: Processo;
@@ -128,6 +129,17 @@ export const ProcessoListItem: React.FC<ProcessoListItemProps> = ({ processo, on
                   <span>{formatFileSize(processo.file_size || 0)}</span>
                   <span>•</span>
                   <span>{processo.transcricao?.totalPages || 0} páginas</span>
+                  {processo.detected_tier && (
+                    <>
+                      <span>•</span>
+                      <TierBadge
+                        tierName={processo.detected_tier}
+                        size="sm"
+                        showIcon={true}
+                        showLabel={true}
+                      />
+                    </>
+                  )}
                   <span>•</span>
                   <span>{new Date(processo.created_at).toLocaleDateString('pt-BR')}</span>
                   {(userInfo || processo.user_profile) && (

@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Loader, CheckCircle, Clock } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
+import TierProgressIndicator from './TierProgressIndicator';
+import { TierName } from '../services/TierSystemService';
 
 interface ProcessingProgressProps {
   processoId: string;
@@ -33,7 +35,9 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
             estimated_completion_time,
             progress_info,
             background_mode,
-            current_llm_model_name
+            current_llm_model_name,
+            detected_tier,
+            transcricao
           `)
           .eq('id', processoId)
           .single();
@@ -216,6 +220,16 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
             )}
           </div>
         </>
+      )}
+
+      {progressData?.detected_tier && progressData?.transcricao?.totalPages && (
+        <div className="mt-3">
+          <TierProgressIndicator
+            tierName={progressData.detected_tier as TierName}
+            totalPages={progressData.transcricao.totalPages}
+            showDetails={isAdmin}
+          />
+        </div>
       )}
     </div>
   );

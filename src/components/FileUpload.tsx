@@ -6,6 +6,8 @@ import { useTokenBalance } from '../contexts/TokenBalanceContext';
 import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
 import { TokenAvailabilityInfo } from './TokenAvailabilityInfo';
 import { TokenValidationService } from '../services/TokenValidationService';
+import { TierSystemService, TierName } from '../services/TierSystemService';
+import TierBadge from './TierBadge';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -30,6 +32,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [estimatedPages, setEstimatedPages] = useState<number>(0);
   const [estimatedTokens, setEstimatedTokens] = useState<number>(0);
+  const [detectedTier, setDetectedTier] = useState<TierName | null>(null);
+  const [estimatedTime, setEstimatedTime] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
 
   const MAX_FILE_SIZE = 3 * 1024 * 1024 * 1024; // 3 GB
@@ -40,12 +44,18 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       const avgKBperPage = 50;
       const estimatedPgs = Math.ceil(totalSizeKB / avgKBperPage);
       const estimatedTks = TokenValidationService.calculateTokensFromPages(estimatedPgs);
+      const tier = TierSystemService.detectTier(estimatedPgs);
+      const time = TierSystemService.formatEstimatedTime(estimatedPgs);
 
       setEstimatedPages(estimatedPgs);
       setEstimatedTokens(estimatedTks);
+      setDetectedTier(tier);
+      setEstimatedTime(time);
     } else {
       setEstimatedPages(0);
       setEstimatedTokens(0);
+      setDetectedTier(null);
+      setEstimatedTime('');
     }
   }, [selectedFiles]);
 
@@ -380,6 +390,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       ~{estimatedPages.toLocaleString('pt-BR')}
                     </span>
                   </div>
+                  {detectedTier && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-blue-700">Tier de Processamento</span>
+                      <TierBadge
+                        tierName={detectedTier}
+                        size="sm"
+                        showIcon={true}
+                        showLabel={true}
+                      />
+                    </div>
+                  )}
+                  {estimatedTime && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-blue-700">Tempo estimado</span>
+                      <span className="font-semibold text-blue-900">
+                        {estimatedTime}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between">
                     <span className="text-blue-700">Tokens necessários</span>
                     <span className="font-semibold text-blue-900">

@@ -20,6 +20,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
 import type { AnalysisResult } from '../lib/supabase';
 import { calculateCardAvailability } from '../utils/analysisAvailability';
+import TierProgressIndicator from './TierProgressIndicator';
+import { TierName } from '../services/TierSystemService';
 
 interface ComplexProcessingProgressProps {
   processoId: string;
@@ -69,6 +71,7 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
   const [isLoading, setIsLoading] = useState(true);
   const [restartingStages, setRestartingStages] = useState<Set<string>>(new Set());
   const [stageProgressHistory, setStageProgressHistory] = useState<Map<string, {progress: number, timestamp: number}>>(new Map());
+  const [tierData, setTierData] = useState<{ tier: TierName | null; totalPages: number | null }>({ tier: null, totalPages: null });
 
   useEffect(() => {
     let intervalId: NodeJS.Timeout | null = null;
@@ -84,7 +87,7 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
       try {
         const { data: processo, error: processoError } = await supabase
           .from('processos')
-          .select('status, is_chunked, total_chunks_count')
+          .select('status, is_chunked, total_chunks_count, detected_tier, transcricao')
           .eq('id', processoId)
           .single();
 
@@ -110,6 +113,10 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
             .maybeSingle();
 
           setComplexStatus(complexData);
+          setTierData({
+            tier: processo.detected_tier || null,
+            totalPages: processo.transcricao?.totalPages || null,
+          });
 
           console.log('🔍 complexStatus carregado:', {
             hasData: !!complexData,
@@ -492,6 +499,15 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
           </div>
         )}
       </div>
+
+      {/* Tier Indicator */}
+      {tierData.tier && tierData.totalPages && (
+        <TierProgressIndicator
+          tierName={tierData.tier}
+          totalPages={tierData.totalPages}
+          showDetails={isAdmin}
+        />
+      )}
 
       {/* Progresso geral */}
       <div className="space-y-2">

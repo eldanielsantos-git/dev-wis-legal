@@ -5,6 +5,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { ProcessStatusIndicator } from './ProcessStatusIndicator';
 import { TokenValidationService } from '../services/TokenValidationService';
 import { supabase } from '../lib/supabase';
+import TierBadge from './TierBadge';
+import { TierSystemService } from '../services/TierSystemService';
 
 interface ProcessoCardProps {
   processo: Processo;
@@ -186,12 +188,22 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
             />
           </div>
           <div className="flex-1 min-w-0">
-            <h3
-              className="text-sm sm:text-base font-semibold break-words line-clamp-2"
-              style={{ color: theme === 'dark' ? '#C8C8C8' : '#1F2937' }}
-            >
-              {processo.file_name}
-            </h3>
+            <div className="flex items-center gap-2 mb-1">
+              <h3
+                className="text-sm sm:text-base font-semibold break-words line-clamp-2 flex-1"
+                style={{ color: theme === 'dark' ? '#C8C8C8' : '#1F2937' }}
+              >
+                {processo.file_name}
+              </h3>
+              {processo.detected_tier && (
+                <TierBadge
+                  tierName={processo.detected_tier}
+                  size="sm"
+                  showIcon={true}
+                  showLabel={false}
+                />
+              )}
+            </div>
             <p
               className="text-xs sm:text-sm"
               style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}
