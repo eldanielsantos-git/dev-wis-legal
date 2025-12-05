@@ -35,6 +35,7 @@ import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManage
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import AdminFeatureFlagsPage from './pages/AdminFeatureFlagsPage';
 import AdminTierMonitoringPage from './pages/AdminTierMonitoringPage';
+import AdminDeploymentVerificationPage from './pages/AdminDeploymentVerificationPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
@@ -450,6 +451,10 @@ function AppContent() {
 
   if (currentPath === '/admin-tier-monitoring') {
     return <AdminTierMonitoringPage />;
+  }
+
+  if (currentPath === '/admin-deployment-verification') {
+    return <AdminDeploymentVerificationPage />;
   }
 
   if (currentPath === '/admin-settings') {

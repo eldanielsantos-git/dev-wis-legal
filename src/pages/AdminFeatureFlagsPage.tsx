@@ -163,7 +163,7 @@ export default function AdminFeatureFlagsPage() {
   }
 
   async function quickRollback() {
-    if (!confirm('⚠️ This will disable the ENTIRE tier system. Are you sure?')) {
+    if (!confirm('⚠️ This will disable ALL tier flags immediately. Are you sure?')) {
       return;
     }
 
@@ -171,14 +171,56 @@ export default function AdminFeatureFlagsPage() {
     setError(null);
 
     try {
+      // Disable all tier-related flags
       const { error: rollbackError } = await supabase
         .from('feature_flags')
         .update({ enabled: false })
-        .eq('flag_name', 'tier_system_enabled');
+        .like('flag_name', 'tier_%');
 
       if (rollbackError) throw rollbackError;
 
-      setSuccess('🚨 TIER SYSTEM DISABLED! All new processes will use legacy flow.');
+      setSuccess('🚨 EMERGENCY ROLLBACK COMPLETE! All tier flags disabled.');
+      await loadFlags();
+
+      setTimeout(() => setSuccess(null), 10000);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function enableStage(stage: number) {
+    const stages = [
+      { stage: 1, flags: ['tier_system_enabled', 'tier_system_small'], name: 'Stage 1: SMALL tier (5% rollout)' },
+      { stage: 2, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium'], name: 'Stage 2: + MEDIUM (25% rollout)' },
+      { stage: 3, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large'], name: 'Stage 3: + LARGE (50% rollout)' },
+      { stage: 4, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large', 'tier_system_xlarge'], name: 'Stage 4: + XLARGE (75% rollout)' },
+      { stage: 5, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large', 'tier_system_xlarge', 'tier_system_massive'], name: 'Stage 5: ALL tiers (100% rollout)' },
+    ];
+
+    const stageConfig = stages.find(s => s.stage === stage);
+    if (!stageConfig) return;
+
+    if (!confirm(`Enable ${stageConfig.name}?\n\nThis will enable multiple tier flags. Monitor carefully!`)) {
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+
+    try {
+      // Enable specified flags
+      for (const flagName of stageConfig.flags) {
+        const { error } = await supabase
+          .from('feature_flags')
+          .update({ enabled: true })
+          .eq('flag_name', flagName);
+
+        if (error) throw error;
+      }
+
+      setSuccess(`✅ ${stageConfig.name} enabled! Monitor at /admin-tier-monitoring`);
       await loadFlags();
 
       setTimeout(() => setSuccess(null), 10000);
@@ -301,6 +343,112 @@ export default function AdminFeatureFlagsPage() {
             >
               {masterFlag?.enabled ? 'Disable' : 'Enable'}
             </button>
+          </div>
+        </div>
+
+        {/* Quick Rollout Stages */}
+        <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Quick Rollout Stages
+              </h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                Enable tier flags progressively (recommended for production rollout)
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <button
+              onClick={() => enableStage(1)}
+              disabled={saving}
+              className="p-4 border-2 border-green-200 dark:border-green-800 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
+            >
+              <div className="text-sm font-semibold text-green-700 dark:text-green-400 mb-1">
+                Stage 1
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                SMALL tier
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                5% rollout
+              </div>
+            </button>
+
+            <button
+              onClick={() => enableStage(2)}
+              disabled={saving}
+              className="p-4 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors disabled:opacity-50"
+            >
+              <div className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-1">
+                Stage 2
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                + MEDIUM
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                25% rollout
+              </div>
+            </button>
+
+            <button
+              onClick={() => enableStage(3)}
+              disabled={saving}
+              className="p-4 border-2 border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors disabled:opacity-50"
+            >
+              <div className="text-sm font-semibold text-orange-700 dark:text-orange-400 mb-1">
+                Stage 3
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                + LARGE
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                50% rollout
+              </div>
+            </button>
+
+            <button
+              onClick={() => enableStage(4)}
+              disabled={saving}
+              className="p-4 border-2 border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
+            >
+              <div className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">
+                Stage 4
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                + XLARGE
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                75% rollout
+              </div>
+            </button>
+
+            <button
+              onClick={() => enableStage(5)}
+              disabled={saving}
+              className="p-4 border-2 border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors disabled:opacity-50"
+            >
+              <div className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-1">
+                Stage 5
+              </div>
+              <div className="text-xs text-gray-600 dark:text-gray-300">
+                + MASSIVE
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                100% rollout
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <p className="text-xs text-blue-800 dark:text-blue-200">
+              💡 <strong>Tip:</strong> Enable stages progressively and monitor at{' '}
+              <a href="/admin-tier-monitoring" className="underline font-semibold">
+                /admin-tier-monitoring
+              </a>{' '}
+              between each stage. Wait 24-48h between stages in production.
+            </p>
           </div>
         </div>
 
