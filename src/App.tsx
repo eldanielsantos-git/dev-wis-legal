@@ -446,7 +446,20 @@ function AppContent() {
   }
 
   if (currentPath === '/admin-feature-flags') {
-    return <AdminFeatureFlagsPage />;
+    return (
+      <AdminFeatureFlagsPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToAdmin={() => navigate('/profile#admin')}
+        onNavigateToSettings={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
   }
 
   if (currentPath === '/admin-tier-monitoring') {

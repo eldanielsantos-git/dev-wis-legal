@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { LoadingSpinner } from '../components/LoadingSpinner';
-import { Flag, Users, TrendingUp, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { SidebarWis } from '../components/SidebarWis';
+import { useTheme } from '../contexts/ThemeContext';
+import { getThemeColors } from '../utils/themeUtils';
+import { Flag, Users, TrendingUp, AlertTriangle, CheckCircle, XCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 
 interface FeatureFlag {
   flag_name: string;
@@ -21,7 +24,34 @@ interface TierStats {
   success_rate: number;
 }
 
-export default function AdminFeatureFlagsPage() {
+interface AdminFeatureFlagsPageProps {
+  onNavigateToApp: () => void;
+  onNavigateToMyProcess: () => void;
+  onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
+  onNavigateToAdmin: () => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToProfile?: () => void;
+  onNavigateToTerms?: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToCookies?: () => void;
+}
+
+export default function AdminFeatureFlagsPage({
+  onNavigateToApp,
+  onNavigateToMyProcess,
+  onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToAdmin,
+  onNavigateToSettings,
+  onNavigateToProfile,
+  onNavigateToTerms,
+  onNavigateToPrivacy,
+  onNavigateToCookies
+}: AdminFeatureFlagsPageProps) {
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
@@ -218,126 +248,210 @@ export default function AdminFeatureFlagsPage() {
     setLoading(false);
   }
 
+  const masterFlag = flags.find(f => f.flag_name === 'tier_system_enabled');
+  const tierFlags = flags.filter(f => f.flag_name.startsWith('tier_system_') && f.flag_name !== 'tier_system_enabled');
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-        <LoadingSpinner size="lg" />
+      <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
+        <SidebarWis
+          onNavigateToApp={onNavigateToApp}
+          onNavigateToMyProcess={onNavigateToMyProcess}
+          onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
+          onNavigateToAdmin={onNavigateToAdmin}
+          onNavigateToSettings={onNavigateToSettings}
+          onNavigateToProfile={onNavigateToProfile}
+          onNavigateToNotifications={() => {
+            window.history.pushState({}, '', '/notifications');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onNavigateToTokens={() => {
+            window.history.pushState({}, '', '/tokens');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onNavigateToSubscription={() => {
+            window.history.pushState({}, '', '/signature');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onCollapsedChange={setIsSidebarCollapsed}
+          onSearchClick={() => {}}
+        />
+        <main className={`flex-1 flex items-center justify-center transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          <LoadingSpinner size="lg" />
+        </main>
       </div>
     );
   }
 
-  const masterFlag = flags.find(f => f.flag_name === 'tier_system_enabled');
-  const tierFlags = flags.filter(f => f.flag_name.startsWith('tier_system_') && f.flag_name !== 'tier_system_enabled');
-
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center space-x-4">
-            <Flag className="h-8 w-8 text-blue-600 dark:text-blue-400" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Feature Flags Management
-              </h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Control tier-aware processing rollout
-              </p>
-            </div>
-          </div>
+    <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
+      <SidebarWis
+        onNavigateToApp={onNavigateToApp}
+        onNavigateToMyProcess={onNavigateToMyProcess}
+        onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToAdmin={onNavigateToAdmin}
+        onNavigateToSettings={onNavigateToSettings}
+        onNavigateToProfile={onNavigateToProfile}
+        onNavigateToNotifications={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToTokens={() => {
+          window.history.pushState({}, '', '/tokens');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToSubscription={() => {
+          window.history.pushState({}, '', '/signature');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onCollapsedChange={setIsSidebarCollapsed}
+        onSearchClick={() => {}}
+      />
 
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={refreshData}
-              disabled={saving}
-              className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-            >
-              <RefreshCw className="h-4 w-4" />
-              <span>Refresh</span>
-            </button>
+      <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+          <button
+            onClick={() => {
+              window.history.pushState({}, '', '/profile#admin');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-7xl"
+            style={{
+              backgroundColor: colors.bgSecondary,
+              color: colors.textPrimary
+            }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Voltar ao Painel</span>
+          </button>
 
-            <button
-              onClick={quickRollback}
-              disabled={saving || !masterFlag?.enabled}
-              className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <AlertTriangle className="h-4 w-4" />
-              <span>Emergency Rollback</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Success/Error Messages */}
-        {success && (
-          <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-start space-x-3">
-            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-green-800 dark:text-green-200">{success}</p>
-          </div>
-        )}
-
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start space-x-3">
-            <XCircle className="h-5 w-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
-          </div>
-        )}
-
-        {/* Master Flag */}
-        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className={`p-3 rounded-lg ${masterFlag?.enabled ? 'bg-green-100 dark:bg-green-900' : 'bg-gray-100 dark:bg-gray-800'}`}>
-                <Flag className={`h-6 w-6 ${masterFlag?.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-400'}`} />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Master Switch: Tier System
-                </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-                  {masterFlag?.description || 'Enable/disable entire tier-aware processing system'}
-                </p>
-                <div className="flex items-center space-x-4 mt-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Status: <strong className={masterFlag?.enabled ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}>
-                      {masterFlag?.enabled ? 'ACTIVE' : 'INACTIVE'}
-                    </strong>
-                  </span>
-                  {masterFlag?.enabled_for_users && masterFlag.enabled_for_users.length > 0 && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      <Users className="h-3 w-3 inline mr-1" />
-                      {masterFlag.enabled_for_users.length} user(s)
-                    </span>
-                  )}
+          <div className="max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-4">
+                <Flag className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <h1 className="text-3xl font-bold" style={{ color: colors.textPrimary }}>
+                    Feature Flags Management
+                  </h1>
+                  <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                    Control tier-aware processing rollout
+                  </p>
                 </div>
               </div>
+
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={refreshData}
+                  disabled={saving}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors hover:opacity-80"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    color: colors.textPrimary,
+                    borderColor: theme === 'dark' ? '#4B5563' : '#D1D5DB'
+                  }}
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Refresh</span>
+                </button>
+
+                <button
+                  onClick={quickRollback}
+                  disabled={saving || !masterFlag?.enabled}
+                  className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <AlertTriangle className="h-4 w-4" />
+                  <span>Emergency Rollback</span>
+                </button>
+              </div>
             </div>
 
-            <button
-              onClick={() => toggleFlag(masterFlag?.flag_name || '', masterFlag?.enabled || false)}
-              disabled={saving}
-              className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-                masterFlag?.enabled
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'bg-green-600 text-white hover:bg-green-700'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {masterFlag?.enabled ? 'Disable' : 'Enable'}
-            </button>
-          </div>
-        </div>
+            {/* Success/Error Messages */}
+            {success && (
+              <div className="mb-6 p-4 border rounded-lg flex items-start space-x-3" style={{
+                backgroundColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.1)' : '#F0FDF4',
+                borderColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.3)' : '#BBF7D0'
+              }}>
+                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm" style={{ color: theme === 'dark' ? '#BBF7D0' : '#166534' }}>{success}</p>
+              </div>
+            )}
 
-        {/* Quick Rollout Stages */}
-        <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Quick Rollout Stages
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Enable tier flags progressively (recommended for production rollout)
-              </p>
+            {error && (
+              <div className="mb-6 p-4 border rounded-lg flex items-start space-x-3" style={{
+                backgroundColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.1)' : '#FEF2F2',
+                borderColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.3)' : '#FECACA'
+              }}>
+                <XCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                <p className="text-sm" style={{ color: theme === 'dark' ? '#FECACA' : '#991B1B' }}>{error}</p>
+              </div>
+            )}
+
+            {/* Master Flag */}
+            <div className="mb-8 border-2 rounded-lg p-6" style={{
+              backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF',
+              borderColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE'
+            }}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className={`p-3 rounded-lg`} style={{
+                    backgroundColor: masterFlag?.enabled
+                      ? (theme === 'dark' ? 'rgba(34, 197, 94, 0.2)' : '#DCFCE7')
+                      : colors.bgSecondary
+                  }}>
+                    <Flag className={`h-6 w-6 ${masterFlag?.enabled ? 'text-green-600' : 'text-gray-400'}`} />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
+                      Master Switch: Tier System
+                    </h2>
+                    <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                      {masterFlag?.description || 'Master switch for tier-aware processing system'}
+                    </p>
+                    <div className="flex items-center space-x-4 mt-2">
+                      <span className="text-xs" style={{ color: colors.textSecondary }}>
+                        Status: <strong className={masterFlag?.enabled ? 'text-green-600' : ''}>
+                          {masterFlag?.enabled ? 'ACTIVE' : 'INACTIVE'}
+                        </strong>
+                      </span>
+                      {masterFlag?.enabled_for_users && masterFlag.enabled_for_users.length > 0 && (
+                        <span className="text-xs" style={{ color: colors.textSecondary }}>
+                          <Users className="h-3 w-3 inline mr-1" />
+                          {masterFlag.enabled_for_users.length} user(s)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => toggleFlag(masterFlag?.flag_name || '', masterFlag?.enabled || false)}
+                  disabled={saving}
+                  className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+                    masterFlag?.enabled
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'bg-green-600 text-white hover:bg-green-700'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {masterFlag?.enabled ? 'Disable' : 'Enable'}
+                </button>
+              </div>
             </div>
-          </div>
+
+            {/* Quick Rollout Stages */}
+            <div className="mb-8 rounded-lg shadow-md p-6" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                    Quick Rollout Stages
+                  </h3>
+                  <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                    Enable tier flags progressively (recommended for production rollout)
+                  </p>
+                </div>
+              </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
             <button
@@ -421,146 +535,157 @@ export default function AdminFeatureFlagsPage() {
             </button>
           </div>
 
-          <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-            <p className="text-xs text-blue-800 dark:text-blue-200">
-              💡 <strong>Tip:</strong> Enable stages progressively and monitor at{' '}
-              <a href="/admin-tier-monitoring" className="underline font-semibold">
-                /admin-tier-monitoring
-              </a>{' '}
-              between each stage. Wait 24-48h between stages in production.
-            </p>
-          </div>
-        </div>
-
-        {/* Tier Stats Overview */}
-        {tierStats.length > 0 && (
-          <div className="mb-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-            <div className="flex items-center space-x-3 mb-4">
-              <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Tier Performance (Last 7 Days)
-              </h3>
+              <div className="mt-4 p-3 rounded-lg" style={{
+                backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF'
+              }}>
+                <p className="text-xs" style={{ color: theme === 'dark' ? '#BFDBFE' : '#1E40AF' }}>
+                  💡 <strong>Tip:</strong> Enable stages progressively and monitor at{' '}
+                  <a href="/admin-tier-monitoring" className="underline font-semibold">
+                    /admin-tier-monitoring
+                  </a>{' '}
+                  between each stage. Wait 24-48h between stages in production.
+                </p>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-              {tierStats.map(stats => (
-                <div
-                  key={stats.tier_name}
-                  className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
-                >
-                  <div className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                    {stats.tier_name}
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-600 dark:text-gray-300">Total:</span>
-                      <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {stats.total_processes}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-600 dark:text-gray-300">Success:</span>
-                      <span className="text-sm font-semibold text-green-600 dark:text-green-400">
-                        {stats.success_rate.toFixed(1)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs text-gray-600 dark:text-gray-300">Avg Time:</span>
-                      <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                        {stats.avg_duration.toFixed(0)}m
-                      </span>
-                    </div>
-                  </div>
+            {/* Tier Stats Overview */}
+            {tierStats.length > 0 && (
+              <div className="mb-8 rounded-lg shadow-md p-6" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="flex items-center space-x-3 mb-4">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                    Tier Performance (Last 7 Days)
+                  </h3>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {/* Tier Flags */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-              Tier-Specific Flags
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Control which tiers are active (master switch must be enabled first)
-            </p>
-          </div>
-
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {tierFlags.map(flag => {
-              const tierName = flag.flag_name.replace('tier_system_', '').toUpperCase();
-              const isBlocked = !masterFlag?.enabled;
-
-              return (
-                <div key={flag.flag_name} className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-3 h-3 rounded-full ${flag.enabled && !isBlocked ? 'bg-green-500' : 'bg-gray-300 dark:bg-gray-600'}`} />
-                        <div>
-                          <h4 className="text-sm font-semibold text-gray-900 dark:text-white">
-                            {tierName} Tier
-                          </h4>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            {flag.description || `Enable tier-aware processing for ${tierName} files`}
-                          </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                  {tierStats.map(stats => (
+                    <div
+                      key={stats.tier_name}
+                      className="rounded-lg p-4 border"
+                      style={{
+                        backgroundColor: theme === 'dark' ? '#374151' : '#F9FAFB',
+                        borderColor: theme === 'dark' ? '#4B5563' : '#E5E7EB'
+                      }}
+                    >
+                      <div className="text-xs font-semibold uppercase mb-2" style={{ color: colors.textSecondary }}>
+                        {stats.tier_name}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs" style={{ color: colors.textSecondary }}>Total:</span>
+                          <span className="text-sm font-semibold" style={{ color: colors.textPrimary }}>
+                            {stats.total_processes}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs" style={{ color: colors.textSecondary }}>Success:</span>
+                          <span className="text-sm font-semibold text-green-600">
+                            {stats.success_rate.toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs" style={{ color: colors.textSecondary }}>Avg Time:</span>
+                          <span className="text-sm font-semibold text-blue-600">
+                            {stats.avg_duration.toFixed(0)}m
+                          </span>
                         </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center space-x-4">
-                      {flag.enabled_for_users && flag.enabled_for_users.length > 0 && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center space-x-1">
-                          <Users className="h-3 w-3" />
-                          <span>{flag.enabled_for_users.length}</span>
-                        </span>
-                      )}
-
-                      <button
-                        onClick={() => toggleFlag(flag.flag_name, flag.enabled)}
-                        disabled={saving || isBlocked}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                          flag.enabled && !isBlocked
-                            ? 'bg-green-600'
-                            : 'bg-gray-200 dark:bg-gray-700'
-                        } disabled:opacity-50 disabled:cursor-not-allowed`}
-                        title={isBlocked ? 'Master switch must be enabled first' : ''}
-                      >
-                        <span
-                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                            flag.enabled && !isBlocked ? 'translate-x-6' : 'translate-x-1'
-                          }`}
-                        />
-                      </button>
-                    </div>
-                  </div>
+                  ))}
                 </div>
-              );
-            })}
+              </div>
+            )}
+
+            {/* Tier Flags */}
+            <div className="rounded-lg shadow-md" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="px-6 py-4 border-b" style={{ borderColor: theme === 'dark' ? '#374151' : '#E5E7EB' }}>
+                <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                  Tier-Specific Flags
+                </h3>
+                <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                  Control which tiers are active (master switch must be enabled first)
+                </p>
+              </div>
+
+              <div className="divide-y" style={{ borderColor: theme === 'dark' ? '#374151' : '#E5E7EB' }}>
+                {tierFlags.map(flag => {
+                  const tierName = flag.flag_name.replace('tier_system_', '').toUpperCase();
+                  const isBlocked = !masterFlag?.enabled;
+
+                  return (
+                    <div key={flag.flag_name} className="px-6 py-4 hover:opacity-90 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${flag.enabled && !isBlocked ? 'bg-green-500' : 'bg-gray-300'}`} />
+                            <div>
+                              <h4 className="text-sm font-semibold" style={{ color: colors.textPrimary }}>
+                                {tierName} Tier
+                              </h4>
+                              <p className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
+                                {flag.description || `Enable tier system for ${tierName} files (2001-5000 pages)`}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4">
+                          {flag.enabled_for_users && flag.enabled_for_users.length > 0 && (
+                            <span className="text-xs flex items-center space-x-1" style={{ color: colors.textSecondary }}>
+                              <Users className="h-3 w-3" />
+                              <span>{flag.enabled_for_users.length}</span>
+                            </span>
+                          )}
+
+                          <button
+                            onClick={() => toggleFlag(flag.flag_name, flag.enabled)}
+                            disabled={saving || isBlocked}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                              flag.enabled && !isBlocked
+                                ? 'bg-green-600'
+                                : 'bg-gray-200'
+                            } disabled:opacity-50 disabled:cursor-not-allowed`}
+                            title={isBlocked ? 'Master switch must be enabled first' : ''}
+                          >
+                            <span
+                              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                flag.enabled && !isBlocked ? 'translate-x-6' : 'translate-x-1'
+                              }`}
+                            />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Documentation Link */}
+            <div className="mt-8 border rounded-lg p-6" style={{
+              backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF',
+              borderColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE'
+            }}>
+              <h4 className="text-sm font-semibold mb-2" style={{ color: theme === 'dark' ? '#BFDBFE' : '#1E40AF' }}>
+                📚 Need help?
+              </h4>
+              <p className="text-sm" style={{ color: theme === 'dark' ? '#BFDBFE' : '#1E40AF' }}>
+                Check the{' '}
+                <a
+                  href="/docs/TIER_SYSTEM_OVERVIEW.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline font-semibold hover:opacity-80"
+                >
+                  Tier System Documentation
+                </a>{' '}
+                for detailed rollout strategies, monitoring queries, and troubleshooting guides.
+              </p>
+            </div>
           </div>
         </div>
-
-        {/* Documentation Link */}
-        <div className="mt-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-6">
-          <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-            📚 Need help?
-          </h4>
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            Check the{' '}
-            <a
-              href="/docs/TIER_SYSTEM_OVERVIEW.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline font-semibold hover:text-blue-600 dark:hover:text-blue-300"
-            >
-              Tier System Documentation
-            </a>{' '}
-            for detailed rollout strategies, monitoring queries, and troubleshooting guides.
-          </p>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
