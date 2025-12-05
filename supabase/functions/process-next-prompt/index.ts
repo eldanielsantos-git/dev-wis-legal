@@ -135,6 +135,120 @@ async function notifyModelSwitch(
   }
 }
 
+async function logCriticalErrorAndNotify(
+  supabase: any,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  processoId: string,
+  analysisResultId: string,
+  error: any,
+  model: LLMModel | null,
+  nextResult: any,
+  chunks: any[] | null = null
+) {
+  try {
+    console.log('🚨 Registrando erro crítico e enviando notificação...');
+
+    const { data: processo } = await supabase
+      .from('processos')
+      .select('user_id, is_chunked, total_chunks_count')
+      .eq('id', processoId)
+      .single();
+
+    if (!processo) {
+      console.error('Processo não encontrado para logging de erro');
+      return;
+    }
+
+    const errorType = error.message?.includes('token')
+      ? 'token_limit_exceeded'
+      : error.message?.includes('quota')
+      ? 'quota_exceeded'
+      : error.message?.includes('timeout')
+      ? 'timeout'
+      : 'llm_error';
+
+    const errorCategory = error.message?.includes('400')
+      ? 'client_error'
+      : error.message?.includes('500')
+      ? 'server_error'
+      : error.message?.includes('429')
+      ? 'rate_limit'
+      : 'unknown';
+
+    const severity = errorType === 'token_limit_exceeded' ? 'critical' : 'high';
+
+    const totalChunks = chunks?.length || processo.total_chunks_count || 0;
+    const chunksCompleted = chunks?.filter(c => c.status === 'completed').length || 0;
+    const progressPercent = totalChunks > 0 ? (chunksCompleted / totalChunks) * 100 : 0;
+
+    const errorRecord = {
+      processo_id: processoId,
+      user_id: processo.user_id,
+      analysis_result_id: analysisResultId,
+      error_type: errorType,
+      error_category: errorCategory,
+      error_message: error.message || 'Unknown error',
+      error_details: {
+        stack: error.stack,
+        code: error.code,
+        full_error: error.toString()
+      },
+      severity,
+      prompt_title: nextResult?.prompt_title || 'Unknown',
+      execution_order: nextResult?.execution_order || 0,
+      total_chunks: totalChunks,
+      chunks_completed: chunksCompleted,
+      progress_percent: progressPercent,
+      model_used: model?.name || 'Unknown',
+      retry_attempt: 0,
+      max_retries: 3,
+      auto_recovery_enabled: false,
+      occurred_at: new Date().toISOString()
+    };
+
+    const { data: errorData, error: insertError } = await supabase
+      .from('complex_analysis_errors')
+      .insert(errorRecord)
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Erro ao inserir registro de erro:', insertError);
+      return;
+    }
+
+    console.log('✅ Erro registrado na tabela complex_analysis_errors:', errorData.id);
+
+    console.log('📧 Disparando email para administradores...');
+
+    fetch(`${supabaseUrl}/functions/v1/send-admin-complex-analysis-error`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({
+        error_id: errorData.id
+      }),
+    })
+    .then(async (response) => {
+      if (response.ok) {
+        console.log('✅ Email de erro enviado com sucesso');
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Erro ao enviar email:', errorText);
+      }
+    })
+    .catch(emailError => {
+      console.error('❌ Falha ao disparar email de erro:', emailError);
+    });
+
+  } catch (loggingError) {
+    console.error('❌ Erro ao registrar erro crítico:', loggingError);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -755,7 +869,26 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
           await addModelAttempt(supabase, processo_id, model.id, modelName, 'failed');
           await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'failed', error.message, error.code || null, executionTime);
 
-          if (attemptNumber < activeModels.length) {
+          if (attemptNumber >= activeModels.length) {
+            console.log('🚨 Todos os modelos falharam (File API) - registrando erro crítico');
+
+            const { data: chunks } = await supabase
+              .from('process_chunks')
+              .select('*')
+              .eq('processo_id', processo_id);
+
+            await logCriticalErrorAndNotify(
+              supabase,
+              supabaseUrl,
+              supabaseServiceKey,
+              processo_id,
+              nextResult.id,
+              error,
+              model,
+              nextResult,
+              chunks
+            );
+          } else {
             console.log(`🔄 Tentando próximo modelo...`);
             continue;
           }
@@ -959,7 +1092,21 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
           await addModelAttempt(supabase, processo_id, model.id, modelName, 'failed');
           await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'failed', error.message, error.code || null, executionTime);
 
-          if (attemptNumber < activeModels.length) {
+          if (attemptNumber >= activeModels.length) {
+            console.log('🚨 Todos os modelos falharam (Base64) - registrando erro crítico');
+
+            await logCriticalErrorAndNotify(
+              supabase,
+              supabaseUrl,
+              supabaseServiceKey,
+              processo_id,
+              nextResult.id,
+              error,
+              model,
+              nextResult,
+              null
+            );
+          } else {
             console.log(`🔄 Tentando próximo modelo...`);
             continue;
           }
@@ -976,6 +1123,25 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
         error_message: lastError?.message || 'Todos os modelos falharam',
       })
       .eq('id', nextResult.id);
+
+    console.log('🚨 Registrando falha total de todos os modelos como erro crítico');
+
+    const { data: chunks } = await supabase
+      .from('process_chunks')
+      .select('*')
+      .eq('processo_id', processo_id);
+
+    await logCriticalErrorAndNotify(
+      supabase,
+      supabaseUrl,
+      supabaseServiceKey,
+      processo_id,
+      nextResult.id,
+      lastError || new Error('Todos os modelos falharam'),
+      activeModels[activeModels.length - 1] || null,
+      nextResult,
+      chunks
+    );
 
     throw lastError || new Error('Todos os modelos falharam');
   } catch (error: any) {
