@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../hooks/useAuth';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { Flag, Users, TrendingUp, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
@@ -24,8 +22,6 @@ interface TierStats {
 }
 
 export default function AdminFeatureFlagsPage() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [flags, setFlags] = useState<FeatureFlag[]>([]);
@@ -35,26 +31,10 @@ export default function AdminFeatureFlagsPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAdminAndLoadData();
-  }, [user]);
+    loadData();
+  }, []);
 
-  async function checkAdminAndLoadData() {
-    if (!user) {
-      navigate('/signin');
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile?.is_admin) {
-      navigate('/');
-      return;
-    }
-
+  async function loadData() {
     await loadFlags();
     await loadTierStats();
   }
