@@ -1,0 +1,32 @@
+name: Monitor Stuck Chunks
+
+on:
+  schedule:
+    # Executa a cada 5 minutos
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  recover-chunks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call recover-stuck-chunks
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/recover-stuck-chunks" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"threshold_minutes": 10}')
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "Response: $body"
+          echo "HTTP Status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Chunk recovery check failed with status $http_code"
+            exit 1
+          fi
+
+          echo "✅ Chunk recovery check completed successfully"
