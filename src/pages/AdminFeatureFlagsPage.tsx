@@ -160,7 +160,7 @@ export default function AdminFeatureFlagsPage({
 
       if (updateError) throw updateError;
 
-      setSuccess(`Feature flag "${flagName}" ${!currentValue ? 'enabled' : 'disabled'} successfully!`);
+      setSuccess(`Feature flag "${flagName}" ${!currentValue ? 'ativada' : 'desativada'} com sucesso!`);
       await loadFlags();
 
       // Auto-clear success message
@@ -173,7 +173,7 @@ export default function AdminFeatureFlagsPage({
   }
 
   async function quickRollback() {
-    if (!confirm('⚠️ This will disable ALL tier flags immediately. Are you sure?')) {
+    if (!confirm('⚠️ Isso desativará TODAS as flags de nível imediatamente. Tem certeza?')) {
       return;
     }
 
@@ -189,7 +189,7 @@ export default function AdminFeatureFlagsPage({
 
       if (rollbackError) throw rollbackError;
 
-      setSuccess('🚨 EMERGENCY ROLLBACK COMPLETE! All tier flags disabled.');
+      setSuccess('🚨 REVERSÃO DE EMERGÊNCIA CONCLUÍDA! Todas as flags de nível foram desativadas.');
       await loadFlags();
 
       setTimeout(() => setSuccess(null), 10000);
@@ -202,17 +202,17 @@ export default function AdminFeatureFlagsPage({
 
   async function enableStage(stage: number) {
     const stages = [
-      { stage: 1, flags: ['tier_system_enabled', 'tier_system_small'], name: 'Stage 1: SMALL tier (5% rollout)' },
-      { stage: 2, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium'], name: 'Stage 2: + MEDIUM (25% rollout)' },
-      { stage: 3, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large'], name: 'Stage 3: + LARGE (50% rollout)' },
-      { stage: 4, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large', 'tier_system_xlarge'], name: 'Stage 4: + XLARGE (75% rollout)' },
-      { stage: 5, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large', 'tier_system_xlarge', 'tier_system_massive'], name: 'Stage 5: ALL tiers (100% rollout)' },
+      { stage: 1, flags: ['tier_system_enabled', 'tier_system_small'], name: 'Etapa 1: Nível PEQUENO (5% de implementação)' },
+      { stage: 2, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium'], name: 'Etapa 2: + MÉDIO (25% de implementação)' },
+      { stage: 3, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large'], name: 'Etapa 3: + GRANDE (50% de implementação)' },
+      { stage: 4, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large', 'tier_system_xlarge'], name: 'Etapa 4: + EXTRA GRANDE (75% de implementação)' },
+      { stage: 5, flags: ['tier_system_enabled', 'tier_system_small', 'tier_system_medium', 'tier_system_large', 'tier_system_xlarge', 'tier_system_massive'], name: 'Etapa 5: TODOS os níveis (100% de implementação)' },
     ];
 
     const stageConfig = stages.find(s => s.stage === stage);
     if (!stageConfig) return;
 
-    if (!confirm(`Enable ${stageConfig.name}?\n\nThis will enable multiple tier flags. Monitor carefully!`)) {
+    if (!confirm(`Ativar ${stageConfig.name}?\n\nIsso ativará várias flags de nível. Monitore cuidadosamente!`)) {
       return;
     }
 
@@ -230,7 +230,7 @@ export default function AdminFeatureFlagsPage({
         if (error) throw error;
       }
 
-      setSuccess(`✅ ${stageConfig.name} enabled! Monitor at /admin-tier-monitoring`);
+      setSuccess(`✅ ${stageConfig.name} ativada! Monitore em /admin-tier-monitoring`);
       await loadFlags();
 
       setTimeout(() => setSuccess(null), 10000);
@@ -334,10 +334,10 @@ export default function AdminFeatureFlagsPage({
                 <Flag className="h-8 w-8 text-blue-600 dark:text-blue-400" />
                 <div>
                   <h1 className="text-3xl font-bold" style={{ color: colors.textPrimary }}>
-                    Feature Flags Management
+                    Gerenciamento de Feature Flags
                   </h1>
                   <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                    Control tier-aware processing rollout
+                    Controle de implementação do processamento por níveis
                   </p>
                 </div>
               </div>
@@ -354,7 +354,7 @@ export default function AdminFeatureFlagsPage({
                   }}
                 >
                   <RefreshCw className="h-4 w-4" />
-                  <span>Refresh</span>
+                  <span>Atualizar</span>
                 </button>
 
                 <button
@@ -363,7 +363,7 @@ export default function AdminFeatureFlagsPage({
                   className="flex items-center space-x-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <AlertTriangle className="h-4 w-4" />
-                  <span>Emergency Rollback</span>
+                  <span>Reversão de Emergência</span>
                 </button>
               </div>
             </div>
@@ -405,21 +405,21 @@ export default function AdminFeatureFlagsPage({
                   </div>
                   <div>
                     <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
-                      Master Switch: Tier System
+                      Chave Mestra: Sistema de Níveis
                     </h2>
                     <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                      {masterFlag?.description || 'Master switch for tier-aware processing system'}
+                      {masterFlag?.description || 'Chave mestra para o sistema de processamento por níveis'}
                     </p>
                     <div className="flex items-center space-x-4 mt-2">
                       <span className="text-xs" style={{ color: colors.textSecondary }}>
                         Status: <strong className={masterFlag?.enabled ? 'text-green-600' : ''}>
-                          {masterFlag?.enabled ? 'ACTIVE' : 'INACTIVE'}
+                          {masterFlag?.enabled ? 'ATIVO' : 'INATIVO'}
                         </strong>
                       </span>
                       {masterFlag?.enabled_for_users && masterFlag.enabled_for_users.length > 0 && (
                         <span className="text-xs" style={{ color: colors.textSecondary }}>
                           <Users className="h-3 w-3 inline mr-1" />
-                          {masterFlag.enabled_for_users.length} user(s)
+                          {masterFlag.enabled_for_users.length} usuário(s)
                         </span>
                       )}
                     </div>
@@ -435,7 +435,7 @@ export default function AdminFeatureFlagsPage({
                       : 'bg-green-600 text-white hover:bg-green-700'
                   } disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
-                  {masterFlag?.enabled ? 'Disable' : 'Enable'}
+                  {masterFlag?.enabled ? 'Desativar' : 'Ativar'}
                 </button>
               </div>
             </div>
@@ -445,10 +445,10 @@ export default function AdminFeatureFlagsPage({
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                    Quick Rollout Stages
+                    Etapas de Implementação Rápida
                   </h3>
                   <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                    Enable tier flags progressively (recommended for production rollout)
+                    Ative as flags de níveis progressivamente (recomendado para produção)
                   </p>
                 </div>
               </div>
@@ -460,13 +460,13 @@ export default function AdminFeatureFlagsPage({
               className="p-4 border-2 border-green-200 dark:border-green-800 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors disabled:opacity-50"
             >
               <div className="text-sm font-semibold text-green-700 dark:text-green-400 mb-1">
-                Stage 1
+                Etapa 1
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-300">
-                SMALL tier
+                Nível PEQUENO
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                5% rollout
+                5% de implementação
               </div>
             </button>
 
@@ -476,13 +476,13 @@ export default function AdminFeatureFlagsPage({
               className="p-4 border-2 border-yellow-200 dark:border-yellow-800 rounded-lg hover:bg-yellow-50 dark:hover:bg-yellow-900/20 transition-colors disabled:opacity-50"
             >
               <div className="text-sm font-semibold text-yellow-700 dark:text-yellow-400 mb-1">
-                Stage 2
+                Etapa 2
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-300">
-                + MEDIUM
+                + MÉDIO
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                25% rollout
+                25% de implementação
               </div>
             </button>
 
@@ -492,13 +492,13 @@ export default function AdminFeatureFlagsPage({
               className="p-4 border-2 border-orange-200 dark:border-orange-800 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors disabled:opacity-50"
             >
               <div className="text-sm font-semibold text-orange-700 dark:text-orange-400 mb-1">
-                Stage 3
+                Etapa 3
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-300">
-                + LARGE
+                + GRANDE
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                50% rollout
+                50% de implementação
               </div>
             </button>
 
@@ -508,13 +508,13 @@ export default function AdminFeatureFlagsPage({
               className="p-4 border-2 border-red-200 dark:border-red-800 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
             >
               <div className="text-sm font-semibold text-red-700 dark:text-red-400 mb-1">
-                Stage 4
+                Etapa 4
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-300">
-                + XLARGE
+                + EXTRA GRANDE
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                75% rollout
+                75% de implementação
               </div>
             </button>
 
@@ -524,13 +524,13 @@ export default function AdminFeatureFlagsPage({
               className="p-4 border-2 border-purple-200 dark:border-purple-800 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors disabled:opacity-50"
             >
               <div className="text-sm font-semibold text-purple-700 dark:text-purple-400 mb-1">
-                Stage 5
+                Etapa 5
               </div>
               <div className="text-xs text-gray-600 dark:text-gray-300">
-                + MASSIVE
+                + MASSIVO
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                100% rollout
+                100% de implementação
               </div>
             </button>
           </div>
@@ -539,11 +539,11 @@ export default function AdminFeatureFlagsPage({
                 backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.1)' : '#EFF6FF'
               }}>
                 <p className="text-xs" style={{ color: theme === 'dark' ? '#BFDBFE' : '#1E40AF' }}>
-                  💡 <strong>Tip:</strong> Enable stages progressively and monitor at{' '}
+                  💡 <strong>Dica:</strong> Ative as etapas progressivamente e monitore em{' '}
                   <a href="/admin-tier-monitoring" className="underline font-semibold">
                     /admin-tier-monitoring
                   </a>{' '}
-                  between each stage. Wait 24-48h between stages in production.
+                  entre cada etapa. Aguarde 24-48h entre as etapas em produção.
                 </p>
               </div>
             </div>
@@ -554,7 +554,7 @@ export default function AdminFeatureFlagsPage({
                 <div className="flex items-center space-x-3 mb-4">
                   <TrendingUp className="h-5 w-5 text-blue-600" />
                   <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                    Tier Performance (Last 7 Days)
+                    Desempenho por Nível (Últimos 7 Dias)
                   </h3>
                 </div>
 
@@ -579,13 +579,13 @@ export default function AdminFeatureFlagsPage({
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs" style={{ color: colors.textSecondary }}>Success:</span>
+                          <span className="text-xs" style={{ color: colors.textSecondary }}>Sucesso:</span>
                           <span className="text-sm font-semibold text-green-600">
                             {stats.success_rate.toFixed(1)}%
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs" style={{ color: colors.textSecondary }}>Avg Time:</span>
+                          <span className="text-xs" style={{ color: colors.textSecondary }}>Tempo Médio:</span>
                           <span className="text-sm font-semibold text-blue-600">
                             {stats.avg_duration.toFixed(0)}m
                           </span>
@@ -601,10 +601,10 @@ export default function AdminFeatureFlagsPage({
             <div className="rounded-lg shadow-md" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="px-6 py-4 border-b" style={{ borderColor: theme === 'dark' ? '#374151' : '#E5E7EB' }}>
                 <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                  Tier-Specific Flags
+                  Flags Específicas por Nível
                 </h3>
                 <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                  Control which tiers are active (master switch must be enabled first)
+                  Controle quais níveis estão ativos (a chave mestra deve estar ativada primeiro)
                 </p>
               </div>
 
@@ -621,10 +621,10 @@ export default function AdminFeatureFlagsPage({
                             <div className={`w-3 h-3 rounded-full ${flag.enabled && !isBlocked ? 'bg-green-500' : 'bg-gray-300'}`} />
                             <div>
                               <h4 className="text-sm font-semibold" style={{ color: colors.textPrimary }}>
-                                {tierName} Tier
+                                Nível {tierName}
                               </h4>
                               <p className="text-xs mt-0.5" style={{ color: colors.textSecondary }}>
-                                {flag.description || `Enable tier system for ${tierName} files (2001-5000 pages)`}
+                                {flag.description || `Ativar sistema de níveis para arquivos ${tierName}`}
                               </p>
                             </div>
                           </div>
@@ -646,7 +646,7 @@ export default function AdminFeatureFlagsPage({
                                 ? 'bg-green-600'
                                 : 'bg-gray-200'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            title={isBlocked ? 'Master switch must be enabled first' : ''}
+                            title={isBlocked ? 'A chave mestra deve estar ativada primeiro' : ''}
                           >
                             <span
                               className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
@@ -668,19 +668,19 @@ export default function AdminFeatureFlagsPage({
               borderColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.3)' : '#BFDBFE'
             }}>
               <h4 className="text-sm font-semibold mb-2" style={{ color: theme === 'dark' ? '#BFDBFE' : '#1E40AF' }}>
-                📚 Need help?
+                📚 Precisa de ajuda?
               </h4>
               <p className="text-sm" style={{ color: theme === 'dark' ? '#BFDBFE' : '#1E40AF' }}>
-                Check the{' '}
+                Confira a{' '}
                 <a
                   href="/docs/TIER_SYSTEM_OVERVIEW.md"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="underline font-semibold hover:opacity-80"
                 >
-                  Tier System Documentation
+                  Documentação do Sistema de Níveis
                 </a>{' '}
-                for detailed rollout strategies, monitoring queries, and troubleshooting guides.
+                para estratégias detalhadas de implementação, consultas de monitoramento e guias de solução de problemas.
               </p>
             </div>
           </div>
