@@ -11,6 +11,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { AnalysisProgress } from '../components/AnalysisProgress';
 import { ComplexProcessingProgress } from '../components/ComplexProcessingProgress';
+import { AnalysisStagesProgress } from '../components/AnalysisStagesProgress';
 import { AnalysisCard } from '../components/AnalysisCard';
 import { AnalysisViewSelector } from '../components/analysis-views/AnalysisViewSelector';
 import { calculateCardAvailability, getAvailableCards } from '../utils/analysisAvailability';
@@ -805,7 +806,7 @@ function MyProcessDetailPageInner({
           <div className="max-w-5xl mx-auto w-full">
             {/* Progress Card */}
             {processo.status !== 'completed' && (
-              <div className="mb-6">
+              <div className="space-y-4 mb-6">
                 {processo.is_chunked ? (
                   <ComplexProcessingProgress
                     processoId={processoId}
@@ -839,6 +840,8 @@ function MyProcessDetailPageInner({
                     isAdmin={isAdmin}
                   />
                 )}
+
+                <AnalysisStagesProgress processoId={processoId} />
               </div>
             )}
 
