@@ -67,6 +67,7 @@ export function AdminTierMonitoringPage({
 }: AdminTierMonitoringPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [healthCheck, setHealthCheck] = useState<HealthCheckResult | null>(null);
   const [tierStats, setTierStats] = useState<TierStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -204,9 +205,10 @@ export function AdminTierMonitoringPage({
           window.history.pushState({}, '', '/subscription');
           window.dispatchEvent(new PopStateEvent('popstate'));
         }}
+        onCollapsedChange={setIsSidebarCollapsed}
       />
 
-      <div className="flex-1 flex flex-col">
+      <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
         <div className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <button
