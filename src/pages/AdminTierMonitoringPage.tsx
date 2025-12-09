@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Activity, AlertCircle, CheckCircle, Clock, TrendingUp, RefreshCw } from 'lucide-react';
+import { Activity, AlertCircle, CheckCircle, Clock, TrendingUp, RefreshCw, ArrowLeft } from 'lucide-react';
+import { SidebarWis } from '../components/SidebarWis';
+import { FooterWis } from '../components/FooterWis';
 import { useTheme } from '../contexts/ThemeContext';
+import { getThemeColors } from '../utils/themeUtils';
 import { supabase } from '../lib/supabase';
 
 interface HealthCheckResult {
@@ -37,8 +40,34 @@ interface TierStats {
   date: string;
 }
 
-const AdminTierMonitoringPage: React.FC = () => {
+interface AdminTierMonitoringPageProps {
+  onNavigateToApp: () => void;
+  onNavigateToMyProcess: () => void;
+  onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
+  onNavigateToAdmin: () => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToProfile?: () => void;
+  onNavigateToTerms?: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToCookies?: () => void;
+}
+
+export function AdminTierMonitoringPage({
+  onNavigateToApp,
+  onNavigateToMyProcess,
+  onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToAdmin,
+  onNavigateToSettings,
+  onNavigateToProfile,
+  onNavigateToTerms,
+  onNavigateToPrivacy,
+  onNavigateToCookies
+}: AdminTierMonitoringPageProps) {
   const { theme } = useTheme();
+  const colors = getThemeColors(theme);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [healthCheck, setHealthCheck] = useState<HealthCheckResult | null>(null);
   const [tierStats, setTierStats] = useState<TierStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -155,196 +184,230 @@ const AdminTierMonitoringPage: React.FC = () => {
   const aggregatedStats = aggregateStatsByTier();
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#FAFAFA' }}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-              Tier System Monitoring
-            </h1>
-            <p className="text-sm mt-1" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-              Real-time health and performance metrics
-            </p>
-          </div>
+    <div className="flex h-screen" style={{ backgroundColor: colors.background }}>
+      <SidebarWis
+        isCollapsed={isSidebarCollapsed}
+        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+        onNavigateToApp={onNavigateToApp}
+        onNavigateToMyProcess={onNavigateToMyProcess}
+        onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSettings={onNavigateToSettings}
+        onNavigateToProfile={onNavigateToProfile}
+      />
 
-          <button
-            onClick={refresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
-            style={{
-              backgroundColor: theme === 'dark' ? '#1D1C1B' : '#FFFFFF',
-              color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D',
-              border: `1px solid ${theme === 'dark' ? '#2D2C2B' : '#E5E7EB'}`,
-            }}
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
-          </button>
-        </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <button
+              onClick={onNavigateToAdmin}
+              className="flex items-center gap-2 mb-6 px-4 py-2 rounded-lg transition-all"
+              style={{
+                backgroundColor: colors.cardBackground,
+                color: colors.text,
+                border: `1px solid ${colors.border}`,
+              }}
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Voltar para Admin</span>
+            </button>
 
-        <div className="text-xs mb-4" style={{ color: theme === 'dark' ? '#6B7280' : '#9CA3AF' }}>
-          Last updated: {lastRefresh.toLocaleTimeString()}
-        </div>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h1 className="text-3xl font-bold" style={{ color: colors.text }}>
+                  Monitoramento do Sistema de Níveis
+                </h1>
+                <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                  Métricas de saúde e desempenho em tempo real
+                </p>
+              </div>
 
-        {healthCheck && (
-          <>
+              <button
+                onClick={refresh}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
+                style={{
+                  backgroundColor: colors.cardBackground,
+                  color: colors.text,
+                  border: `1px solid ${colors.border}`,
+                }}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span>Atualizar</span>
+              </button>
+            </div>
+
+            <div className="text-xs mb-4" style={{ color: colors.textTertiary }}>
+              Última atualização: {lastRefresh.toLocaleTimeString()}
+            </div>
+
+            {healthCheck && (
+              <>
+                <div
+                  className="rounded-xl p-6 mb-6"
+                  style={{
+                    backgroundColor: colors.cardBackground,
+                    border: `2px solid ${getStatusColor(healthCheck.status)}`,
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      {getStatusIcon(healthCheck.status)}
+                      <div>
+                        <h2 className="text-xl font-bold" style={{ color: colors.text }}>
+                          Status Geral: {healthCheck.status.toUpperCase()}
+                        </h2>
+                        <p className="text-sm" style={{ color: colors.textSecondary }}>
+                          {healthCheck.summary.healthy}/{healthCheck.summary.total} componentes saudáveis
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.background }}>
+                      <div className="text-2xl font-bold" style={{ color: '#10B981' }}>
+                        {healthCheck.summary.healthy}
+                      </div>
+                      <div className="text-sm" style={{ color: colors.textSecondary }}>
+                        Saudável
+                      </div>
+                    </div>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.background }}>
+                      <div className="text-2xl font-bold" style={{ color: '#F59E0B' }}>
+                        {healthCheck.summary.degraded}
+                      </div>
+                      <div className="text-sm" style={{ color: colors.textSecondary }}>
+                        Degradado
+                      </div>
+                    </div>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.background }}>
+                      <div className="text-2xl font-bold" style={{ color: '#EF4444' }}>
+                        {healthCheck.summary.unhealthy}
+                      </div>
+                      <div className="text-sm" style={{ color: colors.textSecondary }}>
+                        Não Saudável
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  {Object.entries(healthCheck.checks).map(([key, check]) => (
+                    <div
+                      key={key}
+                      className="rounded-xl p-6"
+                      style={{
+                        backgroundColor: colors.cardBackground,
+                        border: `1px solid ${colors.border}`,
+                      }}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          {getStatusIcon(check.status)}
+                          <h3 className="font-semibold capitalize" style={{ color: colors.text }}>
+                            {key.replace(/([A-Z])/g, ' $1').trim()}
+                          </h3>
+                        </div>
+                        {check.latencyMs && (
+                          <div className="flex items-center gap-1 text-xs" style={{ color: colors.textSecondary }}>
+                            <Clock className="w-3 h-3" />
+                            {check.latencyMs}ms
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-sm" style={{ color: colors.textSecondary }}>
+                        {check.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
             <div
               className="rounded-xl p-6 mb-6"
               style={{
-                backgroundColor: theme === 'dark' ? '#1D1C1B' : '#FFFFFF',
-                border: `2px solid ${getStatusColor(healthCheck.status)}`,
+                backgroundColor: colors.cardBackground,
+                border: `1px solid ${colors.border}`,
               }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  {getStatusIcon(healthCheck.status)}
-                  <div>
-                    <h2 className="text-xl font-bold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-                      Overall Status: {healthCheck.status.toUpperCase()}
-                    </h2>
-                    <p className="text-sm" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                      {healthCheck.summary.healthy}/{healthCheck.summary.total} components healthy
-                    </p>
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 mb-6">
+                <TrendingUp className="w-5 h-5" style={{ color: colors.text }} />
+                <h2 className="text-xl font-bold" style={{ color: colors.text }}>
+                  Desempenho por Nível (Últimos 7 Dias)
+                </h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#F9FAFB' }}>
-                  <div className="text-2xl font-bold" style={{ color: '#10B981' }}>
-                    {healthCheck.summary.healthy}
-                  </div>
-                  <div className="text-sm" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                    Healthy
-                  </div>
-                </div>
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#F9FAFB' }}>
-                  <div className="text-2xl font-bold" style={{ color: '#F59E0B' }}>
-                    {healthCheck.summary.degraded}
-                  </div>
-                  <div className="text-sm" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                    Degraded
-                  </div>
-                </div>
-                <div className="text-center p-4 rounded-lg" style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#F9FAFB' }}>
-                  <div className="text-2xl font-bold" style={{ color: '#EF4444' }}>
-                    {healthCheck.summary.unhealthy}
-                  </div>
-                  <div className="text-sm" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                    Unhealthy
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              {Object.entries(healthCheck.checks).map(([key, check]) => (
-                <div
-                  key={key}
-                  className="rounded-xl p-6"
-                  style={{
-                    backgroundColor: theme === 'dark' ? '#1D1C1B' : '#FFFFFF',
-                    border: `1px solid ${theme === 'dark' ? '#2D2C2B' : '#E5E7EB'}`,
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(check.status)}
-                      <h3 className="font-semibold capitalize" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-                        {key.replace(/([A-Z])/g, ' $1').trim()}
-                      </h3>
-                    </div>
-                    {check.latencyMs && (
-                      <div className="flex items-center gap-1 text-xs" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                        <Clock className="w-3 h-3" />
-                        {check.latencyMs}ms
+              {aggregatedStats.length === 0 ? (
+                <p className="text-center py-8" style={{ color: colors.textSecondary }}>
+                  Nenhuma estatística de nível disponível ainda
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {aggregatedStats.map((stat) => (
+                    <div
+                      key={stat.tierName}
+                      className="p-4 rounded-lg"
+                      style={{ backgroundColor: colors.background }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-semibold" style={{ color: colors.text }}>
+                          {stat.tierName}
+                        </h3>
+                        <div className="flex items-center gap-4 text-sm">
+                          <span style={{ color: colors.textSecondary }}>
+                            Total: <span className="font-semibold">{stat.total}</span>
+                          </span>
+                          <span style={{ color: '#10B981' }}>
+                            Sucesso: <span className="font-semibold">{stat.successful}</span>
+                          </span>
+                          <span style={{ color: '#EF4444' }}>
+                            Falhas: <span className="font-semibold">{stat.failed}</span>
+                          </span>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <p className="text-sm" style={{ color: theme === 'dark' ? '#C8C8C8' : '#4B5563' }}>
-                    {check.message}
-                  </p>
+                      <div className="flex items-center gap-4 text-sm">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span style={{ color: colors.textSecondary }}>Taxa de Sucesso</span>
+                            <span className="font-semibold" style={{ color: colors.text }}>
+                              {stat.successRate.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="w-full h-2 rounded-full" style={{ backgroundColor: colors.border }}>
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${stat.successRate}%`,
+                                backgroundColor: stat.successRate >= 95 ? '#10B981' : stat.successRate >= 80 ? '#F59E0B' : '#EF4444',
+                              }}
+                            />
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div style={{ color: colors.textSecondary }}>Tempo Médio</div>
+                          <div className="font-semibold" style={{ color: colors.text }}>
+                            {stat.avgTime.toFixed(1)}s
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          </>
-        )}
-
-        <div
-          className="rounded-xl p-6"
-          style={{
-            backgroundColor: theme === 'dark' ? '#1D1C1B' : '#FFFFFF',
-            border: `1px solid ${theme === 'dark' ? '#2D2C2B' : '#E5E7EB'}`,
-          }}
-        >
-          <div className="flex items-center gap-2 mb-6">
-            <TrendingUp className="w-5 h-5" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }} />
-            <h2 className="text-xl font-bold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-              Tier Performance (Last 7 Days)
-            </h2>
           </div>
-
-          {aggregatedStats.length === 0 ? (
-            <p className="text-center py-8" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-              No tier statistics available yet
-            </p>
-          ) : (
-            <div className="space-y-4">
-              {aggregatedStats.map((stat) => (
-                <div
-                  key={stat.tierName}
-                  className="p-4 rounded-lg"
-                  style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#F9FAFB' }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-                      {stat.tierName}
-                    </h3>
-                    <div className="flex items-center gap-4 text-sm">
-                      <span style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                        Total: <span className="font-semibold">{stat.total}</span>
-                      </span>
-                      <span style={{ color: '#10B981' }}>
-                        Success: <span className="font-semibold">{stat.successful}</span>
-                      </span>
-                      <span style={{ color: '#EF4444' }}>
-                        Failed: <span className="font-semibold">{stat.failed}</span>
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <span style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>Success Rate</span>
-                        <span className="font-semibold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-                          {stat.successRate.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="w-full h-2 rounded-full" style={{ backgroundColor: theme === 'dark' ? '#2D2C2B' : '#E5E7EB' }}>
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${stat.successRate}%`,
-                            backgroundColor: stat.successRate >= 95 ? '#10B981' : stat.successRate >= 80 ? '#F59E0B' : '#EF4444',
-                          }}
-                        />
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>Avg Time</div>
-                      <div className="font-semibold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-                        {stat.avgTime.toFixed(1)}s
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+
+        <FooterWis
+          onNavigateToTerms={onNavigateToTerms}
+          onNavigateToPrivacy={onNavigateToPrivacy}
+          onNavigateToCookies={onNavigateToCookies}
+        />
       </div>
     </div>
   );
-};
+}
 
 export default AdminTierMonitoringPage;
