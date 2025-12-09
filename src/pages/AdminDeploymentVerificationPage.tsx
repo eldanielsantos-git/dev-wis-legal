@@ -26,30 +26,30 @@ const AdminDeploymentVerificationPage: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('processing_tier_config')
-          .select('tier_name, is_active')
-          .order('priority');
+          .select('tier_name, active')
+          .order('tier_name');
 
         if (error) throw error;
 
         if (data && data.length === 5) {
           results.push({
-            name: 'Tier Configurations',
+            name: 'Configurações de Nível',
             status: 'success',
-            message: `Found ${data.length} tier configs`,
-            details: data.map(t => `${t.tier_name} (${t.is_active ? 'active' : 'inactive'})`).join(', '),
+            message: `Encontradas ${data.length} configurações de nível`,
+            details: data.map(t => `${t.tier_name} (${t.active ? 'ativo' : 'inativo'})`).join(', '),
           });
         } else {
           results.push({
-            name: 'Tier Configurations',
+            name: 'Configurações de Nível',
             status: 'warning',
-            message: `Found ${data?.length || 0} tier configs (expected 5)`,
+            message: `Encontradas ${data?.length || 0} configurações (esperado 5)`,
           });
         }
       } catch (error: any) {
         results.push({
-          name: 'Tier Configurations',
+          name: 'Configurações de Nível',
           status: 'error',
-          message: `Table check failed: ${error.message}`,
+          message: `Verificação de tabela falhou: ${error.message}`,
         });
       }
 
@@ -57,23 +57,23 @@ const AdminDeploymentVerificationPage: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('feature_flags')
-          .select('flag_key, is_enabled')
-          .like('flag_key', 'tier_%');
+          .select('flag_name, enabled')
+          .like('flag_name', 'tier_%');
 
         if (error) throw error;
 
-        const enabledCount = data?.filter(f => f.is_enabled).length || 0;
+        const enabledCount = data?.filter(f => f.enabled).length || 0;
         results.push({
           name: 'Feature Flags',
           status: 'success',
-          message: `${enabledCount}/${data?.length || 0} tier flags enabled`,
-          details: data?.map(f => `${f.flag_key}: ${f.is_enabled ? 'ON' : 'OFF'}`).join(', '),
+          message: `${enabledCount}/${data?.length || 0} flags de nível ativadas`,
+          details: data?.map(f => `${f.flag_name}: ${f.enabled ? 'ATIVA' : 'INATIVA'}`).join(', '),
         });
       } catch (error: any) {
         results.push({
           name: 'Feature Flags',
           status: 'error',
-          message: `Feature flags check failed: ${error.message}`,
+          message: `Verificação de feature flags falhou: ${error.message}`,
         });
       }
 
@@ -81,43 +81,43 @@ const AdminDeploymentVerificationPage: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('tier_usage_stats')
-          .select('count')
+          .select('id')
           .limit(1);
 
         if (error) throw error;
 
         results.push({
-          name: 'Tier Usage Stats',
+          name: 'Estatísticas de Uso por Nível',
           status: 'success',
-          message: 'Table exists and accessible',
+          message: 'Tabela existe e está acessível',
         });
       } catch (error: any) {
         results.push({
-          name: 'Tier Usage Stats',
+          name: 'Estatísticas de Uso por Nível',
           status: 'error',
-          message: `Stats table check failed: ${error.message}`,
+          message: `Verificação de tabela falhou: ${error.message}`,
         });
       }
 
-      // Check 4: Processos table has detected_tier column
+      // Check 4: Processos table has tier_info column
       try {
         const { data, error } = await supabase
           .from('processos')
-          .select('detected_tier')
+          .select('tier_info')
           .limit(1);
 
         if (error) throw error;
 
         results.push({
-          name: 'Processos Table Schema',
+          name: 'Esquema da Tabela Processos',
           status: 'success',
-          message: 'detected_tier column exists',
+          message: 'Coluna tier_info existe',
         });
       } catch (error: any) {
         results.push({
-          name: 'Processos Table Schema',
+          name: 'Esquema da Tabela Processos',
           status: 'error',
-          message: `Schema check failed: ${error.message}`,
+          message: `Verificação de esquema falhou: ${error.message}`,
         });
       }
 
@@ -136,23 +136,23 @@ const AdminDeploymentVerificationPage: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           results.push({
-            name: 'Health Check Function',
+            name: 'Função de Verificação de Saúde',
             status: 'success',
-            message: `System status: ${data.status}`,
-            details: `${data.summary.healthy}/${data.summary.total} components healthy`,
+            message: `Status do sistema: ${data.status}`,
+            details: `${data.summary.healthy}/${data.summary.total} componentes saudáveis`,
           });
         } else {
           results.push({
-            name: 'Health Check Function',
+            name: 'Função de Verificação de Saúde',
             status: 'warning',
-            message: `Function responded with status ${response.status}`,
+            message: `Função respondeu com status ${response.status}`,
           });
         }
       } catch (error: any) {
         results.push({
-          name: 'Health Check Function',
+          name: 'Função de Verificação de Saúde',
           status: 'warning',
-          message: 'Function not accessible (may not be deployed yet)',
+          message: 'Função não acessível (pode não estar implantada ainda)',
         });
       }
 
@@ -161,23 +161,23 @@ const AdminDeploymentVerificationPage: React.FC = () => {
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data, error } = await supabase
           .from('processos')
-          .select('id, detected_tier, status')
+          .select('id, tier_info, status')
           .gte('created_at', oneDayAgo);
 
         if (error) throw error;
 
-        const withTier = data?.filter(p => p.detected_tier).length || 0;
+        const withTier = data?.filter(p => p.tier_info && p.tier_info.tier).length || 0;
         results.push({
-          name: 'Recent Tier Detection',
+          name: 'Detecção Recente de Nível',
           status: withTier > 0 ? 'success' : 'warning',
-          message: `${withTier} processes with detected tier in last 24h`,
-          details: data?.length ? `Total processes: ${data.length}` : 'No recent processes',
+          message: `${withTier} processos com nível detectado nas últimas 24h`,
+          details: data?.length ? `Total de processos: ${data.length}` : 'Nenhum processo recente',
         });
       } catch (error: any) {
         results.push({
-          name: 'Recent Tier Detection',
+          name: 'Detecção Recente de Nível',
           status: 'warning',
-          message: 'Could not check recent processes',
+          message: 'Não foi possível verificar processos recentes',
         });
       }
 
@@ -219,26 +219,26 @@ const AdminDeploymentVerificationPage: React.FC = () => {
     switch (overallStatus) {
       case 'success':
         return {
-          title: 'All Checks Passed',
-          message: 'System is ready for tier system deployment',
+          title: 'Todas as Verificações Passaram',
+          message: 'Sistema pronto para implantação do sistema de níveis',
           color: '#10B981',
         };
       case 'warning':
         return {
-          title: 'Checks Passed with Warnings',
-          message: 'System is mostly ready, review warnings before proceeding',
+          title: 'Verificações Passaram com Avisos',
+          message: 'Sistema está quase pronto, revise os avisos antes de prosseguir',
           color: '#F59E0B',
         };
       case 'error':
         return {
-          title: 'Checks Failed',
-          message: 'Fix errors before enabling tier system',
+          title: 'Verificações Falharam',
+          message: 'Corrija os erros antes de ativar o sistema de níveis',
           color: '#EF4444',
         };
       default:
         return {
-          title: 'Ready to Verify',
-          message: 'Click "Run Verification" to check system status',
+          title: 'Pronto para Verificar',
+          message: 'Clique em "Executar Verificação" para verificar o status do sistema',
           color: theme === 'dark' ? '#8B8B8B' : '#6B7280',
         };
     }
@@ -254,10 +254,10 @@ const AdminDeploymentVerificationPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-            Deployment Verification
+            Verificação de Implantação
           </h1>
           <p className="text-sm mt-1" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-            Verify tier system components before enabling features
+            Verifique os componentes do sistema de níveis antes de ativar as funcionalidades
           </p>
         </div>
 
@@ -289,12 +289,12 @@ const AdminDeploymentVerificationPage: React.FC = () => {
               {running ? (
                 <>
                   <RefreshCw className="w-5 h-5 animate-spin" />
-                  <span>Verifying...</span>
+                  <span>Verificando...</span>
                 </>
               ) : (
                 <>
                   <Play className="w-5 h-5" />
-                  <span>Run Verification</span>
+                  <span>Executar Verificação</span>
                 </>
               )}
             </button>
@@ -307,7 +307,7 @@ const AdminDeploymentVerificationPage: React.FC = () => {
                   {successCount}
                 </div>
                 <div className="text-sm" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                  Passed
+                  Aprovadas
                 </div>
               </div>
               <div className="text-center p-3 rounded-lg" style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#F9FAFB' }}>
@@ -315,7 +315,7 @@ const AdminDeploymentVerificationPage: React.FC = () => {
                   {warningCount}
                 </div>
                 <div className="text-sm" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                  Warnings
+                  Avisos
                 </div>
               </div>
               <div className="text-center p-3 rounded-lg" style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#F9FAFB' }}>
@@ -323,7 +323,7 @@ const AdminDeploymentVerificationPage: React.FC = () => {
                   {errorCount}
                 </div>
                 <div className="text-sm" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-                  Failed
+                  Falharam
                 </div>
               </div>
             </div>
@@ -371,7 +371,7 @@ const AdminDeploymentVerificationPage: React.FC = () => {
             }}
           >
             <p style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-              Click "Run Verification" to check tier system deployment status
+              Clique em "Executar Verificação" para verificar o status de implantação do sistema de níveis
             </p>
           </div>
         )}
