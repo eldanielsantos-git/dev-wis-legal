@@ -67,7 +67,6 @@ export function AdminTierMonitoringPage({
 }: AdminTierMonitoringPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [healthCheck, setHealthCheck] = useState<HealthCheckResult | null>(null);
   const [tierStats, setTierStats] = useState<TierStats[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,27 +183,38 @@ export function AdminTierMonitoringPage({
   const aggregatedStats = aggregateStatsByTier();
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: colors.background }}>
+    <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
       <SidebarWis
-        isCollapsed={isSidebarCollapsed}
-        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}
+        onNavigateToNotifications={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToTokens={() => {
+          window.history.pushState({}, '', '/tokens');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToSubscription={() => {
+          window.history.pushState({}, '', '/subscription');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 flex flex-col">
+        <div className="flex-1">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <button
               onClick={onNavigateToAdmin}
               className="flex items-center gap-2 mb-6 px-4 py-2 rounded-lg transition-all"
               style={{
-                backgroundColor: colors.cardBackground,
-                color: colors.text,
+                backgroundColor: colors.bgSecondary,
+                color: colors.textPrimary,
                 border: `1px solid ${colors.border}`,
               }}
             >
@@ -214,7 +224,7 @@ export function AdminTierMonitoringPage({
 
             <div className="flex items-center justify-between mb-8">
               <div>
-                <h1 className="text-3xl font-bold" style={{ color: colors.text }}>
+                <h1 className="text-3xl font-bold" style={{ color: colors.textPrimary }}>
                   Monitoramento do Sistema de Níveis
                 </h1>
                 <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
@@ -227,8 +237,8 @@ export function AdminTierMonitoringPage({
                 disabled={loading}
                 className="flex items-center gap-2 px-4 py-2 rounded-lg transition-all"
                 style={{
-                  backgroundColor: colors.cardBackground,
-                  color: colors.text,
+                  backgroundColor: colors.bgSecondary,
+                  color: colors.textPrimary,
                   border: `1px solid ${colors.border}`,
                 }}
               >
@@ -237,7 +247,7 @@ export function AdminTierMonitoringPage({
               </button>
             </div>
 
-            <div className="text-xs mb-4" style={{ color: colors.textTertiary }}>
+            <div className="text-xs mb-4" style={{ color: colors.textSecondary }}>
               Última atualização: {lastRefresh.toLocaleTimeString()}
             </div>
 
@@ -246,7 +256,7 @@ export function AdminTierMonitoringPage({
                 <div
                   className="rounded-xl p-6 mb-6"
                   style={{
-                    backgroundColor: colors.cardBackground,
+                    backgroundColor: colors.bgSecondary,
                     border: `2px solid ${getStatusColor(healthCheck.status)}`,
                   }}
                 >
@@ -254,7 +264,7 @@ export function AdminTierMonitoringPage({
                     <div className="flex items-center gap-3">
                       {getStatusIcon(healthCheck.status)}
                       <div>
-                        <h2 className="text-xl font-bold" style={{ color: colors.text }}>
+                        <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
                           Status Geral: {healthCheck.status.toUpperCase()}
                         </h2>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -265,7 +275,7 @@ export function AdminTierMonitoringPage({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.background }}>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="text-2xl font-bold" style={{ color: '#10B981' }}>
                         {healthCheck.summary.healthy}
                       </div>
@@ -273,7 +283,7 @@ export function AdminTierMonitoringPage({
                         Saudável
                       </div>
                     </div>
-                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.background }}>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="text-2xl font-bold" style={{ color: '#F59E0B' }}>
                         {healthCheck.summary.degraded}
                       </div>
@@ -281,7 +291,7 @@ export function AdminTierMonitoringPage({
                         Degradado
                       </div>
                     </div>
-                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.background }}>
+                    <div className="text-center p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="text-2xl font-bold" style={{ color: '#EF4444' }}>
                         {healthCheck.summary.unhealthy}
                       </div>
@@ -298,14 +308,14 @@ export function AdminTierMonitoringPage({
                       key={key}
                       className="rounded-xl p-6"
                       style={{
-                        backgroundColor: colors.cardBackground,
+                        backgroundColor: colors.bgSecondary,
                         border: `1px solid ${colors.border}`,
                       }}
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center gap-2">
                           {getStatusIcon(check.status)}
-                          <h3 className="font-semibold capitalize" style={{ color: colors.text }}>
+                          <h3 className="font-semibold capitalize" style={{ color: colors.textPrimary }}>
                             {key.replace(/([A-Z])/g, ' $1').trim()}
                           </h3>
                         </div>
@@ -328,13 +338,13 @@ export function AdminTierMonitoringPage({
             <div
               className="rounded-xl p-6 mb-6"
               style={{
-                backgroundColor: colors.cardBackground,
+                backgroundColor: colors.bgSecondary,
                 border: `1px solid ${colors.border}`,
               }}
             >
               <div className="flex items-center gap-2 mb-6">
-                <TrendingUp className="w-5 h-5" style={{ color: colors.text }} />
-                <h2 className="text-xl font-bold" style={{ color: colors.text }}>
+                <TrendingUp className="w-5 h-5" style={{ color: colors.textPrimary }} />
+                <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
                   Desempenho por Nível (Últimos 7 Dias)
                 </h2>
               </div>
@@ -349,10 +359,10 @@ export function AdminTierMonitoringPage({
                     <div
                       key={stat.tierName}
                       className="p-4 rounded-lg"
-                      style={{ backgroundColor: colors.background }}
+                      style={{ backgroundColor: colors.bgPrimary }}
                     >
                       <div className="flex items-center justify-between mb-2">
-                        <h3 className="font-semibold" style={{ color: colors.text }}>
+                        <h3 className="font-semibold" style={{ color: colors.textPrimary }}>
                           {stat.tierName}
                         </h3>
                         <div className="flex items-center gap-4 text-sm">
@@ -371,7 +381,7 @@ export function AdminTierMonitoringPage({
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
                             <span style={{ color: colors.textSecondary }}>Taxa de Sucesso</span>
-                            <span className="font-semibold" style={{ color: colors.text }}>
+                            <span className="font-semibold" style={{ color: colors.textPrimary }}>
                               {stat.successRate.toFixed(1)}%
                             </span>
                           </div>
@@ -387,7 +397,7 @@ export function AdminTierMonitoringPage({
                         </div>
                         <div className="text-right">
                           <div style={{ color: colors.textSecondary }}>Tempo Médio</div>
-                          <div className="font-semibold" style={{ color: colors.text }}>
+                          <div className="font-semibold" style={{ color: colors.textPrimary }}>
                             {stat.avgTime.toFixed(1)}s
                           </div>
                         </div>
