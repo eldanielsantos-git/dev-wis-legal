@@ -201,6 +201,7 @@ Deno.serve(async (req: Request) => {
     // Determinar qual tipo de prompt usar baseado no processo
     let promptType: 'small_file' | 'large_file_chunks' = 'small_file';
     let contextualMessage = '';
+    let chunks: any[] = [];
 
     if (processo.is_chunked && processo.total_chunks_count > 0) {
       // ARQUIVO GRANDE: Usa chunks
@@ -208,12 +209,14 @@ Deno.serve(async (req: Request) => {
       console.log(`📚 Large file detected: ${processo.total_chunks_count} chunks`);
 
       // Buscar chunks completados em ordem
-      const { data: chunks, error: chunksError } = await supabase
+      const { data: chunksData, error: chunksError } = await supabase
         .from('process_chunks')
         .select('chunk_index, start_page, end_page, gemini_file_uri, pages_count, status')
         .eq('processo_id', processo_id)
         .eq('status', 'completed')
         .order('chunk_index', { ascending: true });
+
+      chunks = chunksData || [];
 
       if (chunksError) {
         console.error('❌ Error fetching chunks:', chunksError);
@@ -236,6 +239,20 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      // Validar que todos os chunks têm URIs válidos
+      const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
+      if (chunksWithValidUris.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'URIs dos chunks não disponíveis',
+            details: 'Os arquivos ainda estão sendo preparados no Gemini. Aguarde alguns instantes e tente novamente.'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`✅ Found ${chunks.length} chunks, ${chunksWithValidUris.length} with valid URIs`);
+
       // Construir contexto com informações dos chunks
       const chunksInfo = chunks.map(c =>
         `Chunk ${c.chunk_index}: Páginas ${c.start_page}-${c.end_page} (${c.pages_count} páginas)`
@@ -253,7 +270,7 @@ ${chunksInfo}
 Pergunta do usuário:
 ${message}`;
 
-      console.log(`✅ Using ${chunks.length} chunks for context`);
+      console.log(`✅ Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
     } else {
       // ARQUIVO PEQUENO: Usa transcricao
       promptType = 'small_file';
@@ -385,10 +402,11 @@ ${message}`;
       history: chatHistory,
     });
 
-    // Enviar mensagem - para small_file, incluir PDF como inlineData
+    // Enviar mensagem com contexto apropriado
     let result;
     if (promptType === 'small_file' && processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
-      // Para arquivos pequenos, enviar PDF + pergunta diretamente
+      // Para arquivos pequenos, enviar PDF como inlineData + pergunta
+      console.log('📎 Sending small file with inlineData (base64)');
       result = await chat.sendMessage([
         {
           inlineData: {
@@ -398,8 +416,34 @@ ${message}`;
         },
         { text: contextualMessage }
       ]);
+    } else if (promptType === 'large_file_chunks' && chunks.length > 0) {
+      // Para arquivos grandes, enviar URIs dos chunks + pergunta
+      const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
+
+      if (chunksWithValidUris.length > 0) {
+        console.log(`📎 Sending ${chunksWithValidUris.length} chunks as fileData (URIs)`);
+
+        // Criar array de fileData para cada chunk
+        const messageParts: any[] = chunksWithValidUris.map(chunk => ({
+          fileData: {
+            mimeType: 'application/pdf',
+            fileUri: chunk.gemini_file_uri
+          }
+        }));
+
+        // Adicionar a mensagem do usuário ao final
+        messageParts.push({ text: contextualMessage });
+
+        console.log(`📤 Sending message with ${messageParts.length - 1} file parts + 1 text part`);
+        result = await chat.sendMessage(messageParts);
+      } else {
+        // Fallback: enviar apenas texto se não houver URIs válidos
+        console.log('⚠️ No valid URIs found, sending text only');
+        result = await chat.sendMessage(contextualMessage);
+      }
     } else {
-      // Para arquivos grandes (chunks) ou sem PDF, enviar apenas texto
+      // Fallback: para casos sem PDF ou chunks, enviar apenas texto
+      console.log('📝 Sending text only (no files attached)');
       result = await chat.sendMessage(contextualMessage);
     }
 
