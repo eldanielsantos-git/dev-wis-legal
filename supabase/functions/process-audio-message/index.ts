@@ -272,6 +272,13 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      // Buscar dados do usuário para substituição de variáveis
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('full_name, email, oab')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
       // Substituir variáveis no prompt
       let systemPrompt = audioPromptData.system_prompt;
 
@@ -283,6 +290,11 @@ Deno.serve(async (req: Request) => {
         timeStyle: 'long'
       }).format(now);
       systemPrompt = systemPrompt.replace(/\{\{DATA_HORA_ATUAL\}\}/g, saoPauloTime);
+
+      // Substituir variáveis do usuário
+      systemPrompt = systemPrompt.replace(/\{\{USUARIO_NOME\}\}/g, userProfile?.full_name || 'Usuário');
+      systemPrompt = systemPrompt.replace(/\{\{USUARIO_EMAIL\}\}/g, userProfile?.email || user.email || 'N/A');
+      systemPrompt = systemPrompt.replace(/\{\{USUARIO_OAB\}\}/g, userProfile?.oab || 'N/A');
 
       // Substituir outras variáveis
       systemPrompt = systemPrompt.replace(/\{processo_name\}/g, processo.nome_processo || processo.file_name);

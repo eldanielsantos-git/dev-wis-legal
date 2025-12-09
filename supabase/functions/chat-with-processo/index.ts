@@ -291,6 +291,13 @@ ${message}`;
       );
     }
 
+    // Buscar dados do usuário para substituição de variáveis
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('full_name, email, oab')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
     // Substituir variáveis no prompt
     let systemPrompt = systemPromptData.system_prompt;
 
@@ -302,6 +309,11 @@ ${message}`;
       timeStyle: 'long'
     }).format(now);
     systemPrompt = systemPrompt.replace(/\{\{DATA_HORA_ATUAL\}\}/g, saoPauloTime);
+
+    // Substituir variáveis do usuário
+    systemPrompt = systemPrompt.replace(/\{\{USUARIO_NOME\}\}/g, userProfile?.full_name || 'Usuário');
+    systemPrompt = systemPrompt.replace(/\{\{USUARIO_EMAIL\}\}/g, userProfile?.email || user.email || 'N/A');
+    systemPrompt = systemPrompt.replace(/\{\{USUARIO_OAB\}\}/g, userProfile?.oab || 'N/A');
 
     // Substituir outras variáveis
     systemPrompt = systemPrompt.replace(/\{processo_name\}/g, processo.nome_processo || processo.file_name);
@@ -373,8 +385,24 @@ ${message}`;
       history: chatHistory,
     });
 
-    // Enviar mensagem
-    const result = await chat.sendMessage(contextualMessage);
+    // Enviar mensagem - para small_file, incluir PDF como inlineData
+    let result;
+    if (promptType === 'small_file' && processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
+      // Para arquivos pequenos, enviar PDF + pergunta diretamente
+      result = await chat.sendMessage([
+        {
+          inlineData: {
+            mimeType: 'application/pdf',
+            data: processo.pdf_base64
+          }
+        },
+        { text: contextualMessage }
+      ]);
+    } else {
+      // Para arquivos grandes (chunks) ou sem PDF, enviar apenas texto
+      result = await chat.sendMessage(contextualMessage);
+    }
+
     let aiResponse = result.response.text();
 
     // Limpar resposta
