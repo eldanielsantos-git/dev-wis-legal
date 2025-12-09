@@ -169,11 +169,11 @@ export class TierSystemService {
     const tierName = this.detectTier(totalPages);
 
     const estimates = {
-      'SMALL': 5,
-      'MEDIUM': 10,
-      'LARGE': 20,
-      'VERY_LARGE': 30,
-      'MASSIVE': 45,
+      'SMALL': 10,
+      'MEDIUM': 90,
+      'LARGE': 240,
+      'VERY_LARGE': 420,
+      'MASSIVE': 750,
     };
 
     const minutes = estimates[tierName];

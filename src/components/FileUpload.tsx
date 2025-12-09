@@ -8,6 +8,7 @@ import { TokenAvailabilityInfo } from './TokenAvailabilityInfo';
 import { TokenValidationService } from '../services/TokenValidationService';
 import { TierSystemService, TierName } from '../services/TierSystemService';
 import TierBadge from './TierBadge';
+import { getPDFPageCount } from '../utils/pdfSplitter';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -39,24 +40,39 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const MAX_FILE_SIZE = 3 * 1024 * 1024 * 1024; // 3 GB
 
   useEffect(() => {
-    if (selectedFiles.length > 0) {
-      const totalSizeKB = selectedFiles.reduce((sum, file) => sum + file.size, 0) / 1024;
-      const avgKBperPage = 50;
-      const estimatedPgs = Math.ceil(totalSizeKB / avgKBperPage);
-      const estimatedTks = TokenValidationService.calculateTokensFromPages(estimatedPgs);
-      const tier = TierSystemService.detectTier(estimatedPgs);
-      const time = TierSystemService.formatEstimatedTime(estimatedPgs);
+    const calculateEstimates = async () => {
+      if (selectedFiles.length > 0) {
+        try {
+          let totalPages = 0;
+          for (const file of selectedFiles) {
+            const pageCount = await getPDFPageCount(file);
+            totalPages += pageCount;
+          }
 
-      setEstimatedPages(estimatedPgs);
-      setEstimatedTokens(estimatedTks);
-      setDetectedTier(tier);
-      setEstimatedTime(time);
-    } else {
-      setEstimatedPages(0);
-      setEstimatedTokens(0);
-      setDetectedTier(null);
-      setEstimatedTime('');
-    }
+          const estimatedTks = TokenValidationService.calculateTokensFromPages(totalPages);
+          const tier = TierSystemService.detectTier(totalPages);
+          const time = TierSystemService.formatEstimatedTime(totalPages);
+
+          setEstimatedPages(totalPages);
+          setEstimatedTokens(estimatedTks);
+          setDetectedTier(tier);
+          setEstimatedTime(time);
+        } catch (error) {
+          console.error('Erro ao calcular número de páginas:', error);
+          setEstimatedPages(0);
+          setEstimatedTokens(0);
+          setDetectedTier(null);
+          setEstimatedTime('');
+        }
+      } else {
+        setEstimatedPages(0);
+        setEstimatedTokens(0);
+        setDetectedTier(null);
+        setEstimatedTime('');
+      }
+    };
+
+    calculateEstimates();
   }, [selectedFiles]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
@@ -441,7 +457,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   </div>
                 )}
                 <p className="text-[10px] text-blue-600 mt-2">
-                  * Estimativa baseada em ~50KB por página. O valor real pode variar.
+                  * Estimativa baseada em ~5.500 tokens por página. O valor real pode variar.
                 </p>
               </div>
             </div>
