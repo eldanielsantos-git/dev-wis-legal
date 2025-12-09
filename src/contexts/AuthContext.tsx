@@ -285,6 +285,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: {
         redirectTo: `${window.location.origin}/app`,
         scopes: 'email profile openid User.Read',
+        skipBrowserRedirect: false,
       },
     });
     if (error) throw error;
