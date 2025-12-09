@@ -84,14 +84,14 @@ Deno.serve(async (req: Request) => {
     try {
       const { data: flags, error } = await supabase
         .from('feature_flags')
-        .select('flag_key, is_enabled')
-        .in('flag_key', [
+        .select('flag_name, enabled')
+        .in('flag_name', [
           'tier_system_enabled',
-          'tier_small_enabled',
-          'tier_medium_enabled',
-          'tier_large_enabled',
-          'tier_xlarge_enabled',
-          'tier_massive_enabled',
+          'tier_system_small',
+          'tier_system_medium',
+          'tier_system_large',
+          'tier_system_xlarge',
+          'tier_system_massive',
         ]);
 
       if (error) {
@@ -100,7 +100,7 @@ Deno.serve(async (req: Request) => {
           message: `Feature flags error: ${error.message}`,
         };
       } else {
-        const enabledCount = flags?.filter((f) => f.is_enabled).length || 0;
+        const enabledCount = flags?.filter((f) => f.enabled).length || 0;
         result.checks.featureFlags = {
           status: 'healthy',
           message: `${enabledCount}/${flags?.length || 0} tier flags enabled`,
@@ -118,8 +118,8 @@ Deno.serve(async (req: Request) => {
     try {
       const { data: configs, error } = await supabase
         .from('processing_tier_config')
-        .select('tier_name, is_active, priority')
-        .order('priority', { ascending: true });
+        .select('tier_name, active, min_pages, max_pages')
+        .order('min_pages', { ascending: true });
 
       if (error) {
         result.checks.tierConfigs = {
@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
           message: `Tier config error: ${error.message}`,
         };
       } else {
-        const activeCount = configs?.filter((c) => c.is_active).length || 0;
+        const activeCount = configs?.filter((c) => c.active).length || 0;
         const expectedCount = 5;
 
         if (configs?.length !== expectedCount) {
@@ -179,7 +179,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: recentStats, error } = await supabase
         .from('tier_usage_stats')
-        .select('tier_name, total_processes, successful_processes, failed_processes')
+        .select('tier_name, total_processes, completed_processes, failed_processes')
         .gte('date', oneDayAgo);
 
       if (error) {
