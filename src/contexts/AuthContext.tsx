@@ -284,7 +284,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider: 'azure',
       options: {
         redirectTo: window.location.origin,
-        scopes: 'email',
+        scopes: 'email offline_access',
       },
     });
     if (error) throw error;
