@@ -283,9 +283,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'azure',
       options: {
-        redirectTo: `${window.location.origin}/app`,
-        scopes: 'email profile openid User.Read',
-        skipBrowserRedirect: false,
+        redirectTo: window.location.origin,
+        scopes: 'email',
       },
     });
     if (error) throw error;
