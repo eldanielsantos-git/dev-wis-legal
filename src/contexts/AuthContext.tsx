@@ -269,6 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/app`,
+        scopes: 'email profile https://www.googleapis.com/auth/userinfo.profile',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
