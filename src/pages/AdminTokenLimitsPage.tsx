@@ -109,30 +109,30 @@ export function AdminTokenLimitsPage({
       <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <div className="flex-1 p-6">
           <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <Settings className="w-8 h-8" style={{ color: colors.primary }} />
-                  <h1 className="text-3xl font-bold" style={{ color: colors.text }}>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <div className="flex items-center gap-3 mb-1">
+                  <Settings className="w-7 h-7" style={{ color: colors.primary }} />
+                  <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.text }}>
                     Configuração de Limites de Tokens
                   </h1>
                 </div>
-                <button
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                  className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50"
-                  style={{
-                    backgroundColor: colors.cardBackground,
-                    color: colors.text,
-                  }}
-                >
-                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                  Atualizar
-                </button>
+                <p className="text-sm" style={{ color: colors.mutedText }}>
+                  Gerencie os limites de tokens de output da LLM para diferentes contextos do sistema
+                </p>
               </div>
-              <p className="text-lg" style={{ color: colors.mutedText }}>
-                Gerencie os limites de tokens de output da LLM para diferentes contextos do sistema
-              </p>
+              <button
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 hover:opacity-80"
+                style={{
+                  backgroundColor: colors.cardBackground,
+                  color: colors.text,
+                }}
+              >
+                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                Atualizar
+              </button>
             </div>
 
             {error && (
@@ -148,17 +148,14 @@ export function AdminTokenLimitsPage({
               </div>
             )}
 
-            <div className="space-y-8">
+            <div className="space-y-6">
               <section>
                 <div className="flex items-center gap-2 mb-4">
-                  <FileText className="w-6 h-6" style={{ color: colors.primary }} />
-                  <h2 className="text-2xl font-semibold" style={{ color: colors.text }}>
+                  <FileText className="w-5 h-5" style={{ color: colors.primary }} />
+                  <h2 className="text-xl font-title font-semibold" style={{ color: colors.text }}>
                     Análise de Documentos
                   </h2>
                 </div>
-                <p className="mb-6" style={{ color: colors.mutedText }}>
-                  Configurações de tokens para processamento e análise de documentos PDF
-                </p>
 
                 {analysisConfigs.length === 0 ? (
                   <div
@@ -170,7 +167,7 @@ export function AdminTokenLimitsPage({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {analysisConfigs.map((config) => (
                       <TokenLimitCard
                         key={config.id}
@@ -184,14 +181,11 @@ export function AdminTokenLimitsPage({
 
               <section>
                 <div className="flex items-center gap-2 mb-4">
-                  <MessageSquare className="w-6 h-6" style={{ color: colors.success }} />
-                  <h2 className="text-2xl font-semibold" style={{ color: colors.text }}>
+                  <MessageSquare className="w-5 h-5" style={{ color: colors.success }} />
+                  <h2 className="text-xl font-title font-semibold" style={{ color: colors.text }}>
                     Sistema de Chat
                   </h2>
                 </div>
-                <p className="mb-6" style={{ color: colors.mutedText }}>
-                  Configurações de tokens para conversas e interações com processos
-                </p>
 
                 {chatConfigs.length === 0 ? (
                   <div
@@ -203,7 +197,7 @@ export function AdminTokenLimitsPage({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {chatConfigs.map((config) => (
                       <TokenLimitCard
                         key={config.id}
@@ -217,16 +211,16 @@ export function AdminTokenLimitsPage({
             </div>
 
             <div
-              className="mt-8 p-6 rounded-lg border"
+              className="mt-6 p-4 rounded-lg border"
               style={{
                 backgroundColor: colors.cardBackground,
                 borderColor: colors.border,
               }}
             >
-              <h3 className="font-semibold mb-2" style={{ color: colors.primary }}>
+              <h3 className="font-title font-semibold mb-3 text-sm" style={{ color: colors.primary }}>
                 Informações Importantes
               </h3>
-              <ul className="space-y-2 text-sm" style={{ color: colors.mutedText }}>
+              <ul className="space-y-1.5 text-xs" style={{ color: colors.mutedText }}>
                 <li>• Limites de tokens controlam o tamanho máximo da resposta da LLM</li>
                 <li>• Valores maiores permitem respostas mais completas, mas consomem mais créditos</li>
                 <li>• Valores muito baixos podem resultar em respostas incompletas ou JSONs truncados</li>
