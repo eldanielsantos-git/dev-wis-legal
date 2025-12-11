@@ -589,6 +589,7 @@ function AppContent() {
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
         onNavigateToApp={() => navigate('/app')}
+        onNavigateToTokens={() => navigate('/tokens')}
       />
       </RequireEmailVerification>
     );
