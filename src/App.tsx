@@ -315,7 +315,20 @@ function AppContent() {
   }
 
   if (currentPath === '/admin-token-limits') {
-    return <AdminTokenLimitsPage />;
+    return (
+      <AdminTokenLimitsPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/my-processes')}
+        onNavigateToChat={() => navigate('/chat-processo')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToAdmin={() => navigate('/admin-users')}
+        onNavigateToSettings={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
   }
 
   if (currentPath === '/admin-users') {
