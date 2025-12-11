@@ -1,51 +1,58 @@
 [build]
-  command = "npm run build"
-  publish = "dist"
+command = "npx vite build"
+publish = "dist"
 
 [build.environment]
-  NODE_VERSION = "18"
+NODE_VERSION = "18"
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+from = "/*"
+to = "/index.html"
+status = 200
 
 [[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-Content-Type-Options = "nosniff"
-    Referrer-Policy = "no-referrer-when-downgrade"
-    X-XSS-Protection = "1; mode=block"
+for = "/*"
+
+[headers.values]
+X-Frame-Options = "DENY"
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "no-referrer-when-downgrade"
+X-XSS-Protection = "1; mode=block"
 
 [[headers]]
-  for = "/assets/*"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+for = "/assets/*"
+
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
-  for = "*.js"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+for = "*.js"
+
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
-  for = "*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+for = "*.css"
+
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
-  for = "/index.html"
-  [headers.values]
-    Cache-Control = "public, max-age=0, must-revalidate"
+for = "/index.html"
+
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
 
 [[headers]]
-  for = "/manifest.json"
-  [headers.values]
-    Cache-Control = "public, max-age=86400"
+for = "/manifest.json"
+
+[headers.values]
+Cache-Control = "public, max-age=86400"
 
 [[headers]]
-  for = "/.well-known/*"
-  [headers.values]
-    Content-Type = "application/json"
-    Cache-Control = "public, max-age=0, must-revalidate"
-    Access-Control-Allow-Origin = "*"
+for = "/.well-known/*"
+
+[headers.values]
+Content-Type = "application/json"
+Cache-Control = "public, max-age=0, must-revalidate"
+Access-Control-Allow-Origin = "*"
