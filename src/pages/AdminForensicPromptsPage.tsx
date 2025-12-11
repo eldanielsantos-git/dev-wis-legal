@@ -591,6 +591,20 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                   <MessageSquare className="w-4 h-4" />
                   <span>Prompts Chat</span>
                 </button>
+                <button
+                  onClick={() => {
+                    window.history.pushState({}, '', '/admin-token-limits');
+                    window.dispatchEvent(new PopStateEvent('popstate'));
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-all text-sm font-medium"
+                  style={{
+                    backgroundColor: 'transparent',
+                    color: colors.textSecondary
+                  }}
+                >
+                  <FileText className="w-4 h-4" />
+                  <span>Tokens Config</span>
+                </button>
               </div>
             </div>
 

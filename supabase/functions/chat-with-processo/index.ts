@@ -7,6 +7,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
+async function getMaxOutputTokens(
+  supabase: any,
+  contextKey: string,
+  fallbackValue: number
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('token_limits_config')
+      .select('max_output_tokens, is_active')
+      .eq('context_key', contextKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
+      return fallbackValue;
+    }
+
+    if (data) {
+      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      return data.max_output_tokens;
+    }
+
+    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    return fallbackValue;
+  } catch (error) {
+    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    return fallbackValue;
+  }
+}
+
 interface RequestBody {
   processo_id: string;
   message: string;
@@ -389,12 +420,21 @@ ${message}`;
     // Iniciar chat com Gemini
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
+    // Determinar limite de tokens baseado no tipo de prompt
+    const tokenContextKey = promptType === 'large_file_chunks' ? 'chat_complex_files' : 'chat_standard';
+    const fallbackTokens = promptType === 'large_file_chunks' ? 16384 : 8192;
+    const maxOutputTokens = await getMaxOutputTokens(supabase, tokenContextKey, fallbackTokens);
+
     // Para gemini-2.5-pro e modelos similares, usar formato correto de systemInstruction
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: {
         role: 'system',
         parts: [{ text: systemPrompt }]
+      },
+      generationConfig: {
+        maxOutputTokens: maxOutputTokens,
+        temperature: 0.2
       }
     });
 

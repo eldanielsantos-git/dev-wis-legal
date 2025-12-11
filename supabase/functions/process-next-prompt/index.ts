@@ -23,6 +23,37 @@ interface LLMModel {
   llm_provider: string | null;
 }
 
+async function getMaxOutputTokens(
+  supabase: any,
+  contextKey: string,
+  fallbackValue: number
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('token_limits_config')
+      .select('max_output_tokens, is_active')
+      .eq('context_key', contextKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
+      return fallbackValue;
+    }
+
+    if (data) {
+      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      return data.max_output_tokens;
+    }
+
+    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    return fallbackValue;
+  } catch (error) {
+    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    return fallbackValue;
+  }
+}
+
 async function getActiveModelsOrderedByPriority(supabase: any): Promise<LLMModel[]> {
   const { data, error } = await supabase
     .from('admin_system_models')
@@ -450,7 +481,8 @@ Deno.serve(async (req: Request) => {
       const modelName = model.display_name || model.name;
       const modelId = model.system_model || model.model_id;
       const temperature = model.temperature ?? 0.2;
-      const maxTokens = model.max_tokens ?? 8192;
+      const configuredMaxTokens = await getMaxOutputTokens(supabase, 'analysis_small_files', 8192);
+      const maxTokens = model.max_tokens ?? configuredMaxTokens;
 
       console.log(`\n🔍 Tentativa ${attemptNumber}: ${modelName}`);
 

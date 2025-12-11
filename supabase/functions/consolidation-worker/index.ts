@@ -7,6 +7,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
+async function getMaxOutputTokens(
+  supabase: any,
+  contextKey: string,
+  fallbackValue: number
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('token_limits_config')
+      .select('max_output_tokens, is_active')
+      .eq('context_key', contextKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
+      return fallbackValue;
+    }
+
+    if (data) {
+      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      return data.max_output_tokens;
+    }
+
+    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    return fallbackValue;
+  } catch (error) {
+    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    return fallbackValue;
+  }
+}
+
 async function getActiveModel(supabase: any) {
   const { data, error } = await supabase
     .from('admin_system_models')
@@ -20,12 +51,14 @@ async function getActiveModel(supabase: any) {
     throw new Error('Nenhum modelo ativo encontrado');
   }
 
+  const configuredMaxTokens = await getMaxOutputTokens(supabase, 'analysis_consolidation', 60000);
+
   return {
     id: data.id,
     name: data.name,
     modelId: data.system_model || data.model_id,
     temperature: data.temperature ?? 0.2,
-    maxTokens: data.max_tokens ?? 60000,
+    maxTokens: data.max_tokens ?? configuredMaxTokens,
   };
 }
 

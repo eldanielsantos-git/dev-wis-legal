@@ -7,6 +7,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
+async function getMaxOutputTokens(
+  supabase: any,
+  contextKey: string,
+  fallbackValue: number
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('token_limits_config')
+      .select('max_output_tokens, is_active')
+      .eq('context_key', contextKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
+      return fallbackValue;
+    }
+
+    if (data) {
+      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      return data.max_output_tokens;
+    }
+
+    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    return fallbackValue;
+  } catch (error) {
+    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    return fallbackValue;
+  }
+}
+
 interface RequestBody {
   processo_id: string;
   audio_data: string;
@@ -179,7 +210,14 @@ Deno.serve(async (req: Request) => {
       const genAI = new GoogleGenerativeAI(geminiApiKey);
 
       console.log('[process-audio-message] Transcribing audio with Gemini');
-      const model = genAI.getGenerativeModel({ model: modelId });
+      const maxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio', 8192);
+      const model = genAI.getGenerativeModel({
+        model: modelId,
+        generationConfig: {
+          maxOutputTokens: maxOutputTokens,
+          temperature: 0.2
+        }
+      });
 
       const transcriptionResult = await model.generateContent([
         {
@@ -306,7 +344,14 @@ Pergunta do usuário (transcrição de áudio): "${transcription}"
 
 Responda de forma direta, clara e objetiva com base no documento do processo.`;
 
-      const chatModel = genAI.getGenerativeModel({ model: modelId });
+      const chatMaxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio', 8192);
+      const chatModel = genAI.getGenerativeModel({
+        model: modelId,
+        generationConfig: {
+          maxOutputTokens: chatMaxOutputTokens,
+          temperature: 0.2
+        }
+      });
 
       const chatResult = await chatModel.generateContent([
         {

@@ -7,6 +7,37 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
+async function getMaxOutputTokens(
+  supabase: any,
+  contextKey: string,
+  fallbackValue: number
+): Promise<number> {
+  try {
+    const { data, error } = await supabase
+      .from('token_limits_config')
+      .select('max_output_tokens, is_active')
+      .eq('context_key', contextKey)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error) {
+      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
+      return fallbackValue;
+    }
+
+    if (data) {
+      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      return data.max_output_tokens;
+    }
+
+    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    return fallbackValue;
+  } catch (error) {
+    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    return fallbackValue;
+  }
+}
+
 async function getActiveModels(supabase: any) {
   const { data, error } = await supabase
     .from('admin_system_models')
@@ -18,13 +49,15 @@ async function getActiveModels(supabase: any) {
     throw new Error('Nenhum modelo ativo encontrado');
   }
 
+  const configuredMaxTokens = await getMaxOutputTokens(supabase, 'analysis_complex_files', 60000);
+
   return data.map((model: any) => ({
     id: model.id,
     name: model.display_name || model.name,
     modelId: model.system_model || model.model_id,
     llmProvider: model.llm_provider,
     temperature: model.temperature ?? 0.2,
-    maxTokens: model.max_tokens ?? 60000,
+    maxTokens: model.max_tokens ?? configuredMaxTokens,
     priority: model.priority,
   }));
 }
@@ -80,6 +113,7 @@ async function notifyModelSwitch(
 }
 
 async function generateContextSummary(
+  supabase: any,
   geminiModel: any,
   chunkResult: string,
   chunkIndex: number
@@ -100,11 +134,13 @@ ${chunkResult}
 
 Responda apenas com o resumo executivo em formato de texto estruturado.`;
 
+  const configuredMaxTokens = await getMaxOutputTokens(supabase, 'analysis_complex_files', 60000);
+
   const summaryResult = await geminiModel.generateContent({
     contents: [{ role: 'user', parts: [{ text: summaryPrompt }] }],
     generationConfig: {
       temperature: 0.1,
-      maxOutputTokens: 60000,
+      maxOutputTokens: configuredMaxTokens,
     },
   });
 
@@ -425,7 +461,7 @@ IMPORTANTE: Este é o chunk ${chunk.chunk_index + 1} de ${chunk.total_chunks} do
       console.log(`[${workerId}] 📝 Gerando resumo contextual...`);
       const genAI = new GoogleGenerativeAI(geminiApiKey);
       const geminiModel = genAI.getGenerativeModel({ model: usedModel.modelId });
-      const contextSummary = await generateContextSummary(geminiModel, text, chunk.chunk_index);
+      const contextSummary = await generateContextSummary(supabase, geminiModel, text, chunk.chunk_index);
       console.log(`[${workerId}] ✅ Resumo contextual gerado`);
 
       await supabase

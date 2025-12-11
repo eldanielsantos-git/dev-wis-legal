@@ -33,6 +33,7 @@ import { AdminStripeDiagnosticPage } from './pages/AdminStripeDiagnosticPage';
 import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
+import { AdminTokenLimitsPage } from './pages/AdminTokenLimitsPage';
 import AdminFeatureFlagsPage from './pages/AdminFeatureFlagsPage';
 import AdminTierMonitoringPage from './pages/AdminTierMonitoringPage';
 import AdminDeploymentVerificationPage from './pages/AdminDeploymentVerificationPage';
@@ -311,6 +312,10 @@ function AppContent() {
         onNavigateToCookies={() => navigate('/cookies')}
       />
     );
+  }
+
+  if (currentPath === '/admin-token-limits') {
+    return <AdminTokenLimitsPage />;
   }
 
   if (currentPath === '/admin-users') {
