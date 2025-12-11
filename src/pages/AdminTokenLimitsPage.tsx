@@ -96,8 +96,6 @@ export function AdminTokenLimitsPage({
   return (
     <div className="flex min-h-screen" style={{ backgroundColor: colors.background }}>
       <SidebarWis
-        isCollapsed={isSidebarCollapsed}
-        onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
@@ -105,10 +103,11 @@ export function AdminTokenLimitsPage({
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}
+        onCollapsedChange={setIsSidebarCollapsed}
       />
 
-      <div className="flex-1 flex flex-col">
-        <main className="flex-1 p-6">
+      <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <div className="flex-1 p-6">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
               <div className="flex items-center justify-between mb-2">
@@ -236,14 +235,14 @@ export function AdminTokenLimitsPage({
               </ul>
             </div>
           </div>
-        </main>
+        </div>
 
         <FooterWis
           onNavigateToTerms={onNavigateToTerms}
           onNavigateToPrivacy={onNavigateToPrivacy}
           onNavigateToCookies={onNavigateToCookies}
         />
-      </div>
+      </main>
 
       {editingConfig && (
         <TokenLimitEditModal
