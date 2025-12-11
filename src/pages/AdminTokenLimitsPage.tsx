@@ -99,26 +99,29 @@ export function AdminTokenLimitsPage({
       />
 
       <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
-        <div className="flex-1 p-6">
-          <div className="max-w-7xl mx-auto">
-            <div className="relative flex items-center justify-center mb-8">
-              <button
-                onClick={() => window.history.back()}
-                className="absolute left-0 p-2 rounded-lg transition-colors hover:opacity-70"
-                style={{ color: colors.textPrimary }}
-                title="Voltar"
-              >
-                <ArrowLeft className="w-6 h-6" />
-              </button>
+        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+          <button
+            onClick={() => window.history.back()}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-6xl"
+            style={{
+              backgroundColor: colors.bgSecondary,
+              color: colors.textPrimary
+            }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Voltar ao Painel</span>
+          </button>
 
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col items-center mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
+                <Settings className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.primary }} />
+              </div>
               <div className="text-center">
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <Settings className="w-6 h-6" style={{ color: colors.primary }} />
-                  <h1 className="text-xl sm:text-2xl font-title font-bold" style={{ color: colors.textPrimary }}>
-                    Configuração de Limites de Tokens
-                  </h1>
-                </div>
-                <p className="text-xs" style={{ color: colors.textSecondary }}>
+                <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
+                  Configuração de Limites de Tokens
+                </h1>
+                <p className="text-xs sm:text-sm mt-1 px-4" style={{ color: colors.textSecondary }}>
                   Gerencie os limites de tokens de output da LLM para diferentes contextos do sistema
                 </p>
               </div>
