@@ -16,6 +16,7 @@ interface FileUploadProps {
   processingStatus?: string;
   onViewProcess?: () => void;
   onNavigateToSubscription?: () => void;
+  onNavigateToTokens?: () => void;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
@@ -23,7 +24,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   loading = false,
   processingStatus,
   onViewProcess,
-  onNavigateToSubscription
+  onNavigateToSubscription,
+  onNavigateToTokens
 }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -447,8 +449,25 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   </div>
                 </div>
                 {tokensRemaining < estimatedTokens && (
-                  <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800">
-                    ⚠️ Tokens insuficientes! Você precisará adicionar mais tokens ou reduzir o tamanho do arquivo.
+                  <div className="mt-3">
+                    <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800">
+                      ⚠️ Tokens insuficientes! Você precisará adicionar mais tokens ou reduzir o tamanho do arquivo.
+                    </div>
+                    {onNavigateToTokens && (
+                      <div className="mt-2 flex justify-end">
+                        <button
+                          onClick={onNavigateToTokens}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors hover:opacity-80"
+                          style={{
+                            backgroundColor: theme === 'dark' ? '#3B82F6' : '#2563EB',
+                            color: '#FFFFFF',
+                          }}
+                        >
+                          <Coins className="w-3.5 h-3.5" />
+                          Adicionar tokens
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
                 {tokensRemaining >= estimatedTokens && (tokensRemaining - estimatedTokens) < (tokensRemaining * 0.2) && (

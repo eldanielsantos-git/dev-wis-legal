@@ -493,6 +493,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
                   window.history.pushState({}, '', '/signature');
                   window.dispatchEvent(new PopStateEvent('popstate'));
                 }}
+                onNavigateToTokens={onNavigateToTokens}
               />
             )}
           </section>
