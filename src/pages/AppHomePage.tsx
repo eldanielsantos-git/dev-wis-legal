@@ -36,9 +36,10 @@ interface AppHomePageProps {
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
   onNavigateToApp?: () => void;
+  onNavigateToTokens?: () => void;
 }
 
-export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToApp }: AppHomePageProps) {
+export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToApp, onNavigateToTokens }: AppHomePageProps) {
   logger.log('AppHomePage', 'Renderizando componente');
   const { user, isAdmin } = useAuth();
   const { theme } = useTheme();
@@ -624,6 +625,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         pagesAvailable={upgradeModal.pagesAvailable}
         planName={upgradeModal.planName}
         reason={upgradeModal.reason}
+        onNavigateToTokens={onNavigateToTokens}
       />
       <IntelligentSearch
         isOpen={isSearchOpen}
