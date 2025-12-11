@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Settings, RefreshCw, FileText, MessageSquare, AlertCircle } from 'lucide-react';
+import { Settings, ArrowLeft, FileText, MessageSquare, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { TokenLimitCard } from '../components/TokenLimitCard';
 import { TokenLimitEditModal } from '../components/TokenLimitEditModal';
 import { TokenLimitConfig, TokenLimitsService } from '../services/TokenLimitsService';
@@ -34,6 +35,7 @@ export function AdminTokenLimitsPage({
   onNavigateToPrivacy,
   onNavigateToCookies,
 }: AdminTokenLimitsPageProps) {
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -42,7 +44,6 @@ export function AdminTokenLimitsPage({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [editingConfig, setEditingConfig] = useState<TokenLimitConfig | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadConfigs();
@@ -59,13 +60,6 @@ export function AdminTokenLimitsPage({
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    TokenLimitsService.clearCache();
-    await loadConfigs();
-    setRefreshing(false);
   };
 
   const handleSave = async (id: string, newValue: number) => {
@@ -109,30 +103,27 @@ export function AdminTokenLimitsPage({
       <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <div className="flex-1 p-6">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <div className="flex items-center gap-3 mb-1">
-                  <Settings className="w-7 h-7" style={{ color: colors.primary }} />
-                  <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.text }}>
+            <div className="relative flex items-center justify-center mb-8">
+              <button
+                onClick={() => navigate(-1)}
+                className="absolute left-0 p-2 rounded-lg transition-colors hover:opacity-70"
+                style={{ color: colors.textPrimary }}
+                title="Voltar"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Settings className="w-6 h-6" style={{ color: colors.primary }} />
+                  <h1 className="text-xl sm:text-2xl font-title font-bold" style={{ color: colors.textPrimary }}>
                     Configuração de Limites de Tokens
                   </h1>
                 </div>
-                <p className="text-sm" style={{ color: colors.mutedText }}>
+                <p className="text-xs" style={{ color: colors.textSecondary }}>
                   Gerencie os limites de tokens de output da LLM para diferentes contextos do sistema
                 </p>
               </div>
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 disabled:opacity-50 hover:opacity-80"
-                style={{
-                  backgroundColor: colors.cardBackground,
-                  color: colors.text,
-                }}
-              >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-                Atualizar
-              </button>
             </div>
 
             {error && (
@@ -167,7 +158,7 @@ export function AdminTokenLimitsPage({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {analysisConfigs.map((config) => (
                       <TokenLimitCard
                         key={config.id}
@@ -197,7 +188,7 @@ export function AdminTokenLimitsPage({
                     </p>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                     {chatConfigs.map((config) => (
                       <TokenLimitCard
                         key={config.id}

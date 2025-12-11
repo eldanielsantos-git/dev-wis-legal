@@ -33,30 +33,30 @@ export function TokenLimitCard({ config, onEdit }: TokenLimitCardProps) {
         style={{ backgroundColor: categoryColor }}
       />
 
-      <div className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2 flex-1">
-            <span className="text-2xl" role="img" aria-label={config.context_name}>
+      <div className="p-3">
+        <div className="flex items-start justify-between mb-2.5">
+          <div className="flex items-center gap-1.5 flex-1">
+            <span className="text-xl" role="img" aria-label={config.context_name}>
               {icon}
             </span>
-            <h3 className="text-base font-semibold" style={{ color: colors.textPrimary }}>
+            <h3 className="text-sm font-semibold" style={{ color: colors.textPrimary }}>
               {config.context_name}
             </h3>
           </div>
 
           <button
             onClick={() => onEdit(config)}
-            className="p-1.5 rounded-lg transition-colors hover:opacity-70"
+            className="p-1 rounded-lg transition-colors hover:opacity-70"
             style={{ color: colors.textSecondary }}
             title="Editar configuração"
           >
-            <Edit2 className="w-4 h-4" />
+            <Edit2 className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <div
-            className="flex items-baseline justify-between p-3 rounded-lg border"
+            className="flex items-baseline justify-between p-2.5 rounded-lg border"
             style={{
               backgroundColor: innerBg,
               borderColor: cardBorder
@@ -66,7 +66,7 @@ export function TokenLimitCard({ config, onEdit }: TokenLimitCardProps) {
               <p className="text-xs font-medium mb-0.5" style={{ color: colors.textSecondary }}>
                 Limite Atual
               </p>
-              <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
+              <p className="text-xl font-bold" style={{ color: colors.textPrimary }}>
                 {config.max_output_tokens.toLocaleString()}
               </p>
             </div>
@@ -75,9 +75,9 @@ export function TokenLimitCard({ config, onEdit }: TokenLimitCardProps) {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             <div
-              className="p-2 rounded-lg border"
+              className="p-1.5 rounded-lg border"
               style={{
                 backgroundColor: innerBg,
                 borderColor: cardBorder
@@ -92,7 +92,7 @@ export function TokenLimitCard({ config, onEdit }: TokenLimitCardProps) {
             </div>
 
             <div
-              className="p-2 rounded-lg border"
+              className="p-1.5 rounded-lg border"
               style={{
                 backgroundColor: innerBg,
                 borderColor: cardBorder
@@ -107,10 +107,10 @@ export function TokenLimitCard({ config, onEdit }: TokenLimitCardProps) {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 pt-1">
+          <div className="flex items-center gap-1.5 pt-0.5">
             {config.is_active && (
               <>
-                <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                <CheckCircle className="w-3 h-3 text-green-500" />
                 <span className="text-xs text-green-500 font-medium">Ativo</span>
               </>
             )}
