@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Settings, ArrowLeft, FileText, MessageSquare, AlertCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { TokenLimitCard } from '../components/TokenLimitCard';
 import { TokenLimitEditModal } from '../components/TokenLimitEditModal';
 import { TokenLimitConfig, TokenLimitsService } from '../services/TokenLimitsService';
@@ -35,7 +34,6 @@ export function AdminTokenLimitsPage({
   onNavigateToPrivacy,
   onNavigateToCookies,
 }: AdminTokenLimitsPageProps) {
-  const navigate = useNavigate();
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -105,7 +103,7 @@ export function AdminTokenLimitsPage({
           <div className="max-w-7xl mx-auto">
             <div className="relative flex items-center justify-center mb-8">
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => window.history.back()}
                 className="absolute left-0 p-2 rounded-lg transition-colors hover:opacity-70"
                 style={{ color: colors.textPrimary }}
                 title="Voltar"
