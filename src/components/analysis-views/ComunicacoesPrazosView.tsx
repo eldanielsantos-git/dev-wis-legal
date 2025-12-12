@@ -57,10 +57,6 @@ interface ComunicacoesPrazosViewProps {
  content: string;
 }
 
-const getStatusIcon = (status: string) => {
- return null;
-};
-
 const getStatusBadgeColor = (status: string) => {
  const statusLower = status.toLowerCase();
  if (statusLower.includes('bem-sucedida') || statusLower.includes('cumprido')) {
@@ -268,7 +264,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
            {ato.prazosDerivados.map((prazo, pIndex) => (
             <div
              key={prazo.id}
-             className="bg-purple-50 dark:bg-gray-700/30 rounded-lg p-4 border border-purple-200 dark:border-theme-border"
+             className="bg-blue-50 dark:bg-gray-700/30 rounded-lg p-4 border border-blue-200 dark:border-theme-border"
             >
              <div className="flex items-start gap-3">
               <div className="flex-1 space-y-3">
@@ -315,7 +311,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
                </div>
 
                {prazo.observacoes && (
-                <div className="mt-2 pt-3 border-t border-purple-200 dark:border-theme-border">
+                <div className="mt-2 pt-3 border-t border-blue-200 dark:border-theme-border">
                  <span className="text-xs font-semibold text-theme-text-primary uppercase tracking-wide">Observações</span>
                  <p className="text-sm text-theme-text-primary mt-1 leading-relaxed">
                   {prazo.observacoes}
