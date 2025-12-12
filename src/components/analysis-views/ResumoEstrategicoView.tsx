@@ -188,9 +188,9 @@ export function ResumoEstrategicoView({ content }: ResumoEstrategicoViewProps) {
      {secao.questaoCentral && (
       <div className="mt-4 space-y-4">
        {/* Descrição da Questão Central */}
-       <div className="bg-purple-50 dark:bg-gray-700/50 rounded-lg p-4 border border-purple-200 dark:border-theme-border">
+       <div className="bg-theme-bg-tertiary rounded-lg p-4 border border-theme-border">
         <div className="flex items-start gap-3">
-         <Scale className="w-5 h-5 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
+         <Scale className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
          <div className="flex-1">
           <h3 className="text-sm font-semibold text-theme-text-primary mb-2">
            {secao.questaoCentral.titulo}
