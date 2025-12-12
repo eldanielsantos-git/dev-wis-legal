@@ -29,7 +29,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const { tokensRemaining, loading: tokenLoading } = useTokenBalance();
+  const { tokensRemaining, tokensTotal, tokensUsed, loading: tokenLoading } = useTokenBalance();
   const subscriptionStatus = useSubscriptionStatus(user?.id);
   const [dragActive, setDragActive] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -433,9 +433,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       {TokenValidationService.formatTokenCount(estimatedTokens)}
                     </span>
                   </div>
-                  <div className="pt-2 border-t border-blue-300">
-                    <div className="flex items-center justify-between">
-                      <span className="text-blue-700">Saldo disponível</span>
+                  <div className="pt-2 border-t border-blue-300 space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-blue-600">Total da assinatura</span>
+                      <span className="text-blue-800">
+                        {TokenValidationService.formatTokenCount(tokensTotal)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-blue-600">Já utilizado</span>
+                      <span className="text-blue-800">
+                        {TokenValidationService.formatTokenCount(tokensUsed)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-1 border-t border-blue-200">
+                      <span className="text-blue-700 font-medium">Saldo disponível</span>
                       <span className="font-semibold text-blue-900">
                         {TokenValidationService.formatTokenCount(tokensRemaining)}
                       </span>
