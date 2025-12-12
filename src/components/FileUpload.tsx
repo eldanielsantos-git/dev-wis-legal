@@ -454,12 +454,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       ⚠️ Tokens insuficientes! Você precisará adicionar mais tokens ou reduzir o tamanho do arquivo.
                     </div>
                     {onNavigateToTokens && (
-                      <div className="mt-2 flex justify-end">
+                      <div className="mt-2 flex justify-center">
                         <button
                           onClick={onNavigateToTokens}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors hover:opacity-80"
                           style={{
-                            backgroundColor: theme === 'dark' ? '#3B82F6' : '#2563EB',
+                            backgroundColor: '#000000',
                             color: '#FFFFFF',
                           }}
                         >
