@@ -40,7 +40,7 @@ export class TokenValidationService {
       // Buscar do user_token_balance que considera plan_tokens + extra_tokens
       const { data: balanceData, error: balanceError } = await supabase
         .from('user_token_balance')
-        .select('plan_tokens, extra_tokens, tokens_total, tokens_used')
+        .select('plan_tokens, extra_tokens, tokens_used, total_available_tokens, available_plan_tokens, available_extra_tokens')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -63,9 +63,11 @@ export class TokenValidationService {
         };
       }
 
-      const tokensTotal = balanceData.tokens_total || 0;
+      const planTokens = balanceData.plan_tokens || 0;
+      const extraTokens = balanceData.extra_tokens || 0;
+      const tokensTotal = planTokens + extraTokens;
       const tokensUsed = balanceData.tokens_used || 0;
-      const tokensRemaining = Math.max(tokensTotal - tokensUsed, 0);
+      const tokensRemaining = balanceData.total_available_tokens || 0;
       const hasSufficientTokens = tokensRemaining >= tokensRequired;
       const pagesRemaining = this.calculatePagesFromTokens(tokensRemaining);
 
@@ -137,7 +139,7 @@ export class TokenValidationService {
       // Buscar do user_token_balance que considera plan_tokens + extra_tokens
       const { data: balanceData, error: balanceError } = await supabase
         .from('user_token_balance')
-        .select('plan_tokens, extra_tokens, tokens_total, tokens_used')
+        .select('plan_tokens, extra_tokens, tokens_used, total_available_tokens, available_plan_tokens, available_extra_tokens')
         .eq('user_id', userId)
         .maybeSingle();
 
@@ -146,9 +148,11 @@ export class TokenValidationService {
       }
 
       if (balanceData) {
-        const tokensTotal = balanceData.tokens_total || 0;
+        const planTokens = balanceData.plan_tokens || 0;
+        const extraTokens = balanceData.extra_tokens || 0;
+        const tokensTotal = planTokens + extraTokens;
         const tokensUsed = balanceData.tokens_used || 0;
-        const tokensRemaining = Math.max(tokensTotal - tokensUsed, 0);
+        const tokensRemaining = balanceData.total_available_tokens || 0;
         const pagesRemaining = this.calculatePagesFromTokens(tokensRemaining);
 
         // Tentar identificar o plano a partir da assinatura
