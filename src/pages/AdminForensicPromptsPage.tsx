@@ -1212,9 +1212,43 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                             color: colors.textPrimary
                           }}
                         />
-                        <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
-                          Variáveis disponíveis: {'{processo_name}'}, {'{total_pages}'}, {'{chunks_count}'}
-                        </p>
+                        <div className="text-xs mt-2 space-y-2" style={{ color: colors.textSecondary }}>
+                          <p className="font-semibold">Variáveis disponíveis:</p>
+
+                          <div className="space-y-1">
+                            <p className="font-medium text-blue-400">Usuário:</p>
+                            <p className="ml-2">
+                              {'{{USUARIO_NOME}}'} ou {'{user_full_name}'} - Nome completo<br/>
+                              {'{user_first_name}'} - Primeiro nome<br/>
+                              {'{user_last_name}'} - Sobrenome<br/>
+                              {'{{USUARIO_EMAIL}}'} ou {'{user_email}'} - Email<br/>
+                              {'{{USUARIO_OAB}}'} ou {'{user_oab}'} - OAB<br/>
+                              {'{user_cpf}'} - CPF<br/>
+                              {'{user_city}'} - Cidade<br/>
+                              {'{user_state}'} - Estado
+                            </p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <p className="font-medium text-green-400">Processo:</p>
+                            <p className="ml-2">
+                              {'{processo_name}'} - Nome do arquivo<br/>
+                              {'{total_pages}'} - Total de páginas<br/>
+                              {'{chunks_count}'} - Número de chunks (arquivos grandes)
+                            </p>
+                          </div>
+
+                          <div className="space-y-1">
+                            <p className="font-medium text-purple-400">Sistema:</p>
+                            <p className="ml-2">
+                              {'{{DATA_HORA_ATUAL}}'} - Data/hora atual
+                            </p>
+                          </div>
+
+                          <p className="text-yellow-400 mt-2">
+                            Nota: Campos opcionais retornam "N/A" se não cadastrados
+                          </p>
+                        </div>
                       </div>
 
                       <div>

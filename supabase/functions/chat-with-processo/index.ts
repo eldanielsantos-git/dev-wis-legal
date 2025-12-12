@@ -1,3 +1,34 @@
+/**
+ * EDGE FUNCTION: chat-with-processo
+ *
+ * Processa mensagens de chat com contexto de um processo jurídico.
+ * Suporta arquivos pequenos (PDF completo) e grandes (chunks).
+ *
+ * VARIÁVEIS SUPORTADAS NOS PROMPTS:
+ *
+ * Usuário:
+ * - {{USUARIO_NOME}} / {user_full_name}  → Nome completo
+ * - {user_first_name}                    → Primeiro nome
+ * - {user_last_name}                     → Sobrenome
+ * - {{USUARIO_EMAIL}} / {user_email}     → Email
+ * - {{USUARIO_OAB}} / {user_oab}         → OAB (ou "N/A")
+ * - {user_cpf}                           → CPF (ou "N/A")
+ * - {user_city}                          → Cidade (ou "N/A")
+ * - {user_state}                         → Estado (ou "N/A")
+ * - {user_phone}                         → Telefone (ou "N/A")
+ * - {user_phone_country_code}            → Código do país (padrão: +55)
+ *
+ * Processo:
+ * - {processo_name}                      → Nome do arquivo
+ * - {total_pages}                        → Total de páginas
+ * - {chunks_count}                       → Número de chunks (arquivos grandes)
+ *
+ * Sistema:
+ * - {{DATA_HORA_ATUAL}}                  → Data/hora atual em Brasília
+ *
+ * NOTA: A variável {processo_number} foi REMOVIDA do sistema.
+ */
+
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
 
@@ -342,9 +373,16 @@ ${message}`;
     // Buscar dados do usuário para substituição de variáveis
     const { data: userProfile } = await supabase
       .from('user_profiles')
-      .select('full_name, email, oab')
+      .select('first_name, last_name, email, oab, cpf, city, state, phone, phone_country_code')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    // Construir full_name a partir de first_name e last_name
+    const fullName = userProfile
+      ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Usuário'
+      : 'Usuário';
+    const firstName = userProfile?.first_name || 'Usuário';
+    const lastName = userProfile?.last_name || '';
 
     // Substituir variáveis no prompt
     let systemPrompt = systemPromptData.system_prompt;
@@ -358,15 +396,41 @@ ${message}`;
     }).format(now);
     systemPrompt = systemPrompt.replace(/\{\{DATA_HORA_ATUAL\}\}/g, saoPauloTime);
 
-    // Substituir variáveis do usuário
-    systemPrompt = systemPrompt.replace(/\{\{USUARIO_NOME\}\}/g, userProfile?.full_name || 'Usuário');
-    systemPrompt = systemPrompt.replace(/\{\{USUARIO_EMAIL\}\}/g, userProfile?.email || user.email || 'N/A');
-    systemPrompt = systemPrompt.replace(/\{\{USUARIO_OAB\}\}/g, userProfile?.oab || 'N/A');
+    // Substituir variáveis do usuário (suporta múltiplas sintaxes)
+    // Nome completo
+    systemPrompt = systemPrompt.replace(/\{\{USUARIO_NOME\}\}/g, fullName);
+    systemPrompt = systemPrompt.replace(/\{user_full_name\}/g, fullName);
 
-    // Substituir outras variáveis
+    // Nome e sobrenome separados
+    systemPrompt = systemPrompt.replace(/\{user_first_name\}/g, firstName);
+    systemPrompt = systemPrompt.replace(/\{user_last_name\}/g, lastName);
+
+    // Email
+    systemPrompt = systemPrompt.replace(/\{\{USUARIO_EMAIL\}\}/g, userProfile?.email || user.email || 'N/A');
+    systemPrompt = systemPrompt.replace(/\{user_email\}/g, userProfile?.email || user.email || 'N/A');
+
+    // OAB
+    systemPrompt = systemPrompt.replace(/\{\{USUARIO_OAB\}\}/g, userProfile?.oab || 'N/A');
+    systemPrompt = systemPrompt.replace(/\{user_oab\}/g, userProfile?.oab || 'N/A');
+
+    // CPF
+    systemPrompt = systemPrompt.replace(/\{user_cpf\}/g, userProfile?.cpf || 'N/A');
+
+    // Cidade e Estado
+    systemPrompt = systemPrompt.replace(/\{user_city\}/g, userProfile?.city || 'N/A');
+    systemPrompt = systemPrompt.replace(/\{user_state\}/g, userProfile?.state || 'N/A');
+
+    // Telefone
+    systemPrompt = systemPrompt.replace(/\{user_phone\}/g, userProfile?.phone || 'N/A');
+    systemPrompt = systemPrompt.replace(/\{user_phone_country_code\}/g, userProfile?.phone_country_code || '+55');
+
+    // Substituir variáveis do processo
     systemPrompt = systemPrompt.replace(/\{processo_name\}/g, processo.nome_processo || processo.file_name);
     systemPrompt = systemPrompt.replace(/\{total_pages\}/g, String(processo.total_pages || 0));
     systemPrompt = systemPrompt.replace(/\{chunks_count\}/g, String(processo.total_chunks_count || 0));
+
+    // Remover variáveis não suportadas (processo_number foi removido do sistema)
+    systemPrompt = systemPrompt.replace(/\{processo_number\}/g, '');
 
     console.log(`📝 Using prompt type: ${promptType}`);
 

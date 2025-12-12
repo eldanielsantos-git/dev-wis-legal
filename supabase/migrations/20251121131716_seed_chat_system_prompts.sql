@@ -154,8 +154,54 @@ FORMATO DE RESPOSTA:
 
 -- Os prompts acima foram preservados do código atual e estão funcionando bem.
 -- Agora podem ser gerenciados dinamicamente via interface administrativa.
--- 
--- Variáveis suportadas nos prompts:
--- - {processo_name}: Nome do arquivo do processo
--- - {total_pages}: Número total de páginas
--- - {chunks_count}: Número de chunks (para large_file_chunks)
+--
+-- =====================================================
+-- VARIÁVEIS SUPORTADAS NOS PROMPTS DO CHAT
+-- =====================================================
+--
+-- As variáveis abaixo podem ser usadas nos prompts e serão substituídas
+-- automaticamente pelos valores reais antes de enviar ao modelo de IA.
+--
+-- VARIÁVEIS DO USUÁRIO:
+-- ---------------------
+-- Nome:
+--   {{USUARIO_NOME}} ou {user_full_name}  - Nome completo do usuário
+--   {user_first_name}                     - Primeiro nome
+--   {user_last_name}                      - Sobrenome
+--
+-- Contato:
+--   {{USUARIO_EMAIL}} ou {user_email}     - Email do usuário
+--   {user_phone}                          - Telefone
+--   {user_phone_country_code}             - Código do país do telefone (padrão: +55)
+--
+-- Dados Profissionais:
+--   {{USUARIO_OAB}} ou {user_oab}         - Número da OAB (ou "N/A" se não cadastrado)
+--   {user_cpf}                            - CPF (ou "N/A" se não cadastrado)
+--
+-- Localização:
+--   {user_city}                           - Cidade (ou "N/A" se não cadastrado)
+--   {user_state}                          - Estado (ou "N/A" se não cadastrado)
+--
+-- VARIÁVEIS DO PROCESSO:
+-- ----------------------
+--   {processo_name}                       - Nome do arquivo do processo
+--   {total_pages}                         - Total de páginas do documento
+--   {chunks_count}                        - Número de chunks (apenas para arquivos grandes)
+--
+-- VARIÁVEIS DO SISTEMA:
+-- ---------------------
+--   {{DATA_HORA_ATUAL}}                   - Data e hora atual em Brasília (formato completo)
+--
+-- NOTAS IMPORTANTES:
+-- ------------------
+-- 1. Variáveis com sintaxe dupla {{VARIAVEL}} e simples {variavel} são suportadas
+-- 2. Variáveis de usuário retornam "N/A" quando o dado não está cadastrado
+-- 3. A variável {processo_number} foi REMOVIDA do sistema
+-- 4. Todas as substituições são case-sensitive (diferenciam maiúsculas de minúsculas)
+--
+-- EXEMPLOS DE USO:
+-- ----------------
+-- "Olá {user_first_name}, bem-vindo ao Wis Chat!"
+-- "Dr./Dra. {user_last_name} (OAB: {{USUARIO_OAB}})"
+-- "Processo: {processo_name} com {total_pages} páginas"
+-- "Hoje é {{DATA_HORA_ATUAL}}"
