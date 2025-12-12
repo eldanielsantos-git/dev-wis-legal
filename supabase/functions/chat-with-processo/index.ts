@@ -374,7 +374,7 @@ ${message}`;
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('first_name, last_name, email, oab, cpf, city, state, phone, phone_country_code')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .maybeSingle();
 
     // Construir full_name a partir de first_name e last_name
