@@ -446,12 +446,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                         {TokenValidationService.formatTokenCount(tokensUsed)}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between pt-1 border-t border-blue-200">
-                      <span className="text-blue-700 font-medium">Saldo disponível</span>
-                      <span className="font-semibold text-blue-900">
-                        {TokenValidationService.formatTokenCount(tokensRemaining)}
-                      </span>
-                    </div>
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-blue-700">Saldo após análise</span>
                       <span className={`font-semibold ${tokensRemaining - estimatedTokens < 0 ? 'text-red-600' : 'text-green-600'}`}>
