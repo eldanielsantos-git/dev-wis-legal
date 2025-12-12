@@ -74,34 +74,6 @@ export function UpgradeModal({
             <div className="mb-6">
               <SubscriptionPlans onSuccess={onClose} />
             </div>
-
-            {onNavigateToTokens && (
-              <div
-                className="mt-6 p-4 rounded-lg border text-center"
-                style={{
-                  backgroundColor: colors.bgSecondary,
-                  borderColor: colors.border,
-                }}
-              >
-                <p className="text-sm mb-3" style={{ color: colors.textSecondary }}>
-                  Caso queira apenas analisar este arquivo você pode comprar tokens avulsos.
-                </p>
-                <button
-                  onClick={() => {
-                    onClose();
-                    onNavigateToTokens();
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors hover:opacity-80"
-                  style={{
-                    backgroundColor: colors.primary,
-                    color: '#FFFFFF',
-                  }}
-                >
-                  <Coins className="w-4 h-4" />
-                  Ver plano de tokens
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
