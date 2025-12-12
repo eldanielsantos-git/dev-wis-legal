@@ -109,7 +109,21 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
  let data: { balancoFinanceiro: BalancoFinanceiro } | null = null;
 
  try {
-  data = JSON.parse(content);
+  let cleanContent = content.trim();
+
+  if (cleanContent.startsWith('```json')) {
+   cleanContent = cleanContent.substring(7);
+  } else if (cleanContent.startsWith('```')) {
+   cleanContent = cleanContent.substring(3);
+  }
+
+  if (cleanContent.endsWith('```')) {
+   cleanContent = cleanContent.substring(0, cleanContent.length - 3);
+  }
+
+  cleanContent = cleanContent.trim();
+
+  data = JSON.parse(cleanContent);
  } catch (error) {
   return (
    <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
