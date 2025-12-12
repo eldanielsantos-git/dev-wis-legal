@@ -128,7 +128,21 @@ export function RiscosAlertasView({ content }: RiscosAlertasViewProps) {
  });
 
  try {
-  data = JSON.parse(content);
+  let cleanContent = content.trim();
+
+  if (cleanContent.startsWith('```json')) {
+   cleanContent = cleanContent.substring(7);
+  } else if (cleanContent.startsWith('```')) {
+   cleanContent = cleanContent.substring(3);
+  }
+
+  if (cleanContent.endsWith('```')) {
+   cleanContent = cleanContent.substring(0, cleanContent.length - 3);
+  }
+
+  cleanContent = cleanContent.trim();
+
+  data = JSON.parse(cleanContent);
   console.log('✅ RiscosAlertasView - JSON PARSED', {
    hasData: !!data,
    hasRiscosAlertasProcessuais: !!data?.riscosAlertasProcessuais,
