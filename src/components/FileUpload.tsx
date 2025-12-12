@@ -457,13 +457,13 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       <div className="mt-2 flex justify-center">
                         <button
                           onClick={onNavigateToTokens}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors hover:opacity-80"
+                          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md transition-colors hover:opacity-80"
                           style={{
                             backgroundColor: '#000000',
                             color: '#FFFFFF',
                           }}
                         >
-                          <Coins className="w-3.5 h-3.5" />
+                          <Coins className="w-4 h-4" />
                           Adicionar tokens
                         </button>
                       </div>
