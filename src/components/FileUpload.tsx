@@ -6,9 +6,11 @@ import { useTokenBalance } from '../contexts/TokenBalanceContext';
 import { useSubscriptionStatus } from '../hooks/useSubscriptionStatus';
 import { TokenAvailabilityInfo } from './TokenAvailabilityInfo';
 import { TokenValidationService } from '../services/TokenValidationService';
+import { TokenReservationService } from '../services/TokenReservationService';
 import { TierSystemService, TierName } from '../services/TierSystemService';
 import TierBadge from './TierBadge';
 import { getPDFPageCount } from '../utils/pdfSplitter';
+import { ProcessingInProgressModal } from './ProcessingInProgressModal';
 
 interface FileUploadProps {
   onFileSelect: (files: File[]) => void;
@@ -38,8 +40,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [detectedTier, setDetectedTier] = useState<TierName | null>(null);
   const [estimatedTime, setEstimatedTime] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
+  const [showProcessingModal, setShowProcessingModal] = useState(false);
+  const [availableTokensInfo, setAvailableTokensInfo] = useState({ available: 0, reserved: 0 });
 
   const MAX_FILE_SIZE = 3 * 1024 * 1024 * 1024; // 3 GB
+
+  useEffect(() => {
+    const loadAvailableTokens = async () => {
+      if (user?.id) {
+        const info = await TokenReservationService.getTokensInfo(user.id);
+        setAvailableTokensInfo({ available: info.available, reserved: info.reserved });
+      }
+    };
+
+    loadAvailableTokens();
+  }, [user?.id, tokensRemaining]);
 
   useEffect(() => {
     const calculateEstimates = async () => {
@@ -451,10 +466,26 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                 {tokensRemaining < estimatedTokens && (
                   <div className="mt-3">
                     <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-800">
-                      ⚠️ Tokens insuficientes! Você precisará adicionar mais tokens ou reduzir o tamanho do arquivo.
+                      ⚠️ Tokens insuficientes!
+                      {availableTokensInfo.reserved > 0
+                        ? ' Você tem tokens reservados em análises em andamento.'
+                        : ' Você precisará adicionar mais tokens ou reduzir o tamanho do arquivo.'}
                     </div>
-                    {onNavigateToTokens && (
-                      <div className="mt-2 flex justify-center">
+                    <div className="mt-2 flex gap-2 justify-center">
+                      {availableTokensInfo.reserved > 0 && (
+                        <button
+                          onClick={() => setShowProcessingModal(true)}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md transition-colors hover:opacity-80"
+                          style={{
+                            backgroundColor: '#F59E0B',
+                            color: '#FFFFFF',
+                          }}
+                        >
+                          <AlertCircle className="w-4 h-4" />
+                          Ver Análises em Andamento
+                        </button>
+                      )}
+                      {onNavigateToTokens && (
                         <button
                           onClick={onNavigateToTokens}
                           className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-md transition-colors hover:opacity-80"
@@ -466,8 +497,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                           <Coins className="w-4 h-4" />
                           Adicionar tokens
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 )}
                 {tokensRemaining >= estimatedTokens && (tokensRemaining - estimatedTokens) < (tokensRemaining * 0.2) && (
@@ -483,6 +514,21 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </div>
         </div>
       )}
+
+      <ProcessingInProgressModal
+        isOpen={showProcessingModal}
+        onClose={() => setShowProcessingModal(false)}
+        userId={user?.id || ''}
+        availableTokens={availableTokensInfo.available}
+        requiredTokens={estimatedTokens}
+        reservedTokens={availableTokensInfo.reserved}
+        onNavigateToProcess={(processoId) => {
+          if (onViewProcess) {
+            window.location.href = `/processo/${processoId}`;
+          }
+        }}
+        onNavigateToTokens={onNavigateToTokens}
+      />
     </div>
   );
 };
