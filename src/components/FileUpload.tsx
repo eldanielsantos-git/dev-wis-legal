@@ -435,7 +435,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                   </div>
                   <div className="pt-2 border-t border-blue-300">
                     <div className="flex items-center justify-between">
-                      <span className="text-blue-700">Seu saldo atual</span>
+                      <span className="text-blue-700">Saldo disponível</span>
                       <span className="font-semibold text-blue-900">
                         {TokenValidationService.formatTokenCount(tokensRemaining)}
                       </span>
