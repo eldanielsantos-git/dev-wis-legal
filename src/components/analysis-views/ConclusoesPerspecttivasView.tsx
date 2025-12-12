@@ -213,7 +213,7 @@ export function ConclusoesPerspettivasView({ content }: ConclusoesPerspettivasVi
 
      {/* Confiança da Análise */}
      {secao.campos && secao.id === 'confianca_analise' && (
-      <div className="bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-700/50 rounded-lg p-6 border-2 border-blue-200 dark:border-blue-700/50 ">
+      <div className="bg-gradient-to-br from-blue-50 via-cyan-50 to-sky-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-700/50 rounded-lg p-6 border-2 border-blue-200 dark:border-blue-700/50 ">
        {secao.campos.map((campo) => {
         const isNivelConfianca = campo.id === 'nivel_confianca';
 
