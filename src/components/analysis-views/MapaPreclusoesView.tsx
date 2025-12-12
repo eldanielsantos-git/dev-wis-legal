@@ -98,7 +98,21 @@ export function MapaPreclusoesView({ content }: MapaPreclusoesViewProps) {
  let mapaPreclusoesProcessuais: MapaPreclusoesProcessuais | null = null;
 
  try {
-  parsedData = JSON.parse(content);
+  let cleanContent = content.trim();
+
+  if (cleanContent.startsWith('```json')) {
+   cleanContent = cleanContent.substring(7);
+  } else if (cleanContent.startsWith('```')) {
+   cleanContent = cleanContent.substring(3);
+  }
+
+  if (cleanContent.endsWith('```')) {
+   cleanContent = cleanContent.substring(0, cleanContent.length - 3);
+  }
+
+  cleanContent = cleanContent.trim();
+
+  parsedData = JSON.parse(cleanContent);
 
   if (parsedData.mapaPreclusoesProcessuais) {
    mapaPreclusoesProcessuais = parsedData.mapaPreclusoesProcessuais;
