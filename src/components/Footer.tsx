@@ -14,11 +14,11 @@ export function Footer({ onNavigateToTerms, onNavigateToPrivacy, onNavigateToCoo
           <p className="text-sm font-medium">Wis Legal • Legal transcription and forensic analysis</p>
           <p className="text-xs text-gray-400">Copyright © 2025 all rights reserved</p>
           <div className="flex items-center justify-center space-x-4 text-xs text-gray-400">
-            <button onClick={onNavigateToTerms} className="hover:text-white transition-colors">Terms of Use</button>
+            <button onClick={onNavigateToTerms} className="hover:text-white transition-colors">Termos de Uso</button>
             <span>|</span>
-            <button onClick={onNavigateToPrivacy} className="hover:text-white transition-colors">Privacy Policy</button>
+            <button onClick={onNavigateToPrivacy} className="hover:text-white transition-colors">Política de Privacidade</button>
             <span>|</span>
-            <button onClick={onNavigateToCookies} className="hover:text-white transition-colors">Use of Cookies</button>
+            <button onClick={onNavigateToCookies} className="hover:text-white transition-colors">Uso de Cookies</button>
           </div>
         </div>
       </div>

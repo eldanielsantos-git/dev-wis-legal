@@ -36,7 +36,7 @@ export function FooterWis({ onNavigateToTerms, onNavigateToPrivacy, onNavigateTo
               onMouseEnter={(e) => e.currentTarget.style.color = colors.textPrimary}
               onMouseLeave={(e) => e.currentTarget.style.color = colors.textSecondary}
             >
-              Terms of Use
+              Termos de Uso
             </a>
             <span>|</span>
             <a
@@ -48,7 +48,7 @@ export function FooterWis({ onNavigateToTerms, onNavigateToPrivacy, onNavigateTo
               onMouseEnter={(e) => e.currentTarget.style.color = colors.textPrimary}
               onMouseLeave={(e) => e.currentTarget.style.color = colors.textSecondary}
             >
-              Privacy Policy
+              Política de Privacidade
             </a>
             <span>|</span>
             <a
@@ -60,7 +60,7 @@ export function FooterWis({ onNavigateToTerms, onNavigateToPrivacy, onNavigateTo
               onMouseEnter={(e) => e.currentTarget.style.color = colors.textPrimary}
               onMouseLeave={(e) => e.currentTarget.style.color = colors.textSecondary}
             >
-              Use of Cookies
+              Uso de Cookies
             </a>
           </div>
         </div>
