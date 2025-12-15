@@ -1,9 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
 
-// 🔍 VERSION CHECK: 2025-12-03T03:10:00Z - TOKEN VALIDATION ACTIVE
-const FUNCTION_VERSION = '2025-12-03T03:10:00Z';
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -21,37 +18,6 @@ interface LLMModel {
   temperature: number | null;
   max_tokens: number | null;
   llm_provider: string | null;
-}
-
-async function getMaxOutputTokens(
-  supabase: any,
-  contextKey: string,
-  fallbackValue: number
-): Promise<number> {
-  try {
-    const { data, error } = await supabase
-      .from('token_limits_config')
-      .select('max_output_tokens, is_active')
-      .eq('context_key', contextKey)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (error) {
-      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
-      return fallbackValue;
-    }
-
-    if (data) {
-      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
-      return data.max_output_tokens;
-    }
-
-    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
-    return fallbackValue;
-  } catch (error) {
-    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
-    return fallbackValue;
-  }
 }
 
 async function getActiveModelsOrderedByPriority(supabase: any): Promise<LLMModel[]> {
@@ -166,181 +132,6 @@ async function notifyModelSwitch(
   }
 }
 
-async function logCriticalErrorAndNotify(
-  supabase: any,
-  supabaseUrl: string,
-  supabaseServiceKey: string,
-  processoId: string,
-  analysisResultId: string,
-  error: any,
-  model: LLMModel | null,
-  nextResult: any,
-  chunks: any[] | null = null
-) {
-  try {
-    console.log('🚨 Registrando erro crítico e enviando notificação...');
-
-    const { data: processo } = await supabase
-      .from('processos')
-      .select('user_id, is_chunked, total_chunks_count, total_pages')
-      .eq('id', processoId)
-      .single();
-
-    if (!processo) {
-      console.error('Processo não encontrado para logging de erro');
-      return;
-    }
-
-    const isComplexFile = (processo.total_pages || 0) >= 1000;
-    console.log(`📊 Arquivo ${isComplexFile ? 'COMPLEXO' : 'SIMPLES'} detectado (${processo.total_pages || 0} páginas)`);
-
-
-    const errorType = error.message?.includes('token')
-      ? 'token_limit_exceeded'
-      : error.message?.includes('quota')
-      ? 'quota_exceeded'
-      : error.message?.includes('timeout')
-      ? 'timeout'
-      : 'llm_error';
-
-    const errorCategory = error.message?.includes('400')
-      ? 'client_error'
-      : error.message?.includes('500')
-      ? 'server_error'
-      : error.message?.includes('429')
-      ? 'rate_limit'
-      : 'unknown';
-
-    const severity = errorType === 'token_limit_exceeded' ? 'critical' : 'high';
-
-    const totalChunks = chunks?.length || processo.total_chunks_count || 0;
-    const chunksCompleted = chunks?.filter(c => c.status === 'completed').length || 0;
-    const progressPercent = totalChunks > 0 ? (chunksCompleted / totalChunks) * 100 : 0;
-
-    if (isComplexFile) {
-      const errorRecord = {
-        processo_id: processoId,
-        user_id: processo.user_id,
-        analysis_result_id: analysisResultId,
-        error_type: errorType,
-        error_category: errorCategory,
-        error_message: error.message || 'Unknown error',
-        error_details: {
-          stack: error.stack,
-          code: error.code,
-          full_error: error.toString()
-        },
-        severity,
-        prompt_title: nextResult?.prompt_title || 'Unknown',
-        execution_order: nextResult?.execution_order || 0,
-        total_chunks: totalChunks,
-        chunks_completed: chunksCompleted,
-        progress_percent: progressPercent,
-        model_used: model?.name || 'Unknown',
-        retry_attempt: 0,
-        max_retries: 3,
-        auto_recovery_enabled: false,
-        occurred_at: new Date().toISOString()
-      };
-
-      const { data: errorData, error: insertError } = await supabase
-        .from('complex_analysis_errors')
-        .insert(errorRecord)
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Erro ao inserir registro de erro:', insertError);
-        return;
-      }
-
-      console.log('✅ Erro registrado na tabela complex_analysis_errors:', errorData.id);
-      console.log('📧 Disparando email de ARQUIVO COMPLEXO para administradores...');
-
-      fetch(`${supabaseUrl}/functions/v1/send-admin-complex-analysis-error`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          error_id: errorData.id
-        }),
-      })
-      .then(async (response) => {
-        if (response.ok) {
-          console.log('✅ Email de erro enviado com sucesso');
-        } else {
-          const errorText = await response.text();
-          console.error('❌ Erro ao enviar email:', errorText);
-        }
-      })
-      .catch(emailError => {
-        console.error('❌ Falha ao disparar email de erro:', emailError);
-      });
-    } else {
-      const simpleErrorRecord = {
-        processo_id: processoId,
-        user_id: processo.user_id,
-        analysis_result_id: analysisResultId,
-        error_type: errorType,
-        error_category: errorCategory,
-        error_message: error.message || 'Unknown error',
-        error_details: {
-          stack: error.stack,
-          code: error.code,
-          full_error: error.toString()
-        },
-        severity,
-        prompt_title: nextResult?.prompt_title || 'Unknown',
-        execution_order: nextResult?.execution_order || 0,
-        model_used: model?.name || 'Unknown',
-        current_stage: nextResult?.prompt_title || 'Unknown',
-        occurred_at: new Date().toISOString()
-      };
-
-      const { data: errorData, error: insertError } = await supabase
-        .from('analysis_errors')
-        .insert(simpleErrorRecord)
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Erro ao inserir registro de erro:', insertError);
-        return;
-      }
-
-      console.log('✅ Erro registrado na tabela analysis_errors:', errorData.id);
-      console.log('📧 Disparando email de ARQUIVO SIMPLES para administradores...');
-
-      fetch(`${supabaseUrl}/functions/v1/send-admin-analysis-error`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          error_id: errorData.id
-        }),
-      })
-      .then(async (response) => {
-        if (response.ok) {
-          console.log('✅ Email de erro enviado com sucesso');
-        } else {
-          const errorText = await response.text();
-          console.error('❌ Erro ao enviar email:', errorText);
-        }
-      })
-      .catch(emailError => {
-        console.error('❌ Falha ao disparar email de erro:', emailError);
-      });
-    }
-
-  } catch (loggingError) {
-    console.error('❌ Erro ao registrar erro crítico:', loggingError);
-  }
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers: corsHeaders });
@@ -378,8 +169,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const callId = crypto.randomUUID().slice(0, 8);
-    console.log(`\n🔍 FUNCTION VERSION: ${FUNCTION_VERSION} - TOKEN VALIDATION ACTIVE`);
-    console.log(`[${callId}] 🔄 Iniciando processamento do próximo prompt para processo ${processo_id}`);
+    console.log(`\n[${callId}] 🔄 Iniciando processamento do próximo prompt para processo ${processo_id}`);
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
@@ -542,8 +332,7 @@ Deno.serve(async (req: Request) => {
       const modelName = model.display_name || model.name;
       const modelId = model.system_model || model.model_id;
       const temperature = model.temperature ?? 0.2;
-      const configuredMaxTokens = await getMaxOutputTokens(supabase, 'analysis_small_files', 8192);
-      const maxTokens = model.max_tokens ?? configuredMaxTokens;
+      const maxTokens = model.max_tokens ?? 8192;
 
       console.log(`\n🔍 Tentativa ${attemptNumber}: ${modelName}`);
 
@@ -626,20 +415,7 @@ Deno.serve(async (req: Request) => {
                   throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
                 }
 
-                // ⚠️ VALIDAÇÃO CRÍTICA: Token limit check ANTES de enviar para LLM
-                if (chunk.token_validation_status === 'exceeded') {
-                  const errorMsg = `Chunk ${chunk.chunk_index} excede limite: ${chunk.estimated_tokens} tokens (máx: 850k). SUBDIVIDIR NECESSÁRIO.`;
-                  console.error(`🚫 ${errorMsg}`);
-                  throw new Error(errorMsg);
-                }
-
-                if (!chunk.estimated_tokens || chunk.estimated_tokens > 850000) {
-                  const errorMsg = `Chunk ${chunk.chunk_index} sem validação de tokens ou excede limite. estimated_tokens: ${chunk.estimated_tokens}`;
-                  console.error(`❌ ${errorMsg}`);
-                  throw new Error(errorMsg);
-                }
-
-                console.log(`📄 Processando chunk ${chunk.chunk_index}/${chunks.length} (~${chunk.estimated_tokens.toLocaleString()} tokens - SAFE)...`);
+                console.log(`📄 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
 
                 const chunkParts = [
                   {
@@ -786,12 +562,7 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
                 throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
               }
 
-              // ⚠️ VALIDAÇÃO CRÍTICA: Token limit check
-              if (chunk.token_validation_status === 'exceeded' || (chunk.estimated_tokens && chunk.estimated_tokens > 850000)) {
-                throw new Error(`Chunk ${chunk.chunk_index} excede limite de tokens: ${chunk.estimated_tokens}. Subdividir necessário.`);
-              }
-
-              console.log(`📄 Adicionando chunk ${chunk.chunk_index}: ${chunk.gemini_file_uri} (~${chunk.estimated_tokens?.toLocaleString() || '?'} tokens)`);
+              console.log(`📄 Adicionando chunk ${chunk.chunk_index}: ${chunk.gemini_file_uri}`);
 
               parts.push({
                 fileData: {
@@ -920,22 +691,6 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
               .eq('id', processo_id);
 
             console.log('✅ Processo finalizado com sucesso!');
-
-            // Chamar consolidation-worker para consolidar as análises
-            console.log('📋 Chamando consolidation-worker...');
-            fetch(`${supabaseUrl}/functions/v1/consolidation-worker`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao chamar consolidation-worker:', err?.message);
-            });
-
-            // Email será enviado pelo consolidation-worker após consolidação
-            console.log('✅ Processo concluído - consolidation-worker enviará o email');
           }
 
           return new Response(
@@ -962,26 +717,7 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
           await addModelAttempt(supabase, processo_id, model.id, modelName, 'failed');
           await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'failed', error.message, error.code || null, executionTime);
 
-          if (attemptNumber >= activeModels.length) {
-            console.log('🚨 Todos os modelos falharam (File API) - registrando erro crítico');
-
-            const { data: chunks } = await supabase
-              .from('process_chunks')
-              .select('*')
-              .eq('processo_id', processo_id);
-
-            await logCriticalErrorAndNotify(
-              supabase,
-              supabaseUrl,
-              supabaseServiceKey,
-              processo_id,
-              nextResult.id,
-              error,
-              model,
-              nextResult,
-              chunks
-            );
-          } else {
+          if (attemptNumber < activeModels.length) {
             console.log(`🔄 Tentando próximo modelo...`);
             continue;
           }
@@ -1143,22 +879,6 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
               .eq('id', processo_id);
 
             console.log('✅ Processo finalizado com sucesso!');
-
-            // Chamar consolidation-worker para consolidar as análises
-            console.log('📋 Chamando consolidation-worker...');
-            fetch(`${supabaseUrl}/functions/v1/consolidation-worker`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao chamar consolidation-worker:', err?.message);
-            });
-
-            // Email será enviado pelo consolidation-worker após consolidação
-            console.log('✅ Processo concluído - consolidation-worker enviará o email');
           }
 
           return new Response(
@@ -1185,21 +905,7 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
           await addModelAttempt(supabase, processo_id, model.id, modelName, 'failed');
           await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'failed', error.message, error.code || null, executionTime);
 
-          if (attemptNumber >= activeModels.length) {
-            console.log('🚨 Todos os modelos falharam (Base64) - registrando erro crítico');
-
-            await logCriticalErrorAndNotify(
-              supabase,
-              supabaseUrl,
-              supabaseServiceKey,
-              processo_id,
-              nextResult.id,
-              error,
-              model,
-              nextResult,
-              null
-            );
-          } else {
+          if (attemptNumber < activeModels.length) {
             console.log(`🔄 Tentando próximo modelo...`);
             continue;
           }
@@ -1216,25 +922,6 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
         error_message: lastError?.message || 'Todos os modelos falharam',
       })
       .eq('id', nextResult.id);
-
-    console.log('🚨 Registrando falha total de todos os modelos como erro crítico');
-
-    const { data: chunks } = await supabase
-      .from('process_chunks')
-      .select('*')
-      .eq('processo_id', processo_id);
-
-    await logCriticalErrorAndNotify(
-      supabase,
-      supabaseUrl,
-      supabaseServiceKey,
-      processo_id,
-      nextResult.id,
-      lastError || new Error('Todos os modelos falharam'),
-      activeModels[activeModels.length - 1] || null,
-      nextResult,
-      chunks
-    );
 
     throw lastError || new Error('Todos os modelos falharam');
   } catch (error: any) {
