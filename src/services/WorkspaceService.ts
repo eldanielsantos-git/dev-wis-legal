@@ -114,27 +114,72 @@ export class WorkspaceService {
         };
       }
 
-      // Check if invited user already has an account (sem bloquear se já existir)
+      // Check if invited user already has an account
       const { data: invitedUser } = await supabase
         .from('user_profiles')
         .select('id, email')
         .eq('email', request.email.toLowerCase())
         .maybeSingle();
 
-      // Create the share (sem validar se já existe - permitir múltiplos convites)
-      const { data: share, error } = await supabase
+      // Check if share already exists for this processo and email
+      const { data: existingShare } = await supabase
         .from('workspace_shares')
-        .insert({
-          processo_id: request.processoId,
-          owner_user_id: user.id,
-          shared_with_user_id: invitedUser?.id || null,
-          shared_with_email: request.email.toLowerCase(),
-          shared_with_name: request.name,
-          permission_level: request.permissionLevel,
-          invitation_status: invitedUser ? 'accepted' : 'pending'
-        })
-        .select()
-        .single();
+        .select('id, permission_level')
+        .eq('processo_id', request.processoId)
+        .eq('shared_with_email', request.email.toLowerCase())
+        .maybeSingle();
+
+      let share;
+      let error;
+
+      if (existingShare) {
+        // Update existing share permission if different
+        if (existingShare.permission_level !== request.permissionLevel) {
+          const result = await supabase
+            .from('workspace_shares')
+            .update({
+              permission_level: request.permissionLevel,
+              shared_with_user_id: invitedUser?.id || existingShare.shared_with_user_id,
+              shared_with_name: request.name,
+              invitation_status: invitedUser ? 'accepted' : 'pending',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingShare.id)
+            .select()
+            .single();
+
+          share = result.data;
+          error = result.error;
+        } else {
+          // Permission is the same, just return existing share
+          const result = await supabase
+            .from('workspace_shares')
+            .select()
+            .eq('id', existingShare.id)
+            .single();
+
+          share = result.data;
+          error = result.error;
+        }
+      } else {
+        // Create new share
+        const result = await supabase
+          .from('workspace_shares')
+          .insert({
+            processo_id: request.processoId,
+            owner_user_id: user.id,
+            shared_with_user_id: invitedUser?.id || null,
+            shared_with_email: request.email.toLowerCase(),
+            shared_with_name: request.name,
+            permission_level: request.permissionLevel,
+            invitation_status: invitedUser ? 'accepted' : 'pending'
+          })
+          .select()
+          .single();
+
+        share = result.data;
+        error = result.error;
+      }
 
       if (error) {
         console.error('Error creating share:', error);
