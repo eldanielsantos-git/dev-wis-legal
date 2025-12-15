@@ -428,7 +428,7 @@ function MyProcessDetailPageInner({
     }
 
     try {
-      const workspaceShares = await WorkspaceService.getProcessoShares(processoId);
+      const workspaceShares = await WorkspaceService.getProcessShares(processoId);
       const userShare = workspaceShares.find(
         share =>
           share.shared_with_user_id === user.id &&
