@@ -197,10 +197,7 @@ Deno.serve(async (req: Request) => {
 
     const templateId = "01f7210a-4d2d-47ad-8214-a4fb5ff5a521";
 
-    const fromEmail = "WisLegal <noreply@wislegal.io>";
-
     const resendPayload = {
-      from: fromEmail,
       to: [userProfile.email],
       template: {
         id: templateId,

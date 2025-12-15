@@ -248,10 +248,7 @@ Deno.serve(async (req: Request) => {
           first_name_admin: admin.first_name || "Administrador"
         };
 
-        const fromEmail = "WisLegal <noreply@wislegal.io>";
-
         const resendPayload = {
-          from: fromEmail,
           to: [admin.email],
           template: {
             id: templateId,
