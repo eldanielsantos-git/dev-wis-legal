@@ -40,7 +40,6 @@ Deno.serve(async (req: Request) => {
     const { createClient } = await import("jsr:@supabase/supabase-js@2");
     const supabase = createClient(supabaseUrl!, supabaseKey!);
 
-    // Buscar usuário pelo email
     const { data: profileData, error: profileError } = await supabase
       .from('user_profiles')
       .select('id, first_name, last_name, email')
@@ -49,7 +48,6 @@ Deno.serve(async (req: Request) => {
 
     if (profileError || !profileData) {
       console.log('[ResetPassword] Usuário não encontrado:', email);
-      // Por segurança, não revelar se o email existe ou não
       return new Response(
         JSON.stringify({
           success: true,
@@ -62,12 +60,10 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Gerar token de reset (válido por 1 hora)
     const resetToken = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 1);
 
-    // Salvar token no banco
     const { error: updateError } = await supabase
       .from('user_profiles')
       .update({
@@ -81,7 +77,6 @@ Deno.serve(async (req: Request) => {
       throw new Error('Erro ao gerar token de reset');
     }
 
-    // Buscar URL base da aplicação
     const { data: config } = await supabase
       .from('system_config')
       .select('value')
@@ -91,7 +86,6 @@ Deno.serve(async (req: Request) => {
     const baseUrl = config?.value || 'https://app.wislegal.io';
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
-    // Enviar email via Resend API usando template
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       throw new Error("RESEND_API_KEY não configurada");
@@ -129,14 +123,12 @@ Deno.serve(async (req: Request) => {
       throw new Error('Erro ao enviar email via Resend');
     }
 
-    // Registrar log do email enviado
     const { error: logError } = await supabase
       .from('email_logs')
       .insert({
         user_id: profileData.id,
-        email_type: 'password_reset',
-        to_email: email,
-        subject: 'Redefinir Senha - Wis Legal',
+        type: 'password_reset',
+        email: email,
         status: 'sent',
         sent_at: new Date().toISOString()
       });
