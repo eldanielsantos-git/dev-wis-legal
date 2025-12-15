@@ -408,24 +408,50 @@ function MyProcessDetailPageInner({
     }
   };
 
-  const checkEditPermission = () => {
+  const checkEditPermission = async () => {
     if (!processo || !user) {
       setCanEditTags(false);
       return;
     }
-    const hasPermission = processo.user_id === user.id;
-    console.log('🔑 Verificando permissão de edição de tags:', {
-      processoUserId: processo.user_id,
-      currentUserId: user.id,
-      hasPermission
-    });
-    setCanEditTags(hasPermission);
+
+    const isOwner = processo.user_id === user.id;
+
+    if (isOwner || isAdmin) {
+      console.log('🔑 Permissão de edição de tags concedida (dono ou admin)');
+      setCanEditTags(true);
+      return;
+    }
+
+    try {
+      const workspaceShares = await WorkspaceService.getProcessoShares(processoId);
+      const userShare = workspaceShares.find(
+        share =>
+          share.shared_with_user_id === user.id &&
+          share.invitation_status === 'accepted'
+      );
+
+      const isEditor = userShare?.permission_level === 'editor';
+
+      console.log('🔑 Verificando permissão de edição de tags:', {
+        processoUserId: processo.user_id,
+        currentUserId: user.id,
+        isOwner,
+        isAdmin,
+        isEditor,
+        hasPermission: isOwner || isAdmin || isEditor
+      });
+
+      setCanEditTags(isEditor);
+    } catch (error) {
+      console.error('Erro ao verificar permissões de workspace:', error);
+      setCanEditTags(false);
+    }
   };
 
   // Verificar permissões quando processo ou user mudarem
   useEffect(() => {
     checkEditPermission();
-  }, [processo, user]);
+  }, [processo, user, isAdmin, processoId]);
 
   const handleShareClick = () => {
     if (canShare) {

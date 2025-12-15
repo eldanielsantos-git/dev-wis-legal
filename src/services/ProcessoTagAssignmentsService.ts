@@ -25,8 +25,19 @@ class ProcessoTagAssignmentsServiceClass {
       .single();
 
     const isAdmin = profile?.is_admin || false;
+    const isOwner = processo.user_id === user.id;
 
-    if (processo.user_id !== user.id && !isAdmin) {
+    const { data: workspaceShare } = await supabase
+      .from('workspace_shares')
+      .select('permission_level, invitation_status')
+      .eq('processo_id', processoId)
+      .eq('shared_with_user_id', user.id)
+      .eq('invitation_status', 'accepted')
+      .maybeSingle();
+
+    const isEditor = workspaceShare?.permission_level === 'editor';
+
+    if (!isOwner && !isAdmin && !isEditor) {
       throw new Error('Você não tem permissão para adicionar tags a este processo');
     }
 
@@ -68,8 +79,19 @@ class ProcessoTagAssignmentsServiceClass {
       .single();
 
     const isAdmin = profile?.is_admin || false;
+    const isOwner = processo.user_id === user.id;
 
-    if (processo.user_id !== user.id && !isAdmin) {
+    const { data: workspaceShare } = await supabase
+      .from('workspace_shares')
+      .select('permission_level, invitation_status')
+      .eq('processo_id', processoId)
+      .eq('shared_with_user_id', user.id)
+      .eq('invitation_status', 'accepted')
+      .maybeSingle();
+
+    const isEditor = workspaceShare?.permission_level === 'editor';
+
+    if (!isOwner && !isAdmin && !isEditor) {
       throw new Error('Você não tem permissão para remover tags deste processo');
     }
 
@@ -107,8 +129,19 @@ class ProcessoTagAssignmentsServiceClass {
       .single();
 
     const isAdmin = profile?.is_admin || false;
+    const isOwner = processo.user_id === user.id;
 
-    if (processo.user_id !== user.id && !isAdmin) {
+    const { data: workspaceShare } = await supabase
+      .from('workspace_shares')
+      .select('permission_level, invitation_status')
+      .eq('processo_id', processoId)
+      .eq('shared_with_user_id', user.id)
+      .eq('invitation_status', 'accepted')
+      .maybeSingle();
+
+    const isEditor = workspaceShare?.permission_level === 'editor';
+
+    if (!isOwner && !isAdmin && !isEditor) {
       throw new Error('Você não tem permissão para remover tags deste processo');
     }
 
