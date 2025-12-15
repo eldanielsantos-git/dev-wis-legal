@@ -5,6 +5,7 @@ import { getThemeColors } from '../../utils/themeUtils';
 import type { ProcessoTag } from '../../lib/supabase';
 import { ProcessoTagComponent } from './ProcessoTag';
 import { ProcessoTagsPopup } from './ProcessoTagsPopup';
+import { ReadOnlyPermissionModal } from '../ReadOnlyPermissionModal';
 
 interface ProcessoTagsListProps {
   processoId: string;
@@ -12,6 +13,7 @@ interface ProcessoTagsListProps {
   maxVisible?: number;
   editable?: boolean;
   onTagsChange?: () => void;
+  isReadOnly?: boolean;
 }
 
 export const ProcessoTagsList: React.FC<ProcessoTagsListProps> = ({
@@ -19,17 +21,23 @@ export const ProcessoTagsList: React.FC<ProcessoTagsListProps> = ({
   tags,
   maxVisible = 3,
   editable = false,
-  onTagsChange
+  onTagsChange,
+  isReadOnly = false
 }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
+  const [showReadOnlyModal, setShowReadOnlyModal] = useState(false);
 
   const visibleTags = tags.slice(0, maxVisible);
   const hiddenCount = Math.max(0, tags.length - maxVisible);
 
   const handleOpenPopup = () => {
-    setIsPopupOpen(true);
+    if (isReadOnly) {
+      setShowReadOnlyModal(true);
+    } else {
+      setIsPopupOpen(true);
+    }
   };
 
   const handleClosePopup = () => {
@@ -84,6 +92,11 @@ export const ProcessoTagsList: React.FC<ProcessoTagsListProps> = ({
         tags={tags}
         processoId={editable ? processoId : undefined}
         onTagsUpdated={onTagsChange}
+      />
+
+      <ReadOnlyPermissionModal
+        isOpen={showReadOnlyModal}
+        onClose={() => setShowReadOnlyModal(false)}
       />
     </>
   );

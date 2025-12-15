@@ -23,6 +23,7 @@ import { ProcessoTagsService } from '../services/ProcessoTagsService';
 import { ProcessoTagAssignmentsService } from '../services/ProcessoTagAssignmentsService';
 import { ProcessoTagsList } from '../components/tags/ProcessoTagsList';
 import { ProcessoTagsPopup } from '../components/tags/ProcessoTagsPopup';
+import { ReadOnlyPermissionModal } from '../components/ReadOnlyPermissionModal';
 import type { ProcessoTag } from '../lib/supabase';
 
 interface MyProcessDetailPageProps {
@@ -101,6 +102,8 @@ function MyProcessDetailPageInner({
   const [isLoadingTags, setIsLoadingTags] = useState(true);
   const [isTagsPopupOpen, setIsTagsPopupOpen] = useState(false);
   const [canEditTags, setCanEditTags] = useState(false);
+  const [showReadOnlyModal, setShowReadOnlyModal] = useState(false);
+  const [userPermissionLevel, setUserPermissionLevel] = useState<'owner' | 'editor' | 'read_only' | null>(null);
   const { user, isAdmin } = useAuth();
   const isLoadingResultsRef = React.useRef(false);
   const processoChannelRef = React.useRef<(() => void) | null>(null);
@@ -411,6 +414,7 @@ function MyProcessDetailPageInner({
   const checkEditPermission = async () => {
     if (!processo || !user) {
       setCanEditTags(false);
+      setUserPermissionLevel(null);
       return;
     }
 
@@ -419,6 +423,7 @@ function MyProcessDetailPageInner({
     if (isOwner || isAdmin) {
       console.log('🔑 Permissão de edição de tags concedida (dono ou admin)');
       setCanEditTags(true);
+      setUserPermissionLevel('owner');
       return;
     }
 
@@ -431,6 +436,7 @@ function MyProcessDetailPageInner({
       );
 
       const isEditor = userShare?.permission_level === 'editor';
+      const isReadOnly = userShare?.permission_level === 'read_only';
 
       console.log('🔑 Verificando permissão de edição de tags:', {
         processoUserId: processo.user_id,
@@ -438,13 +444,24 @@ function MyProcessDetailPageInner({
         isOwner,
         isAdmin,
         isEditor,
+        isReadOnly,
         hasPermission: isOwner || isAdmin || isEditor
       });
 
-      setCanEditTags(isEditor);
+      if (isEditor) {
+        setCanEditTags(true);
+        setUserPermissionLevel('editor');
+      } else if (isReadOnly) {
+        setCanEditTags(false);
+        setUserPermissionLevel('read_only');
+      } else {
+        setCanEditTags(false);
+        setUserPermissionLevel(null);
+      }
     } catch (error) {
       console.error('Erro ao verificar permissões de workspace:', error);
       setCanEditTags(false);
+      setUserPermissionLevel(null);
     }
   };
 
@@ -748,6 +765,16 @@ function MyProcessDetailPageInner({
                       Gerenciar Tags
                     </button>
                   )}
+                  {!canEditTags && userPermissionLevel === 'read_only' && (
+                    <button
+                      onClick={() => setShowReadOnlyModal(true)}
+                      className="text-xs px-2 py-1 rounded hover:opacity-80 transition-opacity flex items-center gap-1"
+                      style={{ backgroundColor: colors.bgSecondary, color: colors.textSecondary }}
+                    >
+                      <Lock size={12} />
+                      Gerenciar Tags
+                    </button>
+                  )}
                 </div>
 
                 {processoTags.length > 0 ? (
@@ -756,6 +783,7 @@ function MyProcessDetailPageInner({
                     tags={processoTags}
                     maxVisible={5}
                     editable={canEditTags}
+                    isReadOnly={userPermissionLevel === 'read_only'}
                     onTagsChange={loadProcessoTags}
                   />
                 ) : (
@@ -775,6 +803,11 @@ function MyProcessDetailPageInner({
               tags={processoTags}
               processoId={canEditTags ? processoId : undefined}
               onTagsUpdated={loadProcessoTags}
+            />
+
+            <ReadOnlyPermissionModal
+              isOpen={showReadOnlyModal}
+              onClose={() => setShowReadOnlyModal(false)}
             />
 
             {/* Título Áreas de Análise */}
