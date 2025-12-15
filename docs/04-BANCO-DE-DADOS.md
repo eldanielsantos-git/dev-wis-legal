@@ -83,7 +83,10 @@ CREATE TABLE user_profiles (
   first_name TEXT NOT NULL,
   last_name TEXT NOT NULL,
   phone TEXT,
-  phone_country_code TEXT DEFAULT '+55',
+  phone_country_code TEXT DEFAULT '+55',Erro ao iniciar análise: Error: Processo não encontrado at Object.handler (file:///var/tmp/sb-compile-edge-runtime/source/index.ts:35:13) at eventLoopTick (ext:core/01_core.js:175:7) at async mapped (ext:runtime/http.js:242:18)
+[bc3ed7dd] ❌ Erro ao buscar informações do processo: { code: "42703", details: null, hint: null, message: "column processos.numero_paginas does not exist" }
+[bc3ed7dd] Iniciando análise para processo: 6cd50229-a490-4311-ac15-2845fc61fc70
+booted (time: 25ms)
   oab TEXT,
   city TEXT,
   state TEXT,
