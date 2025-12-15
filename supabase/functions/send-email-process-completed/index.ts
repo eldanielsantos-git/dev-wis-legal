@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
     console.log("Step 1: Fetching processo data from database...");
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
-      .select("id, user_id, file_name, pages_processed_successfully, status")
+      .select("id, user_id, file_name, total_pages, status")
       .eq("id", processo_id)
       .maybeSingle();
 
@@ -118,7 +118,7 @@ Deno.serve(async (req: Request) => {
     const firstName = userProfile.first_name;
     const userEmail = userProfile.email;
     const fileName = processo.file_name;
-    const pagesProcessed = processo.pages_processed_successfully || 0;
+    const pagesProcessed = processo.total_pages || 0;
 
     console.log("Email details:", {
       to: userEmail,
