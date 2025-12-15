@@ -77,13 +77,20 @@ Deno.serve(async (req: Request) => {
       throw new Error('Erro ao gerar token de reset');
     }
 
-    const { data: config } = await supabase
-      .from('system_config')
-      .select('value')
-      .eq('key', 'app_base_url')
-      .single();
-
-    const baseUrl = config?.value || 'https://app.wislegal.io';
+    // Pega a URL base do Origin header da requisição
+    const origin = req.headers.get('origin') || req.headers.get('referer');
+    let baseUrl = 'https://app.wislegal.io';
+    
+    if (origin) {
+      try {
+        const url = new URL(origin);
+        baseUrl = `${url.protocol}//${url.host}`;
+      } catch (e) {
+        console.log('[ResetPassword] Erro ao parsear origin, usando fallback:', e);
+      }
+    }
+    
+    console.log('[ResetPassword] Using base URL:', baseUrl);
     const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
