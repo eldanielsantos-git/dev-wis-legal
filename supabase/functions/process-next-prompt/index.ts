@@ -182,7 +182,7 @@ async function logCriticalErrorAndNotify(
 
     const { data: processo } = await supabase
       .from('processos')
-      .select('user_id, is_chunked, total_chunks_count')
+      .select('user_id, is_chunked, total_chunks_count, total_pages')
       .eq('id', processoId)
       .single();
 
@@ -190,6 +190,10 @@ async function logCriticalErrorAndNotify(
       console.error('Processo não encontrado para logging de erro');
       return;
     }
+
+    const isComplexFile = (processo.total_pages || 0) >= 1000;
+    console.log(`📊 Arquivo ${isComplexFile ? 'COMPLEXO' : 'SIMPLES'} detectado (${processo.total_pages || 0} páginas)`);
+
 
     const errorType = error.message?.includes('token')
       ? 'token_limit_exceeded'
@@ -213,67 +217,124 @@ async function logCriticalErrorAndNotify(
     const chunksCompleted = chunks?.filter(c => c.status === 'completed').length || 0;
     const progressPercent = totalChunks > 0 ? (chunksCompleted / totalChunks) * 100 : 0;
 
-    const errorRecord = {
-      processo_id: processoId,
-      user_id: processo.user_id,
-      analysis_result_id: analysisResultId,
-      error_type: errorType,
-      error_category: errorCategory,
-      error_message: error.message || 'Unknown error',
-      error_details: {
-        stack: error.stack,
-        code: error.code,
-        full_error: error.toString()
-      },
-      severity,
-      prompt_title: nextResult?.prompt_title || 'Unknown',
-      execution_order: nextResult?.execution_order || 0,
-      total_chunks: totalChunks,
-      chunks_completed: chunksCompleted,
-      progress_percent: progressPercent,
-      model_used: model?.name || 'Unknown',
-      retry_attempt: 0,
-      max_retries: 3,
-      auto_recovery_enabled: false,
-      occurred_at: new Date().toISOString()
-    };
+    if (isComplexFile) {
+      const errorRecord = {
+        processo_id: processoId,
+        user_id: processo.user_id,
+        analysis_result_id: analysisResultId,
+        error_type: errorType,
+        error_category: errorCategory,
+        error_message: error.message || 'Unknown error',
+        error_details: {
+          stack: error.stack,
+          code: error.code,
+          full_error: error.toString()
+        },
+        severity,
+        prompt_title: nextResult?.prompt_title || 'Unknown',
+        execution_order: nextResult?.execution_order || 0,
+        total_chunks: totalChunks,
+        chunks_completed: chunksCompleted,
+        progress_percent: progressPercent,
+        model_used: model?.name || 'Unknown',
+        retry_attempt: 0,
+        max_retries: 3,
+        auto_recovery_enabled: false,
+        occurred_at: new Date().toISOString()
+      };
 
-    const { data: errorData, error: insertError } = await supabase
-      .from('complex_analysis_errors')
-      .insert(errorRecord)
-      .select()
-      .single();
+      const { data: errorData, error: insertError } = await supabase
+        .from('complex_analysis_errors')
+        .insert(errorRecord)
+        .select()
+        .single();
 
-    if (insertError) {
-      console.error('Erro ao inserir registro de erro:', insertError);
-      return;
-    }
-
-    console.log('✅ Erro registrado na tabela complex_analysis_errors:', errorData.id);
-
-    console.log('📧 Disparando email para administradores...');
-
-    fetch(`${supabaseUrl}/functions/v1/send-admin-complex-analysis-error`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({
-        error_id: errorData.id
-      }),
-    })
-    .then(async (response) => {
-      if (response.ok) {
-        console.log('✅ Email de erro enviado com sucesso');
-      } else {
-        const errorText = await response.text();
-        console.error('❌ Erro ao enviar email:', errorText);
+      if (insertError) {
+        console.error('Erro ao inserir registro de erro:', insertError);
+        return;
       }
-    })
-    .catch(emailError => {
-      console.error('❌ Falha ao disparar email de erro:', emailError);
-    });
+
+      console.log('✅ Erro registrado na tabela complex_analysis_errors:', errorData.id);
+      console.log('📧 Disparando email de ARQUIVO COMPLEXO para administradores...');
+
+      fetch(`${supabaseUrl}/functions/v1/send-admin-complex-analysis-error`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          error_id: errorData.id
+        }),
+      })
+      .then(async (response) => {
+        if (response.ok) {
+          console.log('✅ Email de erro enviado com sucesso');
+        } else {
+          const errorText = await response.text();
+          console.error('❌ Erro ao enviar email:', errorText);
+        }
+      })
+      .catch(emailError => {
+        console.error('❌ Falha ao disparar email de erro:', emailError);
+      });
+    } else {
+      const simpleErrorRecord = {
+        processo_id: processoId,
+        user_id: processo.user_id,
+        analysis_result_id: analysisResultId,
+        error_type: errorType,
+        error_category: errorCategory,
+        error_message: error.message || 'Unknown error',
+        error_details: {
+          stack: error.stack,
+          code: error.code,
+          full_error: error.toString()
+        },
+        severity,
+        prompt_title: nextResult?.prompt_title || 'Unknown',
+        execution_order: nextResult?.execution_order || 0,
+        model_used: model?.name || 'Unknown',
+        current_stage: nextResult?.prompt_title || 'Unknown',
+        occurred_at: new Date().toISOString()
+      };
+
+      const { data: errorData, error: insertError } = await supabase
+        .from('analysis_errors')
+        .insert(simpleErrorRecord)
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Erro ao inserir registro de erro:', insertError);
+        return;
+      }
+
+      console.log('✅ Erro registrado na tabela analysis_errors:', errorData.id);
+      console.log('📧 Disparando email de ARQUIVO SIMPLES para administradores...');
+
+      fetch(`${supabaseUrl}/functions/v1/send-admin-analysis-error`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          error_id: errorData.id
+        }),
+      })
+      .then(async (response) => {
+        if (response.ok) {
+          console.log('✅ Email de erro enviado com sucesso');
+        } else {
+          const errorText = await response.text();
+          console.error('❌ Erro ao enviar email:', errorText);
+        }
+      })
+      .catch(emailError => {
+        console.error('❌ Falha ao disparar email de erro:', emailError);
+      });
+    }
 
   } catch (loggingError) {
     console.error('❌ Erro ao registrar erro crítico:', loggingError);
