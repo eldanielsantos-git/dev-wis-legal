@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface AdminAnalysisErrorRequest {
+interface AdminComplexAnalysisErrorRequest {
   error_id: string;
 }
 
@@ -20,12 +20,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log("=== SEND ADMIN ANALYSIS ERROR EMAIL - START ===");
+    console.log("=== SEND ADMIN COMPLEX ANALYSIS ERROR EMAIL - START ===");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const appUrl = "https://app.wislegal.io";
+    const appUrl = "https://dev-app.wislegal.io";
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { error_id }: AdminAnalysisErrorRequest = await req.json();
+    const { error_id }: AdminComplexAnalysisErrorRequest = await req.json();
 
     if (!error_id) {
       throw new Error("Missing required field: error_id");
@@ -45,38 +45,25 @@ Deno.serve(async (req: Request) => {
 
     console.log("Request data:", { error_id });
 
-    // Step 1: Buscar informações do erro
-    console.log("Step 1: Fetching error data from database...");
+    // Step 1: Buscar informações do erro complexo
+    console.log("Step 1: Fetching complex error data from database...");
     const { data: errorData, error: errorFetchError } = await supabaseClient
-      .from("analysis_errors")
-      .select(`
-        id,
-        processo_id,
-        user_id,
-        error_type,
-        error_category,
-        error_message,
-        severity,
-        current_stage,
-        prompt_title,
-        execution_order,
-        occurred_at,
-        admin_notified
-      `)
+      .from("complex_analysis_errors")
+      .select("*")
       .eq("id", error_id)
       .maybeSingle();
 
     if (errorFetchError || !errorData) {
-      console.error("Error fetching error data:", errorFetchError);
-      throw new Error(`Error not found: ${error_id}`);
+      console.error("Error fetching complex error data:", errorFetchError);
+      throw new Error(`Complex error not found: ${error_id}`);
     }
 
     if (errorData.admin_notified) {
-      console.warn("Admin already notified for this error. Skipping.");
+      console.warn("Admin already notified for this complex error. Skipping.");
       return new Response(
         JSON.stringify({
           success: false,
-          message: "Admin already notified for this error"
+          message: "Admin already notified for this complex error"
         }),
         {
           status: 200,
@@ -85,17 +72,27 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("Error data found:", {
+    console.log("Complex error data found:", {
       error_type: errorData.error_type,
       severity: errorData.severity,
-      processo_id: errorData.processo_id
+      chunk_index: errorData.failed_chunk_index,
+      total_chunks: errorData.total_chunks
     });
 
     // Step 2: Buscar informações do processo
     console.log("Step 2: Fetching processo data...");
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
-      .select("id, file_name, user_id, current_prompt_number, total_prompts")
+      .select(`
+        id,
+        file_name,
+        user_id,
+        current_prompt_number,
+        total_prompts,
+        transcricao,
+        total_chunks_count,
+        is_chunked
+      `)
       .eq("id", errorData.processo_id)
       .maybeSingle();
 
@@ -104,10 +101,13 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Processo not found: ${errorData.processo_id}`);
     }
 
+    const totalPages = processo.transcricao?.totalPages || 0;
+
     console.log("Processo found:", {
       file_name: processo.file_name,
-      current_prompt: processo.current_prompt_number,
-      total_prompts: processo.total_prompts
+      total_pages: totalPages,
+      total_chunks: processo.total_chunks_count,
+      is_chunked: processo.is_chunked
     });
 
     // Step 3: Buscar informações do usuário
@@ -130,8 +130,6 @@ Deno.serve(async (req: Request) => {
 
     // Step 4: Buscar plano ativo do usuário
     console.log("Step 4: Fetching user subscription...");
-
-    // Primeiro buscar o customer_id
     const { data: customer } = await supabaseClient
       .from("stripe_customers")
       .select("customer_id")
@@ -186,48 +184,89 @@ Deno.serve(async (req: Request) => {
       return `${day}/${month}/${year} às ${hours}:${minutes}`;
     };
 
-    const getSeverityColor = (severity: string): string => {
-      const colors: Record<string, string> = {
-        'critical': '#C92A2A',
-        'high': '#FF6B6B',
-        'medium': '#FFA94D',
-        'low': '#74C0FC'
-      };
-      return colors[severity.toLowerCase()] || '#999';
+    const formatDuration = (seconds: number | null): string => {
+      if (!seconds) return "N/A";
+      if (seconds < 60) return `${seconds}s`;
+      const minutes = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${minutes}min ${secs}s`;
     };
 
-    const getCurrentStage = (): string => {
-      if (errorData.current_stage) {
-        return errorData.current_stage;
-      }
-      if (errorData.prompt_title && errorData.execution_order) {
-        return `Processando prompt ${errorData.execution_order} de ${processo.total_prompts} - ${errorData.prompt_title}`;
-      }
-      if (processo.current_prompt_number && processo.total_prompts) {
-        return `Prompt ${processo.current_prompt_number} de ${processo.total_prompts}`;
-      }
-      return "Estágio desconhecido";
+    const getCurrentPhase = (): string => {
+      const phases: Record<string, string> = {
+        'initializing': 'Inicialização',
+        'processing': 'Processamento de Chunks',
+        'consolidation': 'Consolidação',
+        'finalization': 'Finalização'
+      };
+      return phases[errorData.current_phase] || errorData.current_phase || "Desconhecido";
     };
 
     const templateVariables = {
+      // Admin info
+      first_name_admin: "", // Será preenchido por admin
+
+      // User info
       first_name: userProfile.first_name || "Usuário",
       last_name: userProfile.last_name || "",
       user_email: userProfile.email,
       plan_name: planName,
+
+      // File info
       file_name: processo.file_name,
       processo_id: processo.id,
-      processo_detail_url: `${appUrl}/lawsuits-detail/${processo.id}`,
+      total_pages: totalPages.toString(),
+      total_chunks: (errorData.total_chunks || processo.total_chunks_count || 0).toString(),
+
+      // Failed chunk info
+      failed_chunk_index: (errorData.failed_chunk_index || 0).toString(),
+      chunk_start_page: (errorData.chunk_start_page || 0).toString(),
+      chunk_end_page: (errorData.chunk_end_page || 0).toString(),
+      chunk_pages_count: (errorData.chunk_pages_count || 0).toString(),
       error_datetime: formatDateTime(errorData.occurred_at),
-      current_stage: getCurrentStage(),
+
+      // Processing status
+      current_phase: getCurrentPhase(),
+      chunks_completed: (errorData.chunks_completed || 0).toString(),
+      progress_percent: (errorData.progress_percent || 0).toFixed(1) + "%",
+      prompt_title: errorData.prompt_title || "N/A",
+      execution_order: (errorData.execution_order || 0).toString(),
+      total_prompts: (processo.total_prompts || 0).toString(),
+      chunks_succeeded: (errorData.chunks_succeeded || 0).toString(),
+      chunks_failed: (errorData.chunks_failed || 1).toString(),
+      processing_duration: formatDuration(errorData.processing_duration),
+
+      // Error details
       error_type: errorData.error_type,
       severity: errorData.severity.toUpperCase(),
-      severity_color: getSeverityColor(errorData.severity),
-      error_message: errorData.error_message
+      error_category: errorData.error_category,
+      error_message: errorData.error_message,
+
+      // Technical info
+      worker_id: errorData.worker_id || "N/A",
+      chunk_id: errorData.chunk_id || "N/A",
+      retry_attempt: (errorData.retry_attempt || 0).toString(),
+      max_retries: (errorData.max_retries || 3).toString(),
+      estimated_tokens: errorData.estimated_tokens ? errorData.estimated_tokens.toLocaleString() : "N/A",
+      token_validation_status: errorData.token_validation_status || "N/A",
+      model_used: errorData.model_used || "N/A",
+      gemini_file_uri: errorData.gemini_file_uri || "N/A",
+      recovery_attempted: errorData.recovery_attempted ? "Sim" : "Não",
+
+      // Automatic actions
+      auto_recovery_enabled: errorData.auto_recovery_enabled ? "Sim" : "Não",
+      next_retry_at: errorData.next_retry_at ? formatDateTime(errorData.next_retry_at) : "N/A",
+      chunk_subdivision_triggered: errorData.chunk_subdivision_triggered ? "Sim" : "Não",
+      monitoring_active: "Sim",
+
+      // URLs
+      processo_detail_url: `${appUrl}/lawsuits-detail/${processo.id}`
     };
 
     console.log("Template variables prepared:", {
       user: `${templateVariables.first_name} ${templateVariables.last_name}`,
       file: templateVariables.file_name,
+      chunk: `${templateVariables.failed_chunk_index}/${templateVariables.total_chunks}`,
       error_type: templateVariables.error_type,
       severity: templateVariables.severity
     });
@@ -235,14 +274,13 @@ Deno.serve(async (req: Request) => {
     // Step 7: Enviar email para cada admin
     console.log("Step 7: Sending emails to admins...");
 
-    const templateId = "27f9de05-6f16-4361-86b2-72d8ee8f53a4";
+    const templateId = "f5256a8e-e0bd-4eaa-99f5-baf1e4b8ab3b";
     const emailResults: string[] = [];
 
     for (const admin of admins) {
       try {
         console.log(`Sending email to ${admin.email}...`);
 
-        // Adicionar first_name_admin específico para cada admin
         const adminTemplateVariables = {
           ...templateVariables,
           first_name_admin: admin.first_name || "Administrador"
@@ -282,12 +320,13 @@ Deno.serve(async (req: Request) => {
           .insert({
             user_id: errorData.user_id,
             email: admin.email,
-            type: "admin_analysis_error",
+            type: "admin_complex_analysis_error",
             status: "success",
             email_provider_response: {
               resend_id: resendResult.id,
               error_id: errorData.id,
               processo_id: processo.id,
+              chunk_id: errorData.chunk_id,
               admin_email: admin.email
             },
             sent_at: new Date().toISOString()
@@ -307,10 +346,10 @@ Deno.serve(async (req: Request) => {
     }
 
     // Step 8: Marcar erro como notificado
-    console.log("Step 8: Marking error as notified...");
+    console.log("Step 8: Marking complex error as notified...");
 
     const { error: updateError } = await supabaseClient
-      .from("analysis_errors")
+      .from("complex_analysis_errors")
       .update({
         admin_notified: true,
         admin_notified_at: new Date().toISOString(),
@@ -319,17 +358,17 @@ Deno.serve(async (req: Request) => {
       .eq("id", error_id);
 
     if (updateError) {
-      console.error("Failed to mark error as notified:", updateError);
+      console.error("Failed to mark complex error as notified:", updateError);
     } else {
-      console.log("✓ Error marked as notified");
+      console.log("✓ Complex error marked as notified");
     }
 
-    console.log("=== SEND ADMIN ANALYSIS ERROR EMAIL - SUCCESS ===");
+    console.log("=== SEND ADMIN COMPLEX ANALYSIS ERROR EMAIL - SUCCESS ===");
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Admin error notification sent to ${admins.length} admin(s)`,
+        message: `Admin complex error notification sent to ${admins.length} admin(s)`,
         emails_sent: emailResults.length,
         resend_ids: emailResults
       }),
@@ -340,7 +379,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error) {
-    console.error("💥 Error in send-admin-analysis-error function:", error);
+    console.error("💥 Error in send-admin-complex-analysis-error function:", error);
     console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
 
     return new Response(

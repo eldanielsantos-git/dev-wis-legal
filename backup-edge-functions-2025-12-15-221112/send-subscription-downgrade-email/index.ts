@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface SubscriptionUpgradeRequest {
+interface SubscriptionDowngradeRequest {
   subscription_id: string;
   old_price_id: string;
   new_price_id: string;
@@ -23,12 +23,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log("=== SEND SUBSCRIPTION UPGRADE EMAIL - START ===");
+    console.log("=== SEND SUBSCRIPTION DOWNGRADE EMAIL - START ===");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const appUrl = "https://app.wislegal.io";
+    const plansUrl = "https://dev-app.wislegal.io/signature";
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
       old_price_id,
       new_price_id,
       tokens_preserved
-    }: SubscriptionUpgradeRequest = await req.json();
+    }: SubscriptionDowngradeRequest = await req.json();
 
     console.log("Request data:", {
       subscription_id,
@@ -167,7 +167,7 @@ Deno.serve(async (req: Request) => {
       return `${day}/${month}/${year}`;
     };
 
-    console.log("Step 5.1: Fetching updated token balance after upgrade...");
+    console.log("Step 5.1: Fetching updated token balance after downgrade...");
 
     const { data: updatedSub, error: updatedSubError } = await supabaseClient
       .from('stripe_subscriptions')
@@ -199,14 +199,14 @@ Deno.serve(async (req: Request) => {
       tokens_preserved: formatTokens(actualExtraTokens),
       total_tokens_available: formatTokens(actualTotalTokens),
       current_period_end: formatDate(subscriptionData.current_period_end),
-      app_url: appUrl
+      plans_url: plansUrl
     };
 
     console.log("Template variables prepared:", templateVariables);
 
     console.log("Step 6: Sending email via Resend with template...");
 
-    const templateId = "cae809db-d767-4489-9c15-7c3409418edd";
+    const templateId = "265245b7-2a18-4ad3-958a-e3120453982c";
 
     const resendPayload = {
       from: "WisLegal <noreply@wislegal.io>",
@@ -245,7 +245,7 @@ Deno.serve(async (req: Request) => {
       .insert({
         user_id: userProfile.id,
         email: userProfile.email,
-        type: "subscription_upgraded",
+        type: "subscription_downgraded",
         status: "success",
         email_provider_response: {
           resend_id: resendResult.id,
@@ -263,12 +263,12 @@ Deno.serve(async (req: Request) => {
       console.log("✓ Email send logged to database");
     }
 
-    console.log("=== SEND SUBSCRIPTION UPGRADE EMAIL - SUCCESS ===");
+    console.log("=== SEND SUBSCRIPTION DOWNGRADE EMAIL - SUCCESS ===");
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Subscription upgrade email sent successfully",
+        message: "Subscription downgrade email sent successfully",
         resend_id: resendResult.id,
         recipient: userProfile.email,
         old_plan: oldPlanData.name,
@@ -282,7 +282,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error) {
-    console.error("💥 Error in send-subscription-upgrade-email function:", error);
+    console.error("💥 Error in send-subscription-downgrade-email function:", error);
     console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
 
     return new Response(

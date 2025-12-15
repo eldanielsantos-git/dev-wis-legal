@@ -188,7 +188,7 @@ Link: {{processo_detail_url}}
 ### **Link Secundário** (Texto com underline)
 ```
 Texto: Ver Todos os Erros de Arquivos Grandes
-Link: https://app.wislegal.io/admin/complex-errors
+Link: https://dev-app.wislegal.io/admin/complex-errors
 ```
 
 ---

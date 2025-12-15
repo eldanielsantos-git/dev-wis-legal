@@ -143,8 +143,8 @@ Deno.serve(async (req: Request) => {
 
     const templateId = "06d6d862-a22e-4aee-9b3f-e891b61d61ba";
     const signUpUrl = userExists
-      ? `https://app.wislegal.io/lawsuits-detail/${processoId}`
-      : `https://app.wislegal.io/sign-up?workspace=${shareId}`;
+      ? `https://dev-app.wislegal.io/lawsuits-detail/${processoId}`
+      : `https://dev-app.wislegal.io/sign-up?workspace=${shareId}`;
 
     const resendPayload = {
       from: "WisLegal <noreply@wislegal.io>",

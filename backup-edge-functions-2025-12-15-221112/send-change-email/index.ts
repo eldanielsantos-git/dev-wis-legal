@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
       email: old_email,
       newEmail: new_email,
       options: {
-        redirectTo: 'https://app.wislegal.io/app'
+        redirectTo: 'https://dev-app.wislegal.io/app'
       }
     });
 

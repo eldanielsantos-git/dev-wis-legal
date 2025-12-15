@@ -7,11 +7,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface SubscriptionUpgradeRequest {
+interface SubscriptionConfirmationRequest {
   subscription_id: string;
-  old_price_id: string;
-  new_price_id: string;
-  tokens_preserved: number;
 }
 
 Deno.serve(async (req: Request) => {
@@ -23,12 +20,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log("=== SEND SUBSCRIPTION UPGRADE EMAIL - START ===");
+    console.log("=== SEND SUBSCRIPTION CONFIRMATION EMAIL - START ===");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const appUrl = "https://app.wislegal.io";
+    const appUrl = "https://dev-app.wislegal.io";
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
@@ -40,22 +37,12 @@ Deno.serve(async (req: Request) => {
 
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    const {
-      subscription_id,
-      old_price_id,
-      new_price_id,
-      tokens_preserved
-    }: SubscriptionUpgradeRequest = await req.json();
+    const { subscription_id }: SubscriptionConfirmationRequest = await req.json();
 
-    console.log("Request data:", {
-      subscription_id,
-      old_price_id,
-      new_price_id,
-      tokens_preserved
-    });
+    console.log("Request data:", { subscription_id });
 
-    if (!subscription_id || !old_price_id || !new_price_id) {
-      throw new Error("Missing required fields: subscription_id, old_price_id, or new_price_id");
+    if (!subscription_id) {
+      throw new Error("Missing required field: subscription_id");
     }
 
     console.log("Step 1: Fetching subscription data from database...");
@@ -117,36 +104,21 @@ Deno.serve(async (req: Request) => {
       email: userProfile.email
     });
 
-    console.log("Step 4: Fetching old and new plan details...");
+    console.log("Step 4: Fetching subscription plan details...");
 
-    const { data: oldPlanData, error: oldPlanError } = await supabaseClient
-      .from("subscription_plans")
-      .select("name")
-      .eq("stripe_price_id", old_price_id)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (oldPlanError || !oldPlanData) {
-      console.error("Error fetching old plan:", oldPlanError);
-      throw new Error(`Old plan not found for price_id: ${old_price_id}`);
-    }
-
-    const { data: newPlanData, error: newPlanError } = await supabaseClient
+    const { data: planData, error: planError } = await supabaseClient
       .from("subscription_plans")
       .select("name, price_brl, tokens_included")
-      .eq("stripe_price_id", new_price_id)
+      .eq("stripe_price_id", subscriptionData.price_id)
       .eq("is_active", true)
       .maybeSingle();
 
-    if (newPlanError || !newPlanData) {
-      console.error("Error fetching new plan:", newPlanError);
-      throw new Error(`New plan not found for price_id: ${new_price_id}`);
+    if (planError || !planData) {
+      console.error("Error fetching plan:", planError);
+      throw new Error(`Plan not found for price_id: ${subscriptionData.price_id}`);
     }
 
-    console.log("Plans found:", {
-      old_plan: oldPlanData.name,
-      new_plan: newPlanData.name
-    });
+    console.log("Plan found:", planData);
 
     console.log("Step 5: Formatting data for email template...");
 
@@ -167,37 +139,11 @@ Deno.serve(async (req: Request) => {
       return `${day}/${month}/${year}`;
     };
 
-    console.log("Step 5.1: Fetching updated token balance after upgrade...");
-
-    const { data: updatedSub, error: updatedSubError } = await supabaseClient
-      .from('stripe_subscriptions')
-      .select('plan_tokens, extra_tokens, tokens_total')
-      .eq('subscription_id', subscription_id)
-      .is('deleted_at', null)
-      .maybeSingle();
-
-    if (updatedSubError || !updatedSub) {
-      console.error('Error fetching updated subscription:', updatedSubError);
-    }
-
-    const actualExtraTokens = updatedSub?.extra_tokens || 0;
-    const actualTotalTokens = updatedSub?.tokens_total || 0;
-
-    console.log("Updated subscription balance:", {
-      plan_tokens: updatedSub?.plan_tokens,
-      extra_tokens: actualExtraTokens,
-      total_tokens: actualTotalTokens,
-      tokens_preserved_param: tokens_preserved
-    });
-
     const templateVariables = {
       first_name: userProfile.first_name || "Usuário",
-      old_plan_name: oldPlanData.name,
-      new_plan_name: newPlanData.name,
-      new_plan_price: formatPrice(newPlanData.price_brl),
-      new_plan_tokens: formatTokens(newPlanData.tokens_included),
-      tokens_preserved: formatTokens(actualExtraTokens),
-      total_tokens_available: formatTokens(actualTotalTokens),
+      plan_price: formatPrice(planData.price_brl),
+      plan_name: planData.name,
+      plan_tokens: formatTokens(planData.tokens_included),
       current_period_end: formatDate(subscriptionData.current_period_end),
       app_url: appUrl
     };
@@ -206,7 +152,7 @@ Deno.serve(async (req: Request) => {
 
     console.log("Step 6: Sending email via Resend with template...");
 
-    const templateId = "cae809db-d767-4489-9c15-7c3409418edd";
+    const templateId = "a696743e-d017-472e-8229-bcd001d26d56";
 
     const resendPayload = {
       from: "WisLegal <noreply@wislegal.io>",
@@ -245,14 +191,12 @@ Deno.serve(async (req: Request) => {
       .insert({
         user_id: userProfile.id,
         email: userProfile.email,
-        type: "subscription_upgraded",
+        type: "subscription_confirmed",
         status: "success",
         email_provider_response: {
           resend_id: resendResult.id,
           subscription_id: subscription_id,
-          old_plan_name: oldPlanData.name,
-          new_plan_name: newPlanData.name,
-          tokens_preserved: tokens_preserved
+          plan_name: planData.name
         },
         sent_at: new Date().toISOString()
       });
@@ -263,17 +207,15 @@ Deno.serve(async (req: Request) => {
       console.log("✓ Email send logged to database");
     }
 
-    console.log("=== SEND SUBSCRIPTION UPGRADE EMAIL - SUCCESS ===");
+    console.log("=== SEND SUBSCRIPTION CONFIRMATION EMAIL - SUCCESS ===");
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Subscription upgrade email sent successfully",
+        message: "Subscription confirmation email sent successfully",
         resend_id: resendResult.id,
         recipient: userProfile.email,
-        old_plan: oldPlanData.name,
-        new_plan: newPlanData.name,
-        tokens_preserved: tokens_preserved
+        plan_name: planData.name
       }),
       {
         status: 200,
@@ -282,7 +224,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error) {
-    console.error("💥 Error in send-subscription-upgrade-email function:", error);
+    console.error("💥 Error in send-subscription-confirmation-email function:", error);
     console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
 
     return new Response(

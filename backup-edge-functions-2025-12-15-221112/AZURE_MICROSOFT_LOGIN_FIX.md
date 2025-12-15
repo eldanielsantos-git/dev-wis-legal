@@ -76,7 +76,7 @@ const signInWithMicrosoft = async () => {
 1. Aguarde 2-3 minutos (propagação do Azure)
 2. Limpe o cache do navegador (Ctrl+Shift+Del)
 3. Abra aba anônima
-4. Acesse: https://app.wislegal.io
+4. Acesse: https://dev-app.wislegal.io
 5. Clique em "Login com Microsoft"
 6. Deve funcionar!
 

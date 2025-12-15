@@ -137,7 +137,7 @@ Deno.serve(async (req: Request) => {
       year: 'numeric',
     });
 
-    const baseUrl = Deno.env.get('FRONTEND_URL') || 'https://app.wislegal.io';
+    const baseUrl = Deno.env.get('FRONTEND_URL') || 'https://dev-app.wislegal.io';
     const tokensUrl = baseUrl.endsWith('/') ? `${baseUrl}tokens` : `${baseUrl}/tokens`;
 
     const resendApiKey = Deno.env.get('RESEND_API_KEY');

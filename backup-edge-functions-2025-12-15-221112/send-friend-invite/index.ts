@@ -200,7 +200,7 @@ Deno.serve(async (req: Request) => {
     console.log("Step 5: Sending invitation email via Resend...");
 
     const templateId = "35d5eb17-4f31-4787-bb3b-c344eeb00693";
-    const signUpUrl = `https://app.wislegal.io/sign-up?invite=${invite.id}`;
+    const signUpUrl = `https://dev-app.wislegal.io/sign-up?invite=${invite.id}`;
 
     const resendPayload = {
       from: "WisLegal <noreply@wislegal.io>",

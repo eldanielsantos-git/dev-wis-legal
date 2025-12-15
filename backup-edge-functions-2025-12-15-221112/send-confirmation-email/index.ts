@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
       type: 'magiclink',
       email: email,
       options: {
-        redirectTo: 'https://app.wislegal.io/app'
+        redirectTo: 'https://dev-app.wislegal.io/app'
       }
     });
 
@@ -136,6 +136,7 @@ Deno.serve(async (req: Request) => {
 
     console.log("Step 3.5: Adding contact to Resend Audience...");
 
+    // Adicionar delay para respeitar rate limit do Resend (2 req/sec)
     await new Promise(resolve => setTimeout(resolve, 1000));
 
     try {
@@ -152,6 +153,7 @@ Deno.serve(async (req: Request) => {
         const cityValue = userProfile?.city || city;
         const stateValue = userProfile?.state || state;
 
+        // Função para formatar CPF (000.000.000-00)
         const formatCPF = (cpf: string) => {
           const numbers = cpf.replace(/\D/g, '');
           if (numbers.length === 11) {
@@ -160,6 +162,12 @@ Deno.serve(async (req: Request) => {
           return cpf;
         };
 
+        // Usar as chaves CORRETAS (em português como foram criadas no Resend)
+        // key: "Pais" -> phone_country_code
+        // key: "CPF" -> cpf (formatado)
+        // key: "Phone" -> phone
+        // key: "Cidade" -> city
+        // key: "Estado" -> state
         if (phoneCountryCode) properties.Pais = phoneCountryCode;
         if (cpfValue) properties.CPF = formatCPF(cpfValue);
         if (phoneValue) properties.Phone = phoneValue;

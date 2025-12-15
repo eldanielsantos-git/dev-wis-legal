@@ -7,11 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-interface SubscriptionUpgradeRequest {
-  subscription_id: string;
-  old_price_id: string;
-  new_price_id: string;
-  tokens_preserved: number;
+interface SubscriptionCancellationRequest {
+  subscription_id?: string;
+  customer_id?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -23,12 +21,12 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log("=== SEND SUBSCRIPTION UPGRADE EMAIL - START ===");
+    console.log("=== SEND SUBSCRIPTION CANCELLATION EMAIL - START ===");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const appUrl = "https://app.wislegal.io";
+    const plansUrl = "https://dev-app.wislegal.io/signature";
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase environment variables");
@@ -42,25 +40,21 @@ Deno.serve(async (req: Request) => {
 
     const {
       subscription_id,
-      old_price_id,
-      new_price_id,
-      tokens_preserved
-    }: SubscriptionUpgradeRequest = await req.json();
+      customer_id
+    }: SubscriptionCancellationRequest = await req.json();
 
     console.log("Request data:", {
       subscription_id,
-      old_price_id,
-      new_price_id,
-      tokens_preserved
+      customer_id
     });
 
-    if (!subscription_id || !old_price_id || !new_price_id) {
-      throw new Error("Missing required fields: subscription_id, old_price_id, or new_price_id");
+    if (!subscription_id && !customer_id) {
+      throw new Error("Missing required field: subscription_id or customer_id");
     }
 
     console.log("Step 1: Fetching subscription data from database...");
 
-    const { data: subscriptionData, error: subscriptionError } = await supabaseClient
+    let subscriptionQuery = supabaseClient
       .from("stripe_subscriptions")
       .select(`
         subscription_id,
@@ -69,15 +63,25 @@ Deno.serve(async (req: Request) => {
         price_id,
         current_period_start,
         current_period_end,
-        created_at
-      `)
-      .eq("subscription_id", subscription_id)
-      .is("deleted_at", null)
-      .maybeSingle();
+        cancel_at_period_end,
+        plan_tokens,
+        extra_tokens,
+        tokens_used,
+        created_at,
+        updated_at
+      `);
+
+    if (subscription_id) {
+      subscriptionQuery = subscriptionQuery.eq("subscription_id", subscription_id);
+    } else if (customer_id) {
+      subscriptionQuery = subscriptionQuery.eq("customer_id", customer_id);
+    }
+
+    const { data: subscriptionData, error: subscriptionError } = await subscriptionQuery.maybeSingle();
 
     if (subscriptionError || !subscriptionData) {
       console.error("Error fetching subscription:", subscriptionError);
-      throw new Error(`Subscription not found: ${subscription_id}`);
+      throw new Error(`Subscription not found for: ${subscription_id || customer_id}`);
     }
 
     console.log("Subscription found:", subscriptionData);
@@ -117,43 +121,39 @@ Deno.serve(async (req: Request) => {
       email: userProfile.email
     });
 
-    console.log("Step 4: Fetching old and new plan details...");
+    console.log("Step 4: Fetching plan details...");
 
-    const { data: oldPlanData, error: oldPlanError } = await supabaseClient
+    const { data: planData, error: planError } = await supabaseClient
       .from("subscription_plans")
       .select("name")
-      .eq("stripe_price_id", old_price_id)
+      .eq("stripe_price_id", subscriptionData.price_id)
       .eq("is_active", true)
       .maybeSingle();
 
-    if (oldPlanError || !oldPlanData) {
-      console.error("Error fetching old plan:", oldPlanError);
-      throw new Error(`Old plan not found for price_id: ${old_price_id}`);
+    if (planError || !planData) {
+      console.error("Error fetching plan:", planError);
+      throw new Error(`Plan not found for price_id: ${subscriptionData.price_id}`);
     }
 
-    const { data: newPlanData, error: newPlanError } = await supabaseClient
-      .from("subscription_plans")
-      .select("name, price_brl, tokens_included")
-      .eq("stripe_price_id", new_price_id)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (newPlanError || !newPlanData) {
-      console.error("Error fetching new plan:", newPlanError);
-      throw new Error(`New plan not found for price_id: ${new_price_id}`);
-    }
-
-    console.log("Plans found:", {
-      old_plan: oldPlanData.name,
-      new_plan: newPlanData.name
+    console.log("Plan found:", {
+      plan_name: planData.name
     });
 
-    console.log("Step 5: Formatting data for email template...");
+    console.log("Step 5: Calculating remaining tokens...");
 
-    const formatPrice = (price: string | number): string => {
-      const numPrice = typeof price === 'string' ? parseFloat(price) : price;
-      return `R$ ${numPrice.toFixed(2).replace('.', ',')}`;
-    };
+    const planTokens = subscriptionData.plan_tokens || 0;
+    const extraTokens = subscriptionData.extra_tokens || 0;
+    const tokensUsed = subscriptionData.tokens_used || 0;
+    const tokensRemaining = Math.max(0, planTokens + extraTokens - tokensUsed);
+
+    console.log("Token calculation:", {
+      plan_tokens: planTokens,
+      extra_tokens: extraTokens,
+      tokens_used: tokensUsed,
+      tokens_remaining: tokensRemaining
+    });
+
+    console.log("Step 6: Formatting data for email template...");
 
     const formatTokens = (tokens: number): string => {
       return tokens.toLocaleString('pt-BR');
@@ -167,46 +167,30 @@ Deno.serve(async (req: Request) => {
       return `${day}/${month}/${year}`;
     };
 
-    console.log("Step 5.1: Fetching updated token balance after upgrade...");
+    const cancelDate = subscriptionData.updated_at
+      ? new Date(subscriptionData.updated_at).toLocaleDateString('pt-BR', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        })
+      : formatDate(Math.floor(Date.now() / 1000));
 
-    const { data: updatedSub, error: updatedSubError } = await supabaseClient
-      .from('stripe_subscriptions')
-      .select('plan_tokens, extra_tokens, tokens_total')
-      .eq('subscription_id', subscription_id)
-      .is('deleted_at', null)
-      .maybeSingle();
-
-    if (updatedSubError || !updatedSub) {
-      console.error('Error fetching updated subscription:', updatedSubError);
-    }
-
-    const actualExtraTokens = updatedSub?.extra_tokens || 0;
-    const actualTotalTokens = updatedSub?.tokens_total || 0;
-
-    console.log("Updated subscription balance:", {
-      plan_tokens: updatedSub?.plan_tokens,
-      extra_tokens: actualExtraTokens,
-      total_tokens: actualTotalTokens,
-      tokens_preserved_param: tokens_preserved
-    });
+    const accessUntilDate = formatDate(subscriptionData.current_period_end);
 
     const templateVariables = {
       first_name: userProfile.first_name || "Usuário",
-      old_plan_name: oldPlanData.name,
-      new_plan_name: newPlanData.name,
-      new_plan_price: formatPrice(newPlanData.price_brl),
-      new_plan_tokens: formatTokens(newPlanData.tokens_included),
-      tokens_preserved: formatTokens(actualExtraTokens),
-      total_tokens_available: formatTokens(actualTotalTokens),
-      current_period_end: formatDate(subscriptionData.current_period_end),
-      app_url: appUrl
+      plan_name: planData.name,
+      access_until_date: accessUntilDate,
+      tokens_remaining: formatTokens(tokensRemaining),
+      cancel_date: cancelDate,
+      plans_url: plansUrl
     };
 
     console.log("Template variables prepared:", templateVariables);
 
-    console.log("Step 6: Sending email via Resend with template...");
+    console.log("Step 7: Sending email via Resend with template...");
 
-    const templateId = "cae809db-d767-4489-9c15-7c3409418edd";
+    const templateId = "a46a65da-db78-464f-a4fd-bbf247eec3d2";
 
     const resendPayload = {
       from: "WisLegal <noreply@wislegal.io>",
@@ -238,21 +222,22 @@ Deno.serve(async (req: Request) => {
     const resendResult = await resendResponse.json();
     console.log("✓ Email sent successfully via Resend template:", resendResult);
 
-    console.log("Step 7: Logging email send to database...");
+    console.log("Step 8: Logging email send to database...");
 
     const { error: logError } = await supabaseClient
       .from("email_logs")
       .insert({
         user_id: userProfile.id,
         email: userProfile.email,
-        type: "subscription_upgraded",
+        type: "subscription_canceled",
         status: "success",
         email_provider_response: {
           resend_id: resendResult.id,
-          subscription_id: subscription_id,
-          old_plan_name: oldPlanData.name,
-          new_plan_name: newPlanData.name,
-          tokens_preserved: tokens_preserved
+          subscription_id: subscriptionData.subscription_id,
+          plan_name: planData.name,
+          tokens_remaining: tokensRemaining,
+          access_until_date: accessUntilDate,
+          cancel_date: cancelDate
         },
         sent_at: new Date().toISOString()
       });
@@ -263,17 +248,17 @@ Deno.serve(async (req: Request) => {
       console.log("✓ Email send logged to database");
     }
 
-    console.log("=== SEND SUBSCRIPTION UPGRADE EMAIL - SUCCESS ===");
+    console.log("=== SEND SUBSCRIPTION CANCELLATION EMAIL - SUCCESS ===");
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Subscription upgrade email sent successfully",
+        message: "Subscription cancellation email sent successfully",
         resend_id: resendResult.id,
         recipient: userProfile.email,
-        old_plan: oldPlanData.name,
-        new_plan: newPlanData.name,
-        tokens_preserved: tokens_preserved
+        plan_name: planData.name,
+        tokens_remaining: tokensRemaining,
+        access_until_date: accessUntilDate
       }),
       {
         status: 200,
@@ -282,7 +267,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error) {
-    console.error("💥 Error in send-subscription-upgrade-email function:", error);
+    console.error("💥 Error in send-subscription-cancellation-email function:", error);
     console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace");
 
     return new Response(

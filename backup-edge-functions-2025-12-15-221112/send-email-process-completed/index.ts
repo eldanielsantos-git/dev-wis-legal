@@ -114,7 +114,7 @@ Deno.serve(async (req: Request) => {
 
     console.log("Step 3: Preparing email data...");
 
-    const analysisUrl = `https://app.wislegal.io/lawsuits-detail/${processo.id}`;
+    const analysisUrl = `https://dev-app.wislegal.io/lawsuits-detail/${processo.id}`;
     const firstName = userProfile.first_name;
     const userEmail = userProfile.email;
     const fileName = processo.file_name;
