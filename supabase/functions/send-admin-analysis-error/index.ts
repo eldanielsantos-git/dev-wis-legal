@@ -248,7 +248,7 @@ Deno.serve(async (req: Request) => {
           first_name_admin: admin.first_name || "Administrador"
         };
 
-        const fromEmail = Deno.env.get("RESEND_ALERTS_FROM_EMAIL") || "WisLegal Alerts <alerts@wislegal.io>";
+        const fromEmail = "WisLegal <noreply@wislegal.io>";
 
         const resendPayload = {
           from: fromEmail,

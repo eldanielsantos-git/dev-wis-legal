@@ -146,7 +146,7 @@ Deno.serve(async (req: Request) => {
       ? `https://app.wislegal.io/lawsuits-detail/${processoId}`
       : `https://app.wislegal.io/sign-up?workspace=${shareId}`;
 
-    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "WisLegal <noreply@wislegal.io>";
+    const fromEmail = "WisLegal <noreply@wislegal.io>";
 
     const resendPayload = {
       from: fromEmail,
