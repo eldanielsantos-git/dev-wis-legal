@@ -163,7 +163,8 @@ export class ProcessosService {
         file_size: fileSize,
         status: 'created',
         user_id: user.id,
-        transcricao: { totalPages }
+        transcricao: { totalPages },
+        total_pages: totalPages
       })
       .select()
       .single();
@@ -225,7 +226,8 @@ export class ProcessosService {
           file_path: filePath,
           file_url: fileUrl,
           status: 'created',
-          transcricao: { totalPages }
+          transcricao: { totalPages },
+          total_pages: totalPages
         })
         .eq('id', tempProcessoId);
 
@@ -820,7 +822,8 @@ export class ProcessosService {
           .from('processos')
           .update({
             status: 'created',
-            transcricao: { totalPages, totalChunks: chunks.length, chunkSize: config.chunkSize }
+            transcricao: { totalPages, totalChunks: chunks.length, chunkSize: config.chunkSize },
+            total_pages: totalPages
           })
           .eq('id', processoId);
 
