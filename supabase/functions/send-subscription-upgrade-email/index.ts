@@ -208,8 +208,10 @@ Deno.serve(async (req: Request) => {
 
     const templateId = "cae809db-d767-4489-9c15-7c3409418edd";
 
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "WisLegal <noreply@wislegal.io>";
+
     const resendPayload = {
-      from: "WisLegal <noreply@wislegal.io>",
+      from: fromEmail,
       to: [userProfile.email],
       template: {
         id: templateId,

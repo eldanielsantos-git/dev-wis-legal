@@ -186,8 +186,10 @@ Deno.serve(async (req: Request) => {
       tokens_url: tokensUrl,
     };
 
+    const fromEmail = Deno.env.get("RESEND_FROM_EMAIL") || "WisLegal <noreply@wislegal.io>";
+
     const resendPayload = {
-      from: 'WisLegal <noreply@wislegal.io>',
+      from: fromEmail,
       to: [profile.email],
       template: {
         id: templateId,
