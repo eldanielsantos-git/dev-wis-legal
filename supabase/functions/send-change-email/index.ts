@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
       throw new Error("User profile not found");
     }
 
-    const firstName = userProfile.first_name || "Usu\u00e1rio";
+    const firstName = userProfile.first_name || "Usuário";
 
     console.log("Step 2: Generating email change confirmation link...");
 

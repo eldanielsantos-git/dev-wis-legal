@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
           user_id: invitedUserProfile.id,
           type: "workspace_share",
           title: "Novo processo compartilhado",
-          message: `${ownerFirstName} ${ownerLastName} compartilhou o processo "${processo.file_name}" com voc\u00ea (${permissionText})`,
+          message: `${ownerFirstName} ${ownerLastName} compartilhou o processo "${processo.file_name}" com você (${permissionText})`,
           link: `/lawsuits-detail/${processoId}`,
         });
 

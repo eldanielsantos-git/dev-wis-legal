@@ -70,7 +70,7 @@ Deno.serve(async (req: Request) => {
 
     if (!invitedName || !invitedEmail) {
       return new Response(
-        JSON.stringify({ error: "Nome e email s\u00e3o obrigat\u00f3rios" }),
+        JSON.stringify({ error: "Nome e email são obrigatórios" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -81,7 +81,7 @@ Deno.serve(async (req: Request) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(invitedEmail)) {
       return new Response(
-        JSON.stringify({ error: "Email inv\u00e1lido" }),
+        JSON.stringify({ error: "Email inválido" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -102,7 +102,7 @@ Deno.serve(async (req: Request) => {
 
     if (existingUser) {
       return new Response(
-        JSON.stringify({ error: "Este email j\u00e1 est\u00e1 cadastrado na plataforma" }),
+        JSON.stringify({ error: "Este email já está cadastrado na plataforma" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -127,7 +127,7 @@ Deno.serve(async (req: Request) => {
     if (existingInvite) {
       if (existingInvite.status === "accepted") {
         return new Response(
-          JSON.stringify({ error: "Este convite j\u00e1 foi aceito. O usu\u00e1rio j\u00e1 est\u00e1 cadastrado na plataforma." }),
+          JSON.stringify({ error: "Este convite já foi aceito. O usuário já está cadastrado na plataforma." }),
           {
             status: 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
