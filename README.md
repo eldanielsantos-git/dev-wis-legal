@@ -1,1 +1,1 @@
-WisLegal
+Wis Legal
