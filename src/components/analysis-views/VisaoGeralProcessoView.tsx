@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileText, User, Link as LinkIcon } from 'lucide-react';
 import { safeToString } from '../../utils/safeRender';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface Campo {
  id: string;
@@ -88,7 +89,7 @@ export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps)
    </h1>
 
    {/* Renderizar cada seção */}
-   {visaoGeralProcesso.secoes.map((secao) => (
+   {isNonEmptyArray(visaoGeralProcesso.secoes) && visaoGeralProcesso.secoes.map((secao) => (
     <div
      key={secao.id}
      className="bg-theme-card border border-theme-border rounded-lg p-6 space-y-4"

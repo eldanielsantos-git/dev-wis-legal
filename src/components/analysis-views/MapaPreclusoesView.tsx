@@ -1,5 +1,6 @@
 import React from 'react';
 import { Clock, AlertTriangle, Calendar, FileText, Zap, Shield, Info, TrendingUp } from 'lucide-react';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface BaseDocumental {
  arquivo?: string;
@@ -203,7 +204,7 @@ export function MapaPreclusoesView({ content }: MapaPreclusoesViewProps) {
    </h1>
 
    {/* Renderizar cada seção */}
-   {mapaPreclusoesProcessuais.secoes.map((secao) => (
+   {isNonEmptyArray(mapaPreclusoesProcessuais.secoes) && mapaPreclusoesProcessuais.secoes.map((secao) => (
     <div key={secao.id} className="space-y-4">
      {/* Título da Seção */}
      <h2 className="text-xl font-semibold text-theme-text-primary border-b border-theme-border pb-2">
@@ -493,9 +494,9 @@ export function MapaPreclusoesView({ content }: MapaPreclusoesViewProps) {
             {campo.label}
            </h4>
           )}
-          {isArray ? (
+          {isArray && isNonEmptyArray(campo.valor) ? (
            <ul className="space-y-2">
-            {(campo.valor as string[]).map((item, idx) => (
+            {campo.valor.map((item, idx) => (
              <li key={idx} className="flex items-start gap-2">
               <span className="text-blue-600 dark:text-blue-400 mt-1">•</span>
               <p className="text-sm text-theme-text-primary leading-relaxed flex-1">

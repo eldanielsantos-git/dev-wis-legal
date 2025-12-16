@@ -1,5 +1,6 @@
 import React from 'react';
 import { Target, Lightbulb, AlertTriangle, DollarSign, TrendingUp, FileText, Info } from 'lucide-react';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface EstrategiaPrincipal {
  descricao: string;
@@ -173,7 +174,7 @@ export function EstrategiasJuridicasView({ content }: EstrategiasJuridicasViewPr
    </h1>
 
    {/* Renderizar cada seção */}
-   {estrategiasJuridicas.secoes.map((secao) => (
+   {isNonEmptyArray(estrategiasJuridicas.secoes) && estrategiasJuridicas.secoes.map((secao) => (
     <div key={secao.id} className="space-y-4">
      {/* Título da Seção */}
      <h2 className="text-xl font-semibold text-theme-text-primary border-b border-theme-border pb-2">

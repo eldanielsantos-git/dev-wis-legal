@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Clock, Scale, AlertCircle } from 'lucide-react';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface Campo {
  id: string;
@@ -80,7 +81,7 @@ export function ResumoEstrategicoView({ content }: ResumoEstrategicoViewProps) {
    </h1>
 
    {/* Renderizar cada seção */}
-   {resumoEstrategico.secoes.map((secao) => (
+   {isNonEmptyArray(resumoEstrategico.secoes) && resumoEstrategico.secoes.map((secao) => (
     <div
      key={secao.id}
      className="bg-theme-card border border-theme-border rounded-lg p-6 space-y-4"
@@ -204,7 +205,7 @@ export function ResumoEstrategicoView({ content }: ResumoEstrategicoViewProps) {
 
        {/* Argumentos por Polo */}
        <div className="space-y-3">
-        {secao.questaoCentral.argumentosPorPolo.map((argumento) => (
+        {isNonEmptyArray(secao.questaoCentral.argumentosPorPolo) && secao.questaoCentral.argumentosPorPolo.map((argumento) => (
          <div
           key={argumento.id}
           className="bg-theme-bg-tertiary rounded-lg p-4 border border-theme-border"
