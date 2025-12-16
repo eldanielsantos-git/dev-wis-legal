@@ -19,6 +19,16 @@ interface AnalysisViewSelectorProps {
 
 export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorProps) {
  try {
+  const isComunicacoes = title?.toLowerCase().includes('comunicações');
+
+  if (isComunicacoes) {
+   console.log('🔍 COMUNICAÇÕES - AnalysisViewSelector called:', {
+    title,
+    contentLength: content?.length,
+    firstChars: content?.substring(0, 100)
+   });
+  }
+
   const validation = validateAndSanitizeJson(content);
 
   const isRiscos = title?.toLowerCase().includes('riscos');
@@ -32,13 +42,19 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
    });
   }
 
+  if (isComunicacoes) {
+   console.log('🔍 COMUNICAÇÕES - Validation result:', validation);
+  }
+
   if (validation.isEmpty) {
    if (isRiscos) console.log('❌ RISCOS - Content is empty');
+   if (isComunicacoes) console.log('❌ COMUNICAÇÕES - Content is empty');
    return null;
   }
 
   if (!validation.isValid) {
    if (isRiscos) console.error('❌ RISCOS - Validation failed:', title, validation.error);
+   if (isComunicacoes) console.error('❌ COMUNICAÇÕES - Validation failed:', title, validation.error);
    return null;
   }
 
@@ -54,6 +70,12 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
  }
 
  if (normalizedTitle.includes('comunicações') && normalizedTitle.includes('prazos')) {
+  console.log('✅ Matched Comunicações e Prazos!', {
+   title,
+   normalizedTitle,
+   sanitizedLength: sanitizedContent.length,
+   firstChars: sanitizedContent.substring(0, 200)
+  });
   return <ComunicacoesPrazosView content={sanitizedContent} />;
  }
 

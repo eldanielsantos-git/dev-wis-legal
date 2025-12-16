@@ -183,11 +183,18 @@ const normalizarDados = (rawData: any): { comunicacoesPrazos: ComunicacoesPrazos
 };
 
 export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps) {
+ console.log('🔍 ComunicacoesPrazosView - Component called', {
+  contentLength: content?.length,
+  firstChars: content?.substring(0, 200)
+ });
+
  let rawData: any = null;
 
  try {
   rawData = JSON.parse(content);
+  console.log('✅ ComunicacoesPrazosView - JSON parsed successfully', rawData);
  } catch (error) {
+  console.error('❌ ComunicacoesPrazosView - JSON parse error:', error);
   return (
    <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
     <p className="text-red-800 dark:text-red-200">Erro ao processar os dados da análise.</p>
@@ -196,8 +203,10 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
  }
 
  const data = normalizarDados(rawData);
+ console.log('🔍 ComunicacoesPrazosView - Normalized data:', data);
 
  if (!data?.comunicacoesPrazos) {
+  console.error('❌ ComunicacoesPrazosView - Invalid data structure', { rawData, data });
   return (
    <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
     <p className="text-yellow-800 dark:text-yellow-200">Estrutura de dados inválida.</p>
@@ -206,6 +215,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
  }
 
  const { comunicacoesPrazos } = data;
+ console.log('✅ ComunicacoesPrazosView - Will render with:', comunicacoesPrazos);
 
  return (
   <div className="space-y-6">
