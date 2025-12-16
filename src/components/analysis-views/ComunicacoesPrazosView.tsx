@@ -66,7 +66,10 @@ interface ComunicacoesPrazosViewProps {
  content: string;
 }
 
-const getStatusBadgeColor = (status: string) => {
+const getStatusBadgeColor = (status: string | undefined) => {
+ if (!status) {
+  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
+ }
  const statusLower = status.toLowerCase();
  if (statusLower.includes('bem-sucedida') || statusLower.includes('cumprido')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
@@ -80,7 +83,7 @@ const getStatusBadgeColor = (status: string) => {
  if (statusLower.includes('suspenso')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
- if (statusLower.includes('esgotado')) {
+ if (statusLower.includes('esgotado') || statusLower.includes('escoado')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
