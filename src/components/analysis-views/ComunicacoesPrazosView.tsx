@@ -37,7 +37,15 @@ interface Ato {
  id: string;
  tipoAto: string;
  modalidade: string;
- destinatario: Destinatario;
+ destinatario: Destinatario | Destinatario[];
+ validadeStatus?: string;
+ dataAto?: string;
+ dataJuntada?: string;
+ referencia?: {
+  arquivo?: string;
+  paginas?: string | number;
+ };
+ notas?: string;
  detalhesAR?: DetalhesAR;
  prazosDerivados?: PrazoDerivado[];
 }
@@ -77,65 +85,89 @@ const getStatusBadgeColor = (status: string) => {
  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
 };
 
+const normalizeAto = (atoRaw: any): Ato => {
+ const ato: Ato = {
+  id: atoRaw.id || 'ato_sem_id',
+  tipoAto: atoRaw.tipoAto || 'Tipo não identificado',
+  modalidade: atoRaw.modalidade || 'Modalidade não identificada',
+  destinatario: Array.isArray(atoRaw.destinatario)
+   ? atoRaw.destinatario.map((dest: any) => ({
+      nome: dest.nome || 'Destinatário não identificado',
+      documento: dest.documento,
+      tipo: dest.qualificacao || dest.tipo || 'Tipo não identificado',
+      status: dest.status || atoRaw.validadeStatus || 'Status não identificado',
+      dataAto: dest.dataAto || atoRaw.dataAto,
+      dataJuntada: dest.dataJuntada || atoRaw.dataJuntada,
+      paginaJuntadaAto: dest.paginaJuntadaAto || atoRaw.referencia?.paginas,
+      notas: dest.notas || atoRaw.notas,
+      pagina: dest.pagina || atoRaw.referencia?.paginas
+     }))
+   : {
+      nome: atoRaw.destinatario?.nome || 'Destinatário não identificado',
+      documento: atoRaw.destinatario?.documento,
+      tipo: atoRaw.destinatario?.qualificacao || atoRaw.destinatario?.tipo || 'Tipo não identificado',
+      status: typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.status : atoRaw.statusAto || atoRaw.destinatario?.status || atoRaw.validadeStatus || 'Status não identificado',
+      dataAto: atoRaw.datas?.dataExpedicaoAto || atoRaw.destinatario?.dataAto || atoRaw.dataAto,
+      dataJuntada: atoRaw.datas?.dataJuntadaComprovante || atoRaw.destinatario?.dataJuntada || atoRaw.dataJuntada,
+      paginaJuntadaAto: atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.paginaJuntadaAto,
+      notas: atoRaw.notas || (typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.justificativa : undefined) || atoRaw.destinatario?.notas,
+      pagina: atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.pagina
+     },
+  validadeStatus: atoRaw.validadeStatus,
+  dataAto: atoRaw.dataAto,
+  dataJuntada: atoRaw.dataJuntada,
+  referencia: atoRaw.referencia,
+  notas: atoRaw.notas
+ };
+
+ if (atoRaw.detalhesAR && atoRaw.detalhesAR.status !== 'Não localizado nos autos') {
+  ato.detalhesAR = {
+   nomeManuscrito: atoRaw.detalhesAR.nomeManuscritoRecebedor || atoRaw.detalhesAR.nomeManuscrito || atoRaw.detalhesAR.recebedor,
+   assinaturaPresente: atoRaw.detalhesAR.assinaturaPresente,
+   motivoDevolucaoExistente: atoRaw.detalhesAR.motivoDevolucao ? 'Sim' : atoRaw.detalhesAR.motivoDevolucaoExistente,
+   motivoDevolucaoIndicado: atoRaw.detalhesAR.motivoDevolucao ? [atoRaw.detalhesAR.motivoDevolucao] : atoRaw.detalhesAR.motivoDevolucaoIndicado,
+   notas: atoRaw.detalhesAR.notas
+  };
+ }
+
+ if (atoRaw.prazos && Array.isArray(atoRaw.prazos) && atoRaw.prazos.length > 0) {
+  ato.prazosDerivados = atoRaw.prazos.map((prazoRaw: any) => ({
+   id: prazoRaw.idPrazo || prazoRaw.id || 'prazo_sem_id',
+   tipoPrazo: prazoRaw.tipo || prazoRaw.tipoPrazo || 'Tipo não identificado',
+   finalidade: prazoRaw.finalidade || 'Finalidade não especificada',
+   baseLegal: prazoRaw.baseLegal,
+   dataInicio: prazoRaw.calculo?.termoInicial || prazoRaw.termoInicial || prazoRaw.dataInicio,
+   duracao: prazoRaw.calculo?.duracaoDias || prazoRaw.duracaoDias || prazoRaw.duracao,
+   dataFinal: prazoRaw.calculo?.termoFinal || prazoRaw.termoFinal || prazoRaw.dataFinal,
+   status: prazoRaw.calculo?.statusJuridico || prazoRaw.statusJuridico || prazoRaw.status || 'Status não identificado',
+   observacoes: prazoRaw.calculo?.observacoes || prazoRaw.observacoes
+  }));
+ } else if (atoRaw.prazosDerivados && Array.isArray(atoRaw.prazosDerivados)) {
+  ato.prazosDerivados = atoRaw.prazosDerivados;
+ }
+
+ return ato;
+};
+
 const normalizarDados = (rawData: any): { comunicacoesPrazos: ComunicacoesPrazos } | null => {
  if (!rawData?.comunicacoesPrazos) return null;
 
  const raw = rawData.comunicacoesPrazos;
 
  if (raw.secoes && Array.isArray(raw.secoes)) {
-  return rawData;
+  const normalizedData = { ...rawData };
+  normalizedData.comunicacoesPrazos.secoes = raw.secoes.map((secao: any) => ({
+   ...secao,
+   listaAtos: secao.listaAtos.map((ato: any) => normalizeAto(ato))
+  }));
+  return normalizedData;
  }
 
  if (raw.atosComunicacao && Array.isArray(raw.atosComunicacao)) {
   const secao: Secao = {
    id: 'secao_principal',
    titulo: 'Citações e Intimações',
-   listaAtos: raw.atosComunicacao.map((atoRaw: any) => {
-    const ato: Ato = {
-     id: atoRaw.id || 'ato_sem_id',
-     tipoAto: atoRaw.tipoAto || 'Tipo não identificado',
-     modalidade: atoRaw.modalidade || 'Modalidade não identificada',
-     destinatario: {
-      nome: atoRaw.destinatario?.nome || 'Destinatário não identificado',
-      documento: atoRaw.destinatario?.documento,
-      tipo: atoRaw.destinatario?.qualificacao || atoRaw.destinatario?.tipo || 'Tipo não identificado',
-      status: typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.status : atoRaw.statusAto || atoRaw.destinatario?.status || 'Status não identificado',
-      dataAto: atoRaw.datas?.dataExpedicaoAto || atoRaw.destinatario?.dataAto,
-      dataJuntada: atoRaw.datas?.dataJuntadaComprovante || atoRaw.destinatario?.dataJuntada,
-      paginaJuntadaAto: atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.paginaJuntadaAto,
-      notas: atoRaw.notas || (typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.justificativa : undefined) || atoRaw.destinatario?.notas,
-      pagina: atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.pagina
-     }
-    };
-
-    if (atoRaw.detalhesAR && atoRaw.detalhesAR.status !== 'Não localizado nos autos') {
-     ato.detalhesAR = {
-      nomeManuscrito: atoRaw.detalhesAR.nomeManuscritoRecebedor || atoRaw.detalhesAR.nomeManuscrito || atoRaw.detalhesAR.recebedor,
-      assinaturaPresente: atoRaw.detalhesAR.assinaturaPresente,
-      motivoDevolucaoExistente: atoRaw.detalhesAR.motivoDevolucao ? 'Sim' : atoRaw.detalhesAR.motivoDevolucaoExistente,
-      motivoDevolucaoIndicado: atoRaw.detalhesAR.motivoDevolucao ? [atoRaw.detalhesAR.motivoDevolucao] : atoRaw.detalhesAR.motivoDevolucaoIndicado,
-      notas: atoRaw.detalhesAR.notas
-     };
-    }
-
-    if (atoRaw.prazos && Array.isArray(atoRaw.prazos) && atoRaw.prazos.length > 0) {
-     ato.prazosDerivados = atoRaw.prazos.map((prazoRaw: any) => ({
-      id: prazoRaw.idPrazo || prazoRaw.id || 'prazo_sem_id',
-      tipoPrazo: prazoRaw.tipo || prazoRaw.tipoPrazo || 'Tipo não identificado',
-      finalidade: prazoRaw.finalidade || 'Finalidade não especificada',
-      baseLegal: prazoRaw.baseLegal,
-      dataInicio: prazoRaw.calculo?.termoInicial || prazoRaw.dataInicio,
-      duracao: prazoRaw.calculo?.duracaoDias || prazoRaw.duracao,
-      dataFinal: prazoRaw.calculo?.termoFinal || prazoRaw.dataFinal,
-      status: prazoRaw.calculo?.statusJuridico || prazoRaw.status || 'Status não identificado',
-      observacoes: prazoRaw.calculo?.observacoes || prazoRaw.observacoes
-     }));
-    } else if (atoRaw.prazosDerivados && Array.isArray(atoRaw.prazosDerivados)) {
-     ato.prazosDerivados = atoRaw.prazosDerivados;
-    }
-
-    return ato;
-   })
+   listaAtos: raw.atosComunicacao.map((atoRaw: any) => normalizeAto(atoRaw))
   };
 
   return {
@@ -213,68 +245,150 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
 
         {/* Conteúdo do Ato */}
         <div className="p-4 space-y-4">
-         {/* Informações do Destinatário */}
-         <div className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
-          <h4 className="text-sm font-semibold text-theme-text-primary uppercase tracking-wide flex items-center gap-2">
-           <FileCheck className="w-4 h-4" />
-           Destinatário
-          </h4>
+         {/* Status do Ato (se presente no nível do ato) */}
+         {ato.validadeStatus && (
+          <div className="flex items-center gap-2">
+           <span className="text-sm font-medium text-theme-text-primary">Status do Ato:</span>
+           <span className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${getStatusBadgeColor(ato.validadeStatus)}`}>
+            {ato.validadeStatus}
+           </span>
+          </div>
+         )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-           <div>
-            <span className="font-medium text-theme-text-primary">Nome:</span>
-            <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.nome}</p>
-           </div>
-           {ato.destinatario.documento && (
-            <div>
-             <span className="font-medium text-theme-text-primary">Documento:</span>
-             <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.documento}</p>
-            </div>
-           )}
-           <div>
-            <span className="font-medium text-theme-text-primary">Tipo:</span>
-            <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.tipo}</p>
-           </div>
-           <div>
-            <span className="font-medium text-theme-text-primary">Status:</span>
-            <div className="mt-1">
-             <span className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${getStatusBadgeColor(ato.destinatario.status)}`}>
-              {ato.destinatario.status}
-             </span>
-            </div>
-           </div>
-           {ato.destinatario.dataAto && (
+         {/* Informações Gerais do Ato */}
+         {(ato.dataAto || ato.dataJuntada || ato.referencia) && (
+          <div className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-3 text-sm space-y-2">
+           {ato.dataAto && (
             <div>
              <span className="font-medium text-theme-text-primary">Data do Ato:</span>
-             <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.dataAto}</p>
+             <span className="text-gray-900 dark:text-gray-100 ml-2">{ato.dataAto}</span>
             </div>
            )}
-           {ato.destinatario.dataJuntada && (
+           {ato.dataJuntada && (
             <div>
              <span className="font-medium text-theme-text-primary">Data da Juntada:</span>
-             <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.dataJuntada}</p>
+             <span className="text-gray-900 dark:text-gray-100 ml-2">{ato.dataJuntada}</span>
             </div>
            )}
-           {ato.destinatario.paginaJuntadaAto && (
+           {ato.referencia && (
             <div>
-             <span className="font-medium text-theme-text-primary">Página da Juntada:</span>
-             <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.paginaJuntadaAto}</p>
-            </div>
-           )}
-           {ato.destinatario.pagina && (
-            <div>
-             <span className="font-medium text-theme-text-primary">Página:</span>
-             <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.pagina}</p>
+             <span className="font-medium text-theme-text-primary">Referência:</span>
+             <div className="text-gray-900 dark:text-gray-100 ml-2 mt-1">
+              {ato.referencia.arquivo && <div>Arquivo: {ato.referencia.arquivo}</div>}
+              {ato.referencia.paginas && <div>Páginas: {ato.referencia.paginas}</div>}
+             </div>
             </div>
            )}
           </div>
+         )}
 
-          {ato.destinatario.notas && (
-           <div className="mt-3 pt-3 border-t border-slate-300 dark:border-theme-border">
-            <span className="text-xs font-semibold text-theme-text-primary uppercase tracking-wide">Notas</span>
-            <p className="text-sm text-theme-text-primary mt-1 leading-relaxed">
-             {ato.destinatario.notas}
-            </p>
+         {/* Notas do Ato (se presente no nível do ato) */}
+         {ato.notas && !Array.isArray(ato.destinatario) && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+           <span className="text-xs font-semibold text-theme-text-primary uppercase tracking-wide">Observações</span>
+           <p className="text-sm text-theme-text-primary mt-1 leading-relaxed">
+            {ato.notas}
+           </p>
+          </div>
+         )}
+
+         {/* Informações do(s) Destinatário(s) */}
+         <div className="space-y-3">
+          <h4 className="text-sm font-semibold text-theme-text-primary uppercase tracking-wide flex items-center gap-2">
+           <FileCheck className="w-4 h-4" />
+           {Array.isArray(ato.destinatario) ? 'Destinatários' : 'Destinatário'}
+          </h4>
+
+          {Array.isArray(ato.destinatario) ? (
+           ato.destinatario.map((dest, destIndex) => (
+            <div key={destIndex} className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+              <div>
+               <span className="font-medium text-theme-text-primary">Nome:</span>
+               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{dest.nome}</p>
+              </div>
+              {dest.documento && (
+               <div>
+                <span className="font-medium text-theme-text-primary">Documento:</span>
+                <p className="text-gray-900 dark:text-gray-100 mt-0.5">{dest.documento}</p>
+               </div>
+              )}
+              <div>
+               <span className="font-medium text-theme-text-primary">Tipo:</span>
+               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{dest.tipo}</p>
+              </div>
+              {dest.status && dest.status !== 'Status não identificado' && (
+               <div>
+                <span className="font-medium text-theme-text-primary">Status:</span>
+                <div className="mt-1">
+                 <span className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${getStatusBadgeColor(dest.status)}`}>
+                  {dest.status}
+                 </span>
+                </div>
+               </div>
+              )}
+             </div>
+            </div>
+           ))
+          ) : (
+           <div className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+             <div>
+              <span className="font-medium text-theme-text-primary">Nome:</span>
+              <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.nome}</p>
+             </div>
+             {ato.destinatario.documento && (
+              <div>
+               <span className="font-medium text-theme-text-primary">Documento:</span>
+               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.documento}</p>
+              </div>
+             )}
+             <div>
+              <span className="font-medium text-theme-text-primary">Tipo:</span>
+              <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.tipo}</p>
+             </div>
+             <div>
+              <span className="font-medium text-theme-text-primary">Status:</span>
+              <div className="mt-1">
+               <span className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${getStatusBadgeColor(ato.destinatario.status)}`}>
+                {ato.destinatario.status}
+               </span>
+              </div>
+             </div>
+             {ato.destinatario.dataAto && (
+              <div>
+               <span className="font-medium text-theme-text-primary">Data do Ato:</span>
+               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.dataAto}</p>
+              </div>
+             )}
+             {ato.destinatario.dataJuntada && (
+              <div>
+               <span className="font-medium text-theme-text-primary">Data da Juntada:</span>
+               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.dataJuntada}</p>
+              </div>
+             )}
+             {ato.destinatario.paginaJuntadaAto && (
+              <div>
+               <span className="font-medium text-theme-text-primary">Página da Juntada:</span>
+               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.paginaJuntadaAto}</p>
+              </div>
+             )}
+             {ato.destinatario.pagina && (
+              <div>
+               <span className="font-medium text-theme-text-primary">Página:</span>
+               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.pagina}</p>
+              </div>
+             )}
+            </div>
+
+            {ato.destinatario.notas && (
+             <div className="mt-3 pt-3 border-t border-slate-300 dark:border-theme-border">
+              <span className="text-xs font-semibold text-theme-text-primary uppercase tracking-wide">Notas</span>
+              <p className="text-sm text-theme-text-primary mt-1 leading-relaxed">
+               {ato.destinatario.notas}
+              </p>
+             </div>
+            )}
            </div>
           )}
          </div>
