@@ -1,6 +1,7 @@
 import React from 'react';
 import { Scale, FileText, Clock, CheckCircle, XCircle, AlertTriangle, HelpCircle } from 'lucide-react';
 import { safeToString } from '../../utils/safeRender';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface RecursoIdentificado {
  id: string;
@@ -106,7 +107,7 @@ export function AdmissibilidadeRecursalView({ content }: AdmissibilidadeRecursal
    </h1>
 
    {/* Renderizar cada seção */}
-   {recursosAdmissibilidade.secoes.map((secao) => (
+   {isNonEmptyArray(recursosAdmissibilidade.secoes) && recursosAdmissibilidade.secoes.map((secao) => (
     <div key={secao.id} className="space-y-4">
      {/* Título da Seção */}
      <h2 className="text-xl font-semibold text-theme-text-primary border-b border-theme-border pb-2">

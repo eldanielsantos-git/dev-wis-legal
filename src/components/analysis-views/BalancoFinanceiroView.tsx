@@ -1,5 +1,6 @@
 import React from 'react';
 import { DollarSign, FileText, Lock, Unlock, TrendingUp, Scale, BadgeDollarSign, Receipt, Calculator } from 'lucide-react';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface BaseDocumental {
  arquivo?: string;
@@ -202,7 +203,7 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
    </h1>
 
    {/* Renderizar cada seção */}
-   {balancoFinanceiro.secoes.map((secao) => {
+   {isNonEmptyArray(balancoFinanceiro.secoes) && balancoFinanceiro.secoes.map((secao) => {
     const isConsolidacao = secao.id === 'consolidacao_financeira';
 
     return (

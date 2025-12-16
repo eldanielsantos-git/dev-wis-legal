@@ -1,5 +1,6 @@
 import React from 'react';
 import { CheckCircle, AlertCircle, FileText, TrendingUp, Target, Lightbulb, Shield } from 'lucide-react';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface Completude {
  nivel: string;
@@ -132,7 +133,7 @@ export function ConclusoesPerspettivasView({ content }: ConclusoesPerspettivasVi
    </h1>
 
    {/* Renderizar cada seção */}
-   {conclusoesPerspectivas.secoes.map((secao) => (
+   {isNonEmptyArray(conclusoesPerspectivas.secoes) && conclusoesPerspectivas.secoes.map((secao) => (
     <div key={secao.id} className="space-y-4">
      {/* Título da Seção */}
      <h2 className="text-xl font-semibold text-theme-text-primary border-b border-theme-border pb-2">
