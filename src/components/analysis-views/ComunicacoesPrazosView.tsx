@@ -1,5 +1,6 @@
 import React from 'react';
 import { Mail, FileCheck, AlertTriangle, Clock, CheckCircle, XCircle, Hourglass } from 'lucide-react';
+import { isNonEmptyArray } from '../../utils/typeGuards';
 
 interface DetalhesAR {
  nomeManuscrito?: string;
@@ -214,7 +215,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
    </h1>
 
    {/* Renderizar cada seção */}
-   {comunicacoesPrazos.secoes.map((secao) => (
+   {isNonEmptyArray(comunicacoesPrazos.secoes) && comunicacoesPrazos.secoes.map((secao) => (
     <div key={secao.id} className="space-y-4">
      {/* Título da Seção */}
      <h2 className="text-xl font-semibold text-theme-text-primary border-b border-theme-border pb-2">
@@ -223,7 +224,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
 
      {/* Lista de Atos */}
      <div className="space-y-6">
-      {secao.listaAtos.map((ato, index) => (
+      {isNonEmptyArray(secao.listaAtos) && secao.listaAtos.map((ato, index) => (
        <div
         key={ato.id}
         className="bg-theme-card border border-theme-border rounded-lg overflow-hidden"
@@ -299,7 +300,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
            {Array.isArray(ato.destinatario) ? 'Destinatários' : 'Destinatário'}
           </h4>
 
-          {Array.isArray(ato.destinatario) ? (
+          {isNonEmptyArray(ato.destinatario) ? (
            ato.destinatario.map((dest, destIndex) => (
             <div key={destIndex} className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-4 space-y-3">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
@@ -419,7 +420,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
               <p className="text-theme-text-primary mt-0.5">{ato.detalhesAR.motivoDevolucaoExistente}</p>
              </div>
             )}
-            {ato.detalhesAR.motivoDevolucaoIndicado && ato.detalhesAR.motivoDevolucaoIndicado.length > 0 && (
+            {isNonEmptyArray(ato.detalhesAR.motivoDevolucaoIndicado) && (
              <div>
               <span className="font-medium text-theme-text-primary">Motivos de Devolução:</span>
               <ul className="list-disc list-inside text-theme-text-primary mt-0.5 space-y-1">
@@ -442,7 +443,7 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
          )}
 
          {/* Prazos Derivados */}
-         {ato.prazosDerivados && ato.prazosDerivados.length > 0 && (
+         {isNonEmptyArray(ato.prazosDerivados) && (
           <div className="space-y-3">
            <h4 className="text-sm font-semibold text-theme-text-primary uppercase tracking-wide flex items-center gap-2">
             <Clock className="w-4 h-4" />
