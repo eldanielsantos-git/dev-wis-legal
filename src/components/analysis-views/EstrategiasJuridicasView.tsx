@@ -1,6 +1,7 @@
 import React from 'react';
 import { Target, Lightbulb, AlertTriangle, DollarSign, TrendingUp, FileText, Info } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
+import { safeIncludes } from '../../utils/safeStringUtils';
 
 interface EstrategiaPrincipal {
  descricao: string;
@@ -52,58 +53,54 @@ interface EstrategiasJuridicasViewProps {
  content: string;
 }
 
-const getRiscoBadge = (risco: string) => {
- const riscoLower = risco.toLowerCase();
- if (riscoLower.includes('baixo')) {
+const getRiscoBadge = (risco: string | undefined) => {
+ if (safeIncludes(risco, 'baixo')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
- if (riscoLower.includes('médio') || riscoLower.includes('medio')) {
+ if (safeIncludes(risco, 'médio') || safeIncludes(risco, 'medio')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
- if (riscoLower.includes('alto')) {
+ if (safeIncludes(risco, 'alto')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
 };
 
-const getCustoBadge = (custo: string) => {
- const custoLower = custo.toLowerCase();
- if (custoLower.includes('baixo')) {
+const getCustoBadge = (custo: string | undefined) => {
+ if (safeIncludes(custo, 'baixo')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
- if (custoLower.includes('médio') || custoLower.includes('medio')) {
+ if (safeIncludes(custo, 'médio') || safeIncludes(custo, 'medio')) {
   return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
  }
- if (custoLower.includes('alto')) {
+ if (safeIncludes(custo, 'alto')) {
   return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-200 dark:border-orange-700';
  }
  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
 };
 
-const getPrioridadeBadge = (prioridade: string) => {
- const prioridadeLower = prioridade.toLowerCase();
- if (prioridadeLower.includes('secundária') || prioridadeLower.includes('secundaria')) {
+const getPrioridadeBadge = (prioridade: string | undefined) => {
+ if (safeIncludes(prioridade, 'secundária') || safeIncludes(prioridade, 'secundaria')) {
   return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
  }
- if (prioridadeLower.includes('contingente')) {
+ if (safeIncludes(prioridade, 'contingente')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
- if (prioridadeLower.includes('oportunista')) {
+ if (safeIncludes(prioridade, 'oportunista')) {
   return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-700';
  }
  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
 };
 
-const getPoloColor = (polo: string) => {
- const poloLower = polo.toLowerCase();
- if (poloLower.includes('autor')) {
+const getPoloColor = (polo: string | undefined) => {
+ if (safeIncludes(polo, 'autor')) {
   return {
    bg: 'bg-theme-bg-tertiary',
    border: 'border-blue-200 dark:border-theme-border',
    icon: 'text-blue-600 dark:text-blue-400'
   };
  }
- if (poloLower.includes('réu') || poloLower.includes('reu')) {
+ if (safeIncludes(polo, 'réu') || safeIncludes(polo, 'reu')) {
   return {
    bg: 'bg-orange-50 dark:bg-gray-700/50',
    border: 'border-orange-100 dark:border-theme-border',

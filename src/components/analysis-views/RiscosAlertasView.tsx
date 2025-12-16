@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertTriangle, Shield, Clock, FileText, Target, Zap, Info, TrendingUp } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
+import { safeIncludes } from '../../utils/safeStringUtils';
 
 interface BaseDocumental {
  arquivo?: string;
@@ -44,76 +45,70 @@ interface RiscosAlertasViewProps {
  content: string;
 }
 
-const getGravidadeIcon = (gravidade: string) => {
- const grav = gravidade.toLowerCase();
- if (grav.includes('alta')) {
+const getGravidadeIcon = (gravidade: string | undefined) => {
+ if (safeIncludes(gravidade, 'alta')) {
   return <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />;
  }
- if (grav.includes('média') || grav.includes('media')) {
+ if (safeIncludes(gravidade, 'média') || safeIncludes(gravidade, 'media')) {
   return <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />;
  }
  return <AlertTriangle className="w-5 h-5 text-green-600 dark:text-green-400" />;
 };
 
-const getGravidadeBadge = (gravidade: string) => {
- const grav = gravidade.toLowerCase();
- if (grav.includes('alta')) {
+const getGravidadeBadge = (gravidade: string | undefined) => {
+ if (safeIncludes(gravidade, 'alta')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
- if (grav.includes('média') || grav.includes('media')) {
+ if (safeIncludes(gravidade, 'média') || safeIncludes(gravidade, 'media')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
  return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
 };
 
-const getUrgenciaBadge = (urgencia: string) => {
- const urg = urgencia.toLowerCase();
- if (urg.includes('imediata')) {
+const getUrgenciaBadge = (urgencia: string | undefined) => {
+ if (safeIncludes(urgencia, 'imediata')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
- if (urg.includes('próxima') || urg.includes('proxima')) {
+ if (safeIncludes(urgencia, 'próxima') || safeIncludes(urgencia, 'proxima')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
  return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
 };
 
-const getImpactoBadge = (impacto: string) => {
- const imp = impacto.toLowerCase();
- if (imp.includes('direto')) {
+const getImpactoBadge = (impacto: string | undefined) => {
+ if (safeIncludes(impacto, 'direto')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
- if (imp.includes('indireto')) {
+ if (safeIncludes(impacto, 'indireto')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
  return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
 };
 
-const getCategoriaBadge = (categoria: string) => {
- const cat = categoria.toLowerCase();
- if (cat.includes('nulidade')) {
+const getCategoriaBadge = (categoria: string | undefined) => {
+ if (safeIncludes(categoria, 'nulidade')) {
   return { bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-700', icon: Shield };
  }
- if (cat.includes('prazos')) {
+ if (safeIncludes(categoria, 'prazos')) {
   return { bg: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700', icon: Clock };
  }
- if (cat.includes('provas')) {
+ if (safeIncludes(categoria, 'provas')) {
   return { bg: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700', icon: FileText };
  }
- if (cat.includes('custos')) {
+ if (safeIncludes(categoria, 'custos')) {
   return { bg: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700', icon: TrendingUp };
  }
- if (cat.includes('estratégia') || cat.includes('estrategia')) {
+ if (safeIncludes(categoria, 'estratégia') || safeIncludes(categoria, 'estrategia')) {
   return { bg: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700', icon: Target };
  }
  return { bg: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border', icon: Info };
 };
 
-const getRiscoGlobalColor = (risco: string) => {
- const riscoLower = risco.toLowerCase();
- if (riscoLower.includes('alto')) {
+const getRiscoGlobalColor = (risco: string | undefined) => {
+ if (safeIncludes(risco, 'alto')) {
   return 'bg-red-50/50 dark:bg-red-900/10 border-red-200/50 dark:border-red-700/30';
  }
- if (riscoLower.includes('médio') || riscoLower.includes('medio')) {
+ if (safeIncludes(risco, 'médio') || safeIncludes(risco, 'medio')) {
   return 'bg-amber-50/50 dark:bg-amber-900/10 border-amber-200/50 dark:border-amber-700/30';
  }
  return 'bg-green-50/50 dark:bg-green-900/10 border-green-200/50 dark:border-green-700/30';

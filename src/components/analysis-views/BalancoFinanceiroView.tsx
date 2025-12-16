@@ -1,6 +1,7 @@
 import React from 'react';
 import { DollarSign, FileText, Lock, Unlock, TrendingUp, Scale, BadgeDollarSign, Receipt, Calculator } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
+import { safeIncludes } from '../../utils/safeStringUtils';
 
 interface BaseDocumental {
  arquivo?: string;
@@ -69,18 +70,17 @@ interface BalancoFinanceiroViewProps {
  content: string;
 }
 
-const getSituacaoBadge = (situacao: string) => {
- const sit = situacao.toLowerCase();
- if (sit.includes('pago') || sit.includes('liberado') || sit.includes('convertido')) {
+const getSituacaoBadge = (situacao: string | undefined) => {
+ if (safeIncludes(situacao, 'pago') || safeIncludes(situacao, 'liberado') || safeIncludes(situacao, 'convertido')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
- if (sit.includes('pendente') || sit.includes('ativo')) {
+ if (safeIncludes(situacao, 'pendente') || safeIncludes(situacao, 'ativo')) {
   return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
  }
- if (sit.includes('execução')) {
+ if (safeIncludes(situacao, 'execução')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
- if (sit.includes('revogado') || sit.includes('compensado')) {
+ if (safeIncludes(situacao, 'revogado') || safeIncludes(situacao, 'compensado')) {
   return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
  }
  return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600';

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Clock, AlertTriangle, Calendar, FileText, Zap, Shield, Info, TrendingUp } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
+import { safeIncludes } from '../../utils/safeStringUtils';
 
 interface BaseDocumental {
  arquivo?: string;
@@ -58,37 +59,34 @@ interface MapaPreclusoesViewProps {
  content: string;
 }
 
-const getTipoBadge = (tipo: string) => {
- const tipoLower = tipo.toLowerCase();
- if (tipoLower.includes('temporal')) {
+const getTipoBadge = (tipo: string | undefined) => {
+ if (safeIncludes(tipo, 'temporal')) {
   return { bg: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700', icon: Clock };
  }
- if (tipoLower.includes('consumativa')) {
+ if (safeIncludes(tipo, 'consumativa')) {
   return { bg: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-200 dark:border-orange-700', icon: Zap };
  }
- if (tipoLower.includes('lógica') || tipoLower.includes('logica')) {
+ if (safeIncludes(tipo, 'lógica') || safeIncludes(tipo, 'logica')) {
   return { bg: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-200 dark:border-purple-700', icon: Shield };
  }
  return { bg: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border', icon: Info };
 };
 
-const getUrgenciaBadge = (urgencia: string) => {
- const urg = urgencia.toLowerCase();
- if (urg.includes('imediata')) {
+const getUrgenciaBadge = (urgencia: string | undefined) => {
+ if (safeIncludes(urgencia, 'imediata')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
- if (urg.includes('próxima') || urg.includes('proxima')) {
+ if (safeIncludes(urgencia, 'próxima') || safeIncludes(urgencia, 'proxima')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
  return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
 };
 
-const getImpactoBadge = (impacto: string) => {
- const imp = impacto.toLowerCase();
- if (imp.includes('alto')) {
+const getImpactoBadge = (impacto: string | undefined) => {
+ if (safeIncludes(impacto, 'alto')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
- if (imp.includes('médio') || imp.includes('medio')) {
+ if (safeIncludes(impacto, 'médio') || safeIncludes(impacto, 'medio')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
  return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';

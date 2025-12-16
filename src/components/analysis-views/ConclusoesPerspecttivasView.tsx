@@ -1,6 +1,7 @@
 import React from 'react';
 import { CheckCircle, AlertCircle, FileText, TrendingUp, Target, Lightbulb, Shield } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
+import { safeIncludes } from '../../utils/safeStringUtils';
 
 interface Completude {
  nivel: string;
@@ -43,46 +44,43 @@ interface ConclusoesPerspettivasViewProps {
  content: string;
 }
 
-const getNivelBadge = (nivel: string) => {
- const nivelLower = nivel.toLowerCase();
- if (nivelLower.includes('alta')) {
+const getNivelBadge = (nivel: string | undefined) => {
+ if (safeIncludes(nivel, 'alta')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
- if (nivelLower.includes('média') || nivelLower.includes('media')) {
+ if (safeIncludes(nivel, 'média') || safeIncludes(nivel, 'media')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
- if (nivelLower.includes('baixa')) {
+ if (safeIncludes(nivel, 'baixa')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
 };
 
-const getCoerenciaColor = (status: string) => {
- const statusLower = status.toLowerCase();
- if (statusLower.includes('coerente') && !statusLower.includes('parcialmente')) {
+const getCoerenciaColor = (status: string | undefined) => {
+ if (safeIncludes(status, 'coerente') && !safeIncludes(status, 'parcialmente')) {
   return 'text-green-700 dark:text-green-300';
  }
- if (statusLower.includes('parcialmente')) {
+ if (safeIncludes(status, 'parcialmente')) {
   return 'text-amber-700 dark:text-amber-300';
  }
- if (statusLower.includes('incoerente')) {
+ if (safeIncludes(status, 'incoerente')) {
   return 'text-red-700 dark:text-red-300';
  }
  return 'text-theme-text-primary';
 };
 
-const getTendenciaBadge = (tendencia: string) => {
- const tend = tendencia.toLowerCase();
- if (tend.includes('encerramento')) {
+const getTendenciaBadge = (tendencia: string | undefined) => {
+ if (safeIncludes(tendencia, 'encerramento')) {
   return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
  }
- if (tend.includes('continuidade')) {
+ if (safeIncludes(tendencia, 'continuidade')) {
   return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
  }
- if (tend.includes('recurso')) {
+ if (safeIncludes(tendencia, 'recurso')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
- if (tend.includes('executória') || tend.includes('executoria')) {
+ if (safeIncludes(tendencia, 'executória') || safeIncludes(tendencia, 'executoria')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
  return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600';

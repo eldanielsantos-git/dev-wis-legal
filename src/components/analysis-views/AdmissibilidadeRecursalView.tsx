@@ -2,6 +2,7 @@ import React from 'react';
 import { Scale, FileText, Clock, CheckCircle, XCircle, AlertTriangle, HelpCircle } from 'lucide-react';
 import { safeToString } from '../../utils/safeRender';
 import { isNonEmptyArray } from '../../utils/typeGuards';
+import { safeIncludes } from '../../utils/safeStringUtils';
 
 interface RecursoIdentificado {
  id: string;
@@ -44,33 +45,31 @@ interface AdmissibilidadeRecursalViewProps {
  content: string;
 }
 
-const getTempestividadeIcon = (tempestividade: string) => {
+const getTempestividadeIcon = (tempestividade: string | undefined) => {
  return null;
 };
 
-const getTempestividadeBadge = (tempestividade: string) => {
- const temp = tempestividade.toLowerCase();
- if (temp.includes('tempestivo') && !temp.includes('intempestivo')) {
+const getTempestividadeBadge = (tempestividade: string | undefined) => {
+ if (safeIncludes(tempestividade, 'tempestivo') && !safeIncludes(tempestividade, 'intempestivo')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
- if (temp.includes('intempestivo')) {
+ if (safeIncludes(tempestividade, 'intempestivo')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
  return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
 };
 
-const getSituacaoBadge = (situacao: string) => {
- const sit = situacao.toLowerCase();
- if (sit.includes('julgado') || sit.includes('admitido')) {
+const getSituacaoBadge = (situacao: string | undefined) => {
+ if (safeIncludes(situacao, 'julgado') || safeIncludes(situacao, 'admitido')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
- if (sit.includes('inadmitido') || sit.includes('arquivado')) {
+ if (safeIncludes(situacao, 'inadmitido') || safeIncludes(situacao, 'arquivado')) {
   return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700';
  }
- if (sit.includes('pendente') || sit.includes('em curso')) {
+ if (safeIncludes(situacao, 'pendente') || safeIncludes(situacao, 'em curso')) {
   return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
  }
- if (sit.includes('não cabível') || sit.includes('nenhum')) {
+ if (safeIncludes(situacao, 'não cabível') || safeIncludes(situacao, 'nenhum')) {
   return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
  }
  return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
