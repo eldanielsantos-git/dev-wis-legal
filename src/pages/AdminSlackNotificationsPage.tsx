@@ -270,11 +270,27 @@ export function AdminSlackNotificationsPage({
           onNavigateToAdmin={onNavigateToAdmin}
           onNavigateToSettings={onNavigateToSettings}
           onNavigateToProfile={onNavigateToProfile}
+          onNavigateToNotifications={() => {
+            window.history.pushState({}, '', '/notifications');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onNavigateToTokens={() => {
+            window.history.pushState({}, '', '/tokens');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onNavigateToSubscription={() => {
+            window.history.pushState({}, '', '/signature');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onCollapsedChange={setIsSidebarCollapsed}
+          onSearchClick={() => {}}
         />
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <Loader className="w-8 h-8 animate-spin mb-4" style={{ color: colors.primary }} />
-          <p style={{ color: colors.textSecondary }}>Carregando sistema de notificações...</p>
-        </div>
+        <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          <div className="flex-1 flex flex-col items-center justify-center p-8">
+            <Loader className="w-8 h-8 animate-spin mb-4" style={{ color: '#3B82F6' }} />
+            <p className="text-sm" style={{ color: colors.textSecondary }}>Carregando sistema de notificações...</p>
+          </div>
+        </main>
       </div>
     );
   }
@@ -292,19 +308,38 @@ export function AdminSlackNotificationsPage({
           onNavigateToAdmin={onNavigateToAdmin}
           onNavigateToSettings={onNavigateToSettings}
           onNavigateToProfile={onNavigateToProfile}
+          onNavigateToNotifications={() => {
+            window.history.pushState({}, '', '/notifications');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onNavigateToTokens={() => {
+            window.history.pushState({}, '', '/tokens');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onNavigateToSubscription={() => {
+            window.history.pushState({}, '', '/signature');
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+          onCollapsedChange={setIsSidebarCollapsed}
+          onSearchClick={() => {}}
         />
-        <div className="flex-1 flex flex-col items-center justify-center p-8">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-            <h3 className="text-lg font-semibold text-red-800 mb-2">Erro ao Carregar</h3>
-            <p className="text-red-600 mb-4">{error}</p>
-            <button
-              onClick={() => loadData()}
-              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-            >
-              Tentar Novamente
-            </button>
+        <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+          <div className="flex-1 flex flex-col items-center justify-center p-4 sm:p-8">
+            <div className="rounded-lg p-6 max-w-md shadow-lg" style={{ backgroundColor: theme === 'dark' ? '#1F2937' : '#FEE2E2', border: `1px solid ${theme === 'dark' ? '#374151' : '#FCA5A5'}` }}>
+              <h3 className="text-lg font-semibold mb-2" style={{ color: theme === 'dark' ? '#FCA5A5' : '#991B1B' }}>Erro ao Carregar</h3>
+              <p className="mb-4 text-sm" style={{ color: theme === 'dark' ? '#FCA5A5' : '#DC2626' }}>{error}</p>
+              <button
+                onClick={() => loadData()}
+                className="px-4 py-2 rounded-lg font-medium transition-colors text-sm"
+                style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#DC2626'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#EF4444'}
+              >
+                Tentar Novamente
+              </button>
+            </div>
           </div>
-        </div>
+        </main>
       </div>
     );
   }
@@ -321,51 +356,80 @@ export function AdminSlackNotificationsPage({
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}
+        onNavigateToNotifications={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToTokens={() => {
+          window.history.pushState({}, '', '/tokens');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToSubscription={() => {
+          window.history.pushState({}, '', '/signature');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onCollapsedChange={setIsSidebarCollapsed}
+        onSearchClick={() => {}}
       />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-auto">
-          <div className="p-8">
-            {/* Header */}
-            <div className="mb-8">
-              <button
-                onClick={onNavigateToAdmin}
-                className="mb-4 flex items-center gap-2 hover:opacity-80 transition-opacity"
-                style={{ color: colors.textSecondary }}
-              >
-                <span>←</span>
-                <span>Voltar ao Painel</span>
-              </button>
-              <h1 className="text-3xl font-bold mb-2" style={{ color: colors.text }}>
-                Sistema de Notificações Administrativas
-              </h1>
-              <p style={{ color: colors.textSecondary }}>
-                Gerencie 35 tipos de notificações em 5 categorias com integração Slack
-              </p>
+
+      <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8 overflow-auto">
+          <button
+            onClick={() => {
+              window.history.pushState({}, '', '/profile#admin');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-6xl"
+            style={{
+              backgroundColor: colors.bgSecondary,
+              color: colors.textPrimary
+            }}
+          >
+            <span className="text-sm">←</span>
+            <span className="text-sm font-medium">Voltar ao Painel</span>
+          </button>
+
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col items-center mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
+                <span className="text-2xl sm:text-3xl">🔔</span>
+              </div>
+              <div className="text-center">
+                <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
+                  Sistema de Notificações Administrativas
+                </h1>
+                <p className="text-xs sm:text-sm mt-1 px-4" style={{ color: colors.textSecondary }}>
+                  Gerencie 35 tipos de notificações em 5 categorias com integração Slack
+                </p>
+              </div>
             </div>
 
             {/* Tabs */}
-            <div className="mb-6 border-b" style={{ borderColor: colors.border }}>
-              <nav className="flex space-x-8">
-                {[
-                  { id: 'config', label: 'Configurações', icon: '⚙️' },
-                  { id: 'stats', label: 'Estatísticas', icon: '📊' },
-                  { id: 'history', label: 'Histórico', icon: '📜' },
-                  { id: 'test', label: 'Testar', icon: '🧪' },
-                ].map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors`}
-                    style={{
-                      borderColor: activeTab === tab.id ? colors.primary : 'transparent',
-                      color: activeTab === tab.id ? colors.primary : colors.textSecondary,
-                    }}
-                  >
-                    <span>{tab.icon}</span>
-                    {tab.label}
-                  </button>
-                ))}
-              </nav>
+            <div className="mb-6 sm:mb-8">
+              <div className="border-b" style={{ borderColor: theme === 'dark' ? '#374151' : '#E5E7EB' }}>
+                <nav className="flex flex-wrap gap-2 sm:gap-4 md:gap-8 -mb-px">
+                  {[
+                    { id: 'config', label: 'Configurações', icon: '⚙️' },
+                    { id: 'stats', label: 'Estatísticas', icon: '📊' },
+                    { id: 'history', label: 'Histórico', icon: '📜' },
+                    { id: 'test', label: 'Testar', icon: '🧪' },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id as any)}
+                      className={`py-3 px-2 sm:px-4 border-b-2 font-medium text-xs sm:text-sm flex items-center gap-2 transition-all hover:opacity-80 whitespace-nowrap`}
+                      style={{
+                        borderColor: activeTab === tab.id ? '#3B82F6' : 'transparent',
+                        color: activeTab === tab.id ? '#3B82F6' : colors.textSecondary,
+                      }}
+                    >
+                      <span className="text-base sm:text-lg">{tab.icon}</span>
+                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                    </button>
+                  ))}
+                </nav>
+              </div>
             </div>
 
             {/* Stats Tab */}
@@ -817,7 +881,7 @@ export function AdminSlackNotificationsPage({
           onNavigateToPrivacy={onNavigateToPrivacy}
           onNavigateToCookies={onNavigateToCookies}
         />
-      </div>
+      </main>
     </div>
   );
 }
