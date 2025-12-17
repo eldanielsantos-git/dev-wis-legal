@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { adminNotificationsService, NotificationTypeWithConfig, AdminNotification, NotificationStats } from '../services/AdminNotificationsService';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
-import { Loader } from 'lucide-react';
+import { Loader, Bell, Settings, BarChart3, ScrollText, TestTube, CheckCircle, XCircle, Link, Construction } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 
@@ -20,12 +20,20 @@ interface AdminSlackNotificationsPageProps {
   onNavigateToCookies?: () => void;
 }
 
-const categoryColors: Record<string, { bg: string; text: string; border: string; icon: string }> = {
-  success: { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-800 dark:text-green-400', border: 'border-green-200 dark:border-green-800', icon: '✅' },
-  error: { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-800 dark:text-red-400', border: 'border-red-200 dark:border-red-800', icon: '❌' },
-  integration: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-800 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800', icon: '🔗' },
-  infrastructure: { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-800 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800', icon: '🏗️' },
-  system: { bg: 'bg-gray-50 dark:bg-gray-800/50', text: 'text-gray-800 dark:text-gray-400', border: 'border-gray-200 dark:border-gray-700', icon: '⚙️' },
+const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  success: CheckCircle,
+  error: XCircle,
+  integration: Link,
+  infrastructure: Construction,
+  system: Settings,
+};
+
+const categoryColors: Record<string, { bg: string; text: string; border: string }> = {
+  success: { bg: 'bg-green-50 dark:bg-green-900/20', text: 'text-green-800 dark:text-green-400', border: 'border-green-200 dark:border-green-800' },
+  error: { bg: 'bg-red-50 dark:bg-red-900/20', text: 'text-red-800 dark:text-red-400', border: 'border-red-200 dark:border-red-800' },
+  integration: { bg: 'bg-blue-50 dark:bg-blue-900/20', text: 'text-blue-800 dark:text-blue-400', border: 'border-blue-200 dark:border-blue-800' },
+  infrastructure: { bg: 'bg-orange-50 dark:bg-orange-900/20', text: 'text-orange-800 dark:text-orange-400', border: 'border-orange-200 dark:border-orange-800' },
+  system: { bg: 'bg-gray-50 dark:bg-gray-800/50', text: 'text-gray-800 dark:text-gray-400', border: 'border-gray-200 dark:border-gray-700' },
 };
 
 const categoryNames: Record<string, string> = {
@@ -392,7 +400,7 @@ export function AdminSlackNotificationsPage({
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col items-center mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-                <span className="text-2xl sm:text-3xl">🔔</span>
+                <Bell className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textPrimary }} />
               </div>
               <div className="text-center">
                 <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
@@ -409,10 +417,10 @@ export function AdminSlackNotificationsPage({
               <div className="border-b" style={{ borderColor: theme === 'dark' ? '#374151' : '#E5E7EB' }}>
                 <nav className="flex flex-wrap gap-2 sm:gap-4 md:gap-8 -mb-px">
                   {[
-                    { id: 'config', label: 'Configurações', icon: '⚙️' },
-                    { id: 'stats', label: 'Estatísticas', icon: '📊' },
-                    { id: 'history', label: 'Histórico', icon: '📜' },
-                    { id: 'test', label: 'Testar', icon: '🧪' },
+                    { id: 'config', label: 'Configurações', Icon: Settings },
+                    { id: 'stats', label: 'Estatísticas', Icon: BarChart3 },
+                    { id: 'history', label: 'Histórico', Icon: ScrollText },
+                    { id: 'test', label: 'Testar', Icon: TestTube },
                   ].map(tab => (
                     <button
                       key={tab.id}
@@ -423,7 +431,7 @@ export function AdminSlackNotificationsPage({
                         color: activeTab === tab.id ? '#3B82F6' : colors.textSecondary,
                       }}
                     >
-                      <span className="text-base sm:text-lg">{tab.icon}</span>
+                      <tab.Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                       <span className="hidden sm:inline">{tab.label}</span>
                       <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                     </button>
@@ -470,17 +478,20 @@ export function AdminSlackNotificationsPage({
                   <div className="rounded-lg shadow-sm border p-6" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                     <h3 className="text-lg font-semibold mb-4" style={{ color: colors.text }}>Por Categoria</h3>
                     <div className="space-y-3">
-                      {Object.entries(stats.by_category).map(([category, count]) => (
-                        <div key={category} className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">{categoryColors[category]?.icon}</span>
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full ${categoryColors[category]?.bg} ${categoryColors[category]?.text}`}>
-                              {categoryNames[category] || category}
-                            </span>
+                      {Object.entries(stats.by_category).map(([category, count]) => {
+                        const CategoryIcon = categoryIcons[category];
+                        return (
+                          <div key={category} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {CategoryIcon && <CategoryIcon className={`w-5 h-5 ${categoryColors[category]?.text}`} />}
+                              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${categoryColors[category]?.bg} ${categoryColors[category]?.text}`}>
+                                {categoryNames[category] || category}
+                              </span>
+                            </div>
+                            <span className="text-lg font-bold" style={{ color: colors.text }}>{count}</span>
                           </div>
-                          <span className="text-lg font-bold" style={{ color: colors.text }}>{count}</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -491,10 +502,11 @@ export function AdminSlackNotificationsPage({
                   <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                     {Object.keys(categoryColors).map(category => {
                       const categoryStats = getCategoryStats(category);
+                      const CategoryIcon = categoryIcons[category];
                       return (
                         <div key={category} className={`rounded-lg p-4 border-2 ${categoryColors[category].border} ${categoryColors[category].bg}`}>
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-2xl">{categoryColors[category].icon}</span>
+                            <CategoryIcon className={`w-5 h-5 ${categoryColors[category].text}`} />
                             <div className={`font-semibold ${categoryColors[category].text}`}>
                               {categoryNames[category]}
                             </div>
