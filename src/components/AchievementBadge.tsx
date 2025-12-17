@@ -56,7 +56,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
         {/* Título e Descrição */}
         <h3
-          className="text-base font-bold text-center mb-2 px-1"
+          className="text-lg font-bold text-center mb-2 px-1"
           style={{
             color: unlocked ? '#FFFFFF' : colors.textPrimary
           }}
@@ -64,7 +64,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
           {config.title}
         </h3>
         <p
-          className="text-sm text-center line-clamp-2 px-1"
+          className="text-base text-center line-clamp-2 px-1"
           style={{
             color: unlocked ? 'rgba(255, 255, 255, 0.9)' : colors.textSecondary
           }}
@@ -74,8 +74,8 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Barra de Progresso */}
-      <div className="mt-4 space-y-1">
-        <div className="flex justify-between text-xs font-medium">
+      <div className="mt-4 space-y-1.5">
+        <div className="flex justify-between text-sm font-medium">
           <span
             style={{
               color: unlocked ? 'rgba(255, 255, 255, 0.9)' : colors.textSecondary
@@ -92,7 +92,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
           </span>
         </div>
         <div
-          className="h-1.5 rounded-full overflow-hidden"
+          className="h-2.5 rounded-full overflow-hidden"
           style={{
             backgroundColor: unlocked
               ? 'rgba(255, 255, 255, 0.25)'
@@ -111,7 +111,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
         </div>
         <div className="text-center">
           <span
-            className="text-xs font-semibold"
+            className="text-sm font-semibold"
             style={{
               color: unlocked ? '#FFFFFF' : config.color
             }}
