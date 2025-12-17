@@ -16,6 +16,7 @@ import { UserPreferencesService, type UserPreferences } from '../services/UserPr
 import { UserAchievementsService, type AchievementProgress } from '../services/UserAchievementsService';
 import { AchievementBadge } from '../components/AchievementBadge';
 import { PreferenceToggle } from '../components/PreferenceToggle';
+import { translateSupabaseAuthError, translateError } from '../utils/errorTranslator';
 
 interface ProfilePageProps {
   onNavigateToApp: () => void;
@@ -429,7 +430,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         setShowPasswordSuccessModal(false);
       }, 3000);
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar senha' });
+      setMessage({ type: 'error', text: translateSupabaseAuthError(error) });
     } finally {
       setIsPasswordLoading(false);
     }
@@ -494,7 +495,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       }, 5000);
     } catch (error: any) {
       console.error('Error sending email change confirmation:', error);
-      setMessage({ type: 'error', text: error.message || 'Erro ao enviar confirmação de troca de email' });
+      setMessage({ type: 'error', text: translateSupabaseAuthError(error) });
     } finally {
       setIsEmailLoading(false);
     }
@@ -528,7 +529,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       setFormData({ ...formData, avatar_url: publicUrl });
       setMessage({ type: 'success', text: 'Foto atualizada com sucesso!' });
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Erro ao fazer upload da foto' });
+      setMessage({ type: 'error', text: translateError(error) });
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -565,7 +566,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       await refreshProfile();
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
     } catch (error: any) {
-      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar perfil' });
+      setMessage({ type: 'error', text: translateError(error) });
     } finally {
       setIsLoading(false);
     }
@@ -617,7 +618,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       window.location.href = '/sign-in';
     } catch (error: any) {
       console.error('Error deleting account:', error);
-      setMessage({ type: 'error', text: error.message || 'Erro ao excluir conta' });
+      setMessage({ type: 'error', text: translateError(error) });
       setIsDeleting(false);
       setShowDeleteConfirm(false);
     }
@@ -633,7 +634,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
       console.error('Erro ao atualizar preferência:', error);
-      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar preferência' });
+      setMessage({ type: 'error', text: translateError(error) });
       setTimeout(() => setMessage(null), 3000);
     }
   };
@@ -648,7 +649,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
       console.error('Erro ao atualizar tema:', error);
-      setMessage({ type: 'error', text: error.message || 'Erro ao atualizar tema' });
+      setMessage({ type: 'error', text: translateError(error) });
       setTimeout(() => setMessage(null), 3000);
     }
   };

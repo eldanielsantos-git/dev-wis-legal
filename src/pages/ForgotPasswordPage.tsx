@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader } from 'lucide-react';
+import { translateSupabaseAuthError } from '../utils/errorTranslator';
 
 interface ForgotPasswordPageProps {
   onNavigateToSignIn: () => void;
@@ -13,24 +14,6 @@ export function ForgotPasswordPage({ onNavigateToSignIn }: ForgotPasswordPagePro
   const [success, setSuccess] = useState(false);
   const [email, setEmail] = useState('');
 
-  const translateError = (errorMessage: string): string => {
-    const errorMap: Record<string, string> = {
-      'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
-      'Invalid login credentials': 'Credenciais inválidas',
-      'Email link is invalid or has expired': 'Link de email inválido ou expirado',
-      'User not found': 'Usuário não encontrado',
-      'Unable to validate email address': 'Não foi possível validar o endereço de email'
-    };
-
-    for (const [key, value] of Object.entries(errorMap)) {
-      if (errorMessage.includes(key)) {
-        return value;
-      }
-    }
-
-    return errorMessage;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -39,8 +22,7 @@ export function ForgotPasswordPage({ onNavigateToSignIn }: ForgotPasswordPagePro
       await resetPassword(email);
       setSuccess(true);
     } catch (err: any) {
-      const errorMessage = err.message || 'Erro ao enviar email';
-      setError(translateError(errorMessage));
+      setError(translateSupabaseAuthError(err));
     } finally {
       setLoading(false);
     }

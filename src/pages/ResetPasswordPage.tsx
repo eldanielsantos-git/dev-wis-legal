@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Loader, Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { validatePasswordCharacters, validatePasswordStrict, sanitizePassword } from '../utils/passwordValidation';
+import { translateSupabaseAuthError } from '../utils/errorTranslator';
 
 interface ResetPasswordPageProps {
   onNavigateToSignIn: () => void;
@@ -131,26 +132,7 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
         onNavigateToSignIn();
       }, 2000);
     } catch (err: any) {
-      const errorMessage = err.message || 'Erro ao redefinir senha. Por favor, tente novamente.';
-
-      const errorMap: Record<string, string> = {
-        'Token de reset inválido': 'Link de recuperação inválido',
-        'Token de reset expirado': 'Link de recuperação expirado. Solicite um novo link.',
-        'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
-        'Email link is invalid or has expired': 'Link de email inválido ou expirado',
-        'Password should be at least 6 characters': 'A senha deve ter no mínimo 6 caracteres',
-        'New password should be different': 'A nova senha deve ser diferente da anterior'
-      };
-
-      let translatedError = errorMessage;
-      for (const [key, value] of Object.entries(errorMap)) {
-        if (errorMessage.includes(key)) {
-          translatedError = value;
-          break;
-        }
-      }
-
-      setError(translatedError);
+      setError(translateSupabaseAuthError(err));
     } finally {
       setLoading(false);
     }

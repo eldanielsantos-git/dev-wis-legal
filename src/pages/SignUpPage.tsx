@@ -4,6 +4,7 @@ import { Loader, ChevronDown, Eye, EyeOff, CheckCircle2, XCircle, Upload, User }
 import Select from 'react-select';
 import { brazilianStates, type State } from '../data/brazilianLocations';
 import { validatePasswordCharacters, validatePasswordStrict, sanitizePassword } from '../utils/passwordValidation';
+import { translateSupabaseAuthError } from '../utils/errorTranslator';
 
 interface SignUpPageProps {
   onNavigateToSignIn: () => void;
@@ -397,32 +398,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       setResendCountdown(60);
     } catch (err: any) {
       console.error('[SignUp] Erro ao criar conta:', err);
-      const errorMessage = err.message || 'Erro ao criar conta';
-
-      const errorMap: Record<string, string> = {
-        'User already registered': 'Este email já está cadastrado. Faça login ou use outro email.',
-        'Database error saving new user': 'Este email já está cadastrado. Faça login ou use outro email.',
-        'duplicate key value': 'Este email já está cadastrado. Faça login ou use outro email.',
-        'already exists': 'Este email já está cadastrado. Faça login ou use outro email.',
-        'Email address': 'Email inválido. Use um email real (ex: seunome@gmail.com)',
-        'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
-        'Invalid login credentials': 'Credenciais inválidas',
-        'Password should be at least 6 characters': 'A senha deve ter no mínimo 6 caracteres',
-        'Unable to validate email address': 'Não foi possível validar o endereço de email',
-        'Email link is invalid or has expired': 'Link de email inválido ou expirado',
-        'Password is known to be weak and easy to guess': 'Esta senha é muito fraca e fácil de adivinhar. Por favor, escolha uma senha diferente.',
-        'weak and easy to guess': 'Esta senha é muito fraca e fácil de adivinhar. Por favor, escolha uma senha mais forte.'
-      };
-
-      let translatedError = errorMessage;
-      for (const [key, value] of Object.entries(errorMap)) {
-        if (errorMessage.includes(key)) {
-          translatedError = value;
-          break;
-        }
-      }
-
-      setError(translatedError);
+      setError(translateSupabaseAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -597,7 +573,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
                   try {
                     await signInWithGoogle();
                   } catch (err: any) {
-                    setError(err.message || 'Erro ao fazer cadastro com Google');
+                    setError(translateSupabaseAuthError(err));
                     setGoogleLoading(false);
                   }
                 }}
@@ -618,7 +594,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
                   try {
                     await signInWithMicrosoft();
                   } catch (err: any) {
-                    setError(err.message || 'Erro ao fazer cadastro com Microsoft');
+                    setError(translateSupabaseAuthError(err));
                     setMicrosoftLoading(false);
                   }
                 }}

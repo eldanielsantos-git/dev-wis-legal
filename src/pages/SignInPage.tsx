@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader, Eye, EyeOff } from 'lucide-react';
 import { sanitizePassword } from '../utils/passwordValidation';
+import { translateSupabaseAuthError } from '../utils/errorTranslator';
 
 interface SignInPageProps {
   onNavigateToSignUp: () => void;
@@ -20,24 +21,6 @@ export function SignInPage({ onNavigateToSignUp, onNavigateToForgotPassword, onN
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({ email: '', password: '' });
 
-  const translateError = (errorMessage: string): string => {
-    const errorMap: Record<string, string> = {
-      'Email not confirmed': 'Email não confirmado. Verifique sua caixa de entrada.',
-      'Invalid login credentials': 'Credenciais inválidas. Verifique seu email e senha.',
-      'Email link is invalid or has expired': 'Link de email inválido ou expirado',
-      'User not found': 'Usuário não encontrado',
-      'Invalid email or password': 'Email ou senha inválidos'
-    };
-
-    for (const [key, value] of Object.entries(errorMap)) {
-      if (errorMessage.includes(key)) {
-        return value;
-      }
-    }
-
-    return errorMessage;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -45,8 +28,7 @@ export function SignInPage({ onNavigateToSignUp, onNavigateToForgotPassword, onN
     try {
       await signIn(formData.email, formData.password);
     } catch (err: any) {
-      const errorMessage = err.message || 'Erro ao fazer login';
-      setError(translateError(errorMessage));
+      setError(translateSupabaseAuthError(err));
     } finally {
       setLoading(false);
     }
@@ -112,8 +94,7 @@ export function SignInPage({ onNavigateToSignUp, onNavigateToForgotPassword, onN
                 try {
                   await signInWithGoogle();
                 } catch (err: any) {
-                  const errorMessage = err.message || 'Erro ao fazer login com Google';
-                  setError(translateError(errorMessage));
+                  setError(translateSupabaseAuthError(err));
                   setGoogleLoading(false);
                 }
               }}
@@ -142,8 +123,7 @@ export function SignInPage({ onNavigateToSignUp, onNavigateToForgotPassword, onN
                 try {
                   await signInWithMicrosoft();
                 } catch (err: any) {
-                  const errorMessage = err.message || 'Erro ao fazer login com Microsoft';
-                  setError(translateError(errorMessage));
+                  setError(translateSupabaseAuthError(err));
                   setMicrosoftLoading(false);
                 }
               }}
