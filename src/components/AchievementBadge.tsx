@@ -27,7 +27,8 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
   const handleClick = () => {
     if (config.type === 'profile_complete' && onNavigateToProfile) {
       onNavigateToProfile();
-    } else if (unlocked && onNavigateToApp) {
+    } else if (onNavigateToApp) {
+      // Leva para a home tanto para conquistas desbloqueadas quanto bloqueadas (exceto profile_complete)
       onNavigateToApp();
     }
   };
@@ -35,8 +36,8 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
   return (
     <div
       onClick={handleClick}
-      className={`relative rounded-lg p-6 pb-4 shadow-md transition-all duration-300 ${
-        unlocked || config.type === 'profile_complete' ? 'cursor-pointer transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
+      className={`relative rounded-lg p-6 pb-4 shadow-md transition-all duration-300 cursor-pointer transform hover:scale-105 hover:shadow-lg ${
+        !unlocked ? 'opacity-60' : ''
       }`}
       style={{
         background: unlocked
