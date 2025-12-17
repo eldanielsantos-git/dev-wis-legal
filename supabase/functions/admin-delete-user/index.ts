@@ -89,6 +89,28 @@ Deno.serve(async (req: Request) => {
 
     const progress: DeletionProgress[] = [];
 
+    progress.push({ step: 'Verificando se usuário existe', completed: false });
+    const { data: targetUserProfile } = await supabase
+      .from('user_profiles')
+      .select('id, email')
+      .eq('id', targetUserId)
+      .maybeSingle();
+
+    const { data: { user: targetAuthUser }, error: targetAuthError } = await supabase.auth.admin.getUserById(targetUserId);
+
+    if (!targetUserProfile && !targetAuthUser) {
+      progress[0] = { step: 'Usuário não encontrado', completed: false, error: 'O usuário já foi deletado ou não existe' };
+      return new Response(
+        JSON.stringify({ error: 'User not found', progress }),
+        {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    progress[0] = { step: 'Usuário encontrado', completed: true };
+
     progress.push({ step: 'Cancelando assinatura', completed: false });
     try {
       const { data: customer } = await supabase
@@ -115,15 +137,15 @@ Deno.serve(async (req: Request) => {
               canceled_at: new Date().toISOString()
             })
             .eq('subscription_id', subscription.subscription_id);
-          progress[0] = { step: 'Assinatura cancelada', completed: true };
+          progress[1] = { step: 'Assinatura cancelada', completed: true };
         } else {
-          progress[0] = { step: 'Sem assinatura ativa', completed: true };
+          progress[1] = { step: 'Sem assinatura ativa', completed: true };
         }
       } else {
-        progress[0] = { step: 'Sem assinatura ativa', completed: true };
+        progress[1] = { step: 'Sem assinatura ativa', completed: true };
       }
     } catch (error: any) {
-      progress[0] = { step: 'Cancelando assinatura', completed: false, error: error.message };
+      progress[1] = { step: 'Cancelando assinatura', completed: false, error: error.message };
     }
 
     progress.push({ step: 'Buscando processos do usuário', completed: false });
@@ -133,7 +155,7 @@ Deno.serve(async (req: Request) => {
       .eq('user_id', targetUserId);
 
     const processoCount = processosData?.length || 0;
-    progress[1] = { step: 'Processos encontrados', completed: true, count: processoCount };
+    progress[2] = { step: 'Processos encontrados', completed: true, count: processoCount };
 
     if (processosData && processosData.length > 0) {
       const processoIds = processosData.map(p => p.id);
@@ -145,9 +167,9 @@ Deno.serve(async (req: Request) => {
         .in('processo_id', processoIds);
 
       if (paginasError) {
-        progress[2] = { step: 'Páginas dos processos', completed: false, error: paginasError.message };
+        progress[progress.length - 1] = { step: 'Páginas dos processos', completed: false, error: paginasError.message };
       } else {
-        progress[2] = { step: 'Páginas dos processos excluídas', completed: true };
+        progress[progress.length - 1] = { step: 'Páginas dos processos excluídas', completed: true };
       }
 
       progress.push({ step: 'Excluindo resultados de análise', completed: false });
@@ -157,9 +179,9 @@ Deno.serve(async (req: Request) => {
         .in('processo_id', processoIds);
 
       if (analysisError) {
-        progress[3] = { step: 'Resultados de análise', completed: false, error: analysisError.message };
+        progress[progress.length - 1] = { step: 'Resultados de análise', completed: false, error: analysisError.message };
       } else {
-        progress[3] = { step: 'Resultados de análise excluídos', completed: true };
+        progress[progress.length - 1] = { step: 'Resultados de análise excluídos', completed: true };
       }
 
       progress.push({ step: 'Excluindo chunks de processos', completed: false });
@@ -169,9 +191,9 @@ Deno.serve(async (req: Request) => {
         .in('processo_id', processoIds);
 
       if (chunksError) {
-        progress[4] = { step: 'Chunks de processos', completed: false, error: chunksError.message };
+        progress[progress.length - 1] = { step: 'Chunks de processos', completed: false, error: chunksError.message };
       } else {
-        progress[4] = { step: 'Chunks de processos excluídos', completed: true };
+        progress[progress.length - 1] = { step: 'Chunks de processos excluídos', completed: true };
       }
 
       progress.push({ step: 'Excluindo mensagens de chat', completed: false });
@@ -181,9 +203,9 @@ Deno.serve(async (req: Request) => {
         .in('processo_id', processoIds);
 
       if (chatError) {
-        progress[5] = { step: 'Mensagens de chat', completed: false, error: chatError.message };
+        progress[progress.length - 1] = { step: 'Mensagens de chat', completed: false, error: chatError.message };
       } else {
-        progress[5] = { step: 'Mensagens de chat excluídas', completed: true };
+        progress[progress.length - 1] = { step: 'Mensagens de chat excluídas', completed: true };
       }
     }
 
@@ -267,39 +289,47 @@ Deno.serve(async (req: Request) => {
       progress[progress.length - 1] = { step: 'Dados de pagamento excluídos', completed: true };
     }
 
-    progress.push({ step: 'Excluindo perfil do usuário', completed: false });
-    const { error: profileError } = await supabase
-      .from('user_profiles')
-      .delete()
-      .eq('id', targetUserId);
+    if (targetUserProfile) {
+      progress.push({ step: 'Excluindo perfil do usuário', completed: false });
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .delete()
+        .eq('id', targetUserId);
 
-    if (profileError) {
-      progress[progress.length - 1] = { step: 'Perfil do usuário', completed: false, error: profileError.message };
-      return new Response(
-        JSON.stringify({ error: 'Failed to delete user profile', progress }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      if (profileError) {
+        progress[progress.length - 1] = { step: 'Perfil do usuário', completed: false, error: profileError.message };
+        return new Response(
+          JSON.stringify({ error: 'Failed to delete user profile', progress }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } else {
+        progress[progress.length - 1] = { step: 'Perfil do usuário excluído', completed: true };
+      }
     } else {
-      progress[progress.length - 1] = { step: 'Perfil do usuário excluído', completed: true };
+      progress.push({ step: 'Perfil do usuário já estava excluído', completed: true });
     }
 
-    progress.push({ step: 'Excluindo conta de autenticação', completed: false });
-    const { error: deleteUserError } = await supabase.auth.admin.deleteUser(targetUserId);
+    if (targetAuthUser) {
+      progress.push({ step: 'Excluindo conta de autenticação', completed: false });
+      const { error: deleteUserError } = await supabase.auth.admin.deleteUser(targetUserId);
 
-    if (deleteUserError) {
-      progress[progress.length - 1] = { step: 'Conta de autenticação', completed: false, error: deleteUserError.message };
-      return new Response(
-        JSON.stringify({ error: 'Failed to delete user account', progress }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      if (deleteUserError) {
+        progress[progress.length - 1] = { step: 'Conta de autenticação', completed: false, error: deleteUserError.message };
+        return new Response(
+          JSON.stringify({ error: 'Failed to delete user account', progress }),
+          {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      } else {
+        progress[progress.length - 1] = { step: 'Conta de autenticação excluída', completed: true };
+      }
     } else {
-      progress[progress.length - 1] = { step: 'Conta de autenticação excluída', completed: true };
+      progress.push({ step: 'Conta de autenticação já estava excluída', completed: true });
     }
 
     return new Response(

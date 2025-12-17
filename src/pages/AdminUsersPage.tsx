@@ -54,6 +54,16 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
 
   useEffect(() => {
     loadUsers();
+
+    const handleFocus = () => {
+      loadUsers();
+    };
+
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, []);
 
   useEffect(() => {
@@ -120,7 +130,6 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
       setHasMore(sortedUsers.length > USERS_PER_PAGE);
     } catch (error: any) {
       console.error('Error loading users:', error);
-      setMessage({ type: 'error', text: 'Erro ao carregar usuários' });
       playErrorSound();
     } finally {
       setLoading(false);
