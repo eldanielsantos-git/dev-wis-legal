@@ -288,7 +288,7 @@ Deno.serve(async (req: Request) => {
     if (!remainingResults) {
       const { data: processoData } = await supabase
         .from('processos')
-        .select('user_id, numero_processo, created_at')
+        .select('user_id, file_name, created_at')
         .eq('id', processo_id)
         .single();
 
@@ -329,7 +329,7 @@ Deno.serve(async (req: Request) => {
         console.log(`[${workerId}] 🔔 Enviando notificação administrativa...`);
 
         const { data: userData } = await supabase
-          .from('profiles')
+          .from('user_profiles')
           .select('email, first_name, last_name')
           .eq('id', processoData.user_id)
           .maybeSingle();
@@ -350,7 +350,7 @@ Deno.serve(async (req: Request) => {
           severity: 'success',
           metadata: {
             processo_id,
-            process_number: processoData.numero_processo || 'N/A',
+            file_name: processoData.file_name || 'N/A',
             user_email: userData?.email || 'N/A',
             user_name: userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() : 'N/A',
             duration: durationText,
