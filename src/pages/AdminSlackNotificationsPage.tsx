@@ -3,7 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { adminNotificationsService, NotificationTypeWithConfig, AdminNotification, NotificationStats } from '../services/AdminNotificationsService';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
-import { Loader, Bell, Settings, BarChart3, ScrollText, TestTube, CheckCircle, XCircle, Link, Construction } from 'lucide-react';
+import {
+  Loader, Bell, Settings, BarChart3, ScrollText, TestTube, CheckCircle, XCircle, Link, Construction,
+  Search, X, ChevronDown, ChevronRight,
+  FileCheck, CreditCard, Coins, Users, Mail, Send, PartyPopper, Target, TrendingUp, TrendingDown,
+  AlertTriangle, Database, Zap, Bug, Clock, Activity, Repeat, AlertCircle, ShieldAlert
+} from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 
@@ -26,6 +31,52 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
   integration: Link,
   infrastructure: Construction,
   system: Settings,
+};
+
+const notificationTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  // Success
+  'analysis_completed': FileCheck,
+  'subscription_created': CreditCard,
+  'token_purchase': Coins,
+  'invite_accepted': Users,
+  'friend_invite_sent': Users,
+  'workspace_invite_sent': Send,
+  'subscription_downgraded': TrendingDown,
+  'user_signup': PartyPopper,
+  'user_level_up': Target,
+  'subscription_upgraded': TrendingUp,
+
+  // Error
+  'analysis_complex_failure': AlertTriangle,
+  'analysis_failure': AlertCircle,
+  'dead_letter_queue': Database,
+  'erro_de_banco': Database,
+  'erro_de_storage': Database,
+  'erro_em_worker': Bug,
+  'processo_travado': Clock,
+  'rate_limit_gemini': Zap,
+  'timeout_gemini': Clock,
+
+  // Integration
+  'bounce_rate_alto': Activity,
+  'chargeback_recebido': AlertTriangle,
+  'erro_email_bounce': Mail,
+  'erro_webhook_stripe': Zap,
+  'pagamento_falhou': XCircle,
+
+  // Infrastructure
+  'auto_restart_failed': Repeat,
+  'build_notify_failure': Bug,
+  'deploy_com_warnings': AlertTriangle,
+  'github_action_failure': XCircle,
+  'quota_superlotada': Database,
+
+  // System
+  'consolidação_aps_reiniciar': Settings,
+  'manutenção_agendada': Clock,
+  'operação_em_massa_concluida': CheckCircle,
+  'quota_suspensa_problema': ShieldAlert,
+  'usuário_deletado': Users,
 };
 
 const categoryColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -263,6 +314,11 @@ export function AdminSlackNotificationsPage({
     const enabled = categoryTypes.filter(t => t.config?.is_enabled !== false).length;
     const slackEnabled = categoryTypes.filter(t => t.config?.notify_slack !== false && t.config?.is_enabled !== false).length;
     return { total: categoryTypes.length, enabled, slackEnabled };
+  };
+
+  const getNotificationIcon = (type: NotificationTypeWithConfig) => {
+    const IconComponent = notificationTypeIcons[type.slug];
+    return IconComponent || Bell;
   };
 
   if (authLoading || loading) {
@@ -536,7 +592,7 @@ export function AdminSlackNotificationsPage({
                 {/* Search Bar */}
                 <div className="rounded-lg shadow-sm border p-4" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                   <div className="flex items-center gap-3">
-                    <span className="text-xl" style={{ color: colors.textSecondary }}>🔍</span>
+                    <Search className="w-5 h-5" style={{ color: colors.textSecondary }} />
                     <input
                       type="text"
                       placeholder="Buscar por nome, descrição ou slug..."
@@ -551,7 +607,7 @@ export function AdminSlackNotificationsPage({
                         style={{ color: colors.textSecondary }}
                         className="hover:opacity-80"
                       >
-                        ✕
+                        <X className="w-5 h-5" />
                       </button>
                     )}
                   </div>
@@ -562,6 +618,7 @@ export function AdminSlackNotificationsPage({
                   const categoryStats = getCategoryStats(category);
                   const isExpanded = expandedCategories.has(category);
                   const catColors = categoryColors[category];
+                  const CategoryIcon = categoryIcons[category];
 
                   return (
                     <div key={category} className={`rounded-lg shadow-sm border-2 overflow-hidden`} style={{ borderColor: colors.border, backgroundColor: colors.card }}>
@@ -572,15 +629,15 @@ export function AdminSlackNotificationsPage({
                             onClick={() => toggleCategory(category)}
                             className="flex items-center gap-3 flex-1"
                           >
-                            <span className="text-2xl">{catColors.icon}</span>
+                            {CategoryIcon && <CategoryIcon className={`w-6 h-6 ${catColors.text}`} />}
                             <div className="text-left">
                               <h3 className="text-lg font-bold">{categoryNames[category]}</h3>
                               <div className="text-sm opacity-80">
                                 {categoryStats.total} tipos • {categoryStats.enabled} ativas • {categoryStats.slackEnabled} com Slack
                               </div>
                             </div>
-                            <span className="ml-auto text-xl">
-                              {isExpanded ? '▼' : '▶'}
+                            <span className="ml-auto">
+                              {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                             </span>
                           </button>
                           <div className="flex items-center gap-3 ml-4">
@@ -622,6 +679,7 @@ export function AdminSlackNotificationsPage({
                           {categoryTypes.map(type => {
                             const isEnabled = type.config?.is_enabled !== false;
                             const slackEnabled = type.config?.notify_slack !== false;
+                            const TypeIcon = getNotificationIcon(type);
 
                             return (
                               <div
@@ -630,7 +688,9 @@ export function AdminSlackNotificationsPage({
                               >
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-4 flex-1">
-                                    <span className="text-3xl">{type.icon}</span>
+                                    <div className="flex-shrink-0">
+                                      <TypeIcon className="w-8 h-8" style={{ color: colors.textPrimary }} />
+                                    </div>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
                                         <div className="font-semibold" style={{ color: colors.text }}>{type.name}</div>
@@ -775,9 +835,13 @@ export function AdminSlackNotificationsPage({
                           <td className="px-6 py-4 text-sm" style={{ color: colors.text }}>{notification.title}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {notification.sent_to_slack ? (
-                              <span className="text-green-600 font-medium">✓ Enviada</span>
+                              <span className="flex items-center gap-1 text-green-600 font-medium">
+                                <CheckCircle className="w-4 h-4" /> Enviada
+                              </span>
                             ) : notification.error_message ? (
-                              <span className="text-red-600 font-medium">✗ Erro</span>
+                              <span className="flex items-center gap-1 text-red-600 font-medium">
+                                <XCircle className="w-4 h-4" /> Erro
+                              </span>
                             ) : (
                               <span style={{ color: colors.textSecondary }}>- Não enviada</span>
                             )}
@@ -820,7 +884,7 @@ export function AdminSlackNotificationsPage({
                           <optgroup key={category} label={categoryNames[category]}>
                             {categoryTypes.map(type => (
                               <option key={type.id} value={type.slug}>
-                                {type.icon} {type.name}
+                                {type.name}
                               </option>
                             ))}
                           </optgroup>
@@ -854,10 +918,10 @@ export function AdminSlackNotificationsPage({
                       <h3 className="text-lg font-semibold" style={{ color: colors.text }}>Detalhes da Notificação</h3>
                       <button
                         onClick={() => setSelectedNotification(null)}
-                        className="text-xl hover:opacity-80"
+                        className="hover:opacity-80"
                         style={{ color: colors.textSecondary }}
                       >
-                        ✕
+                        <X className="w-5 h-5" />
                       </button>
                     </div>
                   </div>
