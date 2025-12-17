@@ -133,17 +133,26 @@ export class UserAchievementsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const metadata = user.user_metadata || {};
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('email, first_name, last_name, phone, cpf, oab, state, city, avatar_url')
+      .eq('id', user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      return { completedCount: 0, totalCount: 9 };
+    }
+
     const profileFields = [
-      user.email,
-      metadata.first_name,
-      metadata.last_name,
-      metadata.phone,
-      metadata.cpf,
-      metadata.oab,
-      metadata.state,
-      metadata.city,
-      metadata.avatar_url
+      profile.email,
+      profile.first_name,
+      profile.last_name,
+      profile.phone,
+      profile.cpf,
+      profile.oab,
+      profile.state,
+      profile.city,
+      profile.avatar_url
     ];
 
     const completedFields = profileFields.filter(field => {
