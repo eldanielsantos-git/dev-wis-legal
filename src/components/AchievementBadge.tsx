@@ -144,29 +144,29 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
       </div>
 
       {/* Badge de Status - Altura fixa no final */}
-      <div className="flex justify-center h-6 items-center mb-0.5">
+      <div className="flex justify-center h-7 items-center mb-0.5">
         {unlocked ? (
           <div
-            className="flex items-center gap-1 px-2 py-1 rounded-full font-semibold"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.25)',
               color: '#FFFFFF',
-              fontSize: '0.75rem'
+              fontSize: '0.875rem'
             }}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle2 className="w-4 h-4" />
             <span>Desbloqueado</span>
           </div>
         ) : (
           <div
-            className="flex items-center gap-1 px-2 py-1 rounded-full font-semibold"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold"
             style={{
               backgroundColor: theme === 'dark' ? '#374151' : '#E5E7EB',
               color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
-              fontSize: '0.75rem'
+              fontSize: '0.875rem'
             }}
           >
-            <Lock className="w-3.5 h-3.5" />
+            <Lock className="w-4 h-4" />
             <span>Bloqueado</span>
           </div>
         )}
