@@ -135,17 +135,19 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
         </div>
       </div>
 
-      {/* Área com altura fixa para data de desbloqueio */}
-      <div className={`h-10 mt-3 pt-2 flex items-center justify-center ${unlocked ? 'border-t border-white border-opacity-25' : ''}`}>
-        {unlocked && unlockedAt && (
-          <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
-            Desbloqueado em {formatDate(unlockedAt)}
-          </p>
-        )}
-      </div>
+      {/* Área inferior com altura fixa para data e badge */}
+      <div className="mt-4">
+        {/* Área com altura fixa para data de desbloqueio */}
+        <div className={`h-9 flex items-center justify-center ${unlocked ? 'border-t border-white border-opacity-25 pt-2' : ''}`}>
+          {unlocked && unlockedAt && (
+            <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
+              Desbloqueado em {formatDate(unlockedAt)}
+            </p>
+          )}
+        </div>
 
-      {/* Badge de Status - Altura fixa no final */}
-      <div className="flex justify-center h-7 items-center mb-0.5 mt-2">
+        {/* Badge de Status - Altura fixa no final */}
+        <div className="flex justify-center h-9 items-center mt-1">
         {unlocked ? (
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold"
@@ -171,6 +173,7 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
             <span>Bloqueado</span>
           </div>
         )}
+        </div>
       </div>
 
     </div>
