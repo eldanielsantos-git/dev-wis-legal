@@ -1,7 +1,8 @@
 import { supabase } from '../lib/supabase';
-import { Target, Star, Diamond, Trophy, Crown } from 'lucide-react';
+import { Target, Star, Diamond, Trophy, Crown, User } from 'lucide-react';
 
 export type AchievementType =
+  | 'profile_complete'
   | 'first_process'
   | 'three_processes'
   | 'ten_processes'
@@ -36,49 +37,58 @@ export interface AchievementProgress {
 
 export const ACHIEVEMENTS: AchievementConfig[] = [
   {
+    type: 'profile_complete',
+    title: 'Perfil Wis',
+    description: 'Complete 100% dos dados do seu perfil',
+    icon: User,
+    color: '#10B981',
+    requiredCount: 100,
+    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
+  },
+  {
     type: 'first_process',
     title: 'Primeira Análise',
     description: 'Complete sua primeira análise forense',
     icon: Target,
-    color: '#64748B',
+    color: '#10B981',
     requiredCount: 1,
-    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
+    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
   },
   {
     type: 'three_processes',
     title: 'Iniciante',
     description: 'Complete 3 análises forenses',
     icon: Star,
-    color: '#64748B',
+    color: '#10B981',
     requiredCount: 3,
-    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
+    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
   },
   {
     type: 'ten_processes',
     title: 'Experiente',
     description: 'Complete 10 análises forenses',
     icon: Diamond,
-    color: '#64748B',
+    color: '#10B981',
     requiredCount: 10,
-    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
+    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
   },
   {
     type: 'fifty_processes',
     title: 'Expert',
     description: 'Complete 50 análises forenses',
     icon: Trophy,
-    color: '#64748B',
+    color: '#10B981',
     requiredCount: 50,
-    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
+    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
   },
   {
     type: 'hundred_processes',
-    title: 'Mestre Forense',
+    title: 'Jurídico',
     description: 'Complete 100 análises forenses',
     icon: Crown,
-    color: '#64748B',
+    color: '#10B981',
     requiredCount: 100,
-    badgeGradient: 'linear-gradient(135deg, #64748B, #475569)'
+    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
   }
 ];
 
@@ -119,10 +129,37 @@ export class UserAchievementsService {
     return count || 0;
   }
 
+  static async getProfileCompletionPercentage(): Promise<number> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Usuário não autenticado');
+
+    const metadata = user.user_metadata || {};
+    const profileFields = [
+      metadata.first_name,
+      metadata.last_name,
+      metadata.phone,
+      metadata.cpf,
+      metadata.oab,
+      metadata.state,
+      metadata.city,
+      metadata.avatar_url
+    ];
+
+    const completedFields = profileFields.filter(field => {
+      if (typeof field === 'string') {
+        return field.trim().length > 0;
+      }
+      return false;
+    }).length;
+
+    return Math.round((completedFields / profileFields.length) * 100);
+  }
+
   static async getAchievementProgress(): Promise<AchievementProgress[]> {
-    const [achievements, completedCount] = await Promise.all([
+    const [achievements, completedCount, profileCompletion] = await Promise.all([
       this.getUserAchievements(),
-      this.getCompletedProcessesCount()
+      this.getCompletedProcessesCount(),
+      this.getProfileCompletionPercentage()
     ]);
 
     const achievementMap = new Map(
@@ -132,14 +169,24 @@ export class UserAchievementsService {
     return ACHIEVEMENTS.map(config => {
       const userAchievement = achievementMap.get(config.type);
       const unlocked = !!userAchievement;
-      const progress = Math.min((completedCount / config.requiredCount) * 100, 100);
+
+      let progress: number;
+      let currentCount: number;
+
+      if (config.type === 'profile_complete') {
+        progress = profileCompletion;
+        currentCount = profileCompletion;
+      } else {
+        progress = Math.min((completedCount / config.requiredCount) * 100, 100);
+        currentCount = completedCount;
+      }
 
       return {
         config,
         unlocked,
         unlockedAt: userAchievement?.unlocked_at,
         progress: Math.round(progress),
-        currentCount: completedCount
+        currentCount
       };
     });
   }
@@ -152,7 +199,10 @@ export class UserAchievementsService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const completedCount = await this.getCompletedProcessesCount();
+    const [completedCount, profileCompletion] = await Promise.all([
+      this.getCompletedProcessesCount(),
+      this.getProfileCompletionPercentage()
+    ]);
 
     const { error } = await supabase.rpc('unlock_achievement_if_eligible', {
       p_user_id: user.id,
@@ -162,6 +212,25 @@ export class UserAchievementsService {
     if (error) {
       console.error('Erro ao desbloquear conquistas:', error);
       throw new Error(`Erro ao desbloquear conquistas: ${error.message}`);
+    }
+
+    if (profileCompletion === 100) {
+      const { data: existingAchievement } = await supabase
+        .from('user_achievements')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('achievement_type', 'profile_complete')
+        .maybeSingle();
+
+      if (!existingAchievement) {
+        await supabase
+          .from('user_achievements')
+          .insert({
+            user_id: user.id,
+            achievement_type: 'profile_complete',
+            unlocked_at: new Date().toISOString()
+          });
+      }
     }
   }
 

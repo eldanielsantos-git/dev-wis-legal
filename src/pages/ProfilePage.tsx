@@ -526,7 +526,28 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         .from('avatars')
         .getPublicUrl(fileName);
 
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ avatar_url: publicUrl })
+        .eq('id', user.id);
+
+      if (updateError) throw updateError;
+
       setFormData({ ...formData, avatar_url: publicUrl });
+      await refreshProfile();
+
+      try {
+        await UserAchievementsService.checkAndUnlockAchievements();
+        const [progress, count] = await Promise.all([
+          UserAchievementsService.getAchievementProgress(),
+          UserAchievementsService.getCompletedProcessesCount()
+        ]);
+        setAchievementProgress(progress);
+        setCompletedCount(count);
+      } catch (achievementError) {
+        console.error('Erro ao verificar conquistas:', achievementError);
+      }
+
       setMessage({ type: 'success', text: 'Foto atualizada com sucesso!' });
     } catch (error: any) {
       setMessage({ type: 'error', text: translateError(error) });
@@ -564,6 +585,19 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       if (error) throw error;
 
       await refreshProfile();
+
+      try {
+        await UserAchievementsService.checkAndUnlockAchievements();
+        const [progress, count] = await Promise.all([
+          UserAchievementsService.getAchievementProgress(),
+          UserAchievementsService.getCompletedProcessesCount()
+        ]);
+        setAchievementProgress(progress);
+        setCompletedCount(count);
+      } catch (achievementError) {
+        console.error('Erro ao verificar conquistas:', achievementError);
+      }
+
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
     } catch (error: any) {
       setMessage({ type: 'error', text: translateError(error) });
@@ -1170,7 +1204,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                     <h2 className="text-xl font-bold mb-3" style={{ color: colors.textPrimary }}>
                       Suas Conquistas
                     </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                       {achievementProgress.map((achievement) => (
                         <AchievementBadge key={achievement.config.type} achievement={achievement} />
                       ))}
