@@ -280,22 +280,6 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', processo_id);
 
-        const { data: processoData } = await supabase
-          .from('processos')
-          .select('file_name, user_id, created_at')
-          .eq('id', processo_id)
-          .single();
-
-        if (processoData) {
-          await sendProcessCompletedNotification(
-            supabase,
-            processo_id,
-            processoData.file_name,
-            processoData.user_id,
-            processoData.created_at
-          );
-        }
-
         return new Response(
           JSON.stringify({
             success: true,
@@ -522,14 +506,7 @@ Deno.serve(async (req: Request) => {
 
               console.log(`🔄 Combinando resultados de ${chunks.length} chunks...`);
 
-              const combinationPrompt = `Você está combinando ${chunks.length} análises parciais de um documento dividido em partes.
-
-ANÁLISES PARCIAIS:
-${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}
-
-TAREFA: Combine essas análises em uma única análise completa e coerente, removendo duplicações e garantindo consistência.
-
-IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua texto introdutório como "Com base na consolidação..." ou explicações. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: começando com "{" para JSON).`;
+              const combinationPrompt = `Você está combinando ${chunks.length} análises parciais de um documento dividido em partes.\n\nANÁLISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas análises em uma única análise completa e coerente, removendo duplicações e garantindo consistência.\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua texto introdutório como \"Com base na consolidação...\" ou explicações. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: começando com \"{\" para JSON).`;
 
               const combinationResult = await geminiModel.generateContent({
                 contents: [{ role: 'user', parts: [{ text: combinationPrompt }] }],
@@ -564,7 +541,7 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
               console.log(`📝 Salvando resultado: ${text.length} caracteres`);
 
               if (!text || text.length === 0) {
-                console.error(`⚠️ AVISO: Conteúdo vazio para prompt "${nextResult.prompt_title}"`);
+                console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\"`);
               }
 
               const executionTime = Date.now() - startTime;
@@ -678,7 +655,7 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
           console.log(`📝 Salvando resultado (File API): ${text.length} caracteres`);
 
           if (!text || text.length === 0) {
-            console.error(`⚠️ AVISO: Conteúdo vazio para prompt "${nextResult.prompt_title}" (File API)`);
+            console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\" (File API)`);
           }
 
           console.log(`📝 Atualizando status para 'completed' (File API) - ${nextResult.prompt_title}`);
@@ -882,7 +859,7 @@ IMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua tex
           console.log(`📝 Salvando resultado (Base64): ${text.length} caracteres`);
 
           if (!text || text.length === 0) {
-            console.error(`⚠️ AVISO: Conteúdo vazio para prompt "${nextResult.prompt_title}" (Base64)`);
+            console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\" (Base64)`);
           }
 
           console.log(`📝 Atualizando status para 'completed' (Base64) - ${nextResult.prompt_title}`);
