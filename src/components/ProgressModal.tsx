@@ -120,50 +120,29 @@ export function ProgressModal({
           )}
 
           {progress.length > 0 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm sm:text-base font-semibold" style={{ color: colors.textPrimary }}>
-                  {progressTitle}
-                </h3>
-                {isProcessing && (
-                  <div className="flex items-center gap-1.5">
-                    <Loader className="w-3 h-3 animate-spin" style={{ color: colors.textSecondary }} />
-                    <span className="text-xs" style={{ color: colors.textSecondary }}>
-                      {processingText}
-                    </span>
-                  </div>
-                )}
-              </div>
-
+            <div className="space-y-1.5">
               {progress.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-2 p-2 sm:p-2.5 rounded-lg border"
+                  className="flex items-start gap-2 p-2 rounded-lg"
                   style={{
                     backgroundColor: item.error
                       ? 'rgba(239, 68, 68, 0.1)'
-                      : item.completed
-                      ? 'rgba(16, 185, 129, 0.1)'
                       : colors.bgTertiary,
-                    borderColor: item.error
-                      ? '#EF4444'
-                      : item.completed
-                      ? '#10B981'
-                      : colors.border
                   }}
                 >
                   <div className="flex-shrink-0 mt-0.5">
                     {item.error ? (
-                      <AlertCircle className="w-3.5 h-3.5 text-red-500" />
+                      <AlertCircle className="w-3 h-3 text-red-500" />
                     ) : item.completed ? (
-                      <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                      <CheckCircle className="w-3 h-3 text-green-500" />
                     ) : (
-                      <Loader className="w-3.5 h-3.5 animate-spin" style={{ color: colors.textSecondary }} />
+                      <Loader className="w-3 h-3 animate-spin" style={{ color: colors.textSecondary }} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p
-                      className="text-xs sm:text-sm font-medium"
+                      className="text-xs font-light"
                       style={{
                         color: item.error
                           ? '#EF4444'
@@ -176,7 +155,7 @@ export function ProgressModal({
                       {item.count !== undefined && ` (${item.count})`}
                     </p>
                     {item.error && (
-                      <p className="text-xs mt-0.5 text-red-400">
+                      <p className="text-xs mt-0.5 font-light text-red-400">
                         {item.error}
                       </p>
                     )}

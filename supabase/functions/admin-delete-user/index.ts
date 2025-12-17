@@ -75,7 +75,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { targetUserId } = await req.json();
+    const { targetUserId, operationId: clientOperationId } = await req.json();
 
     if (!targetUserId) {
       return new Response(
@@ -87,7 +87,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const operationId = crypto.randomUUID();
+    const operationId = clientOperationId || crypto.randomUUID();
     const progress: DeletionProgress[] = [];
 
     const updateProgress = async (currentProgress: DeletionProgress[], status: string = 'running', error?: string) => {

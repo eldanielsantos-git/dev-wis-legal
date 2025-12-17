@@ -243,6 +243,7 @@ export function AdminUserDetailPage({
     if (!user) return;
 
     let pollingInterval: NodeJS.Timeout | null = null;
+    const operationId = `delete-${user.id}-${Date.now()}`;
 
     try {
       setIsConfirmDeleteOpen(false);
@@ -256,34 +257,15 @@ export function AdminUserDetailPage({
         throw new Error('Sessão não encontrada. Faça login novamente.');
       }
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 60000);
-
-      const fetchPromise = fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          targetUserId: user.id
-        }),
-        signal: controller.signal
-      });
-
-      let operationId: string | null = null;
-
       const pollProgress = async () => {
-        if (!operationId) return;
-
         const { data } = await supabase
           .from('admin_operation_progress')
           .select('*')
           .eq('operation_id', operationId)
           .maybeSingle();
 
-        if (data) {
-          setDeletionProgress(data.progress || []);
+        if (data && data.progress && data.progress.length > 0) {
+          setDeletionProgress(data.progress);
 
           if (data.status === 'completed') {
             if (pollingInterval) {
@@ -310,38 +292,37 @@ export function AdminUserDetailPage({
         }
       };
 
-      let response;
-      let result;
+      pollingInterval = setInterval(pollProgress, 300);
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       try {
-        response = await fetchPromise;
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            targetUserId: user.id,
+            operationId: operationId
+          }),
+          signal: controller.signal
+        });
+
         clearTimeout(timeoutId);
-        result = await response.json();
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Erro ao excluir usuário');
+        }
       } catch (fetchError: any) {
         clearTimeout(timeoutId);
         if (fetchError.name === 'AbortError') {
           throw new Error('Operação excedeu o tempo limite. Por favor, tente novamente.');
         }
         throw fetchError;
-      }
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao excluir usuário');
-      }
-
-      operationId = result.operationId;
-
-      if (operationId) {
-        pollingInterval = setInterval(pollProgress, 500);
-        pollProgress();
-      } else {
-        setDeletionProgress(result.progress || []);
-        setMessage({ type: 'success', text: 'Usuário excluído com sucesso!' });
-
-        setTimeout(() => {
-          setIsDeletionModalOpen(false);
-          onNavigateBack();
-        }, 2000);
       }
     } catch (error: any) {
       console.error('Erro ao excluir usuário:', error);
