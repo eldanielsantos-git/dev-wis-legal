@@ -53,19 +53,14 @@ function AppContent() {
   const { user, loading } = useAuth();
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
 
-  console.log('[App] Current path:', currentPath);
-
   const navigate = (path: string) => {
-    console.log('[App] Navigating to:', path);
     window.history.pushState({}, '', path);
     setCurrentPath(path);
   };
 
   useEffect(() => {
     const handlePopState = () => {
-      const newPath = window.location.pathname;
-      console.log('[App] PopState - new path:', newPath);
-      setCurrentPath(newPath);
+      setCurrentPath(window.location.pathname);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -289,7 +284,6 @@ function AppContent() {
   }
 
   if (currentPath === '/admin-slack-notifications') {
-    console.log('[App] Rendering AdminSlackNotificationsPage for path:', currentPath);
     return (
       <AdminSlackNotificationsPage
         onNavigateToAdmin={() => navigate('/admin-settings')}

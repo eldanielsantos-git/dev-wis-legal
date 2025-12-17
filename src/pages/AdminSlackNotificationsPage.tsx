@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../contexts/AuthContext';
 import { adminNotificationsService, NotificationTypeWithConfig, AdminNotification, NotificationStats } from '../services/AdminNotificationsService';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
@@ -56,11 +56,7 @@ export function AdminSlackNotificationsPage({
   onNavigateToPrivacy,
   onNavigateToCookies,
 }: AdminSlackNotificationsPageProps) {
-  console.log('[AdminSlackNotificationsPage] Component mounted');
-
   const { user, isAdmin, loading: authLoading } = useAuth();
-  console.log('[AdminSlackNotificationsPage] Auth state:', { userEmail: user?.email, isAdmin, authLoading });
-
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);

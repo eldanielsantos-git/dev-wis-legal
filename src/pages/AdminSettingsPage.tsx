@@ -65,10 +65,8 @@ export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNa
   };
 
   const handleNavigateToSlackNotifications = () => {
-    console.log('[AdminSettingsPage] Navigating to Slack Notifications');
     window.history.pushState({}, '', '/admin-slack-notifications');
     window.dispatchEvent(new PopStateEvent('popstate'));
-    console.log('[AdminSettingsPage] PopState event dispatched');
   };
 
   return (
