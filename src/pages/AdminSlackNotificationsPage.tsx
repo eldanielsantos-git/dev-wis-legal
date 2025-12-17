@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { adminNotificationsService, NotificationTypeWithConfig, AdminNotification, NotificationStats } from '../services/AdminNotificationsService';
 import { SidebarWis } from '../components/SidebarWis';
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+import { CustomSelect } from '../components/CustomSelect';
 
 interface AdminSlackNotificationsPageProps {
   onNavigateToApp: () => void;
@@ -289,6 +290,25 @@ export function AdminSlackNotificationsPage({
     acc[type.category].push(type);
     return acc;
   }, {} as Record<string, NotificationTypeWithConfig[]>);
+
+  // Transform grouped types for CustomSelect
+  const selectOptionGroups = useMemo(() => {
+    return Object.entries(groupedTypes).map(([category, categoryTypes]) => ({
+      label: categoryNames[category] || category,
+      options: categoryTypes.map(type => ({
+        value: type.slug,
+        label: type.name
+      }))
+    }));
+  }, [types]);
+
+  // All options flat for CustomSelect
+  const allSelectOptions = useMemo(() => {
+    return types.map(type => ({
+      value: type.slug,
+      label: type.name
+    }));
+  }, [types]);
 
   const filteredGroupedTypes = Object.entries(groupedTypes).reduce((acc, [category, categoryTypes]) => {
     if (!configSearchTerm) {
@@ -873,28 +893,20 @@ export function AdminSlackNotificationsPage({
                       <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
                         Selecione o tipo de notificação
                       </label>
-                      <div className="relative">
-                        <select
-                          value={testTypeSlug}
-                          onChange={(e) => setTestTypeSlug(e.target.value)}
-                          className="w-full border rounded-lg px-4 py-3 pr-10 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
-                          style={{ backgroundColor: colors.card, color: colors.text, borderColor: colors.border }}
-                        >
-                          <option value="">-- Selecione --</option>
-                          {Object.entries(groupedTypes).map(([category, categoryTypes]) => (
-                            <optgroup key={category} label={categoryNames[category]}>
-                              {categoryTypes.map(type => (
-                                <option key={type.id} value={type.slug}>
-                                  {type.name}
-                                </option>
-                              ))}
-                            </optgroup>
-                          ))}
-                        </select>
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                          <ChevronDown className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.textSecondary }} />
-                        </div>
-                      </div>
+                      <CustomSelect
+                        value={testTypeSlug}
+                        onChange={setTestTypeSlug}
+                        options={allSelectOptions}
+                        optionGroups={selectOptionGroups}
+                        placeholder="-- Selecione --"
+                        colors={{
+                          card: colors.card,
+                          text: colors.text,
+                          textSecondary: colors.textSecondary,
+                          border: colors.border,
+                          primary: '#10B981'
+                        }}
+                      />
                     </div>
                     <button
                       onClick={handleSendTest}
