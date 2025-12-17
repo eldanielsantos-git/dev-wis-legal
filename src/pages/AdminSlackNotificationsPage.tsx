@@ -873,34 +873,39 @@ export function AdminSlackNotificationsPage({
                       <label className="block text-sm font-medium mb-2" style={{ color: colors.text }}>
                         Selecione o tipo de notificação
                       </label>
-                      <select
-                        value={testTypeSlug}
-                        onChange={(e) => setTestTypeSlug(e.target.value)}
-                        className="w-full border rounded px-3 py-2"
-                        style={{ backgroundColor: colors.card, color: colors.text, borderColor: colors.border }}
-                      >
-                        <option value="">-- Selecione --</option>
-                        {Object.entries(groupedTypes).map(([category, categoryTypes]) => (
-                          <optgroup key={category} label={categoryNames[category]}>
-                            {categoryTypes.map(type => (
-                              <option key={type.id} value={type.slug}>
-                                {type.name}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                      </select>
+                      <div className="relative">
+                        <select
+                          value={testTypeSlug}
+                          onChange={(e) => setTestTypeSlug(e.target.value)}
+                          className="w-full border rounded-lg px-4 py-3 pr-10 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+                          style={{ backgroundColor: colors.card, color: colors.text, borderColor: colors.border }}
+                        >
+                          <option value="">-- Selecione --</option>
+                          {Object.entries(groupedTypes).map(([category, categoryTypes]) => (
+                            <optgroup key={category} label={categoryNames[category]}>
+                              {categoryTypes.map(type => (
+                                <option key={type.id} value={type.slug}>
+                                  {type.name}
+                                </option>
+                              ))}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                          <ChevronDown className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.textSecondary }} />
+                        </div>
+                      </div>
                     </div>
                     <button
                       onClick={handleSendTest}
                       disabled={!testTypeSlug}
-                      className="px-4 py-2 rounded font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
-                      style={{ backgroundColor: colors.primary, color: '#fff' }}
+                      className="px-6 py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-all shadow-sm"
+                      style={{ backgroundColor: testTypeSlug ? '#10B981' : '#9CA3AF', color: '#fff' }}
                     >
                       Enviar Teste
                     </button>
                     {testResult && (
-                      <div className={`p-4 rounded ${testResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                         {testResult.message}
                       </div>
                     )}
