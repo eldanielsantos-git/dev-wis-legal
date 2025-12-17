@@ -135,7 +135,7 @@ export class UserAchievementsService {
 
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('email, first_name, last_name, phone, cpf, oab, state, city, avatar_url')
+      .select('type, email, first_name, last_name, company_name, phone, cpf, cnpj, oab, state, city, avatar_url')
       .eq('id', user.id)
       .maybeSingle();
 
@@ -143,26 +143,35 @@ export class UserAchievementsService {
       return { completedCount: 0, totalCount: 9 };
     }
 
-    const profileFields = [
+    const userType = profile.type || 'PF';
+
+    // Campos comuns para ambos os tipos
+    const commonFields = [
       profile.email,
       profile.first_name,
       profile.last_name,
       profile.phone,
-      profile.cpf,
-      profile.oab,
       profile.state,
       profile.city,
       profile.avatar_url
     ];
 
-    const completedFields = profileFields.filter(field => {
+    // Campos específicos baseados no tipo
+    const specificFields = userType === 'PJ'
+      ? [profile.company_name, profile.cnpj] // PJ: Nome da empresa e CNPJ
+      : [profile.cpf]; // PF: CPF
+
+    // OAB é opcional para ambos (não conta na totalCount)
+    const allFields = [...commonFields, ...specificFields];
+
+    const completedFields = allFields.filter(field => {
       if (typeof field === 'string') {
         return field.trim().length > 0;
       }
       return false;
     }).length;
 
-    return { completedCount: completedFields, totalCount: profileFields.length };
+    return { completedCount: completedFields, totalCount: allFields.length };
   }
 
   static async getProfileCompletionPercentage(): Promise<number> {

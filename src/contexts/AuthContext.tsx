@@ -5,11 +5,15 @@ import { logger } from '../utils/logger';
 
 interface UserProfile {
   id: string;
+  type?: 'PF' | 'PJ';
   avatar_url?: string;
   first_name: string;
   last_name: string;
+  company_name?: string;
   phone?: string;
   phone_country_code?: string;
+  cpf?: string;
+  cnpj?: string;
   oab?: string;
   city?: string;
   state?: string;
@@ -160,11 +164,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         emailRedirectTo: `${window.location.origin}/confirm-email`,
         emailConfirmation: true,
         data: {
+          type: profileData.type,
           first_name: profileData.first_name,
           last_name: profileData.last_name,
+          company_name: profileData.company_name,
           phone: profileData.phone,
           phone_country_code: profileData.phone_country_code,
           cpf: profileData.cpf,
+          cnpj: profileData.cnpj,
           oab: profileData.oab,
           city: profileData.city,
           state: profileData.state,

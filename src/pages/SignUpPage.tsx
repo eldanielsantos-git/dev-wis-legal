@@ -21,7 +21,8 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [step, setStep] = useState<'initial' | 'details'>('initial');
+  const [step, setStep] = useState<'initial' | 'type-selection' | 'details'>('initial');
+  const [userType, setUserType] = useState<'PF' | 'PJ' | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendCountdown, setResendCountdown] = useState(0);
@@ -29,7 +30,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
   const [inviteId, setInviteId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', phoneCountryCode: '+55', phone: '', password: '', confirmPassword: '',
-    cpf: '', oab: '', city: '', state: '', termsAccepted: false
+    cpf: '', cnpj: '', companyName: '', oab: '', city: '', state: '', termsAccepted: false
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -96,6 +97,15 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
     const formattedNumbers = numbers.replace(/(\d{1,3})(?=(\d{3})+(?!\d))/g, '$1.');
     return formattedNumbers + letters;
+  };
+
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 14);
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 5) return numbers.replace(/(\d{2})(\d{0,3})/, '$1.$2');
+    if (numbers.length <= 8) return numbers.replace(/(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    if (numbers.length <= 12) return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{0,4})/, '$1.$2.$3/$4');
+    return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
   };
 
   const formatCPF = (value: string) => {
@@ -272,7 +282,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       return;
     }
 
-    setStep('details');
+    setStep('type-selection');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -281,7 +291,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
     setLoading(true);
 
     if (!formData.firstName.trim()) {
-      setError('Nome é obrigatório');
+      setError(userType === 'PJ' ? 'Nome do responsável é obrigatório' : 'Nome é obrigatório');
       setLoading(false);
       return;
     }
@@ -290,6 +300,29 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       setError('Sobrenome é obrigatório');
       setLoading(false);
       return;
+    }
+
+    // Validação específica para PJ
+    if (userType === 'PJ') {
+      if (!formData.companyName.trim()) {
+        setError('Nome da empresa é obrigatório');
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.cnpj.trim()) {
+        setError('CNPJ é obrigatório');
+        setLoading(false);
+        return;
+      }
+
+      // Validar formato do CNPJ (14 dígitos)
+      const cnpjNumbers = formData.cnpj.replace(/\D/g, '');
+      if (cnpjNumbers.length !== 14) {
+        setError('CNPJ inválido');
+        setLoading(false);
+        return;
+      }
     }
 
     if (!formData.phone.trim()) {
@@ -362,11 +395,14 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       }
 
       await signUp(formData.email, formData.password, {
+        type: userType!,
         first_name: formData.firstName,
         last_name: formData.lastName,
+        company_name: userType === 'PJ' ? formData.companyName : undefined,
         phone: formData.phone,
         phone_country_code: formData.phoneCountryCode,
-        cpf: formData.cpf ? formData.cpf.replace(/\D/g, '') : undefined,
+        cpf: userType === 'PF' && formData.cpf ? formData.cpf.replace(/\D/g, '') : undefined,
+        cnpj: userType === 'PJ' ? formData.cnpj.replace(/\D/g, '') : undefined,
         oab: formData.oab || undefined,
         city: formData.city,
         state: formData.state,
@@ -626,6 +662,57 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
     );
   }
 
+  // Tela de seleção de tipo de cadastro (PF ou PJ)
+  if (step === 'type-selection') {
+    return (
+      <div className="min-h-screen flex flex-col md:flex-row font-body">
+        <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
+          <div className="text-center">
+            <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-12 md:h-16 mx-auto mb-4 md:mb-6" />
+            <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+          </div>
+        </div>
+        <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
+          <div className="max-w-sm w-full px-2 sm:px-0">
+            <button
+              type="button"
+              onClick={() => setStep('initial')}
+              className="mb-4 text-gray-600 hover:text-gray-900 flex items-center text-sm"
+            >
+              ← Voltar
+            </button>
+            <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-4 md:mb-8 text-center">
+              Qual o tipo de cadastro que deseja fazer?
+            </h1>
+            {error && <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setUserType('PF');
+                  setStep('details');
+                }}
+                className="w-full bg-black text-white py-4 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-base"
+              >
+                Pessoa Física
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setUserType('PJ');
+                  setStep('details');
+                }}
+                className="w-full bg-black text-white py-4 px-4 rounded-lg hover:bg-gray-800 transition-colors font-medium text-base"
+              >
+                Pessoa Jurídica
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col md:flex-row font-body">
       <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
@@ -638,7 +725,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
         <div className="max-w-sm w-full px-2 sm:px-0">
           <button
             type="button"
-            onClick={() => setStep('initial')}
+            onClick={() => setStep('type-selection')}
             className="mb-4 text-gray-600 hover:text-gray-900 flex items-center text-sm"
           >
             ← Voltar
@@ -679,7 +766,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
               />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              <div><label className="block text-sm font-medium text-gray-700 mb-1">Nome</label><input type="text" required value={formData.firstName} onChange={(e) => {
+              <div><label className="block text-sm font-medium text-gray-700 mb-1">{userType === 'PJ' ? 'Nome do responsável' : 'Nome'}</label><input type="text" required value={formData.firstName} onChange={(e) => {
                 const value = e.target.value.replace(/[^a-zA-ZÀ-ÿ\s]/g, '');
                 setFormData({ ...formData, firstName: value });
               }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600" /></div>
@@ -688,6 +775,21 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
                 setFormData({ ...formData, lastName: value });
               }} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600" /></div>
             </div>
+            {userType === 'PJ' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome da empresa</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.companyName}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^a-zA-ZÀ-ÿ0-9\s]/g, '');
+                    setFormData({ ...formData, companyName: value });
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
               <div className="flex gap-2">
@@ -720,24 +822,43 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
                 />
               </div>
             </div>
+            {userType === 'PF' ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CPF
+                </label>
+                <input
+                  type="text"
+                  value={formData.cpf}
+                  onChange={(e) => {
+                    const formatted = formatCPF(e.target.value);
+                    setFormData({ ...formData, cpf: formatted });
+                  }}
+                  placeholder="000.000.000-00"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+                />
+              </div>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  CNPJ
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.cnpj}
+                  onChange={(e) => {
+                    const formatted = formatCNPJ(e.target.value);
+                    setFormData({ ...formData, cnpj: formatted });
+                  }}
+                  placeholder="09.031.011/0001-23"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
+                />
+              </div>
+            )}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                CPF
-              </label>
-              <input
-                type="text"
-                value={formData.cpf}
-                onChange={(e) => {
-                  const formatted = formatCPF(e.target.value);
-                  setFormData({ ...formData, cpf: formatted });
-                }}
-                placeholder="000.000.000-00"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-gray-300 bg-transparent text-gray-600"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                OAB <span className="text-gray-400 text-xs">(opcional)</span>
+                {userType === 'PJ' ? 'OAB do responsável' : 'OAB'} <span className="text-gray-400 text-xs">(opcional)</span>
               </label>
               <input
                 type="text"
