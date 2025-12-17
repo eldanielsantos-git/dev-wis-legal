@@ -84,13 +84,13 @@ export function ProgressModal({
         style={{ backgroundColor: colors.bgSecondary }}
       >
         <div
-          className="sticky top-0 flex items-center justify-between p-4 sm:p-6 border-b z-10"
+          className="sticky top-0 flex items-center justify-between p-3 sm:p-4 border-b z-10"
           style={{
             backgroundColor: colors.bgSecondary,
             borderColor: colors.border
           }}
         >
-          <h2 className="text-xl sm:text-2xl font-title font-bold" style={{ color: colors.textPrimary }}>
+          <h2 className="text-base sm:text-lg font-title font-bold" style={{ color: colors.textPrimary }}>
             {title}
           </h2>
           {canClose && (
@@ -99,36 +99,36 @@ export function ProgressModal({
               className="p-2 hover:opacity-70 transition-opacity"
               style={{ color: colors.textSecondary }}
             >
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           )}
         </div>
 
-        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
           {error && (
             <div
-              className="p-4 rounded-lg border border-red-500 bg-red-500/10"
+              className="p-3 rounded-lg border border-red-500 bg-red-500/10"
             >
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-500 mt-0.5" />
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-500 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-red-500 mb-1">{errorTitle}</p>
-                  <p className="text-sm text-red-400">{error}</p>
+                  <p className="text-sm font-semibold text-red-500 mb-0.5">{errorTitle}</p>
+                  <p className="text-xs text-red-400">{error}</p>
                 </div>
               </div>
             </div>
           )}
 
           {progress.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base sm:text-lg font-semibold" style={{ color: colors.textPrimary }}>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm sm:text-base font-semibold" style={{ color: colors.textPrimary }}>
                   {progressTitle}
                 </h3>
                 {isProcessing && (
-                  <div className="flex items-center gap-2">
-                    <Loader className="w-4 h-4 animate-spin" style={{ color: colors.textSecondary }} />
-                    <span className="text-sm" style={{ color: colors.textSecondary }}>
+                  <div className="flex items-center gap-1.5">
+                    <Loader className="w-3 h-3 animate-spin" style={{ color: colors.textSecondary }} />
+                    <span className="text-xs" style={{ color: colors.textSecondary }}>
                       {processingText}
                     </span>
                   </div>
@@ -138,7 +138,7 @@ export function ProgressModal({
               {progress.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-3 p-3 sm:p-4 rounded-lg border"
+                  className="flex items-start gap-2 p-2 sm:p-2.5 rounded-lg border"
                   style={{
                     backgroundColor: item.error
                       ? 'rgba(239, 68, 68, 0.1)'
@@ -154,16 +154,16 @@ export function ProgressModal({
                 >
                   <div className="flex-shrink-0 mt-0.5">
                     {item.error ? (
-                      <AlertCircle className="w-5 h-5 text-red-500" />
+                      <AlertCircle className="w-3.5 h-3.5 text-red-500" />
                     ) : item.completed ? (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500" />
                     ) : (
-                      <Loader className="w-5 h-5 animate-spin" style={{ color: colors.textSecondary }} />
+                      <Loader className="w-3.5 h-3.5 animate-spin" style={{ color: colors.textSecondary }} />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p
-                      className="text-sm sm:text-base font-medium"
+                      className="text-xs sm:text-sm font-medium"
                       style={{
                         color: item.error
                           ? '#EF4444'
@@ -176,7 +176,7 @@ export function ProgressModal({
                       {item.count !== undefined && ` (${item.count})`}
                     </p>
                     {item.error && (
-                      <p className="text-xs sm:text-sm mt-1 text-red-400">
+                      <p className="text-xs mt-0.5 text-red-400">
                         {item.error}
                       </p>
                     )}
@@ -187,18 +187,18 @@ export function ProgressModal({
           )}
 
           {!isProcessing && progress.length === 0 && !error && (
-            <div className="text-center py-8">
-              <p className="text-base" style={{ color: colors.textSecondary }}>
+            <div className="text-center py-6">
+              <p className="text-sm" style={{ color: colors.textSecondary }}>
                 {initialText}
               </p>
             </div>
           )}
 
           {!isProcessing && canClose && (
-            <div className="flex justify-end pt-4 border-t" style={{ borderColor: colors.border }}>
+            <div className="flex justify-end pt-3 border-t" style={{ borderColor: colors.border }}>
               <button
                 onClick={onClose}
-                className="px-6 py-3 rounded-lg font-medium text-sm transition-all duration-200 hover:opacity-80"
+                className="px-5 py-2 rounded-lg font-medium text-sm transition-all duration-200 hover:opacity-80"
                 style={{
                   backgroundColor: theme === 'dark' ? '#C8C8C8' : '#0F0E0D',
                   color: theme === 'dark' ? '#0F0E0D' : '#FFFFFF'
