@@ -248,13 +248,16 @@ export function AdminUserDetailPage({
       setIsConfirmDeleteOpen(false);
       setIsDeletionModalOpen(true);
       setIsDeleting(true);
-      setDeletionProgress([]);
+      setDeletionProgress([{ step: 'Iniciando exclusão do usuário...', completed: false }]);
       setDeletionError(null);
 
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.access_token) {
         throw new Error('Sessão não encontrada. Faça login novamente.');
       }
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
       const fetchPromise = fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
         method: 'POST',
@@ -264,7 +267,8 @@ export function AdminUserDetailPage({
         },
         body: JSON.stringify({
           targetUserId: user.id
-        })
+        }),
+        signal: controller.signal
       });
 
       let operationId: string | null = null;
@@ -306,8 +310,20 @@ export function AdminUserDetailPage({
         }
       };
 
-      const response = await fetchPromise;
-      const result = await response.json();
+      let response;
+      let result;
+
+      try {
+        response = await fetchPromise;
+        clearTimeout(timeoutId);
+        result = await response.json();
+      } catch (fetchError: any) {
+        clearTimeout(timeoutId);
+        if (fetchError.name === 'AbortError') {
+          throw new Error('Operação excedeu o tempo limite. Por favor, tente novamente.');
+        }
+        throw fetchError;
+      }
 
       if (!response.ok) {
         throw new Error(result.error || 'Erro ao excluir usuário');
@@ -329,8 +345,27 @@ export function AdminUserDetailPage({
       }
     } catch (error: any) {
       console.error('Erro ao excluir usuário:', error);
-      setDeletionError(error.message || 'Erro ao excluir usuário');
-      setMessage({ type: 'error', text: error.message || 'Erro ao excluir usuário' });
+
+      let errorMessage = 'Erro ao excluir usuário';
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.error) {
+        errorMessage = error.error;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+
+      const finalProgress = deletionProgress.length > 0
+        ? [...deletionProgress.slice(0, -1), {
+            ...deletionProgress[deletionProgress.length - 1],
+            completed: false,
+            error: errorMessage
+          }]
+        : [{ step: 'Erro ao processar exclusão', completed: false, error: errorMessage }];
+
+      setDeletionProgress(finalProgress);
+      setDeletionError(errorMessage);
+      setMessage({ type: 'error', text: errorMessage });
       playErrorSound();
       setIsDeleting(false);
 

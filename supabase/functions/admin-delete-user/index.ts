@@ -91,21 +91,29 @@ Deno.serve(async (req: Request) => {
     const progress: DeletionProgress[] = [];
 
     const updateProgress = async (currentProgress: DeletionProgress[], status: string = 'running', error?: string) => {
-      await supabase
-        .from('admin_operation_progress')
-        .upsert({
-          operation_id: operationId,
-          operation_type: 'delete_user',
-          user_id: targetUserId,
-          admin_user_id: adminUser.id,
-          progress: currentProgress,
-          status,
-          error,
-          updated_at: new Date().toISOString(),
-          ...(status === 'completed' || status === 'error' ? { completed_at: new Date().toISOString() } : {})
-        }, {
-          onConflict: 'operation_id'
-        });
+      try {
+        const { error: upsertError } = await supabase
+          .from('admin_operation_progress')
+          .upsert({
+            operation_id: operationId,
+            operation_type: 'delete_user',
+            user_id: targetUserId,
+            admin_user_id: adminUser.id,
+            progress: currentProgress,
+            status,
+            error,
+            updated_at: new Date().toISOString(),
+            ...(status === 'completed' || status === 'error' ? { completed_at: new Date().toISOString() } : {})
+          }, {
+            onConflict: 'operation_id'
+          });
+
+        if (upsertError) {
+          console.error('Error updating progress:', upsertError);
+        }
+      } catch (progressError) {
+        console.error('Failed to update progress:', progressError);
+      }
     };
 
     await updateProgress(progress, 'running');
@@ -396,8 +404,18 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error: any) {
     console.error('Error in admin-delete-user function:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code,
+    });
+
     return new Response(
-      JSON.stringify({ error: error.message || 'Internal server error' }),
+      JSON.stringify({
+        error: error.message || 'Internal server error',
+        details: error.code ? `Code: ${error.code}` : undefined,
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
