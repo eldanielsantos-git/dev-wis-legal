@@ -48,7 +48,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
   {
     type: 'first_process',
     title: 'Primeira Análise',
-    description: 'Complete sua primeira análise forense',
+    description: 'Complete sua primeira análise',
     icon: Target,
     color: '#10B981',
     requiredCount: 1,
@@ -57,7 +57,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
   {
     type: 'three_processes',
     title: 'Iniciante',
-    description: 'Complete 3 análises forenses',
+    description: 'Complete 3 análises',
     icon: Star,
     color: '#10B981',
     requiredCount: 3,
@@ -66,7 +66,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
   {
     type: 'ten_processes',
     title: 'Experiente',
-    description: 'Complete 10 análises forenses',
+    description: 'Complete 10 análises',
     icon: Diamond,
     color: '#10B981',
     requiredCount: 10,
@@ -75,7 +75,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
   {
     type: 'fifty_processes',
     title: 'Expert',
-    description: 'Complete 50 análises forenses',
+    description: 'Complete 50 análises',
     icon: Trophy,
     color: '#10B981',
     requiredCount: 50,
@@ -84,7 +84,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
   {
     type: 'hundred_processes',
     title: 'Mestre Jurídico',
-    description: 'Complete 100 análises forenses',
+    description: 'Complete 100 análises',
     icon: Crown,
     color: '#10B981',
     requiredCount: 100,
