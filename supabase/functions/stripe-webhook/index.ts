@@ -48,30 +48,6 @@ async function logTokenCreditAudit(params: any) {
   }
 }
 
-async function sendSlackNotification(type: string, data: Record<string, unknown>) {
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    const response = await fetch(`${supabaseUrl}/functions/v1/send-slack-notification`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${serviceKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ type, data }),
-    });
-
-    if (!response.ok) {
-      console.error(`Failed to send Slack notification: ${response.statusText}`);
-    } else {
-      console.info(`Slack notification sent: ${type}`);
-    }
-  } catch (error) {
-    console.error('Error sending Slack notification:', error);
-  }
-}
-
 async function syncCustomerFromStripe(customerId: string, eventId: string) {
   const logPrefix = `[${eventId}][syncCustomer ${customerId}]`;
   console.info(`${logPrefix} Starting sync`);
@@ -125,12 +101,6 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           .maybeSingle();
 
         if (profile) {
-          await sendSlackNotification('subscription_cancelled', {
-            user_email: profile.email,
-            tier: existingSub.tier || 'unknown',
-            reason: 'Subscription cancelled in Stripe',
-          });
-
           notifyAdminSafe({
             type: 'subscription_cancelled',
             title: 'Assinatura Cancelada',
@@ -252,13 +222,6 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         if (profile) {
           const isUpgrade = finalPlanTokens > existingSub.plan_tokens;
           const notificationType = isUpgrade ? 'subscription_upgraded' : 'subscription_downgraded';
-
-          await sendSlackNotification(notificationType, {
-            user_email: profile.email,
-            old_tier: oldPlan?.tier || existingSub.tier || 'unknown',
-            new_tier: newPlan?.tier || 'unknown',
-            amount: 0,
-          });
 
           notifyAdminSafe({
             type: notificationType,
@@ -722,13 +685,6 @@ Deno.serve(async (req: Request) => {
               .maybeSingle();
 
             if (profile && subData) {
-              await sendSlackNotification('subscription_created', {
-                user_email: profile.email,
-                tier: subData.tier || 'unknown',
-                amount: session.amount_total || 0,
-                status: 'active',
-              });
-
               notifyAdminSafe({
                 type: 'subscription_created',
                 title: 'Nova Assinatura Criada',
@@ -831,12 +787,6 @@ Deno.serve(async (req: Request) => {
             .maybeSingle();
 
           if (profile) {
-            await sendSlackNotification('token_purchase', {
-              user_email: profile.email,
-              tokens: tokenPackage.tokens_amount,
-              amount: session.amount_total || 0,
-            });
-
             notifyAdminSafe({
               type: 'token_purchase',
               title: 'Compra de Tokens',

@@ -122,40 +122,11 @@ class SlackNotificationService {
   }
 
   async sendNotification(input: SendNotificationInput): Promise<void> {
-    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Configuração do Supabase não encontrada');
-    }
-
-    const { data: sessionData } = await supabase.auth.getSession();
-    const accessToken = sessionData?.session?.access_token;
-
-    if (!accessToken) {
-      throw new Error('Usuário não autenticado');
-    }
-
-    const apiUrl = `${supabaseUrl}/functions/v1/send-slack-notification`;
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-        'apikey': supabaseAnonKey,
-      },
-      body: JSON.stringify(input),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Error sending Slack notification:', errorData);
-      throw new Error(errorData.error || 'Erro ao enviar notificação para o Slack');
-    }
-
-    const result = await response.json();
-    console.log('Slack notification sent:', result);
+    // DEPRECATED: This method is no longer used.
+    // Notifications are now sent automatically through send-admin-notification edge function
+    // when configured in admin_notification_config table.
+    console.warn('SlackNotificationService.sendNotification is deprecated. Use admin notification system instead.');
+    throw new Error('Este método está obsoleto. Use o sistema de notificações administrativas.');
   }
 
   async testWebhook(webhookUrl: string): Promise<boolean> {
