@@ -1201,7 +1201,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
               ) : (
                 <div className="space-y-4">
                   <div className="rounded-lg p-4 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
-                    <h2 className="text-xl font-bold mb-3" style={{ color: colors.textPrimary }}>
+                    <h2 className="text-xl font-bold mb-3 text-center" style={{ color: colors.textPrimary }}>
                       Suas Conquistas
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-8">
