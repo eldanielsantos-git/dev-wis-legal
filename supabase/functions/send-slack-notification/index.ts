@@ -33,23 +33,28 @@ Deno.serve(async (req: Request) => {
     const payload: NotificationPayload = await req.json();
     const { type, data } = payload;
 
-    // Buscar configurações ativas de Slack que incluem este tipo de notificação
-    const { data: slackConfigs, error: configError } = await supabase
+    // Buscar todas as configurações ativas de Slack
+    const { data: allConfigs, error: configError } = await supabase
       .from("slack_notifications")
       .select("*")
-      .eq("is_active", true)
-      .contains("notification_types", [type]);
+      .eq("is_active", true);
 
     if (configError) {
       console.error("Error fetching Slack configs:", configError);
       throw configError;
     }
 
+    // Filtrar as configurações que incluem este tipo de notificação
+    const slackConfigs = allConfigs?.filter(config =>
+      config.notification_types && config.notification_types.includes(type)
+    );
+
     if (!slackConfigs || slackConfigs.length === 0) {
+      console.log(`No active Slack configurations for notification type: ${type}`);
       return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: "No active Slack configurations for this notification type" 
+        JSON.stringify({
+          success: true,
+          message: "No active Slack configurations for this notification type"
         }),
         {
           status: 200,
@@ -57,6 +62,8 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    console.log(`Found ${slackConfigs.length} active Slack config(s) for type: ${type}`);
 
     // Formatar mensagem baseada no tipo de notificação
     const slackMessage = formatSlackMessage(type, data);

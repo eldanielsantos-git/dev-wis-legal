@@ -41,13 +41,14 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization');
 
     if (!authHeader) {
+      console.warn('[send-admin-notification] Missing authorization header');
       return new Response(
         JSON.stringify({ success: false, error: 'Missing authorization header' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    console.log('[send-admin-notification] Request received with auth header');
+    console.log('[send-admin-notification] Request received');
 
     const notificationsEnabled = Deno.env.get('ADMIN_NOTIFICATIONS_ENABLED');
     if (notificationsEnabled === 'false') {
@@ -64,10 +65,13 @@ Deno.serve(async (req: Request) => {
     const payload: NotificationPayload = await req.json();
     const { type_slug, title, message, severity, metadata = {}, user_id, processo_id } = payload;
 
+    console.log('[send-admin-notification] Processing notification:', type_slug);
+
     if (!type_slug || !title || !message) {
+      console.warn('[send-admin-notification] Missing required fields');
       return new Response(
-        JSON.stringify({ success: true, message: 'Missing required fields but silently ignored' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Missing required fields' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -79,14 +83,15 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (typeError || !notificationType) {
-      console.warn('[send-admin-notification] Type not found or inactive:', type_slug);
+      console.warn('[send-admin-notification] Type not found or inactive:', type_slug, typeError);
       return new Response(
-        JSON.stringify({ success: true, message: 'Type not found but silently ignored' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Notification type not found or inactive' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const typeData = notificationType as unknown as NotificationTypeRow;
+    console.log('[send-admin-notification] Found notification type:', typeData.name);
 
     const { data: config, error: configError } = await supabase
       .from('admin_notification_config')
@@ -95,18 +100,19 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (configError || !config) {
-      console.warn('[send-admin-notification] Config not found:', type_slug);
+      console.warn('[send-admin-notification] Config not found:', type_slug, configError);
       return new Response(
-        JSON.stringify({ success: true, message: 'Config not found but silently ignored' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Notification config not found' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const configData = config as unknown as NotificationConfigRow;
 
     if (!configData.is_enabled) {
+      console.log('[send-admin-notification] Notification type disabled:', type_slug);
       return new Response(
-        JSON.stringify({ success: true, message: 'Notification type disabled' }),
+        JSON.stringify({ success: true, message: 'Notification type is disabled' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -136,12 +142,13 @@ Deno.serve(async (req: Request) => {
     if (insertError) {
       console.error('[send-admin-notification] Failed to insert notification:', insertError);
       return new Response(
-        JSON.stringify({ success: true, message: 'Failed to insert but silently ignored' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Failed to insert notification' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const notificationId = (insertedNotification as { id: string }).id;
+    console.log('[send-admin-notification] Notification saved:', notificationId);
 
     if (configData.notify_slack) {
       try {
@@ -153,7 +160,6 @@ Deno.serve(async (req: Request) => {
           .eq('is_active', true);
 
         console.log('[send-admin-notification] Slack configs found:', slackConfigs?.length || 0);
-        console.log('[send-admin-notification] Slack config error:', slackConfigError);
 
         if (slackConfigError) {
           console.error('[send-admin-notification] Error fetching Slack configs:', slackConfigError);
@@ -161,7 +167,7 @@ Deno.serve(async (req: Request) => {
 
         if (slackConfigs && slackConfigs.length > 0) {
           const matchingConfig = slackConfigs.find((config: { notification_types: string[] }) =>
-            config.notification_types.includes(type_slug)
+            config.notification_types && config.notification_types.includes(type_slug)
           );
 
           console.log('[send-admin-notification] Matching config found:', !!matchingConfig);
@@ -200,7 +206,7 @@ Deno.serve(async (req: Request) => {
           console.log('[send-admin-notification] No active Slack configs found');
         }
       } catch (slackError) {
-        console.error('[send-admin-notification] Slack error (ignored):', slackError);
+        console.error('[send-admin-notification] Slack error (non-blocking):', slackError);
         
         try {
           await supabase
@@ -220,10 +226,10 @@ Deno.serve(async (req: Request) => {
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('[send-admin-notification] Critical error (ignored):', error);
+    console.error('[send-admin-notification] Critical error:', error);
     return new Response(
-      JSON.stringify({ success: true, message: 'Error ignored for safety' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

@@ -24,7 +24,7 @@ const severityColors: Record<NotificationSeverity, string> = {
 };
 
 const severityEmojis: Record<NotificationSeverity, string> = {
-  critical: '��',
+  critical: '🚨',
   high: '⚠️',
   medium: '⚡',
   low: 'ℹ️',
