@@ -46,7 +46,9 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
           : '#F3F4F6',
         border: unlocked
           ? 'none'
-          : `2px solid ${theme === 'dark' ? '#374151' : '#D1D5DB'}`
+          : theme === 'dark'
+          ? '1px solid rgba(255, 255, 255, 0.2)'
+          : '2px solid #D1D5DB'
       }}
     >
       {/* Ícone Principal */}
