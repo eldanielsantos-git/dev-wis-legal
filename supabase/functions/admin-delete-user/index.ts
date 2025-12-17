@@ -206,41 +206,54 @@ Deno.serve(async (req: Request) => {
       progress[progress.length - 1] = { step: 'Processos excluídos', completed: true };
     }
 
-    progress.push({ step: 'Excluindo notificações', completed: false });
-    const { error: notificationsError } = await supabase
-      .from('notifications')
-      .delete()
-      .eq('user_id', targetUserId);
+    progress.push({ step: 'Excluindo compartilhamentos de workspace', completed: false });
+    await supabase.from('workspace_shares').delete().eq('owner_user_id', targetUserId);
+    await supabase.from('workspace_shares').delete().eq('shared_with_user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Compartilhamentos excluídos', completed: true };
 
-    if (notificationsError) {
-      progress[progress.length - 1] = { step: 'Notificações', completed: false, error: notificationsError.message };
-    } else {
-      progress[progress.length - 1] = { step: 'Notificações excluídas', completed: true };
-    }
+    progress.push({ step: 'Excluindo erros de análise complexa', completed: false });
+    await supabase.from('complex_analysis_errors').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Erros de análise complexa excluídos', completed: true };
+
+    progress.push({ step: 'Excluindo erros de análise', completed: false });
+    await supabase.from('analysis_errors').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Erros de análise excluídos', completed: true };
+
+    progress.push({ step: 'Excluindo notificações', completed: false });
+    await supabase.from('notifications').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Notificações excluídas', completed: true };
+
+    progress.push({ step: 'Excluindo notificações admin', completed: false });
+    await supabase.from('admin_notifications').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Notificações admin excluídas', completed: true };
+
+    progress.push({ step: 'Excluindo logs de email', completed: false });
+    await supabase.from('email_logs').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Logs de email excluídos', completed: true };
 
     progress.push({ step: 'Excluindo logs de uso de tokens', completed: false });
-    const { error: tokenUsageError } = await supabase
-      .from('token_usage_logs')
-      .delete()
-      .eq('user_id', targetUserId);
+    await supabase.from('token_usage_logs').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Logs de tokens excluídos', completed: true };
 
-    if (tokenUsageError) {
-      progress[progress.length - 1] = { step: 'Logs de tokens', completed: false, error: tokenUsageError.message };
-    } else {
-      progress[progress.length - 1] = { step: 'Logs de tokens excluídos', completed: true };
-    }
+    progress.push({ step: 'Excluindo reservas de tokens', completed: false });
+    await supabase.from('token_reservations').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Reservas de tokens excluídas', completed: true };
+
+    progress.push({ step: 'Excluindo notificações de limite de tokens', completed: false });
+    await supabase.from('token_limit_notifications').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Notificações de limite excluídas', completed: true };
 
     progress.push({ step: 'Excluindo auditoria de créditos', completed: false });
-    const { error: tokenCreditsError } = await supabase
-      .from('token_credits_audit')
-      .delete()
-      .eq('user_id', targetUserId);
+    await supabase.from('token_credits_audit').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Auditoria de créditos excluída', completed: true };
 
-    if (tokenCreditsError) {
-      progress[progress.length - 1] = { step: 'Auditoria de créditos', completed: false, error: tokenCreditsError.message };
-    } else {
-      progress[progress.length - 1] = { step: 'Auditoria de créditos excluída', completed: true };
-    }
+    progress.push({ step: 'Excluindo conquistas do usuário', completed: false });
+    await supabase.from('user_achievements').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Conquistas excluídas', completed: true };
+
+    progress.push({ step: 'Excluindo preferências do usuário', completed: false });
+    await supabase.from('user_preferences').delete().eq('user_id', targetUserId);
+    progress[progress.length - 1] = { step: 'Preferências excluídas', completed: true };
 
     progress.push({ step: 'Excluindo dados de pagamento', completed: false });
     const { error: stripeError } = await supabase
