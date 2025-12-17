@@ -134,26 +134,26 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       <div className="flex justify-center h-6 items-center mb-0.5">
         {unlocked ? (
           <div
-            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
+            className="flex items-center gap-1 px-2 py-1 rounded-full font-semibold"
             style={{
               backgroundColor: 'rgba(255, 255, 255, 0.25)',
               color: '#FFFFFF',
-              fontSize: '0.65rem'
+              fontSize: '0.75rem'
             }}
           >
-            <CheckCircle2 className="w-2.5 h-2.5" />
+            <CheckCircle2 className="w-3.5 h-3.5" />
             <span>Desbloqueado</span>
           </div>
         ) : (
           <div
-            className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full font-semibold"
+            className="flex items-center gap-1 px-2 py-1 rounded-full font-semibold"
             style={{
               backgroundColor: theme === 'dark' ? '#374151' : '#E5E7EB',
               color: theme === 'dark' ? '#9CA3AF' : '#6B7280',
-              fontSize: '0.65rem'
+              fontSize: '0.75rem'
             }}
           >
-            <Lock className="w-2.5 h-2.5" />
+            <Lock className="w-3.5 h-3.5" />
             <span>Bloqueado</span>
           </div>
         )}
