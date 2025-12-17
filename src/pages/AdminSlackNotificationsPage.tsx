@@ -138,6 +138,12 @@ export function AdminSlackNotificationsPage({
 
   const [testTypeSlug, setTestTypeSlug] = useState('');
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [isTestSending, setIsTestSending] = useState(false);
+
+  useEffect(() => {
+    setTestResult(null);
+    setIsTestSending(false);
+  }, [testTypeSlug]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -262,14 +268,26 @@ export function AdminSlackNotificationsPage({
       return;
     }
 
-    const result = await adminNotificationsService.sendTestNotification(testTypeSlug);
-    setTestResult({
-      success: result.success,
-      message: result.success ? 'Notificação de teste enviada com sucesso!' : result.error || 'Erro ao enviar',
-    });
+    setIsTestSending(true);
+    setTestResult(null);
 
-    if (result.success) {
-      setTimeout(() => loadNotifications(), 2000);
+    try {
+      const result = await adminNotificationsService.sendTestNotification(testTypeSlug);
+      setTestResult({
+        success: result.success,
+        message: result.success ? 'Notificação de teste enviada com sucesso!' : result.error || 'Erro ao enviar',
+      });
+
+      if (result.success) {
+        setTimeout(() => {
+          setTestResult(null);
+        }, 4000);
+        setTimeout(() => loadNotifications(), 2000);
+      }
+    } catch (error) {
+      setTestResult({ success: false, message: 'Erro ao enviar notificação de teste' });
+    } finally {
+      setIsTestSending(false);
     }
   };
 
@@ -910,11 +928,11 @@ export function AdminSlackNotificationsPage({
                     </div>
                     <button
                       onClick={handleSendTest}
-                      disabled={!testTypeSlug}
+                      disabled={!testTypeSlug || isTestSending}
                       className="px-6 py-3 rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-all shadow-sm"
-                      style={{ backgroundColor: testTypeSlug ? '#10B981' : '#9CA3AF', color: '#fff' }}
+                      style={{ backgroundColor: (testTypeSlug && !isTestSending) ? '#10B981' : '#9CA3AF', color: '#fff' }}
                     >
-                      Enviar Teste
+                      {isTestSending ? 'Enviando...' : 'Enviar Teste'}
                     </button>
                     {testResult && (
                       <div className={`p-4 rounded-lg ${testResult.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
