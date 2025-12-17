@@ -57,6 +57,11 @@ Estrutura do banco de dados, schemas, migrações e RLS.
 Sistema de autenticação, autorização e controle de acesso.
 
 - [Overview de Autenticação](./04-authentication/overview.md)
+- [🆕 **OAuth Completo - Google e Microsoft**](./features/oauth-authentication.md) ⭐
+  - Configuração Google Cloud Console
+  - Configuração Azure Portal (Microsoft)
+  - Auto-aceitação de convites pendentes
+  - Scopes, redirects e troubleshooting
 - [Fluxo de Registro/Login](./04-authentication/auth-flow.md)
 - [Gestão de Sessões](./04-authentication/session-management.md)
 - [Sistema de Permissões](./04-authentication/permissions.md)
@@ -84,6 +89,13 @@ Core do sistema: processamento de PDFs e análise com IA.
 Documentação completa das APIs e Edge Functions.
 
 - [Edge Functions Overview](./06-api-reference/edge-functions.md)
+- [🆕 **49 Edge Functions Completas**](./infrastructure/edge-functions-complete.md) ⭐
+  - Análise e Processamento (11 functions)
+  - Monitoramento e Recuperação (10 functions)
+  - Emails - 15 tipos (15 functions)
+  - Stripe e Pagamentos (7 functions)
+  - Administração (4 functions)
+  - Chat e IA (2 functions)
 - [API Endpoints](./06-api-reference/endpoints.md)
 - [Schemas e Validações](./06-api-reference/schemas.md)
 - [Exemplos de Uso](./06-api-reference/examples.md)
@@ -138,6 +150,69 @@ Guias de resolução de problemas e debugging.
 - [FAQ](./10-troubleshooting/faq.md)
 
 [📖 Ver documentação completa](./10-troubleshooting/README.md)
+
+---
+
+## 🆕 INFRAESTRUTURA E AUTOMAÇÃO
+
+### GitHub Actions - Monitoramento Automatizado
+
+Sistema completo de 5 workflows que monitoram e recuperam automaticamente processos e chunks.
+
+- [🆕 **GitHub Actions - 5 Workflows Completos**](./infrastructure/github-actions-monitoring.md) ⭐
+  - **monitor-stuck-processes** (1 minuto) - Processos travados
+  - **monitor-auto-restart-failed-chunks** (3 minutos) - Reinicia falhas
+  - **monitor-complex-health-check** (5 minutos) - Health check geral
+  - **monitor-stuck-chunks** (5 minutos) - Chunks travados
+  - **monitor-complex-recovery** (10 minutos) - Recuperação profunda
+  - Configuração de secrets do GitHub
+  - Logs, alertas e estratégia de resiliência
+
+### Edge Functions Detalhadas
+
+- [🆕 **49 Edge Functions Completas**](./infrastructure/edge-functions-complete.md) ⭐
+- [Edge Functions por Categoria](./infrastructure/edge-functions-complete.md#índice-por-categoria)
+
+---
+
+## 🆕 FEATURES PRINCIPAIS
+
+### Sistema de Tokens
+
+Sistema completo de gerenciamento de tokens, reserva, consumo e notificações.
+
+- [🆕 **Sistema de Tokens Completo**](./features/tokens-system-complete.md) ⭐
+  - Arquitetura de tokens
+  - Token Balance, Transactions e Reservations
+  - Fluxos: Adição, Reserva e Consumo
+  - **Sistema de Notificações (75% e 100%)**
+  - Limites por Tier
+  - Validação e Auditoria
+  - Frontend Integration (TokenBalanceContext)
+  - Métricas e KPIs
+
+### Autenticação OAuth
+
+- [🆕 **OAuth Google e Microsoft Completo**](./features/oauth-authentication.md) ⭐
+
+### Sistema de Emails
+
+- [15 Tipos de Emails Documentados](./infrastructure/edge-functions-complete.md#emails-15-tipos)
+  - Confirmação, Reset de Senha
+  - Análise Concluída
+  - Tokens Limite (75%, 100%)
+  - Stripe (Confirmação, Upgrade, Downgrade, Cancelamento)
+  - Convites (Workspace, Friends)
+
+---
+
+## 📊 STATUS DA DOCUMENTAÇÃO
+
+- [🆕 **Status Completo da Documentação**](./STATUS-DOCUMENTACAO.md) 📈
+  - Progresso detalhado por seção (35% completo)
+  - Checklist de documentos completados
+  - Prioridades e roadmap
+  - O que falta documentar
 
 ---
 
