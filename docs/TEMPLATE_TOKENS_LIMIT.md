@@ -2,13 +2,14 @@
 
 ## 📧 Informações do Template
 
-### Template IDs Necessários
+### Template Configurado
 
-Você precisa criar **3 templates** no Resend, um para cada nível de alerta:
+O sistema utiliza **um único template** no Resend para todos os níveis de alerta:
 
-1. **75% de uso** - ID: `tokens-limit-75`
-2. **90% de uso** - ID: `tokens-limit-90`
-3. **100% de uso** - ID: `tokens-limit-100`
+- **Nome do Template:** `tokens-running-out`
+- **Template ID:** `e4674548-2538-491e-800d-28cd09a46db1`
+
+O mesmo template é usado para os 3 níveis de alerta (75%, 90%, 100%), com as variáveis sendo ajustadas dinamicamente.
 
 ---
 
@@ -124,41 +125,42 @@ Todas as variáveis abaixo devem ser configuradas nos 3 templates do Resend:
 
 ---
 
-## 🎨 Diferenças entre os Templates
+## 🎨 Níveis de Alerta
 
-### Template 75% (Alerta Amarelo)
-- **ID:** `tokens-limit-75`
-- **Cor Principal:** `#f59e0b` (Amarelo/Laranja)
-- **Tom:** Aviso preventivo
+O sistema dispara o mesmo template em 3 níveis diferentes, ajustando dinamicamente as variáveis:
+
+### 75% de Uso (Alerta Preventivo)
+- **Tipo:** `75_percent`
 - **Mensagem:** "Seus tokens estão chegando ao fim!"
+- **Tom:** Aviso preventivo
+- **Quando dispara:** Quando o uso atinge ou ultrapassa 75%
 
-### Template 90% (Alerta Laranja)
-- **ID:** `tokens-limit-90`
-- **Cor Principal:** `#ea580c` (Laranja escuro)
-- **Tom:** Urgente
+### 90% de Uso (Alerta Urgente)
+- **Tipo:** `90_percent`
 - **Mensagem:** "Atenção: Restam poucos tokens!"
+- **Tom:** Urgente
+- **Quando dispara:** Quando o uso atinge ou ultrapassa 90%
 
-### Template 100% (Alerta Vermelho)
-- **ID:** `tokens-limit-100`
-- **Cor Principal:** `#dc2626` (Vermelho)
-- **Tom:** Crítico
+### 100% de Uso (Alerta Crítico)
+- **Tipo:** `100_percent`
 - **Mensagem:** "Seus tokens acabaram!"
+- **Tom:** Crítico
+- **Quando dispara:** Quando o uso atinge ou ultrapassa 100%
+
+**Nota:** O sistema sempre dispara o alerta do nível mais alto atingido. Por exemplo, se o usuário tem 95% de uso, apenas o alerta de 90% será enviado (não o de 75%).
 
 ---
 
-## ⚙️ Como Configurar no Resend
+## ⚙️ Configuração no Resend
 
-1. Acesse o [Resend Dashboard](https://resend.com/emails)
-2. Vá em **Emails** > **Templates**
-3. Clique em **Create Template**
-4. Configure cada template:
-   - **Name:** "WisLegal - Alerta de Tokens 75%"
-   - **Template ID:** `tokens-limit-75`
-   - **Subject:** `Alerta: Seus tokens estão chegando ao fim ({{percentage_used}} usado)`
-   - **From:** `WisLegal <noreply@wislegal.io>`
-   - **HTML:** Cole o código HTML acima
-5. Clique em **Create Template**
-6. Repita para os templates de 90% e 100%
+O template já está configurado no Resend:
+
+- **Template Name:** `tokens-running-out`
+- **Template ID:** `e4674548-2538-491e-800d-28cd09a46db1`
+- **Subject:** `Alerta: Seus tokens estão chegando ao fim ({{percentage_used}} usado)`
+- **From:** `WisLegal <noreply@wislegal.io>`
+
+O template deve incluir todas as variáveis listadas acima para funcionar corretamente.
 
 ---
 
@@ -251,10 +253,11 @@ A função registra automaticamente:
 
 ## ⚠️ Notas Importantes
 
-1. **Ambiente de Produção**: A função só funciona em produção
-2. **Resend API Key**: Deve estar configurada como secret no Supabase
-3. **Template IDs**: Devem corresponder exatamente aos IDs configurados no código
-4. **Variáveis**: Todas as variáveis devem estar presentes nos templates
+1. **Ambiente de Produção**: A função funciona automaticamente em produção
+2. **Resend API Key**: Já configurada no Supabase
+3. **Template ID**: `e4674548-2538-491e-800d-28cd09a46db1` (configurado no código)
+4. **Variáveis**: Todas as 8 variáveis devem estar presentes no template
+5. **Anti-Spam**: Máximo de 1 email por tipo de alerta a cada 7 dias
 
 ---
 
