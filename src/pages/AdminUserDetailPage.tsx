@@ -243,7 +243,7 @@ export function AdminUserDetailPage({
     if (!user) return;
 
     let pollingInterval: NodeJS.Timeout | null = null;
-    const operationId = `delete-${user.id}-${Date.now()}`;
+    const operationId = crypto.randomUUID();
 
     try {
       setIsConfirmDeleteOpen(false);
