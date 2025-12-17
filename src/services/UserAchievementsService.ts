@@ -42,7 +42,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
     description: 'Complete 100% dos dados do seu perfil',
     icon: User,
     color: '#10B981',
-    requiredCount: 100,
+    requiredCount: 9,
     badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
   },
   {
@@ -129,12 +129,13 @@ export class UserAchievementsService {
     return count || 0;
   }
 
-  static async getProfileCompletionPercentage(): Promise<number> {
+  static async getProfileCompletionCount(): Promise<{ completedCount: number; totalCount: number }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
     const metadata = user.user_metadata || {};
     const profileFields = [
+      user.email,
       metadata.first_name,
       metadata.last_name,
       metadata.phone,
@@ -152,13 +153,19 @@ export class UserAchievementsService {
       return false;
     }).length;
 
-    return Math.round((completedFields / profileFields.length) * 100);
+    return { completedCount: completedFields, totalCount: profileFields.length };
+  }
+
+  static async getProfileCompletionPercentage(): Promise<number> {
+    const { completedCount, totalCount } = await this.getProfileCompletionCount();
+    return Math.round((completedCount / totalCount) * 100);
   }
 
   static async getAchievementProgress(): Promise<AchievementProgress[]> {
-    const [achievements, completedCount, profileCompletion] = await Promise.all([
+    const [achievements, completedCount, profileCompletionData, profilePercentage] = await Promise.all([
       this.getUserAchievements(),
       this.getCompletedProcessesCount(),
+      this.getProfileCompletionCount(),
       this.getProfileCompletionPercentage()
     ]);
 
@@ -174,8 +181,8 @@ export class UserAchievementsService {
       let currentCount: number;
 
       if (config.type === 'profile_complete') {
-        progress = profileCompletion;
-        currentCount = profileCompletion;
+        progress = profilePercentage;
+        currentCount = profileCompletionData.completedCount;
       } else {
         progress = Math.min((completedCount / config.requiredCount) * 100, 100);
         currentCount = completedCount;
