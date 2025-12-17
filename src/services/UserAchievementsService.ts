@@ -83,7 +83,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
   },
   {
     type: 'hundred_processes',
-    title: 'Jurídico',
+    title: 'Mestre Jurídico',
     description: 'Complete 100 análises forenses',
     icon: Crown,
     color: '#10B981',
