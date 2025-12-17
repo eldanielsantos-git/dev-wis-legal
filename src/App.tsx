@@ -34,6 +34,7 @@ import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import { AdminTokenLimitsPage } from './pages/AdminTokenLimitsPage';
+import { AdminSlackNotificationsPage } from './pages/AdminSlackNotificationsPage';
 import AdminFeatureFlagsPage from './pages/AdminFeatureFlagsPage';
 import AdminTierMonitoringPage from './pages/AdminTierMonitoringPage';
 import AdminDeploymentVerificationPage from './pages/AdminDeploymentVerificationPage';
@@ -269,6 +270,22 @@ function AppContent() {
   if (currentPath === '/admin-tags') {
     return (
       <AdminTagsManagementPage
+        onNavigateToAdmin={() => navigate('/admin')}
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
+  }
+
+  if (currentPath === '/admin-slack-notifications') {
+    return (
+      <AdminSlackNotificationsPage
         onNavigateToAdmin={() => navigate('/admin')}
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}

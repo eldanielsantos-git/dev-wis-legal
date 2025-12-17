@@ -47,6 +47,30 @@ async function logTokenCreditAudit(params: any) {
   }
 }
 
+async function sendSlackNotification(type: string, data: Record<string, unknown>) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-slack-notification`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ type, data }),
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to send Slack notification: ${response.statusText}`);
+    } else {
+      console.info(`Slack notification sent: ${type}`);
+    }
+  } catch (error) {
+    console.error('Error sending Slack notification:', error);
+  }
+}
+
 async function syncCustomerFromStripe(customerId: string, eventId: string) {
   const logPrefix = `[${eventId}][syncCustomer ${customerId}]`;
   console.info(`${logPrefix} Starting sync`);
@@ -84,6 +108,28 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       if (deleteError) {
         console.error(`${logPrefix} Error marking subscription as deleted:`, deleteError);
         throw deleteError;
+      }
+
+      const { data: userData } = await supabase
+        .from('stripe_customers')
+        .select('user_id')
+        .eq('customer_id', customerId)
+        .maybeSingle();
+
+      if (userData) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('email')
+          .eq('id', userData.user_id)
+          .maybeSingle();
+
+        if (profile) {
+          await sendSlackNotification('subscription_cancelled', {
+            user_email: profile.email,
+            tier: existingSub.tier || 'unknown',
+            reason: 'Subscription cancelled in Stripe',
+          });
+        }
       }
     }
 
@@ -162,6 +208,44 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           tokens_carried_forward: tokensCarriedForward,
         },
       });
+
+      const { data: userData } = await supabase
+        .from('stripe_customers')
+        .select('user_id')
+        .eq('customer_id', customerId)
+        .maybeSingle();
+
+      if (userData) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('email')
+          .eq('id', userData.user_id)
+          .maybeSingle();
+
+        const { data: oldPlan } = await supabase
+          .from('subscription_plans')
+          .select('tier')
+          .eq('stripe_price_id', oldPriceId)
+          .maybeSingle();
+
+        const { data: newPlan } = await supabase
+          .from('subscription_plans')
+          .select('tier')
+          .eq('stripe_price_id', priceId)
+          .maybeSingle();
+
+        if (profile) {
+          const isUpgrade = finalPlanTokens > existingSub.plan_tokens;
+          const notificationType = isUpgrade ? 'subscription_upgraded' : 'subscription_downgraded';
+
+          await sendSlackNotification(notificationType, {
+            user_email: profile.email,
+            old_tier: oldPlan?.tier || existingSub.tier || 'unknown',
+            new_tier: newPlan?.tier || 'unknown',
+            amount: 0,
+          });
+        }
+      }
     } else {
       finalTokensUsed = existingSub.tokens_used || 0;
     }
@@ -586,6 +670,35 @@ Deno.serve(async (req: Request) => {
 
         if (subscriptionId) {
           await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
+
+          const { data: subData } = await supabase
+            .from('stripe_subscriptions')
+            .select('tier, plan_tokens')
+            .eq('customer_id', customerId)
+            .maybeSingle();
+
+          const { data: userData } = await supabase
+            .from('stripe_customers')
+            .select('user_id')
+            .eq('customer_id', customerId)
+            .maybeSingle();
+
+          if (userData) {
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('email')
+              .eq('id', userData.user_id)
+              .maybeSingle();
+
+            if (profile && subData) {
+              await sendSlackNotification('subscription_created', {
+                user_email: profile.email,
+                tier: subData.tier || 'unknown',
+                amount: session.amount_total || 0,
+                status: 'active',
+              });
+            }
+          }
         }
       } else if (session.mode === 'payment' && session.payment_status === 'paid') {
         console.info(`[${event.id}] Processing token payment`);
@@ -663,6 +776,20 @@ Deno.serve(async (req: Request) => {
             tokens_amount: tokenPackage.tokens_amount,
             processing_time_ms: Date.now() - startTime,
           });
+
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('email')
+            .eq('id', customerData.user_id)
+            .maybeSingle();
+
+          if (profile) {
+            await sendSlackNotification('token_purchase', {
+              user_email: profile.email,
+              tokens: tokenPackage.tokens_amount,
+              amount: session.amount_total || 0,
+            });
+          }
 
           const supabaseUrl = Deno.env.get('SUPABASE_URL');
           const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
