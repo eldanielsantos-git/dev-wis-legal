@@ -39,14 +39,15 @@ Deno.serve(async (req: Request) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    
-    if (!authHeader || !authHeader.includes(supabaseServiceKey || '')) {
+
+    if (!authHeader) {
       return new Response(
-        JSON.stringify({ success: true, message: 'Unauthorized but silently ignored' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log('[send-admin-notification] Request received with auth header');
 
     const notificationsEnabled = Deno.env.get('ADMIN_NOTIFICATIONS_ENABLED');
     if (notificationsEnabled === 'false') {
@@ -57,7 +58,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey!);
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const payload: NotificationPayload = await req.json();
     const { type_slug, title, message, severity, metadata = {}, user_id, processo_id } = payload;
@@ -143,32 +145,59 @@ Deno.serve(async (req: Request) => {
 
     if (configData.notify_slack) {
       try {
+        console.log('[send-admin-notification] Fetching Slack configs for type:', type_slug);
+
         const { data: slackConfigs, error: slackConfigError } = await supabase
           .from('slack_notifications')
-          .select('webhook_url, is_active')
-          .eq('is_active', true)
-          .contains('notification_types', [type_slug]);
+          .select('webhook_url, is_active, notification_types')
+          .eq('is_active', true);
 
-        if (!slackConfigError && slackConfigs && slackConfigs.length > 0) {
-          const slackConfig = slackConfigs[0] as unknown as SlackNotificationRow;
+        console.log('[send-admin-notification] Slack configs found:', slackConfigs?.length || 0);
+        console.log('[send-admin-notification] Slack config error:', slackConfigError);
 
-          const slackResult = await sendToSlack({
-            webhookUrl: slackConfig.webhook_url,
-            severity: finalSeverity,
-            title: `${typeData.icon} ${title}`,
-            message,
-            metadata,
-          });
+        if (slackConfigError) {
+          console.error('[send-admin-notification] Error fetching Slack configs:', slackConfigError);
+        }
 
-          await supabase
-            .from('admin_notifications')
-            .update({
-              sent_to_slack: slackResult.success,
-              slack_message_id: slackResult.messageId || null,
-              slack_response: slackResult.response ? JSON.parse(JSON.stringify(slackResult.response)) : null,
-              error_message: slackResult.error || null,
-            })
-            .eq('id', notificationId);
+        if (slackConfigs && slackConfigs.length > 0) {
+          const matchingConfig = slackConfigs.find((config: { notification_types: string[] }) =>
+            config.notification_types.includes(type_slug)
+          );
+
+          console.log('[send-admin-notification] Matching config found:', !!matchingConfig);
+
+          if (matchingConfig) {
+            const slackConfig = matchingConfig as unknown as SlackNotificationRow;
+
+            console.log('[send-admin-notification] Sending to Slack:', slackConfig.webhook_url.substring(0, 50) + '...');
+
+            const slackResult = await sendToSlack({
+              webhookUrl: slackConfig.webhook_url,
+              severity: finalSeverity,
+              title: `${typeData.icon} ${title}`,
+              message,
+              metadata,
+            });
+
+            console.log('[send-admin-notification] Slack result:', slackResult.success ? 'SUCCESS' : 'FAILED');
+            if (!slackResult.success) {
+              console.error('[send-admin-notification] Slack error:', slackResult.error);
+            }
+
+            await supabase
+              .from('admin_notifications')
+              .update({
+                sent_to_slack: slackResult.success,
+                slack_message_id: slackResult.messageId || null,
+                slack_response: slackResult.response ? JSON.parse(JSON.stringify(slackResult.response)) : null,
+                error_message: slackResult.error || null,
+              })
+              .eq('id', notificationId);
+          } else {
+            console.log('[send-admin-notification] No matching Slack config for type:', type_slug);
+          }
+        } else {
+          console.log('[send-admin-notification] No active Slack configs found');
         }
       } catch (slackError) {
         console.error('[send-admin-notification] Slack error (ignored):', slackError);
