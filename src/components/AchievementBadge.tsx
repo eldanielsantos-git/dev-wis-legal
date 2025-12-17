@@ -1,16 +1,16 @@
 import React from 'react';
 import { Lock, CheckCircle2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { AchievementProgress } from '../services/UserAchievementsService';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 
 interface AchievementBadgeProps {
   achievement: AchievementProgress;
+  onNavigateToProfile?: () => void;
+  onNavigateToApp?: () => void;
 }
 
-export function AchievementBadge({ achievement }: AchievementBadgeProps) {
-  const navigate = useNavigate();
+export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateToApp }: AchievementBadgeProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { config, unlocked, unlockedAt, progress, currentCount } = achievement;
@@ -25,10 +25,10 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
   };
 
   const handleClick = () => {
-    if (config.type === 'profile_complete') {
-      navigate('/profile#profile');
-    } else if (unlocked) {
-      navigate('/app-home');
+    if (config.type === 'profile_complete' && onNavigateToProfile) {
+      onNavigateToProfile();
+    } else if (unlocked && onNavigateToApp) {
+      onNavigateToApp();
     }
   };
 
