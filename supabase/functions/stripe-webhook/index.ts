@@ -1,6 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
+import { notifyAdminSafe } from '../_shared/notify-admin-safe.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   appInfo: {
@@ -129,6 +130,20 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
             tier: existingSub.tier || 'unknown',
             reason: 'Subscription cancelled in Stripe',
           });
+
+          notifyAdminSafe({
+            type: 'subscription_cancelled',
+            title: 'Assinatura Cancelada',
+            message: `Assinatura do plano ${existingSub.tier || 'unknown'} foi cancelada.`,
+            severity: 'medium',
+            metadata: {
+              customer_id: customerId,
+              user_email: profile.email,
+              tier: existingSub.tier,
+              cancellation_reason: 'Cancelled in Stripe',
+            },
+            userId: profile.id,
+          });
         }
       }
     }
@@ -243,6 +258,22 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
             old_tier: oldPlan?.tier || existingSub.tier || 'unknown',
             new_tier: newPlan?.tier || 'unknown',
             amount: 0,
+          });
+
+          notifyAdminSafe({
+            type: notificationType,
+            title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
+            message: `Plano alterado de ${oldPlan?.tier || existingSub.tier} para ${newPlan?.tier}.`,
+            severity: isUpgrade ? 'success' : 'low',
+            metadata: {
+              customer_id: customerId,
+              user_email: profile.email,
+              old_tier: oldPlan?.tier || existingSub.tier,
+              new_tier: newPlan?.tier,
+              old_tokens: existingSub.plan_tokens,
+              new_tokens: finalPlanTokens,
+            },
+            userId: profile.id,
           });
         }
       }
@@ -697,6 +728,22 @@ Deno.serve(async (req: Request) => {
                 amount: session.amount_total || 0,
                 status: 'active',
               });
+
+              notifyAdminSafe({
+                type: 'subscription_created',
+                title: 'Nova Assinatura Criada',
+                message: `Nova assinatura do plano ${subData.tier} foi ativada.`,
+                severity: 'success',
+                metadata: {
+                  customer_id: customerId,
+                  user_email: profile.email,
+                  tier: subData.tier,
+                  plan_tokens: subData.plan_tokens,
+                  amount: session.amount_total || 0,
+                  status: 'active',
+                },
+                userId: userData.user_id,
+              });
             }
           }
         }
@@ -788,6 +835,23 @@ Deno.serve(async (req: Request) => {
               user_email: profile.email,
               tokens: tokenPackage.tokens_amount,
               amount: session.amount_total || 0,
+            });
+
+            notifyAdminSafe({
+              type: 'token_purchase',
+              title: 'Compra de Tokens',
+              message: `Usuário comprou ${tokenPackage.tokens_amount} tokens.`,
+              severity: 'success',
+              metadata: {
+                customer_id: customerId,
+                user_email: profile.email,
+                tokens_purchased: tokenPackage.tokens_amount,
+                amount: session.amount_total || 0,
+                package_name: tokenPackage.name,
+                before_tokens: currentExtraTokens,
+                after_tokens: newExtraTokens,
+              },
+              userId: customerData.user_id,
             });
           }
 
