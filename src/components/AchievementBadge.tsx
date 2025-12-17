@@ -24,7 +24,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
   return (
     <div
-      className={`relative rounded-lg p-3 pb-2 shadow-md transition-all duration-300 ${
+      className={`relative rounded-lg p-4 pb-3 shadow-md transition-all duration-300 ${
         unlocked ? 'transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
       }`}
       style={{
@@ -41,12 +41,12 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       {/* Ícone Principal */}
       <div className="flex flex-col items-center mb-2 pt-1">
         <div
-          className={`mb-1.5 transition-all duration-300 ${
+          className={`mb-2 transition-all duration-300 ${
             unlocked ? '' : 'opacity-40'
           }`}
         >
           <config.icon
-            className="w-10 h-10"
+            className="w-12 h-12"
             style={{
               color: unlocked ? '#FFFFFF' : colors.textSecondary,
               strokeWidth: 1.5
@@ -56,7 +56,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
         {/* Título e Descrição */}
         <h3
-          className="text-sm font-bold text-center mb-1 px-1"
+          className="text-base font-bold text-center mb-1.5 px-1"
           style={{
             color: unlocked ? '#FFFFFF' : colors.textPrimary
           }}
@@ -64,7 +64,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
           {config.title}
         </h3>
         <p
-          className="text-xs text-center line-clamp-2 px-1"
+          className="text-sm text-center line-clamp-2 px-1"
           style={{
             color: unlocked ? 'rgba(255, 255, 255, 0.9)' : colors.textSecondary
           }}
