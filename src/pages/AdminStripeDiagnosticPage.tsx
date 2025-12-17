@@ -202,6 +202,8 @@ export function AdminStripeDiagnosticPage({
         return;
       }
 
+      console.log(`Iniciando correção para customer: ${customerId}`);
+
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-stripe-subscription`,
         {
@@ -222,13 +224,19 @@ export function AdminStripeDiagnosticPage({
         } catch {
           errorData = { error: errorText };
         }
+        console.error('Erro na resposta:', errorData);
         throw new Error(errorData.error || 'Erro ao sincronizar customer');
       }
 
       const result = await response.json();
-      console.log('Sincronização concluída:', result);
+      console.log('Sincronização concluída com sucesso:', result);
 
+      console.log('Aguardando 1 segundo antes de recarregar diagnóstico...');
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log('Recarregando diagnóstico...');
       await runDiagnostic();
+      console.log('Diagnóstico recarregado com sucesso');
     } catch (err: any) {
       console.error('Erro ao corrigir customer:', err);
       setError(`Erro ao corrigir ${customerId}: ${err.message || 'Erro desconhecido'}`);
@@ -654,7 +662,9 @@ export function AdminStripeDiagnosticPage({
                 </div>
 
                 <div className="space-y-4">
-                  {diagnosticData.diagnostics.map((diagnostic, index) => (
+                  {diagnosticData.diagnostics
+                    .filter(diagnostic => diagnostic.sync_needed)
+                    .map((diagnostic, index) => (
                     <div
                       key={index}
                       className="p-4 rounded-lg border"
