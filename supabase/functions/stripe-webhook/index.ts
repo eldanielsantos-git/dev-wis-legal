@@ -737,14 +737,47 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        const { data: customerData } = await supabase
+        let customerData = (await supabase
           .from('stripe_customers')
-          .select('user_id')
+          .select('user_id, customer_id')
           .eq('customer_id', customerId)
-          .maybeSingle();
+          .maybeSingle()).data;
+
+        let actualCustomerId = customerId;
 
         if (!customerData) {
-          console.error(`[${event.id}] User not found`);
+          console.warn(`[${event.id}] Customer not found by customer_id, trying email fallback`);
+
+          const stripeCustomer = await stripe.customers.retrieve(customerId);
+          const customerEmail = 'email' in stripeCustomer ? stripeCustomer.email : null;
+
+          if (customerEmail) {
+            console.info(`[${event.id}] Found email: ${customerEmail}, searching by email`);
+
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('id')
+              .eq('email', customerEmail)
+              .maybeSingle();
+
+            if (profile) {
+              const { data: fallbackCustomer } = await supabase
+                .from('stripe_customers')
+                .select('user_id, customer_id')
+                .eq('user_id', profile.id)
+                .maybeSingle();
+
+              if (fallbackCustomer) {
+                customerData = fallbackCustomer;
+                actualCustomerId = fallbackCustomer.customer_id;
+                console.info(`[${event.id}] Found user by email, using customer_id: ${actualCustomerId}`);
+              }
+            }
+          }
+        }
+
+        if (!customerData) {
+          console.error(`[${event.id}] User not found by customer_id or email`);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -754,7 +787,7 @@ Deno.serve(async (req: Request) => {
         const { data: subscription } = await supabase
           .from('stripe_subscriptions')
           .select('extra_tokens')
-          .eq('customer_id', customerId)
+          .eq('customer_id', actualCustomerId)
           .maybeSingle();
 
         const currentExtraTokens = subscription?.extra_tokens || 0;
@@ -766,7 +799,7 @@ Deno.serve(async (req: Request) => {
             extra_tokens: newExtraTokens,
             updated_at: new Date().toISOString(),
           })
-          .eq('customer_id', customerId);
+          .eq('customer_id', actualCustomerId);
 
         if (updateError) {
           console.error(`[${event.id}] Error updating tokens:`, updateError);
@@ -776,7 +809,7 @@ Deno.serve(async (req: Request) => {
           await logTokenCreditAudit({
             event_id: event.id,
             event_type: 'token_purchase',
-            customer_id: customerId,
+            customer_id: actualCustomerId,
             price_id: priceId,
             operation: 'add_extra_tokens',
             status: 'success',
@@ -785,6 +818,10 @@ Deno.serve(async (req: Request) => {
             after_extra_tokens: newExtraTokens,
             tokens_amount: tokenPackage.tokens_amount,
             processing_time_ms: Date.now() - startTime,
+            metadata: customerId !== actualCustomerId ? {
+              original_customer_id: customerId,
+              resolved_via_email: true,
+            } : undefined,
           });
 
           const { data: profile } = await supabase
@@ -800,7 +837,8 @@ Deno.serve(async (req: Request) => {
               message: `Usuário comprou ${tokenPackage.tokens_amount} tokens.`,
               severity: 'success',
               metadata: {
-                customer_id: customerId,
+                customer_id: actualCustomerId,
+                original_customer_id: customerId !== actualCustomerId ? customerId : undefined,
                 user_email: profile.email,
                 tokens_purchased: tokenPackage.tokens_amount,
                 amount: session.amount_total || 0,
