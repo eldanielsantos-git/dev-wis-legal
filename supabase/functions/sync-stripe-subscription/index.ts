@@ -71,6 +71,8 @@ Deno.serve(async (req: Request) => {
     const requestedCustomerId = body.customer_id;
 
     let customerId: string;
+    let userIdForCustomer: string | null = null;
+    let customerEmail: string | null = null;
 
     if (requestedCustomerId) {
       const { data: userProfile } = await supabase
@@ -87,10 +89,21 @@ Deno.serve(async (req: Request) => {
       }
 
       customerId = requestedCustomerId;
+
+      const { data: customerData } = await supabase
+        .from('stripe_customers')
+        .select('user_id, email')
+        .eq('customer_id', customerId)
+        .maybeSingle();
+
+      if (customerData) {
+        userIdForCustomer = customerData.user_id;
+        customerEmail = customerData.email;
+      }
     } else {
       const { data: customerData } = await supabase
         .from('stripe_customers')
-        .select('customer_id')
+        .select('customer_id, user_id, email')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -102,16 +115,97 @@ Deno.serve(async (req: Request) => {
       }
 
       customerId = customerData.customer_id;
+      userIdForCustomer = customerData.user_id;
+      customerEmail = customerData.email;
     }
 
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      limit: 1,
-      status: 'all',
-      expand: ['data.default_payment_method'],
-    });
+    let subscriptions;
+    try {
+      subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        limit: 1,
+        status: 'all',
+        expand: ['data.default_payment_method'],
+      });
+    } catch (error: any) {
+      if (error.code === 'resource_missing' || error.message?.includes('No such customer')) {
+        console.log(`Customer ${customerId} not found in Stripe. Attempting to find by email: ${customerEmail}`);
 
-    if (subscriptions.data.length === 0) {
+        if (!customerEmail) {
+          return new Response(JSON.stringify({
+            error: 'Customer not found in Stripe and no email available to search',
+            shouldDelete: true
+          }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const customers = await stripe.customers.list({
+          email: customerEmail,
+          limit: 10,
+        });
+
+        if (customers.data.length === 0) {
+          return new Response(JSON.stringify({
+            error: 'No customer found in Stripe with this email',
+            shouldDelete: true
+          }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        let foundCustomer = null;
+        let foundSubscription = null;
+
+        for (const customer of customers.data) {
+          const customerSubs = await stripe.subscriptions.list({
+            customer: customer.id,
+            limit: 1,
+            status: 'all',
+            expand: ['data.default_payment_method'],
+          });
+
+          if (customerSubs.data.length > 0) {
+            foundCustomer = customer;
+            subscriptions = customerSubs;
+            foundSubscription = customerSubs.data[0];
+            break;
+          }
+        }
+
+        if (!foundCustomer || !foundSubscription) {
+          foundCustomer = customers.data[0];
+          const customerSubs = await stripe.subscriptions.list({
+            customer: foundCustomer.id,
+            limit: 1,
+            status: 'all',
+            expand: ['data.default_payment_method'],
+          });
+          subscriptions = customerSubs;
+        }
+
+        console.log(`Found customer ${foundCustomer.id} in Stripe. Updating database...`);
+        customerId = foundCustomer.id;
+
+        if (userIdForCustomer) {
+          await supabase
+            .from('stripe_customers')
+            .upsert({
+              user_id: userIdForCustomer,
+              customer_id: foundCustomer.id,
+              email: customerEmail,
+            }, {
+              onConflict: 'user_id',
+            });
+        }
+      } else {
+        throw error;
+      }
+    }
+
+    if (!subscriptions || subscriptions.data.length === 0) {
       return new Response(JSON.stringify({ message: 'No subscription found in Stripe', hasSubscription: false }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
