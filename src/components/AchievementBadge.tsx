@@ -1,5 +1,6 @@
 import React from 'react';
 import { Lock, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AchievementProgress } from '../services/UserAchievementsService';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
@@ -9,6 +10,7 @@ interface AchievementBadgeProps {
 }
 
 export function AchievementBadge({ achievement }: AchievementBadgeProps) {
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const { config, unlocked, unlockedAt, progress, currentCount } = achievement;
@@ -22,10 +24,19 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
     });
   };
 
+  const handleClick = () => {
+    if (config.type === 'profile_complete') {
+      navigate('/profile#profile');
+    } else if (unlocked) {
+      navigate('/app-home');
+    }
+  };
+
   return (
     <div
+      onClick={handleClick}
       className={`relative rounded-lg p-6 pb-4 shadow-md transition-all duration-300 ${
-        unlocked ? 'transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
+        unlocked || config.type === 'profile_complete' ? 'cursor-pointer transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
       }`}
       style={{
         background: unlocked
