@@ -68,10 +68,12 @@ export function AdminStripeDiagnosticPage({
   const [syncing, setSyncing] = useState(false);
   const [smartSyncing, setSmartSyncing] = useState(false);
   const [syncingExtraTokens, setSyncingExtraTokens] = useState(false);
+  const [reconcilingOrphans, setReconcilingOrphans] = useState(false);
   const [diagnosticData, setDiagnosticData] = useState<DiagnosticResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<any>(null);
   const [extraTokensSyncResult, setExtraTokensSyncResult] = useState<any>(null);
+  const [orphanReconciliationResult, setOrphanReconciliationResult] = useState<any>(null);
   const [fixingCustomer, setFixingCustomer] = useState<string | null>(null);
 
   const runDiagnostic = async () => {
@@ -263,6 +265,45 @@ export function AdminStripeDiagnosticPage({
     }
   };
 
+  const reconcileOrphanSubscriptions = async () => {
+    setReconcilingOrphans(true);
+    setError(null);
+    setOrphanReconciliationResult(null);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        setError('Sessão não encontrada. Faça login novamente.');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reconcile-orphan-subscriptions`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao reconciliar órfãs');
+      }
+
+      const data = await response.json();
+      setOrphanReconciliationResult(data);
+
+      await runDiagnostic();
+    } catch (err: any) {
+      setError(err.message || 'Erro desconhecido');
+    } finally {
+      setReconcilingOrphans(false);
+    }
+  };
+
   const getPlanName = (priceId: string | null | undefined) => {
     if (!priceId) return 'Nenhum';
     const plans: Record<string, string> = {
@@ -325,7 +366,7 @@ export function AdminStripeDiagnosticPage({
               <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={runDiagnostic}
-                  disabled={loading || syncing || smartSyncing || syncingExtraTokens}
+                  disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
                   className="flex-1 sm:flex-none px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}
                 >
@@ -334,7 +375,7 @@ export function AdminStripeDiagnosticPage({
                 </button>
                 <button
                   onClick={smartSyncSubscriptions}
-                  disabled={loading || syncing || smartSyncing || syncingExtraTokens}
+                  disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
                   className="flex-1 sm:flex-none px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={{ backgroundColor: '#3B82F6', color: '#FFFFFF' }}
                 >
@@ -343,7 +384,7 @@ export function AdminStripeDiagnosticPage({
                 </button>
                 <button
                   onClick={syncAllSubscriptions}
-                  disabled={loading || syncing || smartSyncing || syncingExtraTokens}
+                  disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
                   className="flex-1 sm:flex-none px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={{ backgroundColor: '#10B981', color: '#FFFFFF' }}
                 >
@@ -353,14 +394,79 @@ export function AdminStripeDiagnosticPage({
               </div>
               <button
                 onClick={syncExtraTokens}
-                disabled={loading || syncing || smartSyncing || syncingExtraTokens}
+                disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
                 className="w-full px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ backgroundColor: '#F59E0B', color: '#FFFFFF' }}
               >
                 <RefreshCw className={`w-5 h-5 ${syncingExtraTokens ? 'animate-spin' : ''}`} />
                 {syncingExtraTokens ? 'Sincronizando Tokens Extras...' : 'Sincronizar Tokens Extras do Stripe'}
               </button>
+              <button
+                onClick={reconcileOrphanSubscriptions}
+                disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
+                className="w-full px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#8B5CF6', color: '#FFFFFF' }}
+              >
+                <RefreshCw className={`w-5 h-5 ${reconcilingOrphans ? 'animate-spin' : ''}`} />
+                {reconcilingOrphans ? 'Reconciliando Órfãs...' : 'Reconciliar Subscriptions Órfãs'}
+              </button>
             </div>
+
+            {orphanReconciliationResult && (
+              <div className="mb-6 p-4 rounded-lg border-2 border-purple-500" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-bold text-purple-500 mb-2">Reconciliação de Órfãs Concluída</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                      <div>
+                        <div className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
+                          {orphanReconciliationResult.summary.total_orphans}
+                        </div>
+                        <div className="text-xs" style={{ color: colors.textSecondary }}>Órfãs Encontradas</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-green-500">
+                          {orphanReconciliationResult.summary.reconciled}
+                        </div>
+                        <div className="text-xs" style={{ color: colors.textSecondary }}>Reconciliadas</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-yellow-500">
+                          {orphanReconciliationResult.summary.no_match}
+                        </div>
+                        <div className="text-xs" style={{ color: colors.textSecondary }}>Sem Match</div>
+                      </div>
+                      <div>
+                        <div className="text-2xl font-bold text-red-500">
+                          {orphanReconciliationResult.summary.errors}
+                        </div>
+                        <div className="text-xs" style={{ color: colors.textSecondary }}>Erros</div>
+                      </div>
+                    </div>
+                    {orphanReconciliationResult.reconciled && orphanReconciliationResult.reconciled.length > 0 && (
+                      <div className="pt-3 border-t" style={{ borderColor: colors.border }}>
+                        <div className="text-xs font-semibold mb-2" style={{ color: colors.textSecondary }}>
+                          Órfãs Reconciliadas:
+                        </div>
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          {orphanReconciliationResult.reconciled.map((item: any, idx: number) => (
+                            <div key={idx} className="text-xs p-2 rounded" style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}>
+                              <div className="font-bold" style={{ color: colors.textPrimary }}>
+                                {item.customer_id}
+                              </div>
+                              <div style={{ color: colors.textSecondary }}>
+                                Email: {item.email} → User ID: {item.user_id}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {extraTokensSyncResult && (
               <div className="mb-6 p-4 rounded-lg border-2 border-orange-500" style={{ backgroundColor: colors.bgSecondary }}>
