@@ -258,37 +258,46 @@ export function AdminUserDetailPage({
       }
 
       const pollProgress = async () => {
-        const { data } = await supabase
-          .from('admin_operation_progress')
-          .select('*')
-          .eq('operation_id', operationId)
-          .maybeSingle();
+        try {
+          const { data, error } = await supabase
+            .from('admin_operation_progress')
+            .select('*')
+            .eq('operation_id', operationId)
+            .maybeSingle();
 
-        if (data && data.progress && data.progress.length > 0) {
-          setDeletionProgress(data.progress);
-
-          if (data.status === 'completed') {
-            if (pollingInterval) {
-              clearInterval(pollingInterval);
-              pollingInterval = null;
-            }
-            setMessage({ type: 'success', text: 'Usuário excluído com sucesso!' });
-            setIsDeleting(false);
-
-            setTimeout(() => {
-              setIsDeletionModalOpen(false);
-              onNavigateBack();
-            }, 2000);
-          } else if (data.status === 'error') {
-            if (pollingInterval) {
-              clearInterval(pollingInterval);
-              pollingInterval = null;
-            }
-            setDeletionError(data.error || 'Erro ao excluir usuário');
-            setMessage({ type: 'error', text: data.error || 'Erro ao excluir usuário' });
-            setIsDeleting(false);
-            playErrorSound();
+          if (error) {
+            console.error('Polling error:', error);
+            return;
           }
+
+          if (data && data.progress && data.progress.length > 0) {
+            setDeletionProgress(data.progress);
+
+            if (data.status === 'completed') {
+              if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+              }
+              setMessage({ type: 'success', text: 'Usuário excluído com sucesso!' });
+              setIsDeleting(false);
+
+              setTimeout(() => {
+                setIsDeletionModalOpen(false);
+                onNavigateBack();
+              }, 2000);
+            } else if (data.status === 'error') {
+              if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+              }
+              setDeletionError(data.error || 'Erro ao excluir usuário');
+              setMessage({ type: 'error', text: data.error || 'Erro ao excluir usuário' });
+              setIsDeleting(false);
+              playErrorSound();
+            }
+          }
+        } catch (error) {
+          console.error('Exception during polling:', error);
         }
       };
 
