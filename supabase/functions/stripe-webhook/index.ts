@@ -641,7 +641,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (event.type === 'checkout.session.completed') {
-      const session = stripeData as Stripe.Checkout.Session;
+      let session = stripeData as Stripe.Checkout.Session;
       const customerId = typeof session.customer === 'string'
         ? session.customer
         : session.customer?.id;
@@ -651,6 +651,13 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ received: true }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (session.mode === 'payment') {
+        console.info(`[${event.id}] Expanding line_items for payment session`);
+        session = await stripe.checkout.sessions.retrieve(session.id, {
+          expand: ['line_items', 'line_items.data.price'],
         });
       }
 
