@@ -87,9 +87,32 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    const operationId = crypto.randomUUID();
     const progress: DeletionProgress[] = [];
 
+    const updateProgress = async (currentProgress: DeletionProgress[], status: string = 'running', error?: string) => {
+      await supabase
+        .from('admin_operation_progress')
+        .upsert({
+          operation_id: operationId,
+          operation_type: 'delete_user',
+          user_id: targetUserId,
+          admin_user_id: adminUser.id,
+          progress: currentProgress,
+          status,
+          error,
+          updated_at: new Date().toISOString(),
+          ...(status === 'completed' || status === 'error' ? { completed_at: new Date().toISOString() } : {})
+        }, {
+          onConflict: 'operation_id'
+        });
+    };
+
+    await updateProgress(progress, 'running');
+
     progress.push({ step: 'Verificando se usuário existe', completed: false });
+    await updateProgress(progress);
+
     const { data: targetUserProfile } = await supabase
       .from('user_profiles')
       .select('id, email')
@@ -100,8 +123,9 @@ Deno.serve(async (req: Request) => {
 
     if (!targetUserProfile && !targetAuthUser) {
       progress[0] = { step: 'Usuário não encontrado', completed: false, error: 'O usuário já foi deletado ou não existe' };
+      await updateProgress(progress, 'error', 'User not found');
       return new Response(
-        JSON.stringify({ error: 'User not found', progress }),
+        JSON.stringify({ error: 'User not found', progress, operationId }),
         {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -110,8 +134,11 @@ Deno.serve(async (req: Request) => {
     }
 
     progress[0] = { step: 'Usuário encontrado', completed: true };
+    await updateProgress(progress);
 
     progress.push({ step: 'Cancelando assinatura', completed: false });
+    await updateProgress(progress);
+
     try {
       const { data: customer } = await supabase
         .from('stripe_customers')
@@ -147,8 +174,11 @@ Deno.serve(async (req: Request) => {
     } catch (error: any) {
       progress[1] = { step: 'Cancelando assinatura', completed: false, error: error.message };
     }
+    await updateProgress(progress);
 
     progress.push({ step: 'Buscando processos do usuário', completed: false });
+    await updateProgress(progress);
+
     const { data: processosData } = await supabase
       .from('processos')
       .select('id')
@@ -156,6 +186,7 @@ Deno.serve(async (req: Request) => {
 
     const processoCount = processosData?.length || 0;
     progress[2] = { step: 'Processos encontrados', completed: true, count: processoCount };
+    await updateProgress(progress);
 
     if (processosData && processosData.length > 0) {
       const processoIds = processosData.map(p => p.id);
@@ -207,9 +238,12 @@ Deno.serve(async (req: Request) => {
       } else {
         progress[progress.length - 1] = { step: 'Mensagens de chat excluídas', completed: true };
       }
+      await updateProgress(progress);
     }
 
     progress.push({ step: 'Excluindo processos', completed: false });
+    await updateProgress(progress);
+
     const { error: processosError } = await supabase
       .from('processos')
       .delete()
@@ -217,8 +251,9 @@ Deno.serve(async (req: Request) => {
 
     if (processosError) {
       progress[progress.length - 1] = { step: 'Processos', completed: false, error: processosError.message };
+      await updateProgress(progress, 'error', 'Failed to delete user processos');
       return new Response(
-        JSON.stringify({ error: 'Failed to delete user processos', progress }),
+        JSON.stringify({ error: 'Failed to delete user processos', progress, operationId }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -226,12 +261,14 @@ Deno.serve(async (req: Request) => {
       );
     } else {
       progress[progress.length - 1] = { step: 'Processos excluídos', completed: true };
+      await updateProgress(progress);
     }
 
     progress.push({ step: 'Excluindo compartilhamentos de workspace', completed: false });
     await supabase.from('workspace_shares').delete().eq('owner_user_id', targetUserId);
     await supabase.from('workspace_shares').delete().eq('shared_with_user_id', targetUserId);
     progress[progress.length - 1] = { step: 'Compartilhamentos excluídos', completed: true };
+    await updateProgress(progress);
 
     progress.push({ step: 'Excluindo erros de análise complexa', completed: false });
     await supabase.from('complex_analysis_errors').delete().eq('user_id', targetUserId);
@@ -240,6 +277,7 @@ Deno.serve(async (req: Request) => {
     progress.push({ step: 'Excluindo erros de análise', completed: false });
     await supabase.from('analysis_errors').delete().eq('user_id', targetUserId);
     progress[progress.length - 1] = { step: 'Erros de análise excluídos', completed: true };
+    await updateProgress(progress);
 
     progress.push({ step: 'Excluindo notificações', completed: false });
     await supabase.from('notifications').delete().eq('user_id', targetUserId);
@@ -248,6 +286,7 @@ Deno.serve(async (req: Request) => {
     progress.push({ step: 'Excluindo notificações admin', completed: false });
     await supabase.from('admin_notifications').delete().eq('user_id', targetUserId);
     progress[progress.length - 1] = { step: 'Notificações admin excluídas', completed: true };
+    await updateProgress(progress);
 
     progress.push({ step: 'Excluindo logs de email', completed: false });
     await supabase.from('email_logs').delete().eq('user_id', targetUserId);
@@ -256,6 +295,7 @@ Deno.serve(async (req: Request) => {
     progress.push({ step: 'Excluindo logs de uso de tokens', completed: false });
     await supabase.from('token_usage_logs').delete().eq('user_id', targetUserId);
     progress[progress.length - 1] = { step: 'Logs de tokens excluídos', completed: true };
+    await updateProgress(progress);
 
     progress.push({ step: 'Excluindo reservas de tokens', completed: false });
     await supabase.from('token_reservations').delete().eq('user_id', targetUserId);
@@ -264,6 +304,7 @@ Deno.serve(async (req: Request) => {
     progress.push({ step: 'Excluindo notificações de limite de tokens', completed: false });
     await supabase.from('token_limit_notifications').delete().eq('user_id', targetUserId);
     progress[progress.length - 1] = { step: 'Notificações de limite excluídas', completed: true };
+    await updateProgress(progress);
 
     progress.push({ step: 'Excluindo auditoria de créditos', completed: false });
     await supabase.from('token_credits_audit').delete().eq('user_id', targetUserId);
@@ -276,6 +317,7 @@ Deno.serve(async (req: Request) => {
     progress.push({ step: 'Excluindo preferências do usuário', completed: false });
     await supabase.from('user_preferences').delete().eq('user_id', targetUserId);
     progress[progress.length - 1] = { step: 'Preferências excluídas', completed: true };
+    await updateProgress(progress);
 
     progress.push({ step: 'Excluindo dados de pagamento', completed: false });
     const { error: stripeError } = await supabase
@@ -288,9 +330,12 @@ Deno.serve(async (req: Request) => {
     } else {
       progress[progress.length - 1] = { step: 'Dados de pagamento excluídos', completed: true };
     }
+    await updateProgress(progress);
 
     if (targetUserProfile) {
       progress.push({ step: 'Excluindo perfil do usuário', completed: false });
+      await updateProgress(progress);
+
       const { error: profileError } = await supabase
         .from('user_profiles')
         .delete()
@@ -298,8 +343,9 @@ Deno.serve(async (req: Request) => {
 
       if (profileError) {
         progress[progress.length - 1] = { step: 'Perfil do usuário', completed: false, error: profileError.message };
+        await updateProgress(progress, 'error', 'Failed to delete user profile');
         return new Response(
-          JSON.stringify({ error: 'Failed to delete user profile', progress }),
+          JSON.stringify({ error: 'Failed to delete user profile', progress, operationId }),
           {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -307,19 +353,24 @@ Deno.serve(async (req: Request) => {
         );
       } else {
         progress[progress.length - 1] = { step: 'Perfil do usuário excluído', completed: true };
+        await updateProgress(progress);
       }
     } else {
       progress.push({ step: 'Perfil do usuário já estava excluído', completed: true });
+      await updateProgress(progress);
     }
 
     if (targetAuthUser) {
       progress.push({ step: 'Excluindo conta de autenticação', completed: false });
+      await updateProgress(progress);
+
       const { error: deleteUserError } = await supabase.auth.admin.deleteUser(targetUserId);
 
       if (deleteUserError) {
         progress[progress.length - 1] = { step: 'Conta de autenticação', completed: false, error: deleteUserError.message };
+        await updateProgress(progress, 'error', 'Failed to delete user account');
         return new Response(
-          JSON.stringify({ error: 'Failed to delete user account', progress }),
+          JSON.stringify({ error: 'Failed to delete user account', progress, operationId }),
           {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -327,13 +378,17 @@ Deno.serve(async (req: Request) => {
         );
       } else {
         progress[progress.length - 1] = { step: 'Conta de autenticação excluída', completed: true };
+        await updateProgress(progress);
       }
     } else {
       progress.push({ step: 'Conta de autenticação já estava excluída', completed: true });
+      await updateProgress(progress);
     }
 
+    await updateProgress(progress, 'completed');
+
     return new Response(
-      JSON.stringify({ success: true, message: 'User deleted successfully', progress }),
+      JSON.stringify({ success: true, message: 'User deleted successfully', progress, operationId }),
       {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

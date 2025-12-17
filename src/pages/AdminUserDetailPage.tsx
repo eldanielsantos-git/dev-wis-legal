@@ -242,6 +242,8 @@ export function AdminUserDetailPage({
   const handleConfirmDeleteUser = async () => {
     if (!user) return;
 
+    let pollingInterval: NodeJS.Timeout | null = null;
+
     try {
       setIsConfirmDeleteOpen(false);
       setIsDeletionModalOpen(true);
@@ -254,7 +256,7 @@ export function AdminUserDetailPage({
         throw new Error('Sessão não encontrada. Faça login novamente.');
       }
 
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
+      const fetchPromise = fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -265,26 +267,76 @@ export function AdminUserDetailPage({
         })
       });
 
+      let operationId: string | null = null;
+
+      const pollProgress = async () => {
+        if (!operationId) return;
+
+        const { data } = await supabase
+          .from('admin_operation_progress')
+          .select('*')
+          .eq('operation_id', operationId)
+          .maybeSingle();
+
+        if (data) {
+          setDeletionProgress(data.progress || []);
+
+          if (data.status === 'completed') {
+            if (pollingInterval) {
+              clearInterval(pollingInterval);
+              pollingInterval = null;
+            }
+            setMessage({ type: 'success', text: 'Usuário excluído com sucesso!' });
+            setIsDeleting(false);
+
+            setTimeout(() => {
+              setIsDeletionModalOpen(false);
+              onNavigateBack();
+            }, 2000);
+          } else if (data.status === 'error') {
+            if (pollingInterval) {
+              clearInterval(pollingInterval);
+              pollingInterval = null;
+            }
+            setDeletionError(data.error || 'Erro ao excluir usuário');
+            setMessage({ type: 'error', text: data.error || 'Erro ao excluir usuário' });
+            setIsDeleting(false);
+            playErrorSound();
+          }
+        }
+      };
+
+      const response = await fetchPromise;
       const result = await response.json();
 
       if (!response.ok) {
         throw new Error(result.error || 'Erro ao excluir usuário');
       }
 
-      setDeletionProgress(result.progress || []);
-      setMessage({ type: 'success', text: 'Usuário excluído com sucesso!' });
+      operationId = result.operationId;
 
-      setTimeout(() => {
-        setIsDeletionModalOpen(false);
-        onNavigateBack();
-      }, 2000);
+      if (operationId) {
+        pollingInterval = setInterval(pollProgress, 500);
+        pollProgress();
+      } else {
+        setDeletionProgress(result.progress || []);
+        setMessage({ type: 'success', text: 'Usuário excluído com sucesso!' });
+
+        setTimeout(() => {
+          setIsDeletionModalOpen(false);
+          onNavigateBack();
+        }, 2000);
+      }
     } catch (error: any) {
       console.error('Erro ao excluir usuário:', error);
       setDeletionError(error.message || 'Erro ao excluir usuário');
       setMessage({ type: 'error', text: error.message || 'Erro ao excluir usuário' });
       playErrorSound();
-    } finally {
       setIsDeleting(false);
+
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
     }
   };
 
