@@ -456,7 +456,7 @@ export function AdminSlackNotificationsPage({
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col items-center mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-                <Bell className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textPrimary }} />
+                <Bell className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.textPrimary }} />
               </div>
               <div className="text-center">
                 <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
@@ -487,7 +487,7 @@ export function AdminSlackNotificationsPage({
                         color: activeTab === tab.id ? '#3B82F6' : colors.textSecondary,
                       }}
                     >
-                      <tab.Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <tab.Icon className="w-4 h-4" strokeWidth={1.5} />
                       <span className="hidden sm:inline">{tab.label}</span>
                       <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                     </button>
@@ -539,7 +539,7 @@ export function AdminSlackNotificationsPage({
                         return (
                           <div key={category} className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              {CategoryIcon && <CategoryIcon className={`w-5 h-5 ${categoryColors[category]?.text}`} />}
+                              {CategoryIcon && <CategoryIcon className={`w-4 h-4 ${categoryColors[category]?.text}`} strokeWidth={1.5} />}
                               <span className={`px-3 py-1 text-xs font-semibold rounded-full ${categoryColors[category]?.bg} ${categoryColors[category]?.text}`}>
                                 {categoryNames[category] || category}
                               </span>
@@ -562,7 +562,7 @@ export function AdminSlackNotificationsPage({
                       return (
                         <div key={category} className={`rounded-lg p-4 border-2 ${categoryColors[category].border} ${categoryColors[category].bg}`}>
                           <div className="flex items-center gap-2 mb-2">
-                            <CategoryIcon className={`w-5 h-5 ${categoryColors[category].text}`} />
+                            <CategoryIcon className={`w-4 h-4 ${categoryColors[category].text}`} strokeWidth={1.5} />
                             <div className={`font-semibold ${categoryColors[category].text}`}>
                               {categoryNames[category]}
                             </div>
@@ -592,7 +592,7 @@ export function AdminSlackNotificationsPage({
                 {/* Search Bar */}
                 <div className="rounded-lg shadow-sm border p-4" style={{ backgroundColor: colors.card, borderColor: colors.border }}>
                   <div className="flex items-center gap-3">
-                    <Search className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                    <Search className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.textSecondary }} />
                     <input
                       type="text"
                       placeholder="Buscar por nome, descrição ou slug..."
@@ -607,7 +607,7 @@ export function AdminSlackNotificationsPage({
                         style={{ color: colors.textSecondary }}
                         className="hover:opacity-80"
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" strokeWidth={1.5} />
                       </button>
                     )}
                   </div>
@@ -629,7 +629,7 @@ export function AdminSlackNotificationsPage({
                             onClick={() => toggleCategory(category)}
                             className="flex items-center gap-3 flex-1"
                           >
-                            {CategoryIcon && <CategoryIcon className={`w-6 h-6 ${catColors.text}`} />}
+                            {CategoryIcon && <CategoryIcon className={`w-5 h-5 ${catColors.text}`} strokeWidth={1.5} />}
                             <div className="text-left">
                               <h3 className="text-lg font-bold">{categoryNames[category]}</h3>
                               <div className="text-sm opacity-80">
@@ -637,7 +637,7 @@ export function AdminSlackNotificationsPage({
                               </div>
                             </div>
                             <span className="ml-auto">
-                              {isExpanded ? <ChevronDown className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+                              {isExpanded ? <ChevronDown className="w-4 h-4" strokeWidth={1.5} /> : <ChevronRight className="w-4 h-4" strokeWidth={1.5} />}
                             </span>
                           </button>
                           <div className="flex items-center gap-3 ml-4">
@@ -689,7 +689,7 @@ export function AdminSlackNotificationsPage({
                                 <div className="flex items-center justify-between">
                                   <div className="flex items-center gap-4 flex-1">
                                     <div className="flex-shrink-0">
-                                      <TypeIcon className="w-8 h-8" style={{ color: colors.textPrimary }} />
+                                      <TypeIcon className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.textPrimary }} />
                                     </div>
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 mb-1">
@@ -836,11 +836,11 @@ export function AdminSlackNotificationsPage({
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             {notification.sent_to_slack ? (
                               <span className="flex items-center gap-1 text-green-600 font-medium">
-                                <CheckCircle className="w-4 h-4" /> Enviada
+                                <CheckCircle className="w-4 h-4" strokeWidth={1.5} /> Enviada
                               </span>
                             ) : notification.error_message ? (
                               <span className="flex items-center gap-1 text-red-600 font-medium">
-                                <XCircle className="w-4 h-4" /> Erro
+                                <XCircle className="w-4 h-4" strokeWidth={1.5} /> Erro
                               </span>
                             ) : (
                               <span style={{ color: colors.textSecondary }}>- Não enviada</span>
@@ -921,7 +921,7 @@ export function AdminSlackNotificationsPage({
                         className="hover:opacity-80"
                         style={{ color: colors.textSecondary }}
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-4 h-4" strokeWidth={1.5} />
                       </button>
                     </div>
                   </div>
