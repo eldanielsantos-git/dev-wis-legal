@@ -62,6 +62,7 @@ export function AdminSlackNotificationsPage({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'stats' | 'config' | 'history' | 'test'>('config');
 
   const [types, setTypes] = useState<NotificationTypeWithConfig[]>([]);
@@ -91,37 +92,65 @@ export function AdminSlackNotificationsPage({
 
   const loadData = async () => {
     setLoading(true);
-    await Promise.all([
-      loadTypes(),
-      loadStats(),
-      loadNotifications(),
-    ]);
-    setLoading(false);
+    setError(null);
+    try {
+      await Promise.all([
+        loadTypes(),
+        loadStats(),
+        loadNotifications(),
+      ]);
+    } catch (error) {
+      console.error('Error loading admin notifications data:', error);
+      setError(error instanceof Error ? error.message : 'Erro ao carregar dados');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const loadTypes = async () => {
-    const result = await adminNotificationsService.fetchNotificationTypes();
-    if (result.success && result.data) {
-      setTypes(result.data);
+    try {
+      const result = await adminNotificationsService.fetchNotificationTypes();
+      if (result.success && result.data) {
+        setTypes(result.data);
+      } else {
+        throw new Error(result.error || 'Erro ao buscar tipos de notificação');
+      }
+    } catch (error) {
+      console.error('Error in loadTypes:', error);
+      throw error;
     }
   };
 
   const loadStats = async () => {
-    const result = await adminNotificationsService.fetchNotificationStats();
-    if (result.success && result.data) {
-      setStats(result.data);
+    try {
+      const result = await adminNotificationsService.fetchNotificationStats();
+      if (result.success && result.data) {
+        setStats(result.data);
+      } else {
+        throw new Error(result.error || 'Erro ao buscar estatísticas');
+      }
+    } catch (error) {
+      console.error('Error in loadStats:', error);
+      throw error;
     }
   };
 
   const loadNotifications = async () => {
-    const result = await adminNotificationsService.fetchNotifications({
-      limit: 50,
-      category: selectedCategory !== 'all' ? selectedCategory : undefined,
-      severity: selectedSeverity !== 'all' ? selectedSeverity : undefined,
-      search: searchTerm || undefined,
-    });
-    if (result.success && result.data) {
-      setNotifications(result.data);
+    try {
+      const result = await adminNotificationsService.fetchNotifications({
+        limit: 50,
+        category: selectedCategory !== 'all' ? selectedCategory : undefined,
+        severity: selectedSeverity !== 'all' ? selectedSeverity : undefined,
+        search: searchTerm || undefined,
+      });
+      if (result.success && result.data) {
+        setNotifications(result.data);
+      } else {
+        throw new Error(result.error || 'Erro ao buscar notificações');
+      }
+    } catch (error) {
+      console.error('Error in loadNotifications:', error);
+      throw error;
     }
   };
 
@@ -242,8 +271,39 @@ export function AdminSlackNotificationsPage({
           onNavigateToSettings={onNavigateToSettings}
           onNavigateToProfile={onNavigateToProfile}
         />
-        <div className="flex-1 flex items-center justify-center">
-          <Loader className="w-8 h-8 animate-spin" style={{ color: colors.primary }} />
+        <div className="flex-1 flex flex-col items-center justify-center p-8">
+          <Loader className="w-8 h-8 animate-spin mb-4" style={{ color: colors.primary }} />
+          <p style={{ color: colors.textSecondary }}>Carregando sistema de notificações...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen" style={{ backgroundColor: colors.background }}>
+        <SidebarWis
+          isCollapsed={isSidebarCollapsed}
+          onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          onNavigateToApp={onNavigateToApp}
+          onNavigateToMyProcess={onNavigateToMyProcess}
+          onNavigateToChat={onNavigateToChat}
+          onNavigateToWorkspace={onNavigateToWorkspace}
+          onNavigateToAdmin={onNavigateToAdmin}
+          onNavigateToSettings={onNavigateToSettings}
+          onNavigateToProfile={onNavigateToProfile}
+        />
+        <div className="flex-1 flex flex-col items-center justify-center p-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+            <h3 className="text-lg font-semibold text-red-800 mb-2">Erro ao Carregar</h3>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => loadData()}
+              className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+            >
+              Tentar Novamente
+            </button>
+          </div>
         </div>
       </div>
     );
