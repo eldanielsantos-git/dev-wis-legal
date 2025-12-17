@@ -29,14 +29,14 @@ export interface SendNotificationInput {
 }
 
 export const NOTIFICATION_TYPES = [
-  { value: 'user_signup', label: 'Novo Usuário Cadastrado', icon: '🎉' },
-  { value: 'subscription_created', label: 'Nova Assinatura', icon: '💳' },
-  { value: 'subscription_cancelled', label: 'Assinatura Cancelada', icon: '❌' },
-  { value: 'subscription_upgraded', label: 'Upgrade de Assinatura', icon: '⬆️' },
-  { value: 'subscription_downgraded', label: 'Downgrade de Assinatura', icon: '⬇️' },
-  { value: 'token_purchase', label: 'Compra de Tokens', icon: '🪙' },
-  { value: 'analysis_completed', label: 'Análise Concluída', icon: '✅' },
-  { value: 'analysis_failed', label: 'Análise Falhou', icon: '⚠️' },
+  { value: 'user_signup', label: 'Novo Usuário Cadastrado' },
+  { value: 'subscription_created', label: 'Nova Assinatura' },
+  { value: 'subscription_cancelled', label: 'Assinatura Cancelada' },
+  { value: 'subscription_upgraded', label: 'Upgrade de Assinatura' },
+  { value: 'subscription_downgraded', label: 'Downgrade de Assinatura' },
+  { value: 'token_purchase', label: 'Compra de Tokens' },
+  { value: 'analysis_completed', label: 'Análise Concluída' },
+  { value: 'analysis_failed', label: 'Análise Falhou' },
 ] as const;
 
 class SlackNotificationService {
@@ -206,11 +206,6 @@ class SlackNotificationService {
   getNotificationTypeLabel(type: string): string {
     const notificationType = NOTIFICATION_TYPES.find(nt => nt.value === type);
     return notificationType ? notificationType.label : type;
-  }
-
-  getNotificationTypeIcon(type: string): string {
-    const notificationType = NOTIFICATION_TYPES.find(nt => nt.value === type);
-    return notificationType ? notificationType.icon : '📢';
   }
 }
 
