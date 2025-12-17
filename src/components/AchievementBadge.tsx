@@ -145,7 +145,7 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
       </div>
 
       {/* Badge de Status - Altura fixa no final */}
-      <div className="flex justify-center h-7 items-center mb-0.5">
+      <div className="flex justify-center h-7 items-center mb-0.5 mt-2">
         {unlocked ? (
           <div
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold"
