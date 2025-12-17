@@ -56,7 +56,11 @@ export function AdminSlackNotificationsPage({
   onNavigateToPrivacy,
   onNavigateToCookies,
 }: AdminSlackNotificationsPageProps) {
+  console.log('[AdminSlackNotificationsPage] Component mounted');
+
   const { user, isAdmin, loading: authLoading } = useAuth();
+  console.log('[AdminSlackNotificationsPage] Auth state:', { userEmail: user?.email, isAdmin, authLoading });
+
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
