@@ -198,6 +198,7 @@ export function AdminStripeDiagnosticPage({
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setError('Sessão não encontrada. Faça login novamente.');
+        setFixingCustomer(null);
         return;
       }
 
@@ -214,13 +215,23 @@ export function AdminStripeDiagnosticPage({
       );
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { error: errorText };
+        }
         throw new Error(errorData.error || 'Erro ao sincronizar customer');
       }
 
+      const result = await response.json();
+      console.log('Sincronização concluída:', result);
+
       await runDiagnostic();
     } catch (err: any) {
-      setError(err.message || 'Erro desconhecido');
+      console.error('Erro ao corrigir customer:', err);
+      setError(`Erro ao corrigir ${customerId}: ${err.message || 'Erro desconhecido'}`);
     } finally {
       setFixingCustomer(null);
     }
@@ -362,53 +373,51 @@ export function AdminStripeDiagnosticPage({
               </div>
             </div>
 
-            <div className="mb-6 flex flex-col gap-3">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={runDiagnostic}
-                  disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
-                  className="flex-1 sm:flex-none px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}
-                >
-                  <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
-                  {loading ? 'Executando Diagnóstico...' : 'Executar Diagnóstico'}
-                </button>
-                <button
-                  onClick={smartSyncSubscriptions}
-                  disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
-                  className="flex-1 sm:flex-none px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#3B82F6', color: '#FFFFFF' }}
-                >
-                  <RefreshCw className={`w-5 h-5 ${smartSyncing ? 'animate-spin' : ''}`} />
-                  {smartSyncing ? 'Sincronizando...' : 'Sincronizar Inteligente'}
-                </button>
-                <button
-                  onClick={syncAllSubscriptions}
-                  disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
-                  className="flex-1 sm:flex-none px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#10B981', color: '#FFFFFF' }}
-                >
-                  <RefreshCw className={`w-5 h-5 ${syncing ? 'animate-spin' : ''}`} />
-                  {syncing ? 'Sincronizando...' : 'Forçar Sincronização Total'}
-                </button>
-              </div>
+            <div className="mb-6 flex flex-wrap gap-2 justify-center">
+              <button
+                onClick={runDiagnostic}
+                disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Executando...' : 'Executar Diagnóstico'}
+              </button>
+              <button
+                onClick={smartSyncSubscriptions}
+                disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#3B82F6', color: '#FFFFFF' }}
+              >
+                <RefreshCw className={`w-4 h-4 ${smartSyncing ? 'animate-spin' : ''}`} />
+                {smartSyncing ? 'Sincronizando...' : 'Sincronizar Inteligente'}
+              </button>
+              <button
+                onClick={syncAllSubscriptions}
+                disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                style={{ backgroundColor: '#10B981', color: '#FFFFFF' }}
+              >
+                <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
+                {syncing ? 'Sincronizando...' : 'Forçar Sincronização Total'}
+              </button>
               <button
                 onClick={syncExtraTokens}
                 disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
-                className="w-full px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ backgroundColor: '#F59E0B', color: '#FFFFFF' }}
               >
-                <RefreshCw className={`w-5 h-5 ${syncingExtraTokens ? 'animate-spin' : ''}`} />
-                {syncingExtraTokens ? 'Sincronizando Tokens Extras...' : 'Sincronizar Tokens Extras do Stripe'}
+                <RefreshCw className={`w-4 h-4 ${syncingExtraTokens ? 'animate-spin' : ''}`} />
+                {syncingExtraTokens ? 'Sincronizando...' : 'Sincronizar Tokens Extras do Stripe'}
               </button>
               <button
                 onClick={reconcileOrphanSubscriptions}
                 disabled={loading || syncing || smartSyncing || syncingExtraTokens || reconcilingOrphans}
-                className="w-full px-6 py-3 rounded-lg font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 style={{ backgroundColor: '#8B5CF6', color: '#FFFFFF' }}
               >
-                <RefreshCw className={`w-5 h-5 ${reconcilingOrphans ? 'animate-spin' : ''}`} />
-                {reconcilingOrphans ? 'Reconciliando Órfãs...' : 'Reconciliar Subscriptions Órfãs'}
+                <RefreshCw className={`w-4 h-4 ${reconcilingOrphans ? 'animate-spin' : ''}`} />
+                {reconcilingOrphans ? 'Reconciliando...' : 'Reconciliar Subscriptions Órfãs'}
               </button>
             </div>
 
