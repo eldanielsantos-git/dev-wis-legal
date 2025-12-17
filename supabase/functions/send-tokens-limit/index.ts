@@ -12,16 +12,14 @@ interface TokensLimitRequest {
 }
 
 interface NotificationThreshold {
-  type: '75_percent' | '90_percent' | '100_percent';
+  type: '75_percent' | '100_percent';
   threshold: number;
+  templateId: string;
 }
 
-const RESEND_TEMPLATE_ID = 'e4674548-2538-491e-800d-28cd09a46db1';
-
 const THRESHOLDS: NotificationThreshold[] = [
-  { type: '100_percent', threshold: 100 },
-  { type: '90_percent', threshold: 90 },
-  { type: '75_percent', threshold: 75 },
+  { type: '100_percent', threshold: 100, templateId: 'c542e537-4176-4cdb-be3d-71fde95aaeb1' },
+  { type: '75_percent', threshold: 75, templateId: 'e4674548-2538-491e-800d-28cd09a46db1' },
 ];
 
 Deno.serve(async (req: Request) => {
@@ -215,7 +213,7 @@ Deno.serve(async (req: Request) => {
         from: "WisLegal <noreply@wislegal.io>",
         to: [userData.email],
         subject: `Alerta: Seus tokens estão chegando ao fim (${emailData.percentage_used} usado)`,
-        template_id: RESEND_TEMPLATE_ID,
+        template_id: notificationToSend.templateId,
         template_data: emailData,
       }),
     });
