@@ -24,7 +24,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
   return (
     <div
-      className={`relative rounded-lg p-4 pb-3 shadow-md transition-all duration-300 ${
+      className={`relative rounded-lg p-6 pb-4 shadow-md transition-all duration-300 ${
         unlocked ? 'transform hover:scale-105 hover:shadow-lg' : 'opacity-60'
       }`}
       style={{
@@ -39,9 +39,9 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       }}
     >
       {/* Ícone Principal */}
-      <div className="flex flex-col items-center mb-2 pt-1">
+      <div className="flex flex-col items-center mb-4 pt-2">
         <div
-          className={`mb-2 transition-all duration-300 ${
+          className={`mb-3 transition-all duration-300 ${
             unlocked ? '' : 'opacity-40'
           }`}
         >
@@ -56,7 +56,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
 
         {/* Título e Descrição */}
         <h3
-          className="text-base font-bold text-center mb-1.5 px-1"
+          className="text-base font-bold text-center mb-2 px-1"
           style={{
             color: unlocked ? '#FFFFFF' : colors.textPrimary
           }}
@@ -74,7 +74,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Barra de Progresso */}
-      <div className="mt-2 space-y-1">
+      <div className="mt-4 space-y-1">
         <div className="flex justify-between text-xs font-medium">
           <span
             style={{
@@ -122,7 +122,7 @@ export function AchievementBadge({ achievement }: AchievementBadgeProps) {
       </div>
 
       {/* Área com altura fixa para data de desbloqueio */}
-      <div className={`h-10 mt-2 pt-2 flex items-center justify-center ${unlocked ? 'border-t border-white border-opacity-25' : ''}`}>
+      <div className={`h-10 mt-3 pt-2 flex items-center justify-center ${unlocked ? 'border-t border-white border-opacity-25' : ''}`}>
         {unlocked && unlockedAt && (
           <p className="text-xs text-center" style={{ color: 'rgba(255, 255, 255, 0.8)' }}>
             Desbloqueado em {formatDate(unlockedAt)}
