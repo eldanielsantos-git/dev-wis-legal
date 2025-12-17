@@ -191,18 +191,20 @@ export function AdminStripeDiagnosticPage({
   };
 
   const fixSingleCustomer = async (customerId: string) => {
+    console.log(`[fixSingleCustomer] Iniciando correção para: ${customerId}`);
     setFixingCustomer(customerId);
     setError(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        console.error('[fixSingleCustomer] Sessão não encontrada');
         setError('Sessão não encontrada. Faça login novamente.');
         setFixingCustomer(null);
         return;
       }
 
-      console.log(`Iniciando correção para customer: ${customerId}`);
+      console.log(`[fixSingleCustomer] Sessão obtida, chamando edge function...`);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-stripe-subscription`,
@@ -216,31 +218,34 @@ export function AdminStripeDiagnosticPage({
         }
       );
 
+      console.log(`[fixSingleCustomer] Resposta recebida. Status: ${response.status}`);
+
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[fixSingleCustomer] Erro na resposta:', errorText);
         let errorData;
         try {
           errorData = JSON.parse(errorText);
         } catch {
           errorData = { error: errorText };
         }
-        console.error('Erro na resposta:', errorData);
-        throw new Error(errorData.error || 'Erro ao sincronizar customer');
+        throw new Error(errorData.error || `Erro ${response.status}: ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Sincronização concluída com sucesso:', result);
+      console.log('[fixSingleCustomer] Sincronização concluída com sucesso:', result);
 
-      console.log('Aguardando 1 segundo antes de recarregar diagnóstico...');
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log('[fixSingleCustomer] Aguardando 1.5 segundos antes de recarregar diagnóstico...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      console.log('Recarregando diagnóstico...');
+      console.log('[fixSingleCustomer] Recarregando diagnóstico...');
       await runDiagnostic();
-      console.log('Diagnóstico recarregado com sucesso');
+      console.log('[fixSingleCustomer] Diagnóstico recarregado com sucesso');
     } catch (err: any) {
-      console.error('Erro ao corrigir customer:', err);
+      console.error('[fixSingleCustomer] Erro ao corrigir customer:', err);
       setError(`Erro ao corrigir ${customerId}: ${err.message || 'Erro desconhecido'}`);
     } finally {
+      console.log('[fixSingleCustomer] Finalizando, removendo loading...');
       setFixingCustomer(null);
     }
   };
@@ -733,8 +738,13 @@ export function AdminStripeDiagnosticPage({
                               <div className="flex items-center justify-between mb-2">
                                 <h4 className="text-sm font-bold text-red-500">Problemas Encontrados:</h4>
                                 <button
-                                  onClick={() => fixSingleCustomer(diagnostic.database.customer_id)}
-                                  disabled={fixingCustomer === diagnostic.database.customer_id}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    console.log(`[Button Click] Customer ID: ${diagnostic.database.customer_id}`);
+                                    fixSingleCustomer(diagnostic.database.customer_id);
+                                  }}
+                                  disabled={fixingCustomer === diagnostic.database.customer_id || !diagnostic.database.customer_id}
                                   className="px-3 py-1 text-xs font-medium rounded-lg transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                                   style={{ backgroundColor: '#EF4444', color: '#FFFFFF' }}
                                 >

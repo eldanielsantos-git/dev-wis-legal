@@ -92,18 +92,27 @@ Deno.serve(async (req: Request) => {
 
       const { data: customerData } = await supabase
         .from('stripe_customers')
-        .select('user_id, email')
+        .select('user_id')
         .eq('customer_id', customerId)
         .maybeSingle();
 
       if (customerData) {
         userIdForCustomer = customerData.user_id;
-        customerEmail = customerData.email;
+
+        const { data: profileData } = await supabase
+          .from('user_profiles')
+          .select('email')
+          .eq('id', customerData.user_id)
+          .maybeSingle();
+
+        if (profileData) {
+          customerEmail = profileData.email;
+        }
       }
     } else {
       const { data: customerData } = await supabase
         .from('stripe_customers')
-        .select('customer_id, user_id, email')
+        .select('customer_id, user_id')
         .eq('user_id', user.id)
         .maybeSingle();
 
@@ -116,7 +125,16 @@ Deno.serve(async (req: Request) => {
 
       customerId = customerData.customer_id;
       userIdForCustomer = customerData.user_id;
-      customerEmail = customerData.email;
+
+      const { data: profileData } = await supabase
+        .from('user_profiles')
+        .select('email')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        customerEmail = profileData.email;
+      }
     }
 
     let subscriptions;
@@ -132,6 +150,7 @@ Deno.serve(async (req: Request) => {
         console.log(`Customer ${customerId} not found in Stripe. Attempting to find by email: ${customerEmail}`);
 
         if (!customerEmail) {
+          console.error(`No email available for customer ${customerId}. Cannot search in Stripe.`);
           return new Response(JSON.stringify({
             error: 'Customer not found in Stripe and no email available to search',
             shouldDelete: true
@@ -141,12 +160,14 @@ Deno.serve(async (req: Request) => {
           });
         }
 
+        console.log(`Searching Stripe for customers with email: ${customerEmail}`);
         const customers = await stripe.customers.list({
           email: customerEmail,
           limit: 10,
         });
 
         if (customers.data.length === 0) {
+          console.warn(`No customer found in Stripe with email: ${customerEmail}`);
           return new Response(JSON.stringify({
             error: 'No customer found in Stripe with this email',
             shouldDelete: true
@@ -171,6 +192,7 @@ Deno.serve(async (req: Request) => {
             foundCustomer = customer;
             subscriptions = customerSubs;
             foundSubscription = customerSubs.data[0];
+            console.log(`Found customer ${customer.id} with active subscription`);
             break;
           }
         }
@@ -184,21 +206,27 @@ Deno.serve(async (req: Request) => {
             expand: ['data.default_payment_method'],
           });
           subscriptions = customerSubs;
+          console.log(`Using first customer found: ${foundCustomer.id}`);
         }
 
         console.log(`Found customer ${foundCustomer.id} in Stripe. Updating database...`);
         customerId = foundCustomer.id;
 
         if (userIdForCustomer) {
-          await supabase
+          const { error: upsertError } = await supabase
             .from('stripe_customers')
             .upsert({
               user_id: userIdForCustomer,
               customer_id: foundCustomer.id,
-              email: customerEmail,
             }, {
               onConflict: 'user_id',
             });
+
+          if (upsertError) {
+            console.error('Error updating customer_id in database:', upsertError);
+          } else {
+            console.log(`Successfully updated customer_id to ${foundCustomer.id}`);
+          }
         }
       } else {
         throw error;
