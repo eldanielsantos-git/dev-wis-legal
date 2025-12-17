@@ -183,26 +183,21 @@ Deno.serve(async (req: Request) => {
 
     // Step 6: Preparar dados para o email
     const firstName = userData.name?.split(' ')[0] || 'Usuário';
-    const periodEndDate = subscriptionData.current_period_end 
-      ? new Date(subscriptionData.current_period_end * 1000).toLocaleDateString('pt-BR')
-      : 'não definido';
 
     const emailData = {
       first_name: firstName,
       total_tokens: tokensTotal.toLocaleString('pt-BR'),
-      used_tokens: tokensUsed.toLocaleString('pt-BR'),
-      remaining_tokens: tokensRemaining.toLocaleString('pt-BR'),
-      percentage_used: `${percentageUsed.toFixed(0)}%`,
-      view_plans_url: `${appUrl}/subscription`,
-      view_token_packages_url: `${appUrl}/tokens`,
-      reset_date: periodEndDate,
+      tokens_consumed: tokensUsed.toLocaleString('pt-BR'),
+      percentage: notificationToSend.type === '75_percent' ? '75' : '100',
+      subscription_plans_url: `${appUrl}/subscription`,
+      token_packages_url: `${appUrl}/tokens`,
     };
 
     console.log("Email data prepared:", emailData);
 
     // Step 7: Enviar email via Resend
     console.log("Step 7: Sending email via Resend...");
-    
+
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -210,9 +205,7 @@ Deno.serve(async (req: Request) => {
         "Authorization": `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "WisLegal <noreply@wislegal.io>",
         to: [userData.email],
-        subject: `Alerta: Seus tokens estão chegando ao fim (${emailData.percentage_used} usado)`,
         template_id: notificationToSend.templateId,
         template_data: emailData,
       }),

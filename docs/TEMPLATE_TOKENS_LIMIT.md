@@ -22,18 +22,21 @@ O sistema utiliza **2 templates distintos** no Resend:
 
 ## 🔧 Variáveis dos Templates
 
-Ambos os templates devem conter as mesmas 8 variáveis:
+Ambos os templates devem conter as mesmas 5 variáveis:
 
 | Variável | Tipo | Descrição | Exemplo |
 |----------|------|-----------|---------|
 | `first_name` | String | Primeiro nome do usuário | "João" |
 | `total_tokens` | String | Total de tokens disponíveis (formatado) | "50.000" |
-| `used_tokens` | String | Tokens já utilizados (formatado) | "37.500" |
-| `remaining_tokens` | String | Tokens ainda disponíveis (formatado) | "12.500" |
-| `percentage_used` | String | Porcentagem usada | "75%" ou "100%" |
-| `view_plans_url` | String | URL para página de planos de assinatura | "https://app.wislegal.io/subscription" |
-| `view_token_packages_url` | String | URL para página de pacotes de tokens | "https://app.wislegal.io/tokens" |
-| `reset_date` | String | Data de renovação dos tokens | "01/01/2025" |
+| `tokens_consumed` | String | Tokens já utilizados (formatado) | "37.500" |
+| `percentage` | String | Percentual fixo ("75" ou "100") | "75" ou "100" |
+| `subscription_plans_url` | String | URL para página de planos de assinatura | "https://app.wislegal.io/subscription" |
+| `token_packages_url` | String | URL para página de pacotes de tokens | "https://app.wislegal.io/tokens" |
+
+**Notas importantes:**
+- A variável `percentage` é fixa: "75" para o template de 75% e "100" para o template de 100%
+- Não há cálculo dinâmico de percentual, já que temos 2 templates separados
+- O subject, from e to são configurados diretamente no Resend, não na edge function
 
 ---
 
@@ -257,16 +260,19 @@ Os templates devem ser configurados no Resend com os seguintes dados:
 ### Template 75%
 - **Template Name:** `tokens-running-out-75`
 - **Template ID:** `e4674548-2538-491e-800d-28cd09a46db1`
-- **Subject:** `Alerta: Seus tokens estão chegando ao fim ({{percentage_used}} usado)`
-- **From:** `WisLegal <noreply@wislegal.io>`
+- **Subject:** Configurado no Resend (ex: "Alerta: Seus tokens estão chegando ao fim")
+- **From:** Configurado no Resend (ex: "WisLegal <noreply@wislegal.io>")
 
 ### Template 100%
 - **Template Name:** `tokens-running-out-100`
 - **Template ID:** `c542e537-4176-4cdb-be3d-71fde95aaeb1`
-- **Subject:** `Alerta: Seus tokens acabaram! ({{percentage_used}} usado)`
-- **From:** `WisLegal <noreply@wislegal.io>`
+- **Subject:** Configurado no Resend (ex: "Alerta: Seus tokens acabaram!")
+- **From:** Configurado no Resend (ex: "WisLegal <noreply@wislegal.io>")
 
-Ambos os templates devem incluir todas as 8 variáveis listadas acima para funcionar corretamente.
+**Importante:**
+- O subject, from e to são configurados diretamente no Resend
+- Ambos os templates devem incluir todas as 5 variáveis listadas acima
+- A edge function apenas envia o `template_id` e os dados (`template_data`)
 
 ---
 
@@ -363,8 +369,10 @@ A função registra automaticamente:
 3. **Template IDs**:
    - 75%: `e4674548-2538-491e-800d-28cd09a46db1`
    - 100%: `c542e537-4176-4cdb-be3d-71fde95aaeb1`
-4. **Variáveis**: Todas as 8 variáveis devem estar presentes em ambos os templates
-5. **Anti-Spam**: Máximo de 1 email por tipo de alerta a cada 7 dias
+4. **Variáveis**: Todas as 5 variáveis devem estar presentes em ambos os templates
+5. **Percentual Fixo**: A variável `percentage` é fixa ("75" ou "100"), não calculada dinamicamente
+6. **Subject/From/To**: Configurados no Resend, não na edge function
+7. **Anti-Spam**: Máximo de 1 email por tipo de alerta a cada 7 dias
 
 ---
 
