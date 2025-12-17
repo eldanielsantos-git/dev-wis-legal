@@ -56,7 +56,7 @@ export function AdminSlackNotificationsPage({
   onNavigateToPrivacy,
   onNavigateToCookies,
 }: AdminSlackNotificationsPageProps) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
@@ -79,13 +79,15 @@ export function AdminSlackNotificationsPage({
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+
     if (!user || !isAdmin) {
       onNavigateToApp();
       return;
     }
 
     loadData();
-  }, [user, isAdmin, onNavigateToApp]);
+  }, [user, isAdmin, authLoading, onNavigateToApp]);
 
   const loadData = async () => {
     setLoading(true);
@@ -226,7 +228,7 @@ export function AdminSlackNotificationsPage({
     return { total: categoryTypes.length, enabled, slackEnabled };
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="flex h-screen" style={{ backgroundColor: colors.background }}>
         <SidebarWis
