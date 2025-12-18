@@ -6,7 +6,7 @@ import { getThemeColors } from '../utils/themeUtils';
 interface AnalysisCardProps {
   number: number;
   title: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'running' | 'completed' | 'failed' | 'error';
   isSelected: boolean;
   onClick: () => void;
   executionTimeMs?: number;
@@ -68,8 +68,8 @@ export function AnalysisCard({
   const getMainIcon = () => {
     const iconColor = getIconColor(number);
 
-    // Loading state (running)
-    if (status === 'running') {
+    // Loading state (running or processing)
+    if (status === 'running' || status === 'processing') {
       return <Loader className="w-3.5 h-3.5 sm:w-6 sm:h-6 animate-spin" style={{ color: iconColor }} />;
     }
 
