@@ -3,6 +3,13 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('🔍 [Supabase Config] Verificando variáveis de ambiente...');
+console.log('🔍 [Supabase Config] MODE:', import.meta.env.MODE);
+console.log('🔍 [Supabase Config] DEV:', import.meta.env.DEV);
+console.log('🔍 [Supabase Config] VITE_SUPABASE_URL:', supabaseUrl ? `${supabaseUrl.substring(0, 30)}...` : '❌ NÃO DEFINIDA');
+console.log('🔍 [Supabase Config] VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Definida' : '❌ NÃO DEFINIDA');
+console.log('🔍 [Supabase Config] Todas as variáveis env:', Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')));
+
 if (!supabaseUrl || !supabaseAnonKey) {
   // Show user-friendly error
   const errorDiv = document.createElement('div');
