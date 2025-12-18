@@ -290,6 +290,12 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
     setError(null);
     setLoading(true);
 
+    if (!userType) {
+      setError('Erro: Tipo de cadastro não selecionado. Por favor, recarregue a página.');
+      setLoading(false);
+      return;
+    }
+
     if (!formData.firstName.trim()) {
       setError(userType === 'PJ' ? 'Nome do responsável é obrigatório' : 'Nome é obrigatório');
       setLoading(false);
