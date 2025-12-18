@@ -159,9 +159,8 @@ export class UserAchievementsService {
     // Campos específicos baseados no tipo
     const specificFields = userType === 'PJ'
       ? [profile.company_name, profile.cnpj] // PJ: Nome da empresa e CNPJ
-      : [profile.cpf]; // PF: CPF
+      : [profile.cpf, profile.oab]; // PF: CPF e OAB
 
-    // OAB é opcional para ambos (não conta na totalCount)
     const allFields = [...commonFields, ...specificFields];
 
     const completedFields = allFields.filter(field => {
