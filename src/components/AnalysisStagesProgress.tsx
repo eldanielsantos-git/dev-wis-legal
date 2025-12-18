@@ -78,12 +78,30 @@ export const AnalysisStagesProgress: React.FC<AnalysisStagesProgressProps> = ({
 
     fetchStages();
 
-    intervalId = setInterval(fetchStages, 5000);
+    intervalId = setInterval(fetchStages, 1000);
+
+    // Realtime subscription para atualizações instantâneas
+    const channel = supabase
+      .channel(`analysis_stages_${processoId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'analysis_results',
+          filter: `processo_id=eq.${processoId}`,
+        },
+        () => {
+          fetchStages();
+        }
+      )
+      .subscribe();
 
     return () => {
       if (intervalId) {
         clearInterval(intervalId);
       }
+      supabase.removeChannel(channel);
     };
   }, [processoId]);
 

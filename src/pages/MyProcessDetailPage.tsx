@@ -603,8 +603,9 @@ function MyProcessDetailPageInner({
     return null;
   }
 
-  const totalPrompts = 9;
-  const currentPrompt = processo.current_prompt_number || 0;
+  const totalPrompts = analysisResults.length > 0 ? analysisResults.length : (processo.total_prompts || 9);
+  const completedPrompts = analysisResults.filter(r => r.status === 'completed').length;
+  const currentPrompt = completedPrompts;
 
   // Buscar o modelo atual em uso
   const llmModelName = processo.current_llm_model_name || null;
