@@ -21,6 +21,7 @@ interface UserProfile {
   state: string | null;
   avatar_url: string | null;
   is_admin: boolean;
+  type: 'PF' | 'PJ' | null;
   created_at: string;
 }
 
@@ -50,6 +51,7 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [typeFilter, setTypeFilter] = useState<'all' | 'PF' | 'PJ'>('all');
   const USERS_PER_PAGE = 20;
 
   useEffect(() => {
@@ -84,8 +86,14 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
   }, [loadingMore, hasMore, searchTerm, currentPage, filteredUsers]);
 
   useEffect(() => {
+    let filtered = allUsers;
+
+    if (typeFilter !== 'all') {
+      filtered = filtered.filter(user => user.type === typeFilter);
+    }
+
     if (searchTerm) {
-      const filtered = allUsers.filter(user => {
+      filtered = filtered.filter(user => {
         const fullName = `${user.first_name || ''} ${user.last_name || ''}`.toLowerCase();
         const email = (user.email || '').toLowerCase();
         const term = searchTerm.toLowerCase();
@@ -95,13 +103,13 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
       setDisplayedUsers(filtered);
       setHasMore(false);
     } else {
-      setFilteredUsers(allUsers);
-      const initialBatch = allUsers.slice(0, USERS_PER_PAGE);
+      setFilteredUsers(filtered);
+      const initialBatch = filtered.slice(0, USERS_PER_PAGE);
       setDisplayedUsers(initialBatch);
       setCurrentPage(0);
-      setHasMore(allUsers.length > USERS_PER_PAGE);
+      setHasMore(filtered.length > USERS_PER_PAGE);
     }
-  }, [searchTerm, allUsers]);
+  }, [searchTerm, allUsers, typeFilter]);
 
   const loadUsers = async () => {
     try {
@@ -230,7 +238,43 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
               </div>
             </div>
 
-            <div className="mb-4 sm:mb-6">
+            <div className="mb-4 sm:mb-6 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setTypeFilter('all')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: typeFilter === 'all' ? '#3B82F6' : colors.bgSecondary,
+                    color: typeFilter === 'all' ? '#FFFFFF' : colors.textPrimary,
+                    border: typeFilter === 'all' ? 'none' : `1px solid ${theme === 'dark' ? '#4B5563' : '#D1D5DB'}`
+                  }}
+                >
+                  Todos
+                </button>
+                <button
+                  onClick={() => setTypeFilter('PF')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: typeFilter === 'PF' ? '#3B82F6' : colors.bgSecondary,
+                    color: typeFilter === 'PF' ? '#FFFFFF' : colors.textPrimary,
+                    border: typeFilter === 'PF' ? 'none' : `1px solid ${theme === 'dark' ? '#4B5563' : '#D1D5DB'}`
+                  }}
+                >
+                  Pessoa Física
+                </button>
+                <button
+                  onClick={() => setTypeFilter('PJ')}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{
+                    backgroundColor: typeFilter === 'PJ' ? '#3B82F6' : colors.bgSecondary,
+                    color: typeFilter === 'PJ' ? '#FFFFFF' : colors.textPrimary,
+                    border: typeFilter === 'PJ' ? 'none' : `1px solid ${theme === 'dark' ? '#4B5563' : '#D1D5DB'}`
+                  }}
+                >
+                  Pessoa Jurídica
+                </button>
+              </div>
+
               <div className="relative">
                 <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
                 <input
