@@ -288,7 +288,7 @@ Deno.serve(async (req: Request) => {
     if (!remainingResults) {
       const { data: processoData } = await supabase
         .from('processos')
-        .select('user_id, file_name, created_at')
+        .select('user_id, file_name, created_at, is_complex')
         .eq('id', processo_id)
         .single();
 
@@ -343,19 +343,29 @@ Deno.serve(async (req: Request) => {
           ? `${durationMinutes}m ${durationSeconds}s`
           : `${durationSeconds}s`;
 
+        const userName = userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() : 'N/A';
+        const userEmail = userData?.email || 'N/A';
+        const fileName = processoData.file_name || 'N/A';
+
         notifyAdminSafe({
           type: 'analysis_completed',
           title: 'Análise Concluída',
-          message: `Análise de processo complexo concluída com sucesso`,
+          message: `*Usuário:* ${userName} (${userEmail})
+*Arquivo:* ${fileName}
+*Duração:* ${durationText}
+*Chunks:* ${chunks.length}
+*Prompts:* ${analysisResults.length}
+*Complexo:* ${processoData.is_complex ? 'Sim' : 'Não'}`,
           severity: 'success',
           metadata: {
             processo_id,
-            file_name: processoData.file_name || 'N/A',
-            user_email: userData?.email || 'N/A',
-            user_name: userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() : 'N/A',
+            file_name: fileName,
+            user_email: userEmail,
+            user_name: userName,
             duration: durationText,
             chunks_count: chunks.length,
             prompts_consolidated: analysisResults.length,
+            is_complex: processoData.is_complex,
           },
           userId: processoData.user_id,
           processoId: processo_id,

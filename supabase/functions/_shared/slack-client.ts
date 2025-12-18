@@ -121,12 +121,14 @@ function formatSlackMessage(
   message: string,
   metadata: Record<string, unknown>
 ): SlackMessage {
+  const cleanMessage = message.replace(/\*\*/g, '*');
+
   const blocks: Array<Record<string, unknown>> = [
     {
       type: 'header',
       text: {
         type: 'plain_text',
-        text: `${config.emoji} ${config.label} ${title}`,
+        text: title,
         emoji: true,
       },
     },
@@ -134,7 +136,7 @@ function formatSlackMessage(
       type: 'section',
       text: {
         type: 'mrkdwn',
-        text: message,
+        text: cleanMessage,
       },
     },
   ];
@@ -184,15 +186,15 @@ function buildMobilePreview(
   message: string,
   metadata: Record<string, unknown>
 ): string {
-  const parts: string[] = [config.emoji, title];
+  const parts: string[] = [title];
 
-  const userMatch = message.match(/\*\*Usuário:\*\*\s*([^\n]+)/);
+  const userMatch = message.match(/\*Usuário:\*\s*([^\n]+)/);
   if (userMatch) {
     const userName = userMatch[1].replace(/\([^)]*\)/, '').trim();
     parts.push(userName);
   }
 
-  const fileMatch = message.match(/\*\*Arquivo:\*\*\s*([^\n]+)/);
+  const fileMatch = message.match(/\*Arquivo:\*\s*([^\n]+)/);
   if (fileMatch) {
     parts.push(fileMatch[1].trim());
   }

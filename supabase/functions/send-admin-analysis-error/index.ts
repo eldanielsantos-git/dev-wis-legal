@@ -330,12 +330,12 @@ Deno.serve(async (req: Request) => {
       const slackPayload = {
         type_slug: "analysis_failed",
         title: `Erro em Análise - ${processo.file_name}`,
-        message: `**Usuário:** ${userProfile.first_name} ${userProfile.last_name} (${userProfile.email})
-**Plano:** ${planName}
-**Arquivo:** ${processo.file_name}
-**Análise:** ${errorData.prompt_title}
-**Tipo:** ${errorData.error_type}
-**Severity:** ${errorData.severity.toUpperCase()}
+        message: `*Usuário:* ${userProfile.first_name} ${userProfile.last_name} (${userProfile.email})
+*Plano:* ${planName}
+*Arquivo:* ${processo.file_name}
+*Análise:* ${errorData.prompt_title}
+*Tipo:* ${errorData.error_type}
+*Severity:* ${errorData.severity.toUpperCase()}
 
 ${errorData.error_message}`,
         severity: errorData.severity,
