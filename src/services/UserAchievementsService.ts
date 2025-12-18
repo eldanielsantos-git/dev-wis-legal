@@ -140,7 +140,7 @@ export class UserAchievementsService {
       .maybeSingle();
 
     if (!profile) {
-      return { completedCount: 0, totalCount: 9 };
+      return { completedCount: 0, totalCount: 9 }; // Default para PF
     }
 
     const userType = profile.type || 'PF';
@@ -158,7 +158,7 @@ export class UserAchievementsService {
 
     // Campos específicos baseados no tipo
     const specificFields = userType === 'PJ'
-      ? [profile.company_name, profile.cnpj] // PJ: Nome da empresa e CNPJ
+      ? [profile.company_name, profile.cnpj, profile.oab] // PJ: Nome da empresa, CNPJ e OAB do responsável
       : [profile.cpf, profile.oab]; // PF: CPF e OAB
 
     const allFields = [...commonFields, ...specificFields];
