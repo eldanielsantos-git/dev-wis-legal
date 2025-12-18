@@ -1,6 +1,15 @@
 export type NotificationSeverity = 'critical' | 'high' | 'medium' | 'low' | 'success';
 
-interface SlackMessage {
+export interface SlackMessage {
+  text?: string;
+  blocks?: Array<Record<string, unknown>>;
+  attachments?: Array<{
+    color?: string;
+    blocks?: Array<Record<string, unknown>>;
+  }>;
+}
+
+export interface SendToSlackParams {
   webhookUrl: string;
   severity: NotificationSeverity;
   title: string;
@@ -8,105 +17,215 @@ interface SlackMessage {
   metadata?: Record<string, unknown>;
 }
 
-interface SlackResponse {
+export interface SlackSendResult {
   success: boolean;
   messageId?: string;
-  response?: unknown;
   error?: string;
+  response?: unknown;
 }
 
-const severityColors: Record<NotificationSeverity, string> = {
-  critical: '#DC2626',  // red-600
-  high: '#EA580C',     // orange-600
-  medium: '#F59E0B',   // amber-500
-  low: '#3B82F6',      // blue-500
-  success: '#10B981',  // green-500
+const SEVERITY_CONFIG = {
+  critical: {
+    color: '#DC2626',
+    emoji: '🚨',
+    label: '[CRÍTICO]',
+  },
+  high: {
+    color: '#F59E0B',
+    emoji: '⚠️',
+    label: '[ALTO]',
+  },
+  medium: {
+    color: '#FBBF24',
+    emoji: 'ℹ️',
+    label: '[MÉDIO]',
+  },
+  low: {
+    color: '#3B82F6',
+    emoji: '📋',
+    label: '[BAIXO]',
+  },
+  success: {
+    color: '#10B981',
+    emoji: '✅',
+    label: '[SUCESSO]',
+  },
 };
 
-const severityEmojis: Record<NotificationSeverity, string> = {
-  critical: '🚨',
-  high: '⚠️',
-  medium: '⚡',
-  low: 'ℹ️',
-  success: '✅',
-};
+export async function sendToSlack(params: SendToSlackParams): Promise<SlackSendResult> {
+  const { webhookUrl, severity, title, message, metadata = {} } = params;
 
-export async function sendToSlack(message: SlackMessage): Promise<SlackResponse> {
   try {
-    const { webhookUrl, severity, title, message: text, metadata } = message;
+    const config = SEVERITY_CONFIG[severity];
+    const slackMessage = formatSlackMessage(config, title, message, metadata);
 
-    const color = severityColors[severity];
-    const emoji = severityEmojis[severity];
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    const payload = {
-      attachments: [
-        {
-          color,
-          blocks: [
-            {
-              type: 'header',
-              text: {
-                type: 'plain_text',
-                text: `${emoji} ${title}`,
-                emoji: true,
-              },
-            },
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text,
-              },
-            },
-            ...(metadata && Object.keys(metadata).length > 0
-              ? [
-                  {
-                    type: 'section',
-                    fields: Object.entries(metadata).map(([key, value]) => ({
-                      type: 'mrkdwn',
-                      text: `*${key}:*\n${JSON.stringify(value)}`,
-                    })),
-                  },
-                ]
-              : []),
-            {
-              type: 'context',
-              elements: [
-                {
-                  type: 'mrkdwn',
-                  text: `Severity: *${severity}* | ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
-                },
-              ],
-            },
-          ],
-        },
-      ],
-    };
+    let attempt = 0;
+    const maxAttempts = 2;
+    let lastError: Error | null = null;
 
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-    });
+    while (attempt < maxAttempts) {
+      try {
+        const response = await fetch(webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(slackMessage),
+          signal: controller.signal,
+        });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return {
-        success: false,
-        error: `Slack API error: ${response.status} - ${errorText}`,
-      };
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Slack API error: ${response.status} - ${errorText}`);
+        }
+
+        const responseData = await response.text();
+
+        return {
+          success: true,
+          messageId: responseData,
+          response: responseData,
+        };
+      } catch (error) {
+        lastError = error as Error;
+        attempt++;
+
+        if (attempt < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
     }
 
-    return {
-      success: true,
-      response: await response.text(),
-    };
-  } catch (error) {
+    clearTimeout(timeoutId);
+
+    console.error('[slack-client] Failed after retries:', lastError);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error sending to Slack',
+      error: lastError?.message || 'Unknown error',
+    };
+  } catch (error) {
+    console.error('[slack-client] Critical error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
     };
   }
+}
+
+function formatSlackMessage(
+  config: { color: string; emoji: string; label: string },
+  title: string,
+  message: string,
+  metadata: Record<string, unknown>
+): SlackMessage {
+  const blocks: Array<Record<string, unknown>> = [
+    {
+      type: 'header',
+      text: {
+        type: 'plain_text',
+        text: `${config.emoji} ${config.label} ${title}`,
+        emoji: true,
+      },
+    },
+    {
+      type: 'section',
+      text: {
+        type: 'mrkdwn',
+        text: message,
+      },
+    },
+  ];
+
+  if (Object.keys(metadata).length > 0) {
+    const fields = Object.entries(metadata)
+      .filter(([_, value]) => value !== undefined && value !== null)
+      .map(([key, value]) => ({
+        type: 'mrkdwn',
+        text: `*${formatKey(key)}:*\n${formatValue(value)}`,
+      }));
+
+    if (fields.length > 0) {
+      blocks.push({
+        type: 'section',
+        fields: fields.slice(0, 10),
+      });
+    }
+  }
+
+  blocks.push({
+    type: 'context',
+    elements: [
+      {
+        type: 'mrkdwn',
+        text: `⏰ ${new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })}`,
+      },
+    ],
+  });
+
+  const previewText = buildMobilePreview(config, title, message, metadata);
+
+  return {
+    text: previewText,
+    attachments: [
+      {
+        color: config.color,
+        blocks,
+      },
+    ],
+  };
+}
+
+function buildMobilePreview(
+  config: { emoji: string; label: string },
+  title: string,
+  message: string,
+  metadata: Record<string, unknown>
+): string {
+  const parts: string[] = [config.emoji, title];
+
+  const userMatch = message.match(/\*\*Usuário:\*\*\s*([^\n]+)/);
+  if (userMatch) {
+    const userName = userMatch[1].replace(/\([^)]*\)/, '').trim();
+    parts.push(userName);
+  }
+
+  const fileMatch = message.match(/\*\*Arquivo:\*\*\s*([^\n]+)/);
+  if (fileMatch) {
+    parts.push(fileMatch[1].trim());
+  }
+
+  if (metadata.error_type) {
+    parts.push(String(metadata.error_type));
+  }
+
+  return parts.join(' | ');
+}
+
+function formatKey(key: string): string {
+  return key
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return 'N/A';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Sim' : 'Não';
+  }
+
+  if (typeof value === 'number') {
+    return value.toLocaleString('pt-BR');
+  }
+
+  if (typeof value === 'object') {
+    return '```' + JSON.stringify(value, null, 2) + '```';
+  }
+
+  return String(value);
 }

@@ -165,8 +165,10 @@ function formatSlackMessage(
     ],
   });
 
+  const previewText = buildMobilePreview(config, title, message, metadata);
+
   return {
-    text: `${config.label} ${title}`,
+    text: previewText,
     attachments: [
       {
         color: config.color,
@@ -174,6 +176,32 @@ function formatSlackMessage(
       },
     ],
   };
+}
+
+function buildMobilePreview(
+  config: { emoji: string; label: string },
+  title: string,
+  message: string,
+  metadata: Record<string, unknown>
+): string {
+  const parts: string[] = [config.emoji, title];
+
+  const userMatch = message.match(/\*\*Usuário:\*\*\s*([^\n]+)/);
+  if (userMatch) {
+    const userName = userMatch[1].replace(/\([^)]*\)/, '').trim();
+    parts.push(userName);
+  }
+
+  const fileMatch = message.match(/\*\*Arquivo:\*\*\s*([^\n]+)/);
+  if (fileMatch) {
+    parts.push(fileMatch[1].trim());
+  }
+
+  if (metadata.error_type) {
+    parts.push(String(metadata.error_type));
+  }
+
+  return parts.join(' | ');
 }
 
 function formatKey(key: string): string {
