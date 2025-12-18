@@ -597,6 +597,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       const { error } = await supabase
         .from('user_profiles')
         .update({
+          type: formData.type,
           first_name: formData.first_name,
           last_name: formData.last_name,
           phone: fullPhone,
@@ -928,94 +929,75 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
               )}
 
               {formData.type === 'PF' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <label htmlFor="first_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                      Nome *
-                    </label>
-                    <input
-                      type="text"
-                      id="first_name"
-                      name="first_name"
-                      value={formData.first_name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                    />
-                  </div>
-
-                  <div>
-                    <label htmlFor="last_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                      Sobrenome *
-                    </label>
-                    <input
-                      type="text"
-                      id="last_name"
-                      name="last_name"
-                      value={formData.last_name}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="mb-6">
-                  <label htmlFor="company_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                    Razão Social *
-                  </label>
-                  <input
-                    type="text"
-                    id="company_name"
-                    name="company_name"
-                    value={formData.company_name}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="Digite a razão social da empresa"
-                    className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                    style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                  />
-                </div>
-              )}
-
-              <div className="mb-6">
-                <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                  Telefone *
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-shrink-0">
-                    <select
-                      value={formData.phoneCountryCode}
-                      onChange={(e) => setFormData({ ...formData, phoneCountryCode: e.target.value })}
-                      className="appearance-none w-24 sm:w-28 px-2 sm:px-3 py-2 pr-7 rounded-lg focus:outline-none cursor-pointer text-sm"
-                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                    >
-                      {countryCodes.map((country) => (
-                        <option key={country.code} value={country.code}>
-                          {country.flag} {country.code}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: colors.textSecondary }} />
-                  </div>
-                  <input
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    placeholder={countryCodes.find(c => c.code === formData.phoneCountryCode)?.example || '(11) 98765-4321'}
-                    className="flex-1 min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                    style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                  />
-                </div>
-              </div>
-
-              {formData.type === 'PF' ? (
                 <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label htmlFor="first_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                        Nome *
+                      </label>
+                      <input
+                        type="text"
+                        id="first_name"
+                        name="first_name"
+                        value={formData.first_name}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="last_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                        Sobrenome *
+                      </label>
+                      <input
+                        type="text"
+                        id="last_name"
+                        name="last_name"
+                        value={formData.last_name}
+                        onChange={handleInputChange}
+                        required
+                        className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      Telefone *
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-shrink-0">
+                        <select
+                          value={formData.phoneCountryCode}
+                          onChange={(e) => setFormData({ ...formData, phoneCountryCode: e.target.value })}
+                          className="appearance-none w-24 sm:w-28 px-2 sm:px-3 py-2 pr-7 rounded-lg focus:outline-none cursor-pointer text-sm"
+                          style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                        >
+                          {countryCodes.map((country) => (
+                            <option key={country.code} value={country.code}>
+                              {country.flag} {country.code}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: colors.textSecondary }} />
+                      </div>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        required
+                        placeholder={countryCodes.find(c => c.code === formData.phoneCountryCode)?.example || '(11) 98765-4321'}
+                        className="flex-1 min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                      />
+                    </div>
+                  </div>
+
                   <div className="mb-6">
                     <label htmlFor="cpf" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
                       CPF <span className="text-xs opacity-60">(opcional)</span>
@@ -1049,21 +1031,126 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                   </div>
                 </>
               ) : (
-                <div className="mb-6">
-                  <label htmlFor="cnpj" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                    CNPJ <span className="text-xs opacity-60">(opcional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    id="cnpj"
-                    name="cnpj"
-                    value={formData.cnpj}
-                    onChange={handleInputChange}
-                    placeholder="00.000.000/0000-00"
-                    className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                    style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                  />
-                </div>
+                <>
+                  <div className="mb-6">
+                    <label htmlFor="company_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      Razão Social *
+                    </label>
+                    <input
+                      type="text"
+                      id="company_name"
+                      name="company_name"
+                      value={formData.company_name}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Digite a razão social da empresa"
+                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                      <label htmlFor="first_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                        Nome do responsável *
+                      </label>
+                      <input
+                        type="text"
+                        id="first_name"
+                        name="first_name"
+                        value={formData.first_name}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Digite o nome"
+                        className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="last_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                        Sobrenome do responsável *
+                      </label>
+                      <input
+                        type="text"
+                        id="last_name"
+                        name="last_name"
+                        value={formData.last_name}
+                        onChange={handleInputChange}
+                        required
+                        placeholder="Digite o sobrenome"
+                        className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      Telefone *
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-shrink-0">
+                        <select
+                          value={formData.phoneCountryCode}
+                          onChange={(e) => setFormData({ ...formData, phoneCountryCode: e.target.value })}
+                          className="appearance-none w-24 sm:w-28 px-2 sm:px-3 py-2 pr-7 rounded-lg focus:outline-none cursor-pointer text-sm"
+                          style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                        >
+                          {countryCodes.map((country) => (
+                            <option key={country.code} value={country.code}>
+                              {country.flag} {country.code}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style={{ color: colors.textSecondary }} />
+                      </div>
+                      <input
+                        type="tel"
+                        id="phone"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        required
+                        placeholder={countryCodes.find(c => c.code === formData.phoneCountryCode)?.example || '(11) 98765-4321'}
+                        className="flex-1 min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                        style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mb-6">
+                    <label htmlFor="cnpj" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      CNPJ <span className="text-xs opacity-60">(opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="cnpj"
+                      name="cnpj"
+                      value={formData.cnpj}
+                      onChange={handleInputChange}
+                      placeholder="00.000.000/0000-00"
+                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    />
+                  </div>
+
+                  <div className="mb-6">
+                    <label htmlFor="oab" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      OAB do responsável <span className="text-xs opacity-60">(opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="oab"
+                      name="oab"
+                      value={formData.oab}
+                      onChange={handleInputChange}
+                      placeholder="Digite o número da OAB (opcional)"
+                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    />
+                  </div>
+                </>
               )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
