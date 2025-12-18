@@ -919,7 +919,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                   onChange={handleAvatarUpload}
                   className="hidden"
                 />
-                <p className="text-sm mt-3" style={{ color: colors.textSecondary }}>Clique no ícone para alterar a foto</p>
+                <p className="text-sm mt-3" style={{ color: colors.textSecondary }}>
+                  {formData.type === 'PJ' ? 'Clique no ícone para alterar o logo da empresa' : 'Clique no ícone para alterar a foto'}
+                </p>
               </div>
 
               {message && (
