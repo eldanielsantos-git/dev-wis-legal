@@ -13,7 +13,7 @@ interface AchievementBadgeProps {
 export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateToApp }: AchievementBadgeProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const { config, unlocked, unlockedAt, progress, currentCount } = achievement;
+  const { config, unlocked, unlockedAt, progress, currentCount, totalCount } = achievement;
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -102,7 +102,7 @@ export function AchievementBadge({ achievement, onNavigateToProfile, onNavigateT
               color: unlocked ? '#FFFFFF' : colors.textPrimary
             }}
           >
-            {currentCount} / {config.requiredCount}
+            {currentCount} / {totalCount ?? config.requiredCount}
           </span>
         </div>
         <div

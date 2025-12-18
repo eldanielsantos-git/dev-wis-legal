@@ -33,6 +33,7 @@ export interface AchievementProgress {
   unlockedAt?: string;
   progress: number;
   currentCount: number;
+  totalCount?: number;
 }
 
 export const ACHIEVEMENTS: AchievementConfig[] = [
@@ -42,7 +43,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
     description: 'Complete 100% dos dados do seu perfil',
     icon: User,
     color: '#10B981',
-    requiredCount: 9,
+    requiredCount: 10,
     badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
   },
   {
@@ -197,9 +198,12 @@ export class UserAchievementsService {
       let progress: number;
       let currentCount: number;
 
+      let totalCount: number | undefined;
+
       if (config.type === 'profile_complete') {
         progress = profilePercentage;
         currentCount = profileCompletionData.completedCount;
+        totalCount = profileCompletionData.totalCount;
       } else {
         progress = Math.min((completedCount / config.requiredCount) * 100, 100);
         currentCount = completedCount;
@@ -210,7 +214,8 @@ export class UserAchievementsService {
         unlocked,
         unlockedAt: userAchievement?.unlocked_at,
         progress: Math.round(progress),
-        currentCount
+        currentCount,
+        totalCount
       };
     });
   }
