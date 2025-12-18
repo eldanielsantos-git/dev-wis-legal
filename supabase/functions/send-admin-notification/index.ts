@@ -180,7 +180,7 @@ Deno.serve(async (req: Request) => {
             const slackResult = await sendToSlack({
               webhookUrl: slackConfig.webhook_url,
               severity: finalSeverity,
-              title: `${typeData.icon} ${title}`,
+              title: title,
               message,
               metadata,
             });

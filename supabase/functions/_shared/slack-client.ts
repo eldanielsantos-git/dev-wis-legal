@@ -27,27 +27,27 @@ export interface SlackSendResult {
 const SEVERITY_CONFIG = {
   critical: {
     color: '#DC2626',
-    emoji: '🚨',
+    emoji: '',
     label: '[CRÍTICO]',
   },
   high: {
     color: '#F59E0B',
-    emoji: '⚠️',
+    emoji: '',
     label: '[ALTO]',
   },
   medium: {
     color: '#FBBF24',
-    emoji: 'ℹ️',
+    emoji: '',
     label: '[MÉDIO]',
   },
   low: {
     color: '#3B82F6',
-    emoji: '📋',
+    emoji: '',
     label: '[BAIXO]',
   },
   success: {
     color: '#10B981',
-    emoji: '✅',
+    emoji: '',
     label: '[SUCESSO]',
   },
 };
