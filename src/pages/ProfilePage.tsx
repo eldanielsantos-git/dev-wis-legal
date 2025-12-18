@@ -81,6 +81,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     phone: '',
     phoneCountryCode: '+55',
     cpf: '',
+    cnpj: '',
+    company_name: '',
+    type: 'PF' as 'PF' | 'PJ',
     oab: '',
     city: '',
     state: '',
@@ -172,6 +175,23 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{0,2})/, '$1.$2.$3-$4');
   };
 
+  const formatCNPJ = (value: string) => {
+    const numbers = value.replace(/\D/g, '').slice(0, 14);
+    if (numbers.length <= 2) {
+      return numbers;
+    }
+    if (numbers.length <= 5) {
+      return numbers.replace(/(\d{2})(\d{0,3})/, '$1.$2');
+    }
+    if (numbers.length <= 8) {
+      return numbers.replace(/(\d{2})(\d{3})(\d{0,3})/, '$1.$2.$3');
+    }
+    if (numbers.length <= 12) {
+      return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{0,4})/, '$1.$2.$3/$4');
+    }
+    return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2})/, '$1.$2.$3/$4-$5');
+  };
+
   const validatePassword = (password: string) => {
     return {
       minLength: password.length >= 6,
@@ -231,6 +251,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         phone: phoneNumber,
         phoneCountryCode: countryCode,
         cpf: formatCPF(profile.cpf || ''),
+        cnpj: formatCNPJ(profile.cnpj || ''),
+        company_name: profile.company_name || '',
+        type: (profile.type as 'PF' | 'PJ') || 'PF',
         oab: formatOAB(profile.oab || ''),
         city: profile.city || '',
         state: stateValue,
@@ -328,6 +351,10 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
     if (name === 'cpf') {
       newValue = formatCPF(value);
+    }
+
+    if (name === 'cnpj') {
+      newValue = formatCNPJ(value);
     }
 
     if (name === 'oab') {
@@ -574,7 +601,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
           last_name: formData.last_name,
           phone: fullPhone,
           phone_country_code: formData.phoneCountryCode,
-          cpf: formData.cpf ? formData.cpf.replace(/\D/g, '') : null,
+          cpf: formData.type === 'PF' && formData.cpf ? formData.cpf.replace(/\D/g, '') : null,
+          cnpj: formData.type === 'PJ' && formData.cnpj ? formData.cnpj.replace(/\D/g, '') : null,
+          company_name: formData.type === 'PJ' ? formData.company_name : null,
           oab: formData.oab || null,
           city: formData.city,
           state: formData.state,
@@ -898,39 +927,58 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <label htmlFor="first_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                    Nome *
-                  </label>
-                  <input
-                    type="text"
-                    id="first_name"
-                    name="first_name"
-                    value={formData.first_name}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                    style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                  />
-                </div>
+              {formData.type === 'PF' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                  <div>
+                    <label htmlFor="first_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      Nome *
+                    </label>
+                    <input
+                      type="text"
+                      id="first_name"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="last_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                    Sobrenome *
+                  <div>
+                    <label htmlFor="last_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      Sobrenome *
+                    </label>
+                    <input
+                      type="text"
+                      id="last_name"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <label htmlFor="company_name" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                    Razão Social *
                   </label>
                   <input
                     type="text"
-                    id="last_name"
-                    name="last_name"
-                    value={formData.last_name}
+                    id="company_name"
+                    name="company_name"
+                    value={formData.company_name}
                     onChange={handleInputChange}
                     required
+                    placeholder="Digite a razão social da empresa"
                     className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
                     style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
                   />
                 </div>
-              </div>
+              )}
 
               <div className="mb-6">
                 <label htmlFor="phone" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
@@ -966,37 +1014,57 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 </div>
               </div>
 
-              <div className="mb-6">
-                <label htmlFor="cpf" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                  CPF <span className="text-xs opacity-60">(opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  id="cpf"
-                  name="cpf"
-                  value={formData.cpf}
-                  onChange={handleInputChange}
-                  placeholder="000.000.000-00"
-                  className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                />
-              </div>
+              {formData.type === 'PF' ? (
+                <>
+                  <div className="mb-6">
+                    <label htmlFor="cpf" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      CPF <span className="text-xs opacity-60">(opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="cpf"
+                      name="cpf"
+                      value={formData.cpf}
+                      onChange={handleInputChange}
+                      placeholder="000.000.000-00"
+                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    />
+                  </div>
 
-              <div className="mb-6">
-                <label htmlFor="oab" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                  OAB <span className="text-xs opacity-60">(opcional)</span>
-                </label>
-                <input
-                  type="text"
-                  id="oab"
-                  name="oab"
-                  value={formData.oab}
-                  onChange={handleInputChange}
-                  placeholder="Digite o número da OAB (opcional)"
-                  className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
-                  style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
-                />
-              </div>
+                  <div className="mb-6">
+                    <label htmlFor="oab" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                      OAB <span className="text-xs opacity-60">(opcional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="oab"
+                      name="oab"
+                      value={formData.oab}
+                      onChange={handleInputChange}
+                      placeholder="Digite o número da OAB (opcional)"
+                      className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                      style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div className="mb-6">
+                  <label htmlFor="cnpj" className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                    CNPJ <span className="text-xs opacity-60">(opcional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="cnpj"
+                    name="cnpj"
+                    value={formData.cnpj}
+                    onChange={handleInputChange}
+                    placeholder="00.000.000/0000-00"
+                    className="w-full min-w-0 px-3 sm:px-4 py-2 rounded-lg focus:outline-none text-sm"
+                    style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.border, border: `1px solid ${colors.border}` }}
+                  />
+                </div>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
