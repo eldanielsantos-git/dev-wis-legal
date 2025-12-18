@@ -780,8 +780,12 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full">
           <section className="mb-6 sm:mb-8 text-center">
-            <h1 className="text-3xl sm:text-4xl font-title font-bold mb-2" style={{ color: colors.textPrimary }}>Meu Perfil</h1>
-            <p className="text-sm sm:text-base text-gray-400">Gerencie suas informações pessoais e configurações</p>
+            <h1 className="text-3xl sm:text-4xl font-title font-bold mb-2" style={{ color: colors.textPrimary }}>
+              {formData.type === 'PJ' ? 'Meu Perfil Corporativo' : 'Meu Perfil'}
+            </h1>
+            <p className="text-sm sm:text-base text-gray-400">
+              {formData.type === 'PJ' ? 'Gerencie suas informações corporativas e configurações' : 'Gerencie suas informações pessoais e configurações'}
+            </p>
           </section>
 
           {/* Tabs Navigation */}
