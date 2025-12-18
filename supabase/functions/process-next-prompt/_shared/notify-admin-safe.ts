@@ -11,7 +11,7 @@ export interface NotifyAdminParams {
 export function notifyAdminSafe(params: NotifyAdminParams): void {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const notificationsEnabled = Deno.env.get('ADMIN_NOTIFICATIONS_ENABLED');
 
     if (!supabaseUrl || !supabaseServiceKey) {
