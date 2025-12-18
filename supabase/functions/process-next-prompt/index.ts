@@ -1,6 +1,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
 import { notifyAdminSafe } from './_shared/notify-admin-safe.ts';
+import { validateAnalysisJSON, formatValidationErrorMessage, ValidationResult } from './json-validator.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -133,6 +134,124 @@ async function notifyModelSwitch(
   }
 }
 
+async function registerAnalysisError(
+  supabase: any,
+  processoId: string,
+  userId: string,
+  analysisResultId: string,
+  promptTitle: string,
+  executionOrder: number,
+  validation: ValidationResult,
+  errorMessage: string
+): Promise<string> {
+  const { data, error } = await supabase
+    .from('analysis_errors')
+    .insert({
+      processo_id: processoId,
+      user_id: userId,
+      analysis_result_id: analysisResultId,
+      error_type: 'validation_error',
+      error_category: 'json_validation',
+      error_message: errorMessage,
+      error_details: {
+        validation_result: validation,
+        errors: validation.errors,
+        warnings: validation.warnings,
+        diagnostics: validation.diagnostics
+      },
+      severity: 'high',
+      current_stage: 'processing',
+      prompt_title: promptTitle,
+      execution_order: executionOrder,
+      recovery_attempted: false,
+      recovery_successful: false,
+      admin_notified: false,
+      occurred_at: new Date().toISOString()
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    console.error('❌ Erro ao registrar erro de validação:', error);
+    throw new Error(`Falha ao registrar erro: ${error.message}`);
+  }
+
+  console.log(`✅ Erro de validação registrado: ${data.id}`);
+  return data.id;
+}
+
+async function triggerAdminErrorEmail(
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  processoId: string,
+  analysisResultId: string,
+  promptTitle: string,
+  errorMessage: string,
+  errorDetails: any
+): Promise<void> {
+  try {
+    console.log(`📧 Disparando email de erro para admin...`);
+
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-admin-analysis-error`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({
+        processo_id: processoId,
+        analysis_result_id: analysisResultId,
+        prompt_title: promptTitle,
+        error_message: errorMessage,
+        error_details: errorDetails,
+        severity: 'high',
+        error_type: 'validation_error'
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Erro ao disparar email: ${response.status} - ${errorText}`);
+    } else {
+      console.log(`✅ Email de erro disparado com sucesso`);
+    }
+  } catch (error) {
+    console.error(`❌ Exceção ao disparar email:`, error);
+  }
+}
+
+async function getTokenLimitForContext(
+  supabase: any,
+  processo: any
+): Promise<number> {
+  const isComplexFile = processo.is_chunked ||
+    (processo.transcricao?.totalPages && processo.transcricao.totalPages >= 1000);
+
+  const contextKey = isComplexFile ? 'analysis_complex_files' : 'analysis_small_files';
+
+  console.log(`🔧 Buscando limite de tokens para contexto: ${contextKey}`);
+
+  const { data, error } = await supabase
+    .from('token_limits_config')
+    .select('max_output_tokens')
+    .eq('context_key', contextKey)
+    .eq('is_active', true)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`❌ Erro ao buscar limite de tokens:`, error);
+    throw new Error(`Falha ao buscar limite de tokens: ${error.message}`);
+  }
+
+  if (!data) {
+    throw new Error(`Limite de tokens não configurado para contexto: ${contextKey}`);
+  }
+
+  console.log(`✅ Limite de tokens obtido: ${data.max_output_tokens} para ${contextKey}`);
+
+  return data.max_output_tokens;
+}
+
 async function sendProcessCompletedNotification(
   supabase: any,
   processo_id: string,
@@ -156,24 +275,32 @@ async function sendProcessCompletedNotification(
       ? `${durationMinutes}m ${durationSeconds}s`
       : `${durationSeconds}s`;
 
-    notifyAdminSafe({
-      type: 'analysis_completed',
-      title: 'Análise Concluída',
-      message: 'Análise de processo concluída com sucesso',
-      severity: 'success',
-      metadata: {
-        processo_id,
-        file_name: file_name || 'N/A',
-        user_email: userData?.email || 'N/A',
-        user_name: userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || 'N/A' : 'N/A',
-        duration: durationText,
-        is_complex: false,
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    await fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${supabaseServiceKey}`,
       },
-      userId: user_id,
-      processoId: processo_id,
+      body: JSON.stringify({
+        email: userData?.email,
+        user_name: userData?.first_name || 'Usuário',
+        processo_id,
+        file_name,
+        duration: durationText,
+      }),
+    });
+
+    await supabase.from('notifications').insert({
+      user_id,
+      type: 'analysis_completed',
+      message: `Análise do processo "${file_name}" concluída com sucesso!`,
+      related_processo_id: processo_id,
     });
   } catch (error) {
-    console.warn('Error sending process completed notification:', error);
+    console.error('Erro ao enviar notificação de processo concluído:', error);
   }
 }
 
@@ -183,38 +310,45 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const { processo_id } = await req.json();
+
+    if (!processo_id) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'Missing processo_id' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')!;
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing Authorization header');
-    }
-
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    const token = authHeader.replace('Bearer ', '');
-    const isServiceKeyCall = token === supabaseServiceKey;
+    console.log(`📋 Obtendo próximo prompt para processo ${processo_id}...`);
 
-    if (!isServiceKeyCall) {
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    const { data: lockResult, error: lockError } = await supabase
+      .rpc('acquire_next_prompt_lock', { p_processo_id: processo_id });
 
-      if (authError || !user) {
-        throw new Error('Unauthorized');
-      }
-    } else {
-      console.log('🔑 Chamada interna com service key detectada');
+    if (lockError) {
+      console.error('❌ Erro ao obter lock:', lockError);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Falha ao obter lock' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { processo_id } = await req.json();
-
-    if (!processo_id) {
-      throw new Error('processo_id é obrigatório');
+    if (!lockResult) {
+      console.log('⏭️ Nenhum prompt pendente ou já em processamento');
+      return new Response(
+        JSON.stringify({ success: true, completed: true, message: 'No more pending prompts' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const callId = crypto.randomUUID().slice(0, 8);
-    console.log(`\n[${callId}] 🔄 Iniciando processamento do próximo prompt para processo ${processo_id}`);
+    const nextResult = lockResult;
+    console.log(`✅ Lock obtido: ${nextResult.id} - ${nextResult.prompt_title}`);
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
@@ -223,394 +357,359 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (processoError || !processo) {
+      console.error('❌ Erro ao buscar processo:', processoError);
       throw new Error('Processo não encontrado');
     }
 
-    if (processo.status === 'completed') {
-      console.log('✅ Processo já concluído');
-      return new Response(
-        JSON.stringify({
-          success: true,
-          completed: true,
-          message: 'Processo já concluído',
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    const models = await getActiveModelsOrderedByPriority(supabase);
+
+    if (models.length === 0) {
+      throw new Error('Nenhum modelo LLM ativo disponível');
     }
 
-    console.log(`[${callId}] 🔒 Tentando adquirir lock para processar próximo prompt...`);
-
-    const now = new Date().toISOString();
-    const lockTimeout = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-
-    const { data: lockedResults, error: lockError } = await supabase.rpc('acquire_next_prompt_lock', {
-      p_processo_id: processo_id,
-      p_now: now,
-      p_lock_timeout: lockTimeout
-    });
-
-    if (lockError) {
-      console.error(`[${callId}] ❌ Erro ao adquirir lock:`, lockError);
-      throw new Error('Erro ao adquirir lock: ' + lockError.message);
-    }
-
-    const nextResult = lockedResults?.[0];
-
-    if (!nextResult) {
-      console.log(`[${callId}] ⏸️ Nenhum prompt disponível para processar (todos em andamento ou concluídos)`);
-
-      const { data: allResults } = await supabase
-        .from('analysis_results')
-        .select('status')
-        .eq('processo_id', processo_id);
-
-      const allCompleted = allResults?.every(r => r.status === 'completed');
-
-      if (allCompleted) {
-        console.log(`[${callId}] 🎉 Todos os prompts foram processados`);
-
-        await supabase
-          .from('processos')
-          .update({
-            status: 'completed',
-            analysis_completed_at: new Date().toISOString(),
-          })
-          .eq('id', processo_id);
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            completed: true,
-            message: 'Análise concluída com sucesso',
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      } else {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            completed: false,
-            message: 'Nenhum prompt disponível no momento (processamento em andamento)',
-          }),
-          {
-            status: 200,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-    }
-
-    console.log(`[${callId}] ✅ Lock adquirido para prompt: ${nextResult.prompt_title} (ordem ${nextResult.execution_order})`);
-    console.log(`[${callId}] 📝 Iniciando processamento...`);
-
-    if (processo.is_chunked && processo.total_chunks_count > 0) {
-      console.log(`📦 Processo chunkeado detectado: ${processo.total_chunks_count} chunks`);
-
-      const { data: chunks, error: chunksError } = await supabase
-        .from('process_chunks')
-        .select('*')
-        .eq('processo_id', processo_id)
-        .order('chunk_index', { ascending: true });
-
-      if (chunksError || !chunks || chunks.length === 0) {
-        throw new Error('Chunks não encontrados');
-      }
-
-      console.log(`🔍 Verificando uploads dos chunks...`);
-
-      for (const chunk of chunks) {
-        if (!chunk.gemini_file_uri || chunk.gemini_file_state !== 'ACTIVE') {
-          console.log(`📤 Upload necessário para chunk ${chunk.chunk_index}/${chunks.length}`);
-
-          try {
-            const uploadResponse = await fetch(`${supabaseUrl}/functions/v1/upload-to-gemini`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({
-                processo_id: processo_id,
-                chunk_id: chunk.id,
-              }),
-            });
-
-            if (!uploadResponse.ok) {
-              const errorData = await uploadResponse.json();
-              throw new Error(`Falha no upload do chunk ${chunk.chunk_index}: ${errorData.error}`);
-            }
-
-            const uploadData = await uploadResponse.json();
-            console.log(`✅ Chunk ${chunk.chunk_index} enviado: ${uploadData.file_uri}`);
-          } catch (uploadError: any) {
-            console.error(`❌ Erro no upload do chunk ${chunk.chunk_index}:`, uploadError);
-            throw new Error(`Falha no upload do chunk ${chunk.chunk_index}: ${uploadError.message}`);
-          }
-        } else {
-          console.log(`✅ Chunk ${chunk.chunk_index} já enviado`);
-        }
-      }
-
-      console.log(`✅ Todos os chunks prontos para processamento`);
-    }
-
-    const activeModels = await getActiveModelsOrderedByPriority(supabase);
-
-    if (activeModels.length === 0) {
-      throw new Error('Nenhum modelo ativo encontrado');
-    }
-
-    console.log(`🤖 ${activeModels.length} modelo(s) disponível(is)`);
-
-    let lastError: Error | null = null;
+    let lastError = null;
     let attemptNumber = 0;
+    const startTime = Date.now();
 
-    for (const model of activeModels) {
-      attemptNumber++;
+    for (const model of models) {
+      try {
+        attemptNumber++;
 
-      const modelName = model.display_name || model.name;
-      const modelId = model.system_model || model.model_id;
-      const temperature = model.temperature ?? 0.2;
-      const maxTokens = model.max_tokens ?? 8192;
+        console.log(`🤖 Tentativa ${attemptNumber}: usando modelo ${model.name}`);
 
-      console.log(`\n🔍 Tentativa ${attemptNumber}: ${modelName}`);
-
-      await updateProcessoModelInfo(
-        supabase,
-        processo_id,
-        model.id,
-        modelName,
-        attemptNumber > 1,
-        attemptNumber > 1 ? 'Fallback devido a erro no modelo anterior' : null
-      );
-
-      if (attemptNumber > 1) {
-        const previousModel = activeModels[attemptNumber - 2];
-        const previousModelName = previousModel.display_name || previousModel.name;
-        await notifyModelSwitch(
-          supabase,
-          processo_id,
-          previousModelName,
-          modelName,
-          'Modelo anterior indisponível ou com erro'
-        );
-        console.log(`📢 Notificação de troca de modelo enviada: ${previousModelName} → ${modelName}`);
-      }
-
-      const shouldUseFileApi = processo.is_chunked
-        ? (await supabase
-            .from('process_chunks')
-            .select('gemini_file_uri')
-            .eq('processo_id', processo_id)
-            .limit(1)
-            .maybeSingle()).data?.gemini_file_uri
-        : processo.gemini_file_uri && processo.gemini_file_state === 'ACTIVE';
-
-      if (shouldUseFileApi) {
-        console.log('📂 Usando File API do Gemini');
-
-        console.log(`🏃 Marcando prompt como 'running': ${nextResult.prompt_title}`);
-        const { error: runningUpdateError } = await supabase
-          .from('analysis_results')
-          .update({
-            status: 'running',
-            processing_at: new Date().toISOString()
-          })
-          .eq('id', nextResult.id);
-
-        if (runningUpdateError) {
-          console.error(`❌ Erro ao marcar como running:`, runningUpdateError);
+        if (models.length > 1 && attemptNumber > 1) {
+          const previousModel = models[attemptNumber - 2];
+          await updateProcessoModelInfo(
+            supabase,
+            processo_id,
+            model.id,
+            model.name,
+            true,
+            `Erro no modelo ${previousModel.name}`
+          );
+          await notifyModelSwitch(
+            supabase,
+            processo_id,
+            previousModel.name,
+            model.name,
+            'Erro no modelo anterior'
+          );
+        } else if (attemptNumber === 1) {
+          await updateProcessoModelInfo(supabase, processo_id, model.id, model.name, false);
         }
 
-        const startTime = Date.now();
+        const modelName = model.system_model || model.model_id;
+        const geminiModel = genAI.getGenerativeModel({ model: modelName });
+        const temperature = model.temperature ?? 0.1;
+        const maxTokens = await getTokenLimitForContext(supabase, processo);
 
-        try {
-          const genAI = new GoogleGenerativeAI(geminiApiKey);
-          const geminiModel = genAI.getGenerativeModel({ model: modelId });
+        const parts: any[] = [];
 
-          const parts: any[] = [];
+        if (processo.pdf_base64) {
+          console.log('📄 Usando PDF base64...');
 
-          if (processo.is_chunked && processo.total_chunks_count > 0) {
-            console.log(`📦 Carregando ${processo.total_chunks_count} chunks...`);
+          const useChunks = processo.is_chunked &&
+            nextResult.prompt_type === 'forensic' &&
+            nextResult.prompt_title !== 'Conclusões e Perspectivas';
 
-            const { data: chunks, error: chunksError } = await supabase
-              .from('process_chunks')
+          if (useChunks) {
+            console.log('🧩 Processando chunks do PDF...');
+
+            const { data: chunks } = await supabase
+              .from('processo_chunks')
               .select('*')
               .eq('processo_id', processo_id)
               .order('chunk_index', { ascending: true });
 
-            if (chunksError || !chunks || chunks.length === 0) {
-              throw new Error('Chunks não encontrados');
+            if (!chunks || chunks.length === 0) {
+              throw new Error('Nenhum chunk encontrado para processo chunked');
             }
 
-            if (chunks.length >= 3) {
-              console.log(`⚡ Processando ${chunks.length} chunks individualmente para evitar limite de tokens`);
+            console.log(`📦 Encontrados ${chunks.length} chunks`);
 
-              const chunkResults: string[] = [];
-              let totalTokensUsed = 0;
+            const chunkResults: string[] = [];
+            let totalTokensUsed = 0;
+
+            for (const chunk of chunks) {
+              console.log(`⚙️ Processando chunk ${chunk.chunk_index + 1}/${chunks.length}...`);
+
+              if (!chunk.pdf_base64) {
+                throw new Error(`Chunk ${chunk.chunk_index} sem PDF base64`);
+              }
+
+              const chunkResult = await geminiModel.generateContent({
+                contents: [
+                  {
+                    role: 'user',
+                    parts: [
+                      {
+                        inlineData: {
+                          mimeType: 'application/pdf',
+                          data: chunk.pdf_base64,
+                        },
+                      },
+                      { text: nextResult.prompt_content },
+                    ],
+                  },
+                ],
+                systemInstruction: nextResult.system_prompt || undefined,
+                generationConfig: {
+                  temperature,
+                  maxOutputTokens: maxTokens,
+                },
+              });
+
+              const response = await chunkResult.response;
+              let chunkText = response.text();
+
+              const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
+              totalTokensUsed += tokensUsed;
+
+              console.log(`✅ Chunk ${chunk.chunk_index + 1} processado: ${tokensUsed} tokens`);
+
+              chunkText = chunkText.trim();
+              if (chunkText.startsWith('```json')) {
+                chunkText = chunkText.replace(/^```json\n?/, '');
+              }
+              if (chunkText.startsWith('```')) {
+                chunkText = chunkText.replace(/^```\n?/, '');
+              }
+              if (chunkText.endsWith('```')) {
+                chunkText = chunkText.replace(/\n?```$/, '');
+              }
+              chunkText = chunkText.trim();
+
+              chunkResults.push(chunkText);
+            }
+
+            console.log(`🔄 Consolidando ${chunkResults.length} resultados...`);
+
+            const combinationPrompt = `Você está combinando ${chunks.length} análises parciais de um documento dividido em partes.\n\nANÁLISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas análises em uma única análise completa e coerente, removendo duplicações e garantindo consistência.\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua texto introdutório como \"Com base na consolidação...\" ou explicações. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: começando com \"{\" para JSON).`;
+
+            const combinationResult = await geminiModel.generateContent({
+              contents: [{ role: 'user', parts: [{ text: combinationPrompt }] }],
+              generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: maxTokens,
+              },
+            });
+
+            const response = await combinationResult.response;
+            let text = response.text();
+
+            const combinationTokens = response.usageMetadata?.totalTokenCount || 0;
+            totalTokensUsed += combinationTokens;
+
+            console.log(`✅ Combinação concluída: ${combinationTokens} tokens`);
+            console.log(`📊 Total de tokens: ${totalTokensUsed}`);
+            console.log(`📄 Tamanho do texto: ${text.length} caracteres`);
+
+            text = text.trim();
+            if (text.startsWith('```json')) {
+              text = text.replace(/^```json\n?/, '');
+            }
+            if (text.startsWith('```')) {
+              text = text.replace(/^```\n?/, '');
+            }
+            if (text.endsWith('```')) {
+              text = text.replace(/\n?```$/, '');
+            }
+            text = text.trim();
+
+            console.log(`📝 Salvando resultado: ${text.length} caracteres`);
+
+            if (!text || text.length === 0) {
+              console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\"`);
+            }
+
+            console.log(`🔍 Validando JSON antes de salvar...`);
+            const validation = validateAnalysisJSON(text, nextResult.prompt_title);
+
+            if (!validation.isValid) {
+              console.error(`❌ JSON INVÁLIDO OU INCOMPLETO:`, validation.errors);
+
+              const errorMessage = formatValidationErrorMessage(
+                processo_id,
+                nextResult.prompt_title,
+                validation
+              );
+
+              const errorId = await registerAnalysisError(
+                supabase,
+                processo_id,
+                processo.user_id,
+                nextResult.id,
+                nextResult.prompt_title,
+                nextResult.execution_order,
+                validation,
+                errorMessage
+              );
+
+              await triggerAdminErrorEmail(
+                supabaseUrl,
+                supabaseServiceKey,
+                processo_id,
+                nextResult.id,
+                nextResult.prompt_title,
+                errorMessage,
+                {
+                  validation_result: validation,
+                  error_id: errorId,
+                  content_length: text.length,
+                  content_preview: text.substring(0, 500)
+                }
+              );
+
+              await supabase
+                .from('analysis_results')
+                .update({
+                  status: 'failed',
+                  error_message: 'JSON inválido ou incompleto',
+                  error_details: { validation }
+                })
+                .eq('id', nextResult.id);
+
+              throw new Error(`Validação de JSON falhou: ${validation.errors.join(', ')}`);
+            }
+
+            console.log(`✅ JSON válido e completo`);
+
+            const executionTime = Date.now() - startTime;
+
+            console.log(`📝 Atualizando status para 'completed' - ${nextResult.prompt_title}`);
+            const { data: updateData, error: updateError } = await supabase
+              .from('analysis_results')
+              .update({
+                status: 'completed',
+                result_content: text,
+                execution_time_ms: executionTime,
+                tokens_used: totalTokensUsed,
+                current_model_id: model.id,
+                current_model_name: modelName,
+                completed_at: new Date().toISOString(),
+              })
+              .eq('id', nextResult.id)
+              .select();
+
+            if (updateError) {
+              console.error(`❌ ERRO ao atualizar status para 'completed':`, updateError);
+              throw new Error(`Falha ao atualizar status: ${updateError.message}`);
+            }
+
+            console.log(`✅ Status atualizado com sucesso:`, {
+              id: nextResult.id,
+              title: nextResult.prompt_title,
+              status: 'completed',
+              hasContent: !!text,
+              contentLength: text.length,
+              updated: !!updateData
+            });
+
+            await addModelAttempt(supabase, processo_id, model.id, modelName, 'success');
+            await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'success', null, null, executionTime);
+
+            console.log(`✅ Análise concluída: ${nextResult.prompt_title}`);
+
+            const { data: remainingPromptsChunk } = await supabase
+              .from('analysis_results')
+              .select('id')
+              .eq('processo_id', processo_id)
+              .eq('status', 'pending')
+              .limit(1);
+
+            const hasMorePrompts = remainingPromptsChunk && remainingPromptsChunk.length > 0;
+
+            if (hasMorePrompts) {
+              console.log('✅ Prompt concluído. Aguardando próxima chamada externa para processamento sequencial.');
+            } else {
+              console.log('🎉 Último prompt processado!');
+
+              await supabase
+                .from('processos')
+                .update({
+                  status: 'completed',
+                  completed_at: new Date().toISOString(),
+                  llm_model_switching: false,
+                })
+                .eq('id', processo_id);
+
+              await updateProcessoModelInfo(supabase, processo_id, null, null, false);
+
+              await sendProcessCompletedNotification(
+                supabase,
+                processo_id,
+                processo.file_name,
+                processo.user_id,
+                processo.created_at
+              );
+            }
+
+            return new Response(
+              JSON.stringify({
+                success: true,
+                completed: !hasMorePrompts,
+                message: hasMorePrompts ? 'Prompt processado com sucesso. Há mais prompts pendentes.' : 'Todos os prompts foram processados com sucesso',
+                tokens_used: totalTokensUsed,
+                execution_time_ms: executionTime,
+                has_more_prompts: hasMorePrompts,
+              }),
+              {
+                status: 200,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              }
+            );
+          }
+
+          parts.push({
+            inlineData: {
+              mimeType: 'application/pdf',
+              data: processo.pdf_base64,
+            },
+          });
+        } else {
+          console.log('📄 Usando File API...');
+
+          const { data: chunks } = await supabase
+            .from('processo_chunks')
+            .select('*')
+            .eq('processo_id', processo_id)
+            .order('chunk_index', { ascending: true });
+
+          if (chunks && chunks.length > 0) {
+            console.log(`📦 Processo chunked com ${chunks.length} chunks`);
+
+            const useChunks = processo.is_chunked &&
+              nextResult.prompt_type === 'forensic' &&
+              nextResult.prompt_title !== 'Conclusões e Perspectivas';
+
+            if (!useChunks) {
+              console.log('⚠️ Análise de Conclusão - ignorando chunks');
+              parts.push({
+                fileData: {
+                  mimeType: processo.gemini_file_mime_type,
+                  fileUri: processo.gemini_file_uri,
+                },
+              });
+            } else {
+              console.log('✅ Usando chunks para análise forensic');
 
               for (const chunk of chunks) {
                 if (!chunk.gemini_file_uri) {
                   throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
                 }
 
-                console.log(`📄 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
+                console.log(`📄 Adicionando chunk ${chunk.chunk_index}: ${chunk.gemini_file_uri}`);
 
-                const chunkParts = [
-                  {
-                    fileData: {
-                      mimeType: 'application/pdf',
-                      fileUri: chunk.gemini_file_uri,
-                    },
-                  },
-                  {
-                    text: `${nextResult.prompt_content}\n\nIMPORTANTE: Esta é a parte ${chunk.chunk_index} de ${chunks.length} do documento. Analise apenas este trecho e forneça os resultados correspondentes.`
-                  }
-                ];
-
-                const chunkResult = await geminiModel.generateContent({
-                  contents: [{ role: 'user', parts: chunkParts }],
-                  systemInstruction: nextResult.system_prompt || undefined,
-                  generationConfig: {
-                    temperature,
-                    maxOutputTokens: maxTokens,
+                parts.push({
+                  fileData: {
+                    mimeType: 'application/pdf',
+                    fileUri: chunk.gemini_file_uri,
                   },
                 });
-
-                const chunkResponse = await chunkResult.response;
-                let chunkText = chunkResponse.text().trim();
-
-                const chunkTokens = chunkResponse.usageMetadata?.totalTokenCount || 0;
-                totalTokensUsed += chunkTokens;
-
-                console.log(`✅ Chunk ${chunk.chunk_index} processado: ${chunkTokens} tokens`);
-
-                if (chunkText.startsWith('```json')) {
-                  chunkText = chunkText.replace(/^```json\n?/, '');
-                }
-                if (chunkText.startsWith('```')) {
-                  chunkText = chunkText.replace(/^```\n?/, '');
-                }
-                if (chunkText.endsWith('```')) {
-                  chunkText = chunkText.replace(/\n?```$/, '');
-                }
-
-                chunkResults.push(chunkText.trim());
               }
 
-              console.log(`🔄 Combinando resultados de ${chunks.length} chunks...`);
-
-              const combinationPrompt = `Você está combinando ${chunks.length} análises parciais de um documento dividido em partes.\n\nANÁLISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas análises em uma única análise completa e coerente, removendo duplicações e garantindo consistência.\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua texto introdutório como \"Com base na consolidação...\" ou explicações. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: começando com \"{\" para JSON).`;
-
-              const combinationResult = await geminiModel.generateContent({
-                contents: [{ role: 'user', parts: [{ text: combinationPrompt }] }],
-                generationConfig: {
-                  temperature: 0.1,
-                  maxOutputTokens: maxTokens,
-                },
-              });
-
-              const response = await combinationResult.response;
-              let text = response.text();
-
-              const combinationTokens = response.usageMetadata?.totalTokenCount || 0;
-              totalTokensUsed += combinationTokens;
-
-              console.log(`✅ Combinação concluída: ${combinationTokens} tokens`);
-              console.log(`📊 Total de tokens: ${totalTokensUsed}`);
-              console.log(`📄 Tamanho do texto: ${text.length} caracteres`);
-
-              text = text.trim();
-              if (text.startsWith('```json')) {
-                text = text.replace(/^```json\n?/, '');
-              }
-              if (text.startsWith('```')) {
-                text = text.replace(/^```\n?/, '');
-              }
-              if (text.endsWith('```')) {
-                text = text.replace(/\n?```$/, '');
-              }
-              text = text.trim();
-
-              console.log(`📝 Salvando resultado: ${text.length} caracteres`);
-
-              if (!text || text.length === 0) {
-                console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\"`);
-              }
-
-              const executionTime = Date.now() - startTime;
-
-              console.log(`📝 Atualizando status para 'completed' - ${nextResult.prompt_title}`);
-              const { data: updateData, error: updateError } = await supabase
-                .from('analysis_results')
-                .update({
-                  status: 'completed',
-                  result_content: text,
-                  execution_time_ms: executionTime,
-                  tokens_used: totalTokensUsed,
-                  current_model_id: model.id,
-                  current_model_name: modelName,
-                  completed_at: new Date().toISOString(),
-                })
-                .eq('id', nextResult.id)
-                .select();
-
-              if (updateError) {
-                console.error(`❌ ERRO ao atualizar status para 'completed':`, updateError);
-                throw new Error(`Falha ao atualizar status: ${updateError.message}`);
-              }
-
-              console.log(`✅ Status atualizado com sucesso:`, {
-                id: nextResult.id,
-                title: nextResult.prompt_title,
-                status: 'completed',
-                hasContent: !!text,
-                contentLength: text.length,
-                updated: !!updateData
-              });
-
-              await addModelAttempt(supabase, processo_id, model.id, modelName, 'success');
-              await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'success', null, null, executionTime);
-
-              console.log(`✅ Análise concluída: ${nextResult.prompt_title}`);
-
-              return new Response(
-                JSON.stringify({
-                  success: true,
-                  completed: false,
-                  message: 'Prompt processado com sucesso',
-                  tokens_used: totalTokensUsed,
-                  execution_time_ms: executionTime,
-                }),
-                {
-                  status: 200,
-                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                }
-              );
+              console.log(`✅ ${chunks.length} chunks adicionados ao prompt`);
             }
-
-            for (const chunk of chunks) {
-              if (!chunk.gemini_file_uri) {
-                throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
-              }
-
-              console.log(`📄 Adicionando chunk ${chunk.chunk_index}: ${chunk.gemini_file_uri}`);
-
-              parts.push({
-                fileData: {
-                  mimeType: 'application/pdf',
-                  fileUri: chunk.gemini_file_uri,
-                },
-              });
-            }
-
-            console.log(`✅ ${chunks.length} chunks adicionados ao prompt`);
           } else {
             parts.push({
               fileData: {
@@ -619,388 +718,230 @@ Deno.serve(async (req: Request) => {
               },
             });
           }
+        }
 
-          parts.push({ text: nextResult.prompt_content });
+        parts.push({ text: nextResult.prompt_content });
 
-          const result = await geminiModel.generateContent({
-            contents: [{ role: 'user', parts }],
-            systemInstruction: nextResult.system_prompt || undefined,
-            generationConfig: {
-              temperature,
-              maxOutputTokens: maxTokens,
-            },
-          });
+        const result = await geminiModel.generateContent({
+          contents: [{ role: 'user', parts }],
+          systemInstruction: nextResult.system_prompt || undefined,
+          generationConfig: {
+            temperature,
+            maxOutputTokens: maxTokens,
+          },
+        });
 
-          const response = await result.response;
-          let text = response.text();
+        const response = await result.response;
+        let text = response.text();
 
-          const executionTime = Date.now() - startTime;
-          const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
+        const executionTime = Date.now() - startTime;
+        const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
 
-          console.log(`📊 Tokens consumidos: ${tokensUsed}`);
-          console.log(`📄 Tamanho do texto (File API): ${text.length} caracteres`);
+        console.log(`📊 Tokens consumidos: ${tokensUsed}`);
+        console.log(`📄 Tamanho do texto (File API): ${text.length} caracteres`);
 
-          text = text.trim();
-          if (text.startsWith('```json')) {
-            text = text.replace(/^```json\n?/, '');
-          }
-          if (text.startsWith('```')) {
-            text = text.replace(/^```\n?/, '');
-          }
-          if (text.endsWith('```')) {
-            text = text.replace(/\n?```$/, '');
-          }
-          text = text.trim();
+        text = text.trim();
+        if (text.startsWith('```json')) {
+          text = text.replace(/^```json\n?/, '');
+        }
+        if (text.startsWith('```')) {
+          text = text.replace(/^```\n?/, '');
+        }
+        if (text.endsWith('```')) {
+          text = text.replace(/\n?```$/, '');
+        }
+        text = text.trim();
 
-          console.log(`📝 Salvando resultado (File API): ${text.length} caracteres`);
+        console.log(`📝 Salvando resultado (File API): ${text.length} caracteres`);
 
-          if (!text || text.length === 0) {
-            console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\" (File API)`);
-          }
+        if (!text || text.length === 0) {
+          console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\" (File API)`);
+        }
 
-          console.log(`📝 Atualizando status para 'completed' (File API) - ${nextResult.prompt_title}`);
-          const { data: updateData, error: updateError } = await supabase
-            .from('analysis_results')
-            .update({
-              status: 'completed',
-              result_content: text,
-              execution_time_ms: executionTime,
-              tokens_used: tokensUsed,
-              completed_at: new Date().toISOString(),
-              current_model_id: model.id,
-              current_model_name: modelName,
-            })
-            .eq('id', nextResult.id)
-            .select();
+        console.log(`🔍 Validando JSON antes de salvar (File API)...`);
+        const validation = validateAnalysisJSON(text, nextResult.prompt_title);
 
-          if (updateError) {
-            console.error(`❌ ERRO ao atualizar status para 'completed' (File API):`, updateError);
-            throw new Error(`Falha ao atualizar status: ${updateError.message}`);
-          }
+        if (!validation.isValid) {
+          console.error(`❌ JSON INVÁLIDO OU INCOMPLETO (File API):`, validation.errors);
 
-          console.log(`✅ Status atualizado com sucesso (File API):`, {
-            id: nextResult.id,
-            title: nextResult.prompt_title,
-            status: 'completed',
-            hasContent: !!text,
-            contentLength: text.length,
-            updated: !!updateData
-          });
+          const errorMessage = formatValidationErrorMessage(
+            processo_id,
+            nextResult.prompt_title,
+            validation
+          );
 
-          await supabase
-            .from('processos')
-            .update({ current_prompt_number: nextResult.execution_order })
-            .eq('id', processo_id);
+          const errorId = await registerAnalysisError(
+            supabase,
+            processo_id,
+            processo.user_id,
+            nextResult.id,
+            nextResult.prompt_title,
+            nextResult.execution_order,
+            validation,
+            errorMessage
+          );
 
-          await addModelAttempt(supabase, processo_id, model.id, modelName, 'success');
-          await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'success', null, null, executionTime);
-
-          console.log(`✅ Sucesso com modelo ${modelName} em ${executionTime}ms`);
-
-          const { data: remainingPrompts } = await supabase
-            .from('analysis_results')
-            .select('id')
-            .eq('processo_id', processo_id)
-            .eq('status', 'pending')
-            .limit(1);
-
-          if (remainingPrompts && remainingPrompts.length > 0) {
-            console.log('🔄 Disparando processamento do próximo prompt...');
-
-            fetch(`${supabaseUrl}/functions/v1/process-next-prompt`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao disparar próximo prompt:', err?.message);
-            });
-          } else {
-            console.log('🎉 Todos os prompts foram processados! Finalizando processo...');
-
-            await supabase
-              .from('processos')
-              .update({
-                status: 'completed',
-                analysis_completed_at: new Date().toISOString(),
-              })
-              .eq('id', processo_id);
-
-            const { data: processoData } = await supabase
-              .from('processos')
-              .select('file_name, user_id, created_at')
-              .eq('id', processo_id)
-              .single();
-
-            if (processoData) {
-              await sendProcessCompletedNotification(
-                supabase,
-                processo_id,
-                processoData.file_name,
-                processoData.user_id,
-                processoData.created_at
-              );
-            }
-
-            console.log('✅ Processo finalizado com sucesso!');
-          }
-
-          return new Response(
-            JSON.stringify({
-              success: true,
-              completed: false,
-              prompt_title: nextResult.prompt_title,
-              execution_time_ms: executionTime,
-              model_used: modelName,
-              attempt_number: attemptNumber,
-              method: 'file_api',
-            }),
+          await triggerAdminErrorEmail(
+            supabaseUrl,
+            supabaseServiceKey,
+            processo_id,
+            nextResult.id,
+            nextResult.prompt_title,
+            errorMessage,
             {
-              status: 200,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              validation_result: validation,
+              error_id: errorId,
+              content_length: text.length,
+              content_preview: text.substring(0, 500)
             }
           );
-        } catch (error: any) {
-          const executionTime = Date.now() - startTime;
-          console.error(`❌ Erro com modelo ${modelName}:`, error.message);
 
-          lastError = error;
+          await supabase
+            .from('analysis_results')
+            .update({
+              status: 'failed',
+              error_message: 'JSON inválido ou incompleto',
+              error_details: { validation }
+            })
+            .eq('id', nextResult.id);
 
-          await addModelAttempt(supabase, processo_id, model.id, modelName, 'failed');
-          await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'failed', error.message, error.code || null, executionTime);
-
-          if (attemptNumber < activeModels.length) {
-            console.log(`🔄 Tentando próximo modelo...`);
-            continue;
-          }
-        }
-      } else {
-        console.log('📦 Usando Base64 inline');
-
-        let base64Data: string | null = null;
-
-        if (processo.pdf_base64) {
-          base64Data = processo.pdf_base64;
-          console.log(`✅ PDF base64 carregado: ${(base64Data.length / 1024 / 1024).toFixed(2)}MB`);
-        } else {
-          throw new Error('PDF não disponível em base64 e File API não está disponível');
+          throw new Error(`Validação de JSON falhou: ${validation.errors.join(', ')}`);
         }
 
-        if (!base64Data) {
-          throw new Error('Falha ao obter dados do PDF');
-        }
+        console.log(`✅ JSON válido e completo (File API)`);
 
-        console.log(`🏃 Marcando prompt como 'running' (Base64): ${nextResult.prompt_title}`);
-        const { error: runningUpdateError } = await supabase
+        console.log(`📝 Atualizando status para 'completed' (File API) - ${nextResult.prompt_title}`);
+        const { data: updateData, error: updateError } = await supabase
           .from('analysis_results')
           .update({
-            status: 'running',
-            processing_at: new Date().toISOString()
+            status: 'completed',
+            result_content: text,
+            execution_time_ms: executionTime,
+            tokens_used: tokensUsed,
+            completed_at: new Date().toISOString(),
+            current_model_id: model.id,
+            current_model_name: modelName,
           })
-          .eq('id', nextResult.id);
+          .eq('id', nextResult.id)
+          .select();
 
-        if (runningUpdateError) {
-          console.error(`❌ Erro ao marcar como running (Base64):`, runningUpdateError);
+        if (updateError) {
+          console.error(`❌ ERRO ao atualizar status para 'completed' (File API):`, updateError);
+          throw new Error(`Falha ao atualizar status: ${updateError.message}`);
         }
 
-        const startTime = Date.now();
+        console.log(`✅ Status atualizado com sucesso (File API):`, {
+          id: nextResult.id,
+          title: nextResult.prompt_title,
+          status: 'completed',
+          hasContent: !!text,
+          contentLength: text.length,
+          updated: !!updateData
+        });
 
-        try {
-          const genAI = new GoogleGenerativeAI(geminiApiKey);
-          const geminiModel = genAI.getGenerativeModel({ model: modelId });
+        await supabase
+          .from('processos')
+          .update({ current_prompt_number: nextResult.execution_order })
+          .eq('id', processo_id);
 
-          const result = await geminiModel.generateContent({
-            contents: [
-              {
-                role: 'user',
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType: 'application/pdf',
-                      data: base64Data,
-                    },
-                  },
-                  { text: nextResult.prompt_content },
-                ],
-              },
-            ],
-            systemInstruction: nextResult.system_prompt || undefined,
-            generationConfig: {
-              temperature,
-              maxOutputTokens: maxTokens,
-            },
-          });
+        await addModelAttempt(supabase, processo_id, model.id, modelName, 'success');
+        await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'success', null, null, executionTime);
 
-          const response = await result.response;
-          let text = response.text();
+        console.log(`✅ Sucesso com modelo ${modelName} em ${executionTime}ms`);
 
-          const executionTime = Date.now() - startTime;
-          const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
+        const { data: remainingPrompts } = await supabase
+          .from('analysis_results')
+          .select('id')
+          .eq('processo_id', processo_id)
+          .eq('status', 'pending')
+          .limit(1);
 
-          console.log(`📊 Tokens consumidos: ${tokensUsed}`);
-          console.log(`📄 Tamanho do texto (Base64): ${text.length} caracteres`);
-
-          base64Data = null;
-
-          text = text.trim();
-          if (text.startsWith('```json')) {
-            text = text.replace(/^```json\n?/, '');
-          }
-          if (text.startsWith('```')) {
-            text = text.replace(/^```\n?/, '');
-          }
-          if (text.endsWith('```')) {
-            text = text.replace(/\n?```$/, '');
-          }
-          text = text.trim();
-
-          console.log(`📝 Salvando resultado (Base64): ${text.length} caracteres`);
-
-          if (!text || text.length === 0) {
-            console.error(`⚠️ AVISO: Conteúdo vazio para prompt \"${nextResult.prompt_title}\" (Base64)`);
-          }
-
-          console.log(`📝 Atualizando status para 'completed' (Base64) - ${nextResult.prompt_title}`);
-          const { data: updateData, error: updateError } = await supabase
-            .from('analysis_results')
-            .update({
-              status: 'completed',
-              result_content: text,
-              execution_time_ms: executionTime,
-              tokens_used: tokensUsed,
-              completed_at: new Date().toISOString(),
-              current_model_id: model.id,
-              current_model_name: modelName,
-            })
-            .eq('id', nextResult.id)
-            .select();
-
-          if (updateError) {
-            console.error(`❌ ERRO ao atualizar status para 'completed' (Base64):`, updateError);
-            throw new Error(`Falha ao atualizar status: ${updateError.message}`);
-          }
-
-          console.log(`✅ Status atualizado com sucesso (Base64):`, {
-            id: nextResult.id,
-            title: nextResult.prompt_title,
-            status: 'completed',
-            hasContent: !!text,
-            contentLength: text.length,
-            updated: !!updateData
-          });
-
-          await supabase
-            .from('processos')
-            .update({ current_prompt_number: nextResult.execution_order })
-            .eq('id', processo_id);
-
-          await addModelAttempt(supabase, processo_id, model.id, modelName, 'success');
-          await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'success', null, null, executionTime);
-
-          console.log(`✅ Sucesso com modelo ${modelName} em ${executionTime}ms`);
-
-          const { data: remainingPrompts } = await supabase
-            .from('analysis_results')
-            .select('id')
-            .eq('processo_id', processo_id)
-            .eq('status', 'pending')
-            .limit(1);
-
-          if (remainingPrompts && remainingPrompts.length > 0) {
-            console.log('🔄 Disparando processamento do próximo prompt...');
-
-            fetch(`${supabaseUrl}/functions/v1/process-next-prompt`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseServiceKey}`,
-              },
-              body: JSON.stringify({ processo_id }),
-            }).catch(err => {
-              console.error('❌ Erro ao disparar próximo prompt:', err?.message);
-            });
-          } else {
-            console.log('🎉 Todos os prompts foram processados! Finalizando processo...');
-
-            await supabase
-              .from('processos')
-              .update({
-                status: 'completed',
-                analysis_completed_at: new Date().toISOString(),
-              })
-              .eq('id', processo_id);
-
-            const { data: processoData } = await supabase
-              .from('processos')
-              .select('file_name, user_id, created_at')
-              .eq('id', processo_id)
-              .single();
-
-            if (processoData) {
-              await sendProcessCompletedNotification(
-                supabase,
-                processo_id,
-                processoData.file_name,
-                processoData.user_id,
-                processoData.created_at
-              );
-            }
-
-            console.log('✅ Processo finalizado com sucesso!');
-          }
+        if (remainingPrompts && remainingPrompts.length > 0) {
+          console.log('✅ Prompt concluído. Aguardando próxima chamada externa para processamento sequencial.');
 
           return new Response(
             JSON.stringify({
               success: true,
               completed: false,
-              prompt_title: nextResult.prompt_title,
-              execution_time_ms: executionTime,
-              model_used: modelName,
-              attempt_number: attemptNumber,
-              method: 'base64_inline',
+              message: 'Prompt processado com sucesso. Há mais prompts pendentes.',
+              has_more_prompts: true,
             }),
             {
               status: 200,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             }
           );
-        } catch (error: any) {
-          const executionTime = Date.now() - startTime;
-          console.error(`❌ Erro com modelo ${modelName}:`, error.message);
+        } else {
+          console.log('🎉 Todos os prompts foram processados!');
 
-          lastError = error;
+          await supabase
+            .from('processos')
+            .update({
+              status: 'completed',
+              completed_at: new Date().toISOString(),
+              llm_model_switching: false,
+            })
+            .eq('id', processo_id);
 
-          await addModelAttempt(supabase, processo_id, model.id, modelName, 'failed');
-          await recordExecution(supabase, processo_id, nextResult.id, model, attemptNumber, 'failed', error.message, error.code || null, executionTime);
+          await updateProcessoModelInfo(supabase, processo_id, null, null, false);
 
-          if (attemptNumber < activeModels.length) {
-            console.log(`🔄 Tentando próximo modelo...`);
-            continue;
-          }
+          await sendProcessCompletedNotification(
+            supabase,
+            processo_id,
+            processo.file_name,
+            processo.user_id,
+            processo.created_at
+          );
+
+          return new Response(
+            JSON.stringify({
+              success: true,
+              completed: true,
+              message: 'Todos os prompts foram processados com sucesso',
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
         }
+      } catch (modelError: any) {
+        console.error(`❌ Erro no modelo ${model.name}:`, modelError?.message);
+
+        lastError = modelError;
+
+        await addModelAttempt(supabase, processo_id, model.id, model.name, 'failed');
+        await recordExecution(
+          supabase,
+          processo_id,
+          nextResult.id,
+          model,
+          attemptNumber,
+          'failed',
+          modelError?.message || 'Unknown error',
+          modelError?.code || null,
+          Date.now() - startTime
+        );
+
+        if (attemptNumber < models.length) {
+          console.log(`🔄 Tentando próximo modelo...`);
+          continue;
+        }
+
+        throw modelError;
       }
     }
 
-    console.error(`❌ Todos os modelos falharam`);
-
-    await supabase
-      .from('analysis_results')
-      .update({
-        status: 'error',
-        error_message: lastError?.message || 'Todos os modelos falharam',
-      })
-      .eq('id', nextResult.id);
-
-    throw lastError || new Error('Todos os modelos falharam');
+    throw new Error(
+      `Todos os modelos falharam. Último erro: ${lastError?.message || 'Unknown'}`
+    );
   } catch (error: any) {
-    console.error('Erro no processamento:', error);
+    console.error('❌ Erro fatal:', error?.message);
 
     return new Response(
       JSON.stringify({
-        error: error?.message || 'Erro no processamento',
-        details: error?.stack,
+        success: false,
+        error: error?.message || 'Unknown error',
       }),
       {
         status: 500,
