@@ -413,8 +413,14 @@ export class ProcessosService {
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Erro ao buscar processos:', error);
-      throw new Error('Não foi possível carregar os processos');
+      console.error('❌ Erro ao buscar processos:', error);
+      console.error('❌ Detalhes do erro:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(`Não foi possível carregar os processos: ${error.message}`);
     }
 
     return data || [];
