@@ -235,7 +235,7 @@ function MyProcessDetailPageInner({
         refreshProcesso();
         loadAnalysisResults();
         loadShares();
-      }, 3000);
+      }, 500);
     };
 
     setupRealtimeAndPolling();

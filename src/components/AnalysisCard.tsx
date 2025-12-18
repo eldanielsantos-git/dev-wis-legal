@@ -57,11 +57,12 @@ export function AnalysisCard({
   const colors = getThemeColors(theme);
 
   React.useEffect(() => {
-    console.log(`🎴 AnalysisCard ${number} - ${title}:`, {
+    console.log(`🎴 AnalysisCard #${number} [${title}]:`, {
       status,
       isAvailable,
       isSelected,
-      executionTimeMs
+      executionTimeMs,
+      shouldShowSpinner: status === 'running' || status === 'processing'
     });
   }, [status, isAvailable, number, title, isSelected, executionTimeMs]);
 
