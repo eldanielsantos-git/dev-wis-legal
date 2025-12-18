@@ -40,7 +40,7 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
   {
     type: 'profile_complete',
     title: 'Perfil Wis',
-    description: 'Complete 100% dos dados do seu perfil',
+    description: 'Complete os dados do seu perfil',
     icon: User,
     color: '#10B981',
     requiredCount: 10,
