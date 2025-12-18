@@ -252,13 +252,16 @@ export class UserAchievementsService {
         .maybeSingle();
 
       if (!existingAchievement) {
-        await supabase
+        const { error: insertError } = await supabase
           .from('user_achievements')
           .insert({
             user_id: user.id,
-            achievement_type: 'profile_complete',
-            unlocked_at: new Date().toISOString()
+            achievement_type: 'profile_complete'
           });
+
+        if (insertError) {
+          console.error('Erro ao inserir conquista de perfil completo:', insertError);
+        }
       }
     }
   }
