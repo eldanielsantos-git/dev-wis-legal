@@ -730,12 +730,14 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
           >
             ← Voltar
           </button>
-          <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-4 md:mb-8 text-center">Complete seu Cadastro</h1>
+          <h1 className="text-2xl md:text-3xl font-title font-bold text-gray-900 mb-4 md:mb-8 text-center">
+            {userType === 'PF' ? 'Cadastro Pessoal' : 'Cadastro Corporativo'}
+          </h1>
           {error && <div className="mb-4 md:mb-6 p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
             <div className="flex flex-col items-center">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Foto de perfil <span className="text-gray-400 text-xs">(opcional)</span>
+                {userType === 'PF' ? 'Foto de perfil' : 'Logo da empresa'} <span className="text-gray-400 text-xs">(opcional)</span>
               </label>
               <div className="relative inline-block">
                 <div
