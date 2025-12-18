@@ -323,6 +323,54 @@ Deno.serve(async (req: Request) => {
       console.log("✓ Error marked as notified");
     }
 
+    // Step 9: Enviar notificação Slack
+    console.log("Step 9: Sending Slack notification...");
+
+    try {
+      const slackPayload = {
+        type_slug: "analysis_failed",
+        title: `Erro em Análise - ${processo.file_name}`,
+        message: `**Usuário:** ${userProfile.first_name} ${userProfile.last_name} (${userProfile.email})
+**Plano:** ${planName}
+**Arquivo:** ${processo.file_name}
+**Análise:** ${errorData.prompt_title}
+**Tipo:** ${errorData.error_type}
+**Severity:** ${errorData.severity.toUpperCase()}
+
+${errorData.error_message}`,
+        severity: errorData.severity,
+        metadata: {
+          user_id: errorData.user_id,
+          processo_id: errorData.processo_id,
+          error_id: errorData.id,
+          error_type: errorData.error_type,
+          prompt_title: errorData.prompt_title,
+          execution_order: errorData.execution_order
+        },
+        user_id: errorData.user_id,
+        processo_id: errorData.processo_id
+      };
+
+      const slackResponse = await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(slackPayload)
+      });
+
+      if (slackResponse.ok) {
+        const slackResult = await slackResponse.json();
+        console.log("✓ Slack notification sent:", slackResult);
+      } else {
+        const slackError = await slackResponse.text();
+        console.error("Failed to send Slack notification:", slackResponse.status, slackError);
+      }
+    } catch (slackError) {
+      console.error("Error sending Slack notification (non-blocking):", slackError);
+    }
+
     console.log("=== SEND ADMIN ANALYSIS ERROR EMAIL - SUCCESS ===");
 
     return new Response(
