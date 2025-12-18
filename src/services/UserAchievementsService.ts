@@ -176,9 +176,7 @@ export class UserAchievementsService {
 
   static async getProfileCompletionPercentage(): Promise<number> {
     const { completedCount, totalCount } = await this.getProfileCompletionCount();
-    const percentage = Math.round((completedCount / totalCount) * 100);
-    console.log('[Achievement Debug] Profile completion:', { completedCount, totalCount, percentage });
-    return percentage;
+    return Math.round((completedCount / totalCount) * 100);
   }
 
   static async getAchievementProgress(): Promise<AchievementProgress[]> {
@@ -245,8 +243,6 @@ export class UserAchievementsService {
       throw new Error(`Erro ao desbloquear conquistas: ${error.message}`);
     }
 
-    console.log('[Achievement Debug] Profile completion check:', { profileCompletion, willUnlock: profileCompletion === 100 });
-
     if (profileCompletion === 100) {
       const { data: existingAchievement } = await supabase
         .from('user_achievements')
@@ -255,23 +251,14 @@ export class UserAchievementsService {
         .eq('achievement_type', 'profile_complete')
         .maybeSingle();
 
-      console.log('[Achievement Debug] Existing achievement:', existingAchievement);
-
       if (!existingAchievement) {
-        console.log('[Achievement Debug] Unlocking profile_complete achievement');
-        const { error: insertError } = await supabase
+        await supabase
           .from('user_achievements')
           .insert({
             user_id: user.id,
             achievement_type: 'profile_complete',
             unlocked_at: new Date().toISOString()
           });
-
-        if (insertError) {
-          console.error('[Achievement Debug] Error inserting achievement:', insertError);
-        } else {
-          console.log('[Achievement Debug] Achievement unlocked successfully');
-        }
       }
     }
   }

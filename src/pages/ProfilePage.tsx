@@ -290,6 +290,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
       setIsLoadingAchievements(true);
       try {
+        await UserAchievementsService.checkAndUnlockAchievements();
         const [progress, count] = await Promise.all([
           UserAchievementsService.getAchievementProgress(),
           UserAchievementsService.getCompletedProcessesCount()
