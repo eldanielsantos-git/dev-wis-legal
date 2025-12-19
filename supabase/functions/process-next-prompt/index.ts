@@ -23,6 +23,7 @@ interface ProcessoData {
   file_name: string;
   user_id: string;
   pdf_base64: string | null;
+  is_chunked: boolean;
 }
 
 async function getMaxOutputTokens(
@@ -53,6 +54,43 @@ async function getMaxOutputTokens(
   } catch (error) {
     console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
     return fallbackValue;
+  }
+}
+
+function isTimeoutError(error: any): boolean {
+  const errorString = error?.message?.toLowerCase() || error?.toString()?.toLowerCase() || '';
+  return (
+    errorString.includes('connection closed') ||
+    errorString.includes('timeout') ||
+    errorString.includes('timed out') ||
+    errorString.includes('deadline exceeded') ||
+    error?.name === 'Http'
+  );
+}
+
+async function scheduleRetry(
+  supabase: any,
+  processo_id: string,
+  analysis_result_id: string,
+  error: any
+): Promise<void> {
+  console.log(`🔄 Agendando retry automático devido a timeout...`);
+
+  try {
+    await supabase
+      .from('analysis_results')
+      .update({
+        status: 'pending',
+        processing_at: null,
+        error_message: `Timeout detectado, retry agendado: ${error?.message || 'Unknown error'}`,
+        retry_count: supabase.raw('COALESCE(retry_count, 0) + 1'),
+        last_retry_at: new Date().toISOString(),
+      })
+      .eq('id', analysis_result_id);
+
+    console.log(`✅ Retry agendado - prompt voltou para pending`);
+  } catch (retryError) {
+    console.error('❌ Erro ao agendar retry:', retryError);
   }
 }
 
@@ -126,7 +164,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
-      .select('id, file_name, user_id, pdf_base64')
+      .select('id, file_name, user_id, pdf_base64, is_chunked')
       .eq('id', processo_id)
       .single();
 
@@ -164,9 +202,10 @@ Deno.serve(async (req: Request) => {
       max_tokens: activeModel.model_config?.max_tokens || 60000,
     };
 
+    const contextKey = processoData.is_chunked ? 'analysis_complex_files' : 'analysis_small_files';
     const configuredMaxTokens = await getMaxOutputTokens(
       supabase,
-      'forensic_analysis',
+      contextKey,
       modelData.max_tokens
     );
 
@@ -399,11 +438,29 @@ Deno.serve(async (req: Request) => {
         const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+        if (isTimeoutError(error)) {
+          console.log('⏱️ Timeout detectado, agendando retry automático...');
+          await scheduleRetry(supabase, processo_id!, analysis_result_id, error);
+
+          return new Response(
+            JSON.stringify({
+              success: false,
+              error: 'Timeout - retry agendado automaticamente',
+              timeout: true,
+              retry_scheduled: true,
+              processo_id,
+              analysis_result_id,
+            }),
+            { status: 408, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
         await supabase
           .from('analysis_results')
           .update({
             status: 'failed',
             processing_at: null,
+            error_message: error?.message || 'Erro desconhecido',
           })
           .eq('id', analysis_result_id);
 
