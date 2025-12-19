@@ -1,62 +1,26 @@
-export interface NotifyAdminParams {
-  type: string;
-  title: string;
-  message: string;
-  severity?: 'critical' | 'high' | 'medium' | 'low' | 'success';
-  metadata?: Record<string, unknown>;
-  userId?: string;
-  processoId?: string;
-}
-
-export function notifyAdminSafe(params: NotifyAdminParams): void {
+export async function notifyAdminSafe(data: any) {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const notificationsEnabled = Deno.env.get('ADMIN_NOTIFICATIONS_ENABLED');
-
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.warn('[notify-admin-safe] Missing Supabase credentials, skipping notification');
+      console.warn('⚠️ Admin notification skipped: missing env vars');
       return;
     }
 
-    if (notificationsEnabled === 'false') {
-      console.log('[notify-admin-safe] Notifications disabled by flag, skipping');
-      return;
-    }
-
-    const payload = {
-      type_slug: params.type,
-      title: params.title,
-      message: params.message,
-      severity: params.severity,
-      metadata: params.metadata || {},
-      user_id: params.userId,
-      processo_id: params.processoId,
-    };
-
-    const url = `${supabaseUrl}/functions/v1/send-admin-notification`;
-
-    fetch(url, {
+    const response = await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseServiceKey}`,
       },
-      body: JSON.stringify(payload),
-    })
-      .then(response => {
-        if (!response.ok) {
-          console.warn('[notify-admin-safe] Notification request failed:', response.status);
-        }
-      })
-      .catch(error => {
-        console.warn('[notify-admin-safe] Notification error (ignored):', error.message);
-      });
-  } catch (error) {
-    try {
-      console.warn('[notify-admin-safe] Critical error (ignored):', error instanceof Error ? error.message : 'Unknown');
-    } catch {
-      // Ignore even logging errors
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      console.warn('⚠️ Admin notification failed:', await response.text());
     }
+  } catch (error) {
+    console.warn('⚠️ Admin notification error:', error);
   }
 }
