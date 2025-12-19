@@ -16,21 +16,36 @@ interface AnalysisResult {
   prompt_content: string;
   system_prompt: string | null;
   execution_order: number;
+  retry_count?: number;
+  max_retries?: number;
 }
 
 interface ProcessoData {
   id: string;
   file_name: string;
   user_id: string;
+  created_at: string;
   pdf_base64: string | null;
   is_chunked: boolean;
   total_chunks: number | null;
+  total_chunks_count?: number;
   file_path: string | null;
+  gemini_file_uri: string | null;
+  gemini_file_state: string | null;
+  gemini_file_mime_type: string | null;
+}
+
+interface ProcessChunk {
+  id: string;
+  chunk_index: number;
+  gemini_file_uri: string | null;
+  gemini_file_state: string | null;
 }
 
 interface ModelConfig {
   id: string;
   name: string;
+  display_name: string | null;
   model_id: string;
   system_model: string | null;
   temperature: number;
@@ -41,7 +56,7 @@ interface ModelConfig {
 async function getActiveModels(supabase: any): Promise<ModelConfig[]> {
   const { data: models, error } = await supabase
     .from('admin_system_models')
-    .select('id, name, model_id, system_model, temperature, model_config, priority')
+    .select('id, name, display_name, model_id, system_model, temperature, model_config, priority')
     .eq('is_active', true)
     .order('priority', { ascending: true });
 
@@ -52,12 +67,110 @@ async function getActiveModels(supabase: any): Promise<ModelConfig[]> {
   return models.map((m: any) => ({
     id: m.id,
     name: m.name,
+    display_name: m.display_name,
     model_id: m.system_model || m.model_id,
     system_model: m.system_model,
     temperature: m.temperature || 0.2,
     max_tokens: m.model_config?.max_tokens || 60000,
     priority: m.priority || 0,
   }));
+}
+
+async function updateProcessoModelInfo(
+  supabase: any,
+  processoId: string,
+  modelId: string | null,
+  modelName: string | null,
+  isSwitching: boolean,
+  switchReason: string | null = null
+) {
+  await supabase
+    .from('processos')
+    .update({
+      current_llm_model_id: modelId,
+      current_llm_model_name: modelName,
+      llm_model_switching: isSwitching,
+      llm_switch_reason: switchReason,
+    })
+    .eq('id', processoId);
+}
+
+async function addModelAttempt(
+  supabase: any,
+  processoId: string,
+  modelId: string,
+  modelName: string,
+  result: 'success' | 'failed'
+) {
+  const { data: processo } = await supabase
+    .from('processos')
+    .select('llm_models_attempted')
+    .eq('id', processoId)
+    .maybeSingle();
+
+  const attempts = processo?.llm_models_attempted || [];
+  attempts.push({
+    model_id: modelId,
+    model_name: modelName,
+    result,
+    timestamp: new Date().toISOString(),
+  });
+
+  await supabase
+    .from('processos')
+    .update({ llm_models_attempted: attempts })
+    .eq('id', processoId);
+}
+
+async function recordExecution(
+  supabase: any,
+  processoId: string,
+  analysisResultId: string,
+  model: ModelConfig,
+  attemptNumber: number,
+  status: string,
+  errorMessage: string | null = null,
+  errorCode: string | null = null,
+  executionTimeMs: number | null = null
+) {
+  await supabase
+    .from('analysis_executions')
+    .insert({
+      processo_id: processoId,
+      analysis_result_id: analysisResultId,
+      model_id: model.id,
+      model_name: model.name,
+      attempt_number: attemptNumber,
+      status,
+      error_message: errorMessage,
+      error_code: errorCode,
+      execution_time_ms: executionTimeMs,
+    });
+}
+
+async function notifyModelSwitch(
+  supabase: any,
+  processoId: string,
+  fromModel: string,
+  toModel: string,
+  reason: string
+) {
+  const { data: processo } = await supabase
+    .from('processos')
+    .select('user_id')
+    .eq('id', processoId)
+    .maybeSingle();
+
+  if (processo?.user_id) {
+    await supabase
+      .from('notifications')
+      .insert({
+        user_id: processo.user_id,
+        type: 'model_switch',
+        message: `Troca de modelo: ${fromModel} → ${toModel}. Motivo: ${reason}`,
+        related_processo_id: processoId,
+      });
+  }
 }
 
 async function getMaxOutputTokens(
@@ -89,6 +202,65 @@ async function getMaxOutputTokens(
     console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
     return fallbackValue;
   }
+}
+
+async function ensureChunksUploaded(
+  supabase: any,
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  processo_id: string,
+  callId: string
+): Promise<ProcessChunk[]> {
+  const { data: chunks, error: chunksError } = await supabase
+    .from('process_chunks')
+    .select('id, chunk_index, gemini_file_uri, gemini_file_state')
+    .eq('processo_id', processo_id)
+    .order('chunk_index', { ascending: true });
+
+  if (chunksError || !chunks || chunks.length === 0) {
+    throw new Error('Chunks não encontrados');
+  }
+
+  console.log(`[${callId}] 🔍 Verificando uploads de ${chunks.length} chunks...`);
+
+  for (const chunk of chunks) {
+    if (!chunk.gemini_file_uri || chunk.gemini_file_state !== 'ACTIVE') {
+      console.log(`[${callId}] 📤 Upload necessário para chunk ${chunk.chunk_index}/${chunks.length}`);
+
+      try {
+        const uploadResponse = await fetch(`${supabaseUrl}/functions/v1/upload-to-gemini`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            processo_id: processo_id,
+            chunk_id: chunk.id,
+          }),
+        });
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json();
+          throw new Error(`Falha no upload do chunk ${chunk.chunk_index}: ${errorData.error}`);
+        }
+
+        const uploadData = await uploadResponse.json();
+        console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} enviado: ${uploadData.file_uri}`);
+
+        chunk.gemini_file_uri = uploadData.file_uri;
+        chunk.gemini_file_state = 'ACTIVE';
+      } catch (uploadError: any) {
+        console.error(`[${callId}] ❌ Erro no upload do chunk ${chunk.chunk_index}:`, uploadError);
+        throw new Error(`Falha no upload do chunk ${chunk.chunk_index}: ${uploadError.message}`);
+      }
+    } else {
+      console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} já enviado`);
+    }
+  }
+
+  console.log(`[${callId}] ✅ Todos os chunks prontos para processamento`);
+  return chunks as ProcessChunk[];
 }
 
 async function loadPDFData(
@@ -191,6 +363,7 @@ Deno.serve(async (req: Request) => {
 
   let processo_id: string | null = null;
   let analysis_result_id: string | null = null;
+  const callId = crypto.randomUUID().slice(0, 8);
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -199,6 +372,11 @@ Deno.serve(async (req: Request) => {
 
     if (!supabaseUrl || !supabaseServiceKey || !geminiApiKey) {
       throw new Error('Variáveis de ambiente ausentes');
+    }
+
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Missing Authorization header');
     }
 
     const body = await req.json();
@@ -211,13 +389,53 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`\n========== PROCESS-NEXT-PROMPT START ==========`);
-    console.log(`Processo ID: ${processo_id}`);
+    console.log(`\n[${callId}] ========== PROCESS-NEXT-PROMPT START ==========`);
+    console.log(`[${callId}] Processo ID: ${processo_id}`);
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const token = authHeader.replace('Bearer ', '');
+    const isServiceKeyCall = token === supabaseServiceKey;
+
+    if (!isServiceKeyCall) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (authError || !user) {
+        throw new Error('Unauthorized');
+      }
+    } else {
+      console.log(`[${callId}] 🔑 Chamada interna com service key detectada`);
+    }
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    console.log(`📋 Obtendo próximo prompt para processo ${processo_id}...`);
+    console.log(`[${callId}] 📋 Obtendo próximo prompt para processo ${processo_id}...`);
+
+    const { data: processo, error: processoError } = await supabase
+      .from('processos')
+      .select('id, file_name, user_id, created_at, status, pdf_base64, is_chunked, total_chunks, total_chunks_count, file_path, gemini_file_uri, gemini_file_state, gemini_file_mime_type')
+      .eq('id', processo_id)
+      .single();
+
+    if (processoError || !processo) {
+      throw new Error(`Processo não encontrado: ${processo_id}`);
+    }
+
+    const processoData = processo as ProcessoData;
+
+    if (processoData.status === 'completed') {
+      console.log(`[${callId}] ✅ Processo já concluído`);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          completed: true,
+          message: 'Processo já concluído',
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     const now = new Date().toISOString();
     const lockTimeout = new Date(Date.now() - 10 * 60 * 1000).toISOString();
@@ -230,7 +448,7 @@ Deno.serve(async (req: Request) => {
       });
 
     if (lockError) {
-      console.error('❌ Erro ao obter lock:', lockError);
+      console.error(`[${callId}] ❌ Erro ao obter lock:`, lockError);
       return new Response(
         JSON.stringify({ success: false, error: 'Falha ao obter lock' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -238,7 +456,7 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!lockResult || !Array.isArray(lockResult) || lockResult.length === 0) {
-      console.log('⏭️ Nenhum prompt pendente ou já em processamento');
+      console.log(`[${callId}] ⏭️ Nenhum prompt pendente ou já em processamento`);
       return new Response(
         JSON.stringify({ success: true, message: 'Nenhum prompt disponível' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -248,35 +466,43 @@ Deno.serve(async (req: Request) => {
     const analysisResult = lockResult[0] as AnalysisResult;
     analysis_result_id = analysisResult.id;
 
-    console.log(`✅ Lock obtido para: ${analysisResult.prompt_title}`);
-    console.log(`   - Analysis Result ID: ${analysis_result_id}`);
-    console.log(`   - Execution Order: ${analysisResult.execution_order}`);
+    console.log(`[${callId}] ✅ Lock obtido para: ${analysisResult.prompt_title}`);
+    console.log(`[${callId}]    - Analysis Result ID: ${analysis_result_id}`);
+    console.log(`[${callId}]    - Execution Order: ${analysisResult.execution_order}`);
+    console.log(`[${callId}]    - Retry Count: ${analysisResult.retry_count || 0}/${analysisResult.max_retries || 3}`);
 
-    const { data: processo, error: processoError } = await supabase
-      .from('processos')
-      .select('id, file_name, user_id, pdf_base64, is_chunked, total_chunks, file_path')
-      .eq('id', processo_id)
-      .single();
+    console.log(`[${callId}] 📄 Processo: ${processoData.file_name}`);
+    console.log(`[${callId}] 📝 Prompt: ${analysisResult.prompt_title}`);
+    console.log(`[${callId}]    - Is chunked: ${processoData.is_chunked}`);
 
-    if (processoError || !processo) {
-      throw new Error(`Processo não encontrado: ${processo_id}`);
+    console.log(`[${callId}] 🏃 Marcando prompt como 'running'`);
+    const { error: runningUpdateError } = await supabase
+      .from('analysis_results')
+      .update({
+        status: 'running',
+        processing_at: new Date().toISOString()
+      })
+      .eq('id', analysis_result_id);
+
+    if (runningUpdateError) {
+      console.error(`[${callId}] ❌ Erro ao marcar como running:`, runningUpdateError);
     }
 
-    const processoData = processo as ProcessoData;
+    const useFileApi = processoData.is_chunked
+      ? (processoData.total_chunks_count || 0) > 0
+      : processoData.gemini_file_uri && processoData.gemini_file_state === 'ACTIVE';
 
-    console.log(`📄 Processo encontrado: ${processoData.file_name}`);
-    console.log(`📝 Prompt para processar: ${analysisResult.prompt_title}`);
-    console.log(`   - Prompt content length: ${analysisResult.prompt_content?.length || 0}`);
-    console.log(`   - Is chunked: ${processoData.is_chunked}`);
+    let chunks: ProcessChunk[] | null = null;
 
-    const pdfBase64Data = await loadPDFData(supabase, processoData, processo_id);
-
-    if (!pdfBase64Data) {
-      throw new Error('Falha ao carregar dados do PDF');
+    if (useFileApi && processoData.is_chunked && (processoData.total_chunks_count || 0) > 0) {
+      console.log(`[${callId}] 📂 Usando File API do Gemini para chunks`);
+      chunks = await ensureChunksUploaded(supabase, supabaseUrl, supabaseServiceKey, processo_id, callId);
+    } else if (!useFileApi) {
+      console.log(`[${callId}] 📦 Usando Base64 inline`);
     }
 
     const activeModels = await getActiveModels(supabase);
-    console.log(`🤖 ${activeModels.length} modelo(s) ativo(s) disponível(is)`);
+    console.log(`[${callId}] 🤖 ${activeModels.length} modelo(s) ativo(s) disponível(is)`);
 
     const contextKey = processoData.is_chunked ? 'analysis_complex_files' : 'analysis_small_files';
 
@@ -286,6 +512,34 @@ Deno.serve(async (req: Request) => {
     for (const modelConfig of activeModels) {
       attemptNumber++;
 
+      const modelName = modelConfig.display_name || modelConfig.name;
+      const modelId = modelConfig.system_model || modelConfig.model_id;
+      const temperature = modelConfig.temperature ?? 0.2;
+
+      console.log(`\n[${callId}] 🔍 Tentativa ${attemptNumber}/${activeModels.length}: ${modelName}`);
+
+      await updateProcessoModelInfo(
+        supabase,
+        processo_id,
+        modelConfig.id,
+        modelName,
+        attemptNumber > 1,
+        attemptNumber > 1 ? 'Fallback devido a erro no modelo anterior' : null
+      );
+
+      if (attemptNumber > 1) {
+        const previousModel = activeModels[attemptNumber - 2];
+        const previousModelName = previousModel.display_name || previousModel.name;
+        await notifyModelSwitch(
+          supabase,
+          processo_id,
+          previousModelName,
+          modelName,
+          'Modelo anterior indisponível ou com erro'
+        );
+        console.log(`[${callId}] 📢 Notificação de troca de modelo enviada`);
+      }
+
       try {
         const configuredMaxTokens = await getMaxOutputTokens(
           supabase,
@@ -293,55 +547,198 @@ Deno.serve(async (req: Request) => {
           modelConfig.max_tokens
         );
 
-        console.log(`\n🔄 Tentativa ${attemptNumber}/${activeModels.length}`);
-        console.log(`   - Modelo: ${modelConfig.name}`);
-        console.log(`   - Model ID: ${modelConfig.model_id}`);
-        console.log(`   - Temperature: ${modelConfig.temperature}`);
-        console.log(`   - Max Tokens: ${configuredMaxTokens}`);
+        console.log(`[${callId}]    - Model ID: ${modelId}`);
+        console.log(`[${callId}]    - Temperature: ${temperature}`);
+        console.log(`[${callId}]    - Max Tokens: ${configuredMaxTokens}`);
 
         const startTime = Date.now();
 
         const model = genAI.getGenerativeModel({
-          model: modelConfig.model_id,
+          model: modelId,
         });
 
-        console.log(`🚀 Enviando prompt para Gemini...`);
+        console.log(`[${callId}] 🚀 Enviando prompt para Gemini...`);
 
         if (!analysisResult.prompt_content || analysisResult.prompt_content.trim() === '') {
           throw new Error('Prompt content is empty or invalid');
         }
 
-        const result = await model.generateContent({
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  inlineData: {
-                    mimeType: 'application/pdf',
-                    data: pdfBase64Data,
-                  },
+        let result;
+        let totalTokensUsed = 0;
+
+        if (useFileApi && chunks && chunks.length >= 3) {
+          console.log(`[${callId}] ⚡ Processando ${chunks.length} chunks individualmente`);
+
+          const chunkResults: string[] = [];
+
+          for (const chunk of chunks) {
+            if (!chunk.gemini_file_uri) {
+              throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
+            }
+
+            console.log(`[${callId}] 📄 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
+
+            const chunkParts = [
+              {
+                fileData: {
+                  mimeType: 'application/pdf',
+                  fileUri: chunk.gemini_file_uri,
                 },
-                {
-                  text: analysisResult.prompt_content.trim()
-                },
-              ],
+              },
+              {
+                text: `${analysisResult.prompt_content}\n\nIMPORTANTE: Esta é a parte ${chunk.chunk_index} de ${chunks.length} do documento. Analise apenas este trecho e forneça os resultados correspondentes.`
+              }
+            ];
+
+            const chunkResult = await model.generateContent({
+              contents: [{ role: 'user', parts: chunkParts }],
+              systemInstruction: analysisResult.system_prompt || undefined,
+              generationConfig: {
+                temperature,
+                maxOutputTokens: configuredMaxTokens,
+              },
+            });
+
+            const chunkResponse = await chunkResult.response;
+            let chunkText = chunkResponse.text().trim();
+
+            const chunkTokens = chunkResponse.usageMetadata?.totalTokenCount || 0;
+            totalTokensUsed += chunkTokens;
+
+            console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} processado: ${chunkTokens} tokens`);
+
+            if (chunkText.startsWith('```json')) {
+              chunkText = chunkText.replace(/^```json\n?/, '');
+            }
+            if (chunkText.startsWith('```')) {
+              chunkText = chunkText.replace(/^```\n?/, '');
+            }
+            if (chunkText.endsWith('```')) {
+              chunkText = chunkText.replace(/\n?```$/, '');
+            }
+
+            chunkResults.push(chunkText.trim());
+          }
+
+          console.log(`[${callId}] 🔄 Combinando resultados de ${chunks.length} chunks...`);
+
+          const combinationPrompt = `Você está combinando ${chunks.length} análises parciais de um documento dividido em partes.\n\nANÁLISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas análises em uma única análise completa e coerente, removendo duplicações e garantindo consistência.\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua texto introdutório como \"Com base na consolidação...\" ou explicações. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: começando com \"{\" para JSON).`;
+
+          const combinationResult = await model.generateContent({
+            contents: [{ role: 'user', parts: [{ text: combinationPrompt }] }],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: configuredMaxTokens,
             },
-          ],
-          systemInstruction: analysisResult.system_prompt || undefined,
-          generationConfig: {
-            temperature: modelConfig.temperature,
-            maxOutputTokens: configuredMaxTokens,
-          },
-        });
+          });
+
+          result = combinationResult;
+          const combinationTokens = combinationResult.response.usageMetadata?.totalTokenCount || 0;
+          totalTokensUsed += combinationTokens;
+
+          console.log(`[${callId}] ✅ Combinação concluída: ${combinationTokens} tokens`);
+          console.log(`[${callId}] 📊 Total de tokens: ${totalTokensUsed}`);
+        } else if (useFileApi && chunks) {
+          console.log(`[${callId}] 📂 Processando ${chunks.length} chunks com File API`);
+
+          const parts: any[] = [];
+
+          for (const chunk of chunks) {
+            if (!chunk.gemini_file_uri) {
+              throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
+            }
+
+            parts.push({
+              fileData: {
+                mimeType: 'application/pdf',
+                fileUri: chunk.gemini_file_uri,
+              },
+            });
+          }
+
+          parts.push({ text: analysisResult.prompt_content });
+
+          result = await model.generateContent({
+            contents: [{ role: 'user', parts }],
+            systemInstruction: analysisResult.system_prompt || undefined,
+            generationConfig: {
+              temperature,
+              maxOutputTokens: configuredMaxTokens,
+            },
+          });
+        } else if (useFileApi && processoData.gemini_file_uri) {
+          console.log(`[${callId}] 📂 Processando com File API (arquivo único)`);
+
+          result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    fileData: {
+                      mimeType: processoData.gemini_file_mime_type,
+                      fileUri: processoData.gemini_file_uri,
+                    },
+                  },
+                  { text: analysisResult.prompt_content }
+                ]
+              }
+            ],
+            systemInstruction: analysisResult.system_prompt || undefined,
+            generationConfig: {
+              temperature,
+              maxOutputTokens: configuredMaxTokens,
+            },
+          });
+        } else {
+          console.log(`[${callId}] 📦 Processando com Base64 inline`);
+
+          const pdfBase64Data = await loadPDFData(supabase, processoData, processo_id);
+
+          if (!pdfBase64Data) {
+            throw new Error('Falha ao carregar dados do PDF');
+          }
+
+          result = await model.generateContent({
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: 'application/pdf',
+                      data: pdfBase64Data,
+                    },
+                  },
+                  {
+                    text: analysisResult.prompt_content.trim()
+                  },
+                ],
+              },
+            ],
+            systemInstruction: analysisResult.system_prompt || undefined,
+            generationConfig: {
+              temperature,
+              maxOutputTokens: configuredMaxTokens,
+            },
+          });
+        }
 
         const response = result.response;
         let text = response.text().trim();
 
-        console.log(`✅ Resposta recebida do Gemini`);
-        console.log(`   - Tamanho da resposta: ${text.length} caracteres`);
+        const executionTime = Date.now() - startTime;
 
-        console.log(`💾 SALVAMENTO PREVENTIVO FASE 1: Salvando conteúdo RAW imediatamente...`);
+        if (totalTokensUsed === 0) {
+          totalTokensUsed = response.usageMetadata?.totalTokenCount || 0;
+        }
+
+        console.log(`[${callId}] ✅ Resposta recebida do Gemini`);
+        console.log(`[${callId}]    - Tamanho: ${text.length} caracteres`);
+        console.log(`[${callId}]    - Tokens: ${totalTokensUsed}`);
+        console.log(`[${callId}]    - Tempo: ${executionTime}ms`);
+
+        console.log(`[${callId}] 💾 SALVAMENTO FASE 1: Salvando conteúdo RAW...`);
 
         const { error: phase1Error } = await supabase
           .from('analysis_results')
@@ -352,11 +749,11 @@ Deno.serve(async (req: Request) => {
           .eq('id', analysis_result_id);
 
         if (phase1Error) {
-          console.error('❌ CRÍTICO: Falha ao salvar conteúdo RAW:', phase1Error);
+          console.error(`[${callId}] ❌ CRÍTICO: Falha ao salvar conteúdo RAW:`, phase1Error);
           throw phase1Error;
         }
 
-        console.log(`✅ FASE 1 CONCLUÍDA: Conteúdo protegido contra 502`);
+        console.log(`[${callId}] ✅ FASE 1 CONCLUÍDA: Conteúdo protegido contra 502`);
 
         if (text.startsWith('```json')) {
           text = text.replace(/^```json\n?/, '');
@@ -369,14 +766,7 @@ Deno.serve(async (req: Request) => {
         }
         text = text.trim();
 
-        const executionTime = Date.now() - startTime;
-        const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
-
-        console.log(`📊 Estatísticas:`);
-        console.log(`   - Tokens usados: ${tokensUsed}`);
-        console.log(`   - Tempo de execução: ${executionTime}ms`);
-
-        console.log(`💾 SALVAMENTO FASE 2: Atualizando metadados...`);
+        console.log(`[${callId}] 💾 SALVAMENTO FASE 2: Atualizando metadados...`);
 
         const { error: phase2Error } = await supabase
           .from('analysis_results')
@@ -384,38 +774,59 @@ Deno.serve(async (req: Request) => {
             status: 'completed',
             result_content: text,
             execution_time_ms: executionTime,
-            tokens_used: tokensUsed,
+            tokens_used: totalTokensUsed,
             current_model_id: modelConfig.id,
-            current_model_name: modelConfig.name,
+            current_model_name: modelName,
             processing_at: null,
             completed_at: new Date().toISOString(),
           })
           .eq('id', analysis_result_id);
 
         if (phase2Error) {
-          console.warn('⚠️ Falha ao atualizar metadados (mas conteúdo já está salvo):', phase2Error);
+          console.warn(`[${callId}] ⚠️ Falha ao atualizar metadados (conteúdo já salvo):`, phase2Error);
         } else {
-          console.log(`✅ FASE 2 CONCLUÍDA: Metadados atualizados`);
+          console.log(`[${callId}] ✅ FASE 2 CONCLUÍDA: Metadados atualizados`);
         }
 
-        console.log(`✅ Sucesso com modelo: ${modelConfig.name}`);
+        await supabase
+          .from('processos')
+          .update({ current_prompt_number: analysisResult.execution_order })
+          .eq('id', processo_id);
+
+        await addModelAttempt(supabase, processo_id, modelConfig.id, modelName, 'success');
+        await recordExecution(supabase, processo_id, analysis_result_id, modelConfig, attemptNumber, 'success', null, null, executionTime);
+
+        console.log(`[${callId}] ✅ Sucesso com modelo: ${modelName}`);
 
         const { data: remainingPrompts, error: remainingError } = await supabase
           .from('analysis_results')
           .select('id')
           .eq('processo_id', processo_id)
-          .in('status', ['pending', 'processing'])
+          .eq('status', 'pending')
           .limit(1)
           .maybeSingle();
 
         if (remainingError) {
-          console.error('⚠️ Erro ao verificar prompts restantes:', remainingError);
+          console.error(`[${callId}] ⚠️ Erro ao verificar prompts restantes:`, remainingError);
         }
 
         const hasMorePrompts = !!remainingPrompts;
 
-        if (!hasMorePrompts) {
-          console.log(`🎉 Todos os prompts concluídos! Marcando processo como completo...`);
+        if (hasMorePrompts) {
+          console.log(`[${callId}] 🔄 Disparando processamento do próximo prompt...`);
+
+          fetch(`${supabaseUrl}/functions/v1/process-next-prompt`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({ processo_id }),
+          }).catch(err => {
+            console.error(`[${callId}] ❌ Erro ao disparar próximo prompt:`, err?.message);
+          });
+        } else {
+          console.log(`[${callId}] 🎉 Todos os prompts concluídos! Finalizando processo...`);
 
           const { error: processoUpdateError } = await supabase
             .from('processos')
@@ -426,9 +837,9 @@ Deno.serve(async (req: Request) => {
             .eq('id', processo_id);
 
           if (processoUpdateError) {
-            console.error('❌ Erro ao atualizar status do processo:', processoUpdateError);
+            console.error(`[${callId}] ❌ Erro ao atualizar status do processo:`, processoUpdateError);
           } else {
-            console.log(`✅ Processo marcado como completed`);
+            console.log(`[${callId}] ✅ Processo marcado como completed`);
           }
 
           const { error: notificationError } = await supabase.from('notifications').insert({
@@ -439,12 +850,12 @@ Deno.serve(async (req: Request) => {
           });
 
           if (notificationError) {
-            console.error('❌ Erro ao criar notificação:', notificationError);
+            console.error(`[${callId}] ❌ Erro ao criar notificação:`, notificationError);
           } else {
-            console.log(`📩 Notificação criada para o usuário`);
+            console.log(`[${callId}] 📩 Notificação criada para o usuário`);
           }
 
-          console.log(`📧 Enviando email de processo concluído...`);
+          console.log(`[${callId}] 📧 Enviando email de processo concluído...`);
           try {
             const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
               method: 'POST',
@@ -457,16 +868,16 @@ Deno.serve(async (req: Request) => {
 
             if (emailResponse.ok) {
               const emailResult = await emailResponse.json();
-              console.log(`✅ Email enviado com sucesso:`, emailResult.resend_id);
+              console.log(`[${callId}] ✅ Email enviado:`, emailResult.resend_id);
             } else {
               const errorText = await emailResponse.text();
-              console.error(`❌ Falha ao enviar email:`, errorText);
+              console.error(`[${callId}] ❌ Falha ao enviar email:`, errorText);
             }
           } catch (emailError) {
-            console.error(`❌ Erro ao chamar edge function de email:`, emailError);
+            console.error(`[${callId}] ❌ Erro ao chamar edge function de email:`, emailError);
           }
 
-          console.log(`🔔 Enviando notificação administrativa...`);
+          console.log(`[${callId}] 🔔 Enviando notificação administrativa Slack...`);
 
           const { data: userData } = await supabase
             .from('user_profiles')
@@ -480,22 +891,19 @@ Deno.serve(async (req: Request) => {
           const userEmail = userData?.email || 'N/A';
           const fileName = processoData.file_name || 'N/A';
 
-          const { data: allResults } = await supabase
-            .from('analysis_results')
-            .select('execution_time_ms')
-            .eq('processo_id', processo_id)
-            .eq('status', 'completed');
-
-          const totalExecutionTime = allResults?.reduce((sum, r) => sum + (r.execution_time_ms || 0), 0) || 0;
-          const durationMinutes = Math.floor(totalExecutionTime / 60000);
-          const durationSeconds = Math.floor((totalExecutionTime % 60000) / 1000);
-          const durationText =
-            durationMinutes > 0 ? `${durationMinutes}m ${durationSeconds}s` : `${durationSeconds}s`;
+          const startTime = new Date(processoData.created_at);
+          const endTime = new Date();
+          const durationMs = endTime.getTime() - startTime.getTime();
+          const durationMinutes = Math.floor(durationMs / 60000);
+          const durationSeconds = Math.floor((durationMs % 60000) / 1000);
+          const durationText = durationMinutes > 0
+            ? `${durationMinutes}m ${durationSeconds}s`
+            : `${durationSeconds}s`;
 
           notifyAdminSafe({
             type: 'analysis_completed',
             title: 'Análise Concluída',
-            message: `*Usuário:* ${userName} (${userEmail})\n*Arquivo:* ${fileName}\n*Duração:* ${durationText}\n*Prompts:* ${allResults?.length || 0}\n*Complexo:* ${processoData.is_chunked ? 'Sim' : 'Não'}`,
+            message: 'Análise de processo concluída com sucesso',
             severity: 'success',
             metadata: {
               processo_id,
@@ -503,17 +911,16 @@ Deno.serve(async (req: Request) => {
               user_email: userEmail,
               user_name: userName,
               duration: durationText,
-              prompts_count: allResults?.length || 0,
               is_complex: processoData.is_chunked,
             },
             userId: processoData.user_id,
             processoId: processo_id,
           });
-        } else {
-          console.log(`⏭️ Ainda há prompts pendentes, continuando processamento...`);
+
+          console.log(`[${callId}] ✅ Processo finalizado com sucesso!`);
         }
 
-        console.log(`========== PROCESS-NEXT-PROMPT END ==========\n`);
+        console.log(`[${callId}] ========== PROCESS-NEXT-PROMPT END ==========\n`);
 
         return new Response(
           JSON.stringify({
@@ -521,27 +928,32 @@ Deno.serve(async (req: Request) => {
             analysis_result_id,
             prompt_title: analysisResult.prompt_title,
             execution_order: analysisResult.execution_order,
-            tokens_used: tokensUsed,
+            tokens_used: totalTokensUsed,
             execution_time_ms: executionTime,
             has_more_prompts: hasMorePrompts,
-            model_used: modelConfig.name,
+            model_used: modelName,
             attempt_number: attemptNumber,
+            method: useFileApi ? 'file_api' : 'base64_inline',
           }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
 
       } catch (modelError: any) {
+        const executionTime = Date.now() - startTime;
         lastError = modelError;
-        console.error(`❌ Falha com modelo ${modelConfig.name}:`, modelError.message);
+        console.error(`[${callId}] ❌ Falha com modelo ${modelName}:`, modelError.message);
+
+        await addModelAttempt(supabase, processo_id, modelConfig.id, modelName, 'failed');
+        await recordExecution(supabase, processo_id, analysis_result_id, modelConfig, attemptNumber, 'failed', modelError.message, modelError.code || null, executionTime);
 
         if (isTimeoutError(modelError)) {
-          console.log(`⏱️ Timeout detectado com ${modelConfig.name}`);
+          console.log(`[${callId}] ⏱️ Timeout detectado com ${modelName}`);
 
           if (attemptNumber < activeModels.length) {
-            console.log(`🔄 Tentando próximo modelo disponível...`);
+            console.log(`[${callId}] 🔄 Tentando próximo modelo disponível...`);
             continue;
           } else {
-            console.log(`⏱️ Timeout no último modelo, agendando retry...`);
+            console.log(`[${callId}] ⏱️ Timeout no último modelo, agendando retry...`);
             await scheduleRetry(supabase, processo_id!, analysis_result_id!, modelError);
 
             return new Response(
@@ -560,16 +972,16 @@ Deno.serve(async (req: Request) => {
         }
 
         if (attemptNumber < activeModels.length) {
-          console.log(`🔄 Tentando próximo modelo (${attemptNumber + 1}/${activeModels.length})...`);
+          console.log(`[${callId}] 🔄 Tentando próximo modelo (${attemptNumber + 1}/${activeModels.length})...`);
           continue;
         }
 
-        console.error(`❌ Todos os ${activeModels.length} modelos falharam`);
+        console.error(`[${callId}] ❌ Todos os ${activeModels.length} modelos falharam`);
         break;
       }
     }
 
-    console.error(`💥 Nenhum modelo conseguiu processar o prompt`);
+    console.error(`[${callId}] 💥 Nenhum modelo conseguiu processar o prompt`);
 
     if (analysis_result_id) {
       await supabase
@@ -595,8 +1007,8 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error: any) {
-    console.error('💥 ERRO CRÍTICO:', error);
-    console.error('Stack:', error?.stack);
+    console.error(`[${callId}] 💥 ERRO CRÍTICO:`, error);
+    console.error(`[${callId}] Stack:`, error?.stack);
 
     if (analysis_result_id) {
       try {
@@ -605,7 +1017,7 @@ Deno.serve(async (req: Request) => {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         if (isTimeoutError(error)) {
-          console.log('⏱️ Timeout detectado no catch geral, agendando retry...');
+          console.log(`[${callId}] ⏱️ Timeout detectado no catch geral, agendando retry...`);
           await scheduleRetry(supabase, processo_id!, analysis_result_id, error);
 
           return new Response(
@@ -630,9 +1042,9 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', analysis_result_id);
 
-        console.log(`🔓 Lock liberado para analysis_result: ${analysis_result_id}`);
+        console.log(`[${callId}] 🔓 Lock liberado para analysis_result: ${analysis_result_id}`);
       } catch (unlockError) {
-        console.error('❌ Erro ao liberar lock:', unlockError);
+        console.error(`[${callId}] ❌ Erro ao liberar lock:`, unlockError);
       }
     }
 
