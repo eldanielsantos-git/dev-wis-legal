@@ -187,7 +187,7 @@ Deno.serve(async (req: Request) => {
 
       const startTime = Date.now();
 
-      const consolidationPrompt = `PROMPT ORIGINAL:\n${analysisResult.prompt_content}\n\nANÁLISES PARCIAIS DOS CHUNKS:\n${allSummaries}\n\nINSTRUÇÕES DE CONSOLIDAÇÃO:\n1. Combine as informações de todos os ${chunks.length} chunks em uma análise unificada\n2. Remova duplicações e contradições\n3. Garanta consistência e coerência no resultado final\n4. Siga estritamente o formato e estrutura solicitados no prompt original\n5. Considere todo o contexto do documento completo\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado solicitado no prompt original. NÃO inclua texto introduçtório, explicações ou observações antes ou depois do conteúdo. Inicie sua resposta diretamente com o formato esperado.`;
+      const consolidationPrompt = `PROMPT ORIGINAL:\n${analysisResult.prompt_content}\n\nANÁLISES PARCIAIS DOS CHUNKS:\n${allSummaries}\n\nINSTRUÇÕES DE CONSOLIDAÇÃO:\n1. Combine as informações de todos os ${chunks.length} chunks em uma análise unificada\n2. Remova duplicações e contradições\n3. Garanta consistência e coerência no resultado final\n4. Siga estritamente o formato e estrutura solicitados no prompt original\n5. Considere todo o contexto do documento completo\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado solicitado no prompt original. NÃO inclua texto introdutório, explicações ou observações antes ou depois do conteúdo. Inicie sua resposta diretamente com o formato esperado.`;
 
       await supabase
         .from('analysis_results')
@@ -350,12 +350,7 @@ Deno.serve(async (req: Request) => {
         notifyAdminSafe({
           type: 'analysis_completed',
           title: 'Análise Concluída',
-          message: `*Usuário:* ${userName} (${userEmail})
-*Arquivo:* ${fileName}
-*Duração:* ${durationText}
-*Chunks:* ${chunks.length}
-*Prompts:* ${analysisResults.length}
-*Complexo:* ${processoData.is_complex ? 'Sim' : 'Não'}`,
+          message: `${userName} | ${fileName} | ${durationText}`,
           severity: 'success',
           metadata: {
             processo_id,

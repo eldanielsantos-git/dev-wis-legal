@@ -910,7 +910,7 @@ Deno.serve(async (req: Request) => {
           notifyAdminSafe({
             type_slug: 'analysis_completed',
             title: 'Análise Concluída',
-            message: 'Análise de processo concluída com sucesso',
+            message: `${userName} | ${fileName} | ${durationText}`,
             severity: 'success',
             metadata: {
               processo_id,
