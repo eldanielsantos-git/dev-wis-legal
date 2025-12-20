@@ -47,6 +47,7 @@ import { ChatPage } from './pages/ChatPage';
 import { ChatProcessSelectionPage } from './pages/ChatProcessSelectionPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { VerifyEmailRequiredPage } from './pages/VerifyEmailRequiredPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { RequireEmailVerification } from './components/RequireEmailVerification';
 import { Loader } from 'lucide-react';
 
@@ -593,7 +594,8 @@ function AppContent() {
     );
   }
 
-    logger.log('AppContent', 'No route matched, rendering AppHomePage with RequireEmailVerification');
+  if (currentPath === '/app' || currentPath === '/') {
+    logger.log('AppContent', 'Rendering AppHomePage with RequireEmailVerification');
     return (
       <RequireEmailVerification
         onNavigateToSignIn={() => navigate('/sign-in')}
@@ -614,6 +616,10 @@ function AppContent() {
       />
       </RequireEmailVerification>
     );
+  }
+
+  logger.log('AppContent', 'No route matched, rendering NotFoundPage');
+  return <NotFoundPage onNavigateToHome={() => navigate('/app')} />;
 }
 
 logger.log('App.tsx', '🔥 Defining App function component');
