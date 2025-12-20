@@ -232,10 +232,11 @@ function MyProcessDetailPageInner({
           return;
         }
 
+        console.log('🔄 Polling tick - atualizando dados...');
         refreshProcesso();
         loadAnalysisResults();
         loadShares();
-      }, 500);
+      }, 1000);
     };
 
     setupRealtimeAndPolling();
@@ -361,6 +362,14 @@ function MyProcessDetailPageInner({
           contentLength: r.result_content?.length || 0
         }))
       });
+
+      // Força atualização do estado sempre que houver mudanças
+      const hasChanged = JSON.stringify(results.map(r => ({ id: r.id, status: r.status }))) !==
+                        JSON.stringify(analysisResultsRef.current.map(r => ({ id: r.id, status: r.status })));
+
+      if (hasChanged) {
+        console.log('🔄 Detectadas mudanças nos resultados - atualizando estado');
+      }
 
       setAnalysisResults(results);
       analysisResultsRef.current = results;
@@ -605,7 +614,28 @@ function MyProcessDetailPageInner({
 
   const totalPrompts = analysisResults.length > 0 ? analysisResults.length : (processo.total_prompts || 9);
   const completedPrompts = analysisResults.filter(r => r.status === 'completed').length;
-  const currentPrompt = completedPrompts;
+  const processingPrompt = analysisResults.find(r => r.status === 'running' || r.status === 'processing');
+
+  // Se há um prompt sendo processado, currentPrompt = execution_order desse prompt
+  // Caso contrário, currentPrompt = número de prompts concluídos
+  const currentPrompt = processingPrompt
+    ? processingPrompt.execution_order
+    : completedPrompts;
+
+  // Log para debug do progresso
+  React.useEffect(() => {
+    console.log('📊 Progress Update:', {
+      totalPrompts,
+      completedPrompts,
+      processingPrompt: processingPrompt ? {
+        order: processingPrompt.execution_order,
+        title: processingPrompt.prompt_title,
+        status: processingPrompt.status
+      } : null,
+      currentPrompt,
+      timestamp: new Date().toISOString()
+    });
+  }, [totalPrompts, completedPrompts, processingPrompt?.execution_order, currentPrompt]);
 
   // Buscar o modelo atual em uso
   const llmModelName = processo.current_llm_model_name || null;
@@ -845,7 +875,7 @@ function MyProcessDetailPageInner({
 
                     return (
                       <AnalysisCard
-                        key={result.id}
+                        key={`${result.id}-${result.status}-${result.completed_at || 'pending'}`}
                         number={result.execution_order}
                         title={result.prompt_title}
                         status={result.status}
