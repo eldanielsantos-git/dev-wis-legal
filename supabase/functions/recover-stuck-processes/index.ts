@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
             .from('analysis_results')
             .select('id')
             .eq('processo_id', processo.processo_id)
-            .in('status', ['pending', 'running'])
+            .in('status', ['pending', 'processing'])
             .limit(1)
             .maybeSingle();
 
