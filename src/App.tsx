@@ -4,6 +4,7 @@ import { logger } from './utils/logger';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { NotificationProvider } from './contexts/NotificationContext';
 import { TokenBalanceProvider } from './contexts/TokenBalanceContext';
+import { useSupabaseConnectionKeepAlive } from './hooks/useSupabaseConnectionKeepAlive';
 
 // Log module loading with timestamp to detect cache issues
 const BUILD_TIMESTAMP = '2025-12-01T19:45:00Z';
@@ -52,6 +53,8 @@ import { Loader } from 'lucide-react';
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
+
+  useSupabaseConnectionKeepAlive(!!user);
 
   const navigate = (path: string) => {
     window.history.pushState({}, '', path);

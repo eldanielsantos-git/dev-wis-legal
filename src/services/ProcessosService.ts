@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { Processo, Pagina } from '../lib/supabase';
+import { executeWithRetry } from '../utils/supabaseWithRetry';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -359,11 +360,13 @@ export class ProcessosService {
       throw new Error('Usuário não autenticado');
     }
 
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('is_admin')
-      .eq('id', user.id)
-      .single();
+    const { data: userProfile } = await executeWithRetry(() =>
+      supabase
+        .from('user_profiles')
+        .select('is_admin')
+        .eq('id', user.id)
+        .single()
+    );
 
     const isAdmin = userProfile?.is_admin || false;
 
@@ -410,7 +413,9 @@ export class ProcessosService {
       query = query.eq('user_id', user.id);
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
+    const { data, error } = await executeWithRetry(() =>
+      query.order('created_at', { ascending: false })
+    );
 
     if (error) {
       console.error('❌ Erro ao buscar processos:', error);
