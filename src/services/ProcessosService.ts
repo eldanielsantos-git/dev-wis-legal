@@ -746,14 +746,11 @@ export class ProcessosService {
       throw new Error('Usuário não autenticado');
     }
 
-    const { splitPDFIntoChunksWithOverlap, getChunkConfiguration } = await import('../utils/pdfSplitter');
+    const { getChunkConfiguration } = await import('../utils/pdfSplitter');
 
     const config = getChunkConfiguration(totalPages);
     console.log(`📦 PDF complexo detectado: ${totalPages} páginas, ${config.totalChunks} chunks com ${config.chunkSize} páginas cada`);
     console.log(`⏱️ Tempo estimado: ~${config.estimatedProcessingTimeMinutes} minutos`);
-
-    const chunks = await splitPDFIntoChunksWithOverlap(file);
-    console.log(`✅ PDF dividido em ${chunks.length} chunks com overlap de 50 páginas`);
 
     const processoId = crypto.randomUUID();
     const { data: processo, error: processoError } = await supabase
@@ -765,8 +762,10 @@ export class ProcessosService {
         status: 'uploading',
         user_id: user.id,
         is_chunked: true,
-        total_chunks_count: chunks.length,
+        total_chunks_count: config.totalChunks,
         current_processing_chunk: 0,
+        total_pages: totalPages,
+        transcricao: { totalPages, totalChunks: config.totalChunks, chunkSize: config.chunkSize }
       })
       .select()
       .single();
@@ -780,12 +779,19 @@ export class ProcessosService {
       onProcessoCreated(processoId);
     }
 
+    console.log('✅ Processo criado, iniciando divisão do PDF em background...');
     console.log('🚀 Upload de chunks iniciado - você pode navegar livremente durante o processo');
     console.log('📊 O progresso será monitorado automaticamente');
 
     // Função assíncrona para upload de chunks em background
     const uploadChunksInBackground = async () => {
       try {
+        const { splitPDFIntoChunksWithOverlap } = await import('../utils/pdfSplitter');
+
+        console.log('📄 Dividindo PDF em chunks com overlap...');
+        const chunks = await splitPDFIntoChunksWithOverlap(file);
+        console.log(`✅ PDF dividido em ${chunks.length} chunks`);
+
         for (let i = 0; i < chunks.length; i++) {
           const chunk = chunks[i];
           console.log(`📤 Fazendo upload do chunk ${i + 1}/${chunks.length}...`);
