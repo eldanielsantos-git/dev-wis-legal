@@ -170,8 +170,13 @@ function formatSlackMessage(
   const previewText = buildMobilePreview(config, title, message, metadata);
 
   return {
-    text: previewText,
-    blocks,
+    text: `${title} - ${message}`,
+    attachments: [
+      {
+        color: config.color,
+        blocks,
+      },
+    ],
   };
 }
 
@@ -183,38 +188,17 @@ function buildMobilePreview(
 ): string {
   const parts: string[] = [title];
 
-  // Extrai: "Nome do Usuário (email@example.com)"
   const userMatch = message.match(/\*Usuário:\*\s*([^\n]+)/);
   if (userMatch) {
-    const fullUser = userMatch[1].trim();
-
-    // Extrai o nome (tudo antes do parêntese)
-    const nameMatch = fullUser.match(/^([^(]+)/);
-    if (nameMatch) {
-      parts.push(nameMatch[1].trim());
-    }
-
-    // Extrai o email (dentro dos parênteses)
-    const emailMatch = fullUser.match(/\(([^)]+)\)/);
-    if (emailMatch) {
-      parts.push(emailMatch[1].trim());
-    }
+    const userName = userMatch[1].replace(/\([^)]*\)/, '').trim();
+    parts.push(userName);
   }
 
-  // Extrai o nome do arquivo
   const fileMatch = message.match(/\*Arquivo:\*\s*([^\n]+)/);
   if (fileMatch) {
     parts.push(fileMatch[1].trim());
   }
 
-  // Extrai a duração (formata removendo espaços extras)
-  const durationMatch = message.match(/\*Duração:\*\s*([^\n]+)/);
-  if (durationMatch) {
-    const duration = durationMatch[1].trim().replace(/\s+/g, '');
-    parts.push(duration);
-  }
-
-  // Para outros tipos de notificação (erros, etc)
   if (metadata.error_type) {
     parts.push(String(metadata.error_type));
   }

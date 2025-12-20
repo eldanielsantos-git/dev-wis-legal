@@ -170,7 +170,7 @@ function formatSlackMessage(
   const previewText = buildMobilePreview(config, title, message, metadata);
 
   return {
-    text: previewText,
+    text: `${title} - ${message}`,
     attachments: [
       {
         color: config.color,
