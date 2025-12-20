@@ -1332,10 +1332,18 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                                 <span
                                   className="px-3 py-1 rounded-full text-xs font-medium"
                                   style={{
-                                    backgroundColor: prompt.prompt_type === 'small_file' ? '#10B98120' :
-                                                   prompt.prompt_type === 'large_file_chunks' ? '#3B82F620' : '#F59E0B20',
-                                    color: prompt.prompt_type === 'small_file' ? '#10B981' :
-                                          prompt.prompt_type === 'large_file_chunks' ? '#3B82F6' : '#F59E0B'
+                                    backgroundColor:
+                                      prompt.prompt_type === 'small_file' ? '#10B98120' :
+                                      prompt.prompt_type === 'large_file_chunks' ? '#3B82F620' :
+                                      prompt.prompt_type === 'consolidated_analysis' ? '#8B5CF620' :
+                                      prompt.prompt_type === 'audio' ? '#F59E0B20' :
+                                      prompt.prompt_type === 'audio_complex' ? '#EC489920' : '#6B728020',
+                                    color:
+                                      prompt.prompt_type === 'small_file' ? '#10B981' :
+                                      prompt.prompt_type === 'large_file_chunks' ? '#3B82F6' :
+                                      prompt.prompt_type === 'consolidated_analysis' ? '#8B5CF6' :
+                                      prompt.prompt_type === 'audio' ? '#F59E0B' :
+                                      prompt.prompt_type === 'audio_complex' ? '#EC4899' : '#6B7280'
                                   }}
                                 >
                                   {ChatSystemPromptsService.getPromptTypeLabel(prompt.prompt_type)}

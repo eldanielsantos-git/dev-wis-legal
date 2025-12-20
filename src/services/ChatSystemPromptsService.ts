@@ -326,7 +326,7 @@ export class ChatSystemPromptsService {
       'large_file_chunks': 'blue',
       'consolidated_analysis': 'purple',
       'audio': 'orange',
-      'audio_complex': 'red'
+      'audio_complex': 'pink'
     };
     return colors[type] || 'gray';
   }
