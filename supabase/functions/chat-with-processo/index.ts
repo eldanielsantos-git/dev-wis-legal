@@ -243,7 +243,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Buscar processo (RLS já valida acesso)
     const { data: processo, error: processoError } = await supabase
       .from('processos')
       .select('*')
@@ -260,17 +259,48 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Determinar qual tipo de prompt usar baseado no processo
-    let promptType: 'small_file' | 'large_file_chunks' = 'small_file';
+    const { data: analysisResults, error: analysisError } = await supabase
+      .from('analysis_results')
+      .select('prompt_title, result_content, execution_order')
+      .eq('processo_id', processo_id)
+      .eq('status', 'completed')
+      .not('result_content', 'is', null)
+      .order('execution_order', { ascending: true });
+
+    let promptType: 'consolidated_analysis' | 'small_file' | 'large_file_chunks' = 'small_file';
     let contextualMessage = '';
     let chunks: any[] = [];
 
-    if (processo.is_chunked && processo.total_chunks_count > 0) {
-      // ARQUIVO GRANDE: Usa chunks
+    if (analysisResults && analysisResults.length >= 7) {
+      promptType = 'consolidated_analysis';
+      console.log(`🎯 Using consolidated analysis: ${analysisResults.length} analyses found`);
+
+      const analysisContext = analysisResults.map((analysis, index) =>
+        `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
+      ).join('\n\n---\n');
+
+      contextualMessage = `
+Processo: ${processo.nome_processo || processo.file_name}
+Total de páginas: ${processo.total_pages || 'N/A'}
+
+# ANÁLISES CONSOLIDADAS DO PROCESSO
+
+Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo estão os resultados completos:
+${analysisContext}
+
+---
+
+# PERGUNTA DO USUÁRIO:
+${message}
+
+INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises consolidadas fornecidas. Seja direto, objetivo e cite qual análise você usou quando relevante.`;
+
+      console.log(`✅ Formatted ${analysisResults.length} analyses (~${Math.round(contextualMessage.length/4)} tokens estimated)`);
+
+    } else if (processo.is_chunked && processo.total_chunks_count > 0) {
       promptType = 'large_file_chunks';
       console.log(`📚 Large file detected: ${processo.total_chunks_count} chunks`);
 
-      // Buscar chunks completados em ordem
       const { data: chunksData, error: chunksError } = await supabase
         .from('process_chunks')
         .select('chunk_index, start_page, end_page, gemini_file_uri, pages_count, status')
@@ -301,7 +331,6 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Validar que todos os chunks têm URIs válidos
       const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
       if (chunksWithValidUris.length === 0) {
         return new Response(
@@ -315,7 +344,6 @@ Deno.serve(async (req: Request) => {
 
       console.log(`✅ Found ${chunks.length} chunks, ${chunksWithValidUris.length} with valid URIs`);
 
-      // Construir contexto com informações dos chunks
       const chunksInfo = chunks.map(c =>
         `Chunk ${c.chunk_index}: Páginas ${c.start_page}-${c.end_page} (${c.pages_count} páginas)`
       ).join('\n');
@@ -334,7 +362,6 @@ ${message}`;
 
       console.log(`✅ Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
     } else {
-      // ARQUIVO PEQUENO: Usa transcricao
       promptType = 'small_file';
       console.log('📄 Small file detected, using transcription');
 
@@ -349,7 +376,6 @@ Pergunta do usuário:
 ${message}`;
     }
 
-    // Buscar prompt ativo do tipo determinado
     const { data: systemPromptData, error: promptError } = await supabase
       .from('chat_system_prompts')
       .select('system_prompt, prompt_type')
@@ -370,24 +396,20 @@ ${message}`;
       );
     }
 
-    // Buscar dados do usuário para substituição de variáveis
     const { data: userProfile } = await supabase
       .from('user_profiles')
       .select('first_name, last_name, email, oab, cpf, city, state, phone, phone_country_code')
       .eq('id', user.id)
       .maybeSingle();
 
-    // Construir full_name a partir de first_name e last_name
     const fullName = userProfile
       ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Usuário'
       : 'Usuário';
     const firstName = userProfile?.first_name || 'Usuário';
     const lastName = userProfile?.last_name || '';
 
-    // Substituir variáveis no prompt
     let systemPrompt = systemPromptData.system_prompt;
 
-    // Substituir data/hora atual
     const now = new Date();
     const saoPauloTime = new Intl.DateTimeFormat('pt-BR', {
       timeZone: 'America/Sao_Paulo',
@@ -396,45 +418,34 @@ ${message}`;
     }).format(now);
     systemPrompt = systemPrompt.replace(/\{\{DATA_HORA_ATUAL\}\}/g, saoPauloTime);
 
-    // Substituir variáveis do usuário (suporta múltiplas sintaxes)
-    // Nome completo
     systemPrompt = systemPrompt.replace(/\{\{USUARIO_NOME\}\}/g, fullName);
     systemPrompt = systemPrompt.replace(/\{user_full_name\}/g, fullName);
 
-    // Nome e sobrenome separados
     systemPrompt = systemPrompt.replace(/\{user_first_name\}/g, firstName);
     systemPrompt = systemPrompt.replace(/\{user_last_name\}/g, lastName);
 
-    // Email
     systemPrompt = systemPrompt.replace(/\{\{USUARIO_EMAIL\}\}/g, userProfile?.email || user.email || 'N/A');
     systemPrompt = systemPrompt.replace(/\{user_email\}/g, userProfile?.email || user.email || 'N/A');
 
-    // OAB
     systemPrompt = systemPrompt.replace(/\{\{USUARIO_OAB\}\}/g, userProfile?.oab || 'N/A');
     systemPrompt = systemPrompt.replace(/\{user_oab\}/g, userProfile?.oab || 'N/A');
 
-    // CPF
     systemPrompt = systemPrompt.replace(/\{user_cpf\}/g, userProfile?.cpf || 'N/A');
 
-    // Cidade e Estado
     systemPrompt = systemPrompt.replace(/\{user_city\}/g, userProfile?.city || 'N/A');
     systemPrompt = systemPrompt.replace(/\{user_state\}/g, userProfile?.state || 'N/A');
 
-    // Telefone
     systemPrompt = systemPrompt.replace(/\{user_phone\}/g, userProfile?.phone || 'N/A');
     systemPrompt = systemPrompt.replace(/\{user_phone_country_code\}/g, userProfile?.phone_country_code || '+55');
 
-    // Substituir variáveis do processo
     systemPrompt = systemPrompt.replace(/\{processo_name\}/g, processo.nome_processo || processo.file_name);
     systemPrompt = systemPrompt.replace(/\{total_pages\}/g, String(processo.total_pages || 0));
     systemPrompt = systemPrompt.replace(/\{chunks_count\}/g, String(processo.total_chunks_count || 0));
 
-    // Remover variáveis não suportadas (processo_number foi removido do sistema)
     systemPrompt = systemPrompt.replace(/\{processo_number\}/g, '');
 
     console.log(`📝 Using prompt type: ${promptType}`);
 
-    // Buscar modelo ativo para chat
     const { data: priorityModel } = await supabase
       .from('admin_chat_models')
       .select('system_model, model_name, supports_system_instruction')
@@ -457,7 +468,6 @@ ${message}`;
     const modelName = priorityModel.system_model;
     console.log(`📱 Using chat model: ${priorityModel.model_name} (${modelName})`);
 
-    // Salvar mensagem do usuário
     await supabase
       .from('chat_messages')
       .insert({
@@ -467,7 +477,6 @@ ${message}`;
         content: message,
       });
 
-    // Buscar histórico de mensagens
     const { data: previousMessages } = await supabase
       .from('chat_messages')
       .select('role, content')
@@ -475,21 +484,17 @@ ${message}`;
       .eq('user_id', user.id)
       .order('created_at', { ascending: true });
 
-    // Converter role 'assistant' para 'model' (formato esperado pelo Gemini)
     const chatHistory = previousMessages?.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : msg.role as 'user' | 'model',
       parts: [{ text: msg.content }]
     })) || [];
 
-    // Iniciar chat com Gemini
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    // Determinar limite de tokens baseado no tipo de prompt
     const tokenContextKey = promptType === 'large_file_chunks' ? 'chat_complex_files' : 'chat_standard';
     const fallbackTokens = promptType === 'large_file_chunks' ? 16384 : 8192;
     const maxOutputTokens = await getMaxOutputTokens(supabase, tokenContextKey, fallbackTokens);
 
-    // Para gemini-2.5-pro e modelos similares, usar formato correto de systemInstruction
     const model = genAI.getGenerativeModel({
       model: modelName,
       systemInstruction: {
@@ -506,10 +511,11 @@ ${message}`;
       history: chatHistory,
     });
 
-    // Enviar mensagem com contexto apropriado
     let result;
-    if (promptType === 'small_file' && processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
-      // Para arquivos pequenos, enviar PDF como inlineData + pergunta
+    if (promptType === 'consolidated_analysis') {
+      console.log('🎯 Sending consolidated analysis context (text only, highly efficient)');
+      result = await chat.sendMessage(contextualMessage);
+    } else if (promptType === 'small_file' && processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
       console.log('📎 Sending small file with inlineData (base64)');
       result = await chat.sendMessage([
         {
@@ -521,13 +527,11 @@ ${message}`;
         { text: contextualMessage }
       ]);
     } else if (promptType === 'large_file_chunks' && chunks.length > 0) {
-      // Para arquivos grandes, enviar URIs dos chunks + pergunta
       const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
 
       if (chunksWithValidUris.length > 0) {
         console.log(`📎 Sending ${chunksWithValidUris.length} chunks as fileData (URIs)`);
 
-        // Criar array de fileData para cada chunk
         const messageParts: any[] = chunksWithValidUris.map(chunk => ({
           fileData: {
             mimeType: 'application/pdf',
@@ -535,29 +539,24 @@ ${message}`;
           }
         }));
 
-        // Adicionar a mensagem do usuário ao final
         messageParts.push({ text: contextualMessage });
 
         console.log(`📤 Sending message with ${messageParts.length - 1} file parts + 1 text part`);
         result = await chat.sendMessage(messageParts);
       } else {
-        // Fallback: enviar apenas texto se não houver URIs válidos
         console.log('⚠️ No valid URIs found, sending text only');
         result = await chat.sendMessage(contextualMessage);
       }
     } else {
-      // Fallback: para casos sem PDF ou chunks, enviar apenas texto
       console.log('📝 Sending text only (no files attached)');
       result = await chat.sendMessage(contextualMessage);
     }
 
     let aiResponse = result.response.text();
 
-    // Limpar resposta
     aiResponse = cleanMarkdownFromResponse(aiResponse);
     aiResponse = removeIntroductoryPhrases(aiResponse);
 
-    // Salvar resposta do assistente
     await supabase
       .from('chat_messages')
       .insert({
@@ -567,7 +566,6 @@ ${message}`;
         content: aiResponse,
       });
 
-    // Debitar tokens
     const estimatedTokens = Math.ceil((message.length + aiResponse.length) / 4);
 
     const { error: debitError } = await supabase.rpc('debit_user_tokens', {
