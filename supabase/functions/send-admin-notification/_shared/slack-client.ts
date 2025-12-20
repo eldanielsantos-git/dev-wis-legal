@@ -171,12 +171,7 @@ function formatSlackMessage(
 
   return {
     text: previewText,
-    attachments: [
-      {
-        color: config.color,
-        blocks,
-      },
-    ],
+    blocks,
   };
 }
 
