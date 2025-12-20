@@ -347,8 +347,8 @@ Deno.serve(async (req: Request) => {
         const userEmail = userData?.email || 'N/A';
         const fileName = processoData.file_name || 'N/A';
 
-        notifyAdminSafe({
-          type: 'analysis_completed',
+        await notifyAdminSafe({
+          type_slug: 'analysis_completed',
           title: 'Análise Concluída',
           message: `${userName} | ${fileName} | ${durationText}`,
           severity: 'success',
@@ -362,8 +362,8 @@ Deno.serve(async (req: Request) => {
             prompts_consolidated: analysisResults.length,
             is_complex: processoData.is_complex,
           },
-          userId: processoData.user_id,
-          processoId: processo_id,
+          user_id: processoData.user_id,
+          processo_id: processo_id,
         });
       }
     }
