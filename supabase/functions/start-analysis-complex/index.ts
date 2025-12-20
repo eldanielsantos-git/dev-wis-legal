@@ -1,10 +1,36 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { GoogleAIFileManager } from 'npm:@google/generative-ai@0.24.1/server';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
+
+async function waitForFileProcessing(
+  fileManager: any,
+  fileName: string,
+  timeoutMs: number = 5 * 60 * 1000
+): Promise<any> {
+  const startTime = Date.now();
+  const pollingInterval = 2000;
+
+  while (Date.now() - startTime < timeoutMs) {
+    const file = await fileManager.getFile(fileName);
+
+    if (file.state === 'ACTIVE') {
+      return file;
+    }
+
+    if (file.state === 'FAILED') {
+      throw new Error(`Processamento do arquivo falhou: ${file.error?.message || 'Unknown error'}`);
+    }
+
+    await new Promise(resolve => setTimeout(resolve, pollingInterval));
+  }
+
+  throw new Error('Timeout aguardando processamento do arquivo');
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -17,8 +43,14 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY não configurada');
+    }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const fileManager = new GoogleAIFileManager(geminiApiKey);
     const { processo_id } = await req.json();
 
     if (!processo_id) {
@@ -191,6 +223,144 @@ Deno.serve(async (req: Request) => {
     if (chunks.length !== processo.total_chunks_count) {
       console.warn(`[${callId}] ⚠️ Número de chunks (${chunks.length}) não corresponde ao esperado (${processo.total_chunks_count})`);
     }
+
+    console.log(`[${callId}] 🚀 Iniciando upload de ${chunks.length} chunks para o Gemini...`);
+
+    let uploadedCount = 0;
+    let skippedCount = 0;
+    const uploadErrors: string[] = [];
+
+    for (const chunk of chunks) {
+      try {
+        if (chunk.gemini_file_uri && chunk.gemini_file_state === 'ACTIVE') {
+          console.log(`[${callId}] ⏭️ Chunk ${chunk.chunk_index} já possui URI do Gemini: ${chunk.gemini_file_uri}`);
+          skippedCount++;
+          continue;
+        }
+
+        console.log(`[${callId}] 📤 Fazendo upload do chunk ${chunk.chunk_index}/${chunk.total_chunks}...`);
+
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from('processos')
+          .download(chunk.file_path);
+
+        if (downloadError || !fileData) {
+          throw new Error(`Erro ao baixar chunk ${chunk.chunk_index}: ${downloadError?.message || 'Arquivo não encontrado'}. Path: ${chunk.file_path}`);
+        }
+
+        const arrayBuffer = await fileData.arrayBuffer();
+        const uint8Array = new Uint8Array(arrayBuffer);
+        const chunkFileName = `chunk_${chunk.chunk_index}_of_${chunk.total_chunks}.pdf`;
+
+        const MAX_RETRIES = 3;
+        let lastError: Error | null = null;
+        let uploadSuccess = false;
+
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+          try {
+            const tempFilePath = `/tmp/${chunk.id}_${chunkFileName}`;
+            await Deno.writeFile(tempFilePath, uint8Array);
+
+            const uploadResult = await fileManager.uploadFile(tempFilePath, {
+              mimeType: 'application/pdf',
+              displayName: chunkFileName,
+            });
+
+            try {
+              await Deno.remove(tempFilePath);
+            } catch (e) {
+              console.log(`[${callId}] ⚠️ Erro ao remover arquivo temporário:`, e);
+            }
+
+            console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} enviado: ${uploadResult.file.uri}`);
+
+            const expiresAt = new Date(uploadResult.file.expirationTime!);
+            const uploadedAt = new Date(uploadResult.file.createTime!);
+
+            await supabase
+              .from('process_chunks')
+              .update({
+                gemini_file_uri: uploadResult.file.uri,
+                gemini_file_name: uploadResult.file.name,
+                gemini_file_state: uploadResult.file.state,
+                gemini_file_uploaded_at: uploadedAt.toISOString(),
+                gemini_file_expires_at: expiresAt.toISOString(),
+              })
+              .eq('id', chunk.id);
+
+            if (uploadResult.file.state === 'PROCESSING') {
+              console.log(`[${callId}] ⏳ Chunk ${chunk.chunk_index} em processamento no Gemini, aguardando...`);
+
+              const fileMetadata = await waitForFileProcessing(fileManager, uploadResult.file.name, 10 * 60 * 1000);
+
+              await supabase
+                .from('process_chunks')
+                .update({
+                  gemini_file_state: fileMetadata.state,
+                })
+                .eq('id', chunk.id);
+
+              console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} pronto: ${fileMetadata.state}`);
+            }
+
+            uploadSuccess = true;
+            uploadedCount++;
+            break;
+          } catch (uploadError) {
+            lastError = uploadError instanceof Error ? uploadError : new Error('Erro desconhecido');
+            console.error(`[${callId}] ❌ Tentativa ${attempt}/${MAX_RETRIES} falhou para chunk ${chunk.chunk_index}:`, lastError.message);
+
+            if (attempt < MAX_RETRIES) {
+              const waitTime = attempt * 2000;
+              console.log(`[${callId}] ⏳ Aguardando ${waitTime}ms antes de tentar novamente...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+          }
+        }
+
+        if (!uploadSuccess) {
+          const errorMsg = `Falha ao enviar chunk ${chunk.chunk_index} após ${MAX_RETRIES} tentativas: ${lastError?.message || 'Erro desconhecido'}`;
+          uploadErrors.push(errorMsg);
+          console.error(`[${callId}] ❌ ${errorMsg}`);
+        }
+      } catch (error: any) {
+        const errorMsg = `Erro ao processar chunk ${chunk.chunk_index}: ${error.message}`;
+        uploadErrors.push(errorMsg);
+        console.error(`[${callId}] ❌ ${errorMsg}`);
+      }
+    }
+
+    console.log(`[${callId}] 📊 Resumo do upload:`);
+    console.log(`[${callId}]   ✅ Enviados: ${uploadedCount}`);
+    console.log(`[${callId}]   ⏭️ Já existentes: ${skippedCount}`);
+    console.log(`[${callId}]   ❌ Falhas: ${uploadErrors.length}`);
+
+    if (uploadErrors.length > 0) {
+      console.error(`[${callId}] ❌ Erros encontrados:`, uploadErrors);
+
+      await supabase
+        .from('complex_processing_status')
+        .update({
+          current_phase: 'upload_failed',
+          error_message: `${uploadErrors.length} chunks com falha no upload: ${uploadErrors.slice(0, 3).join('; ')}${uploadErrors.length > 3 ? '...' : ''}`,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('processo_id', processo_id);
+
+      throw new Error(`Falha ao enviar ${uploadErrors.length} chunks para o Gemini. Primeira falha: ${uploadErrors[0]}`);
+    }
+
+    await supabase
+      .from('complex_processing_status')
+      .update({
+        current_phase: 'chunks_uploaded',
+        chunks_uploaded: uploadedCount + skippedCount,
+        upload_progress_percent: 100,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('processo_id', processo_id);
+
+    console.log(`[${callId}] ✅ Todos os chunks foram enviados ao Gemini com sucesso!`);
 
     const queueItems = [];
     for (const chunk of chunks) {
