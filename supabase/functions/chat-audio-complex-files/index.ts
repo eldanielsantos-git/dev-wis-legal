@@ -1,8 +1,8 @@
 /**
- * EDGE FUNCTION: process-audio-message
+ * EDGE FUNCTION: chat-audio-complex-files
  *
- * Processa mensagens de áudio enviadas no chat para arquivos PEQUENOS (< 1000 páginas).
- * Transcreve o áudio e gera resposta com contexto do processo.
+ * Processa mensagens de áudio para arquivos COMPLEXOS (>= 1000 páginas ou com análises consolidadas).
+ * Usa análises consolidadas ou chunks do Gemini File API.
  *
  * VARIÁVEIS SUPORTADAS NOS PROMPTS:
  *
@@ -21,11 +21,10 @@
  * Processo:
  * - {processo_name}                      → Nome do arquivo
  * - {total_pages}                        → Total de páginas
+ * - {chunks_count}                       → Número de chunks
  *
  * Sistema:
  * - {{DATA_HORA_ATUAL}}                  → Data/hora atual em Brasília
- *
- * NOTA: A variável {processo_number} foi REMOVIDA do sistema.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
@@ -141,14 +140,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    console.log('[process-audio-message] Starting audio processing');
+    console.log('[chat-audio-complex-files] Starting audio processing for complex files');
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
     if (!geminiApiKey) {
-      console.error('[process-audio-message] GEMINI_API_KEY not configured');
+      console.error('[chat-audio-complex-files] GEMINI_API_KEY not configured');
       throw new Error('GEMINI_API_KEY not configured');
     }
 
@@ -156,7 +155,7 @@ Deno.serve(async (req: Request) => {
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      console.error('[process-audio-message] Missing authorization header');
+      console.error('[chat-audio-complex-files] Missing authorization header');
       return new Response(
         JSON.stringify({ error: 'Missing authorization header' }),
         {
@@ -170,7 +169,7 @@ Deno.serve(async (req: Request) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
 
     if (authError || !user) {
-      console.error('[process-audio-message] Auth error:', authError);
+      console.error('[chat-audio-complex-files] Auth error:', authError);
       return new Response(
         JSON.stringify({ error: 'Invalid authorization token' }),
         {
@@ -180,12 +179,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('[process-audio-message] User authenticated:', user.id);
+    console.log('[chat-audio-complex-files] User authenticated:', user.id);
 
     const { processo_id, audio_data, audio_duration }: RequestBody = await req.json();
 
     if (!processo_id || !audio_data) {
-      console.error('[process-audio-message] Missing parameters');
+      console.error('[chat-audio-complex-files] Missing parameters');
       return new Response(
         JSON.stringify({ error: 'Missing processo_id or audio_data' }),
         {
@@ -195,7 +194,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('[process-audio-message] Processing for processo:', processo_id);
+    console.log('[chat-audio-complex-files] Processing for processo:', processo_id);
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
@@ -205,7 +204,7 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (processoError || !processo) {
-      console.error('[process-audio-message] Processo error:', processoError);
+      console.error('[chat-audio-complex-files] Processo error:', processoError);
       return new Response(
         JSON.stringify({ error: 'Processo not found or access denied' }),
         {
@@ -215,7 +214,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('[process-audio-message] Processing audio data');
+    console.log('[chat-audio-complex-files] Processing audio data');
 
     try {
       const audioBuffer = Uint8Array.from(atob(audio_data), c => c.charCodeAt(0));
@@ -230,17 +229,17 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (modelError || !modelConfig) {
-        console.error('[process-audio-message] Model config error:', modelError);
+        console.error('[chat-audio-complex-files] Model config error:', modelError);
         throw new Error('No active chat model configuration found');
       }
 
       const modelId = modelConfig.system_model;
-      console.log('[process-audio-message] Using chat model:', modelConfig.model_name, '(', modelId, ')');
+      console.log('[chat-audio-complex-files] Using chat model:', modelConfig.model_name, '(', modelId, ')');
 
       const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-      console.log('[process-audio-message] Transcribing audio with Gemini');
-      const maxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio', 8192);
+      console.log('[chat-audio-complex-files] Transcribing audio with Gemini');
+      const maxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio_complex', 16384);
       const model = genAI.getGenerativeModel({
         model: modelId,
         generationConfig: {
@@ -260,9 +259,9 @@ Deno.serve(async (req: Request) => {
       ]);
 
       const transcription = transcriptionResult.response.text();
-      console.log('[process-audio-message] Transcription:', transcription);
+      console.log('[chat-audio-complex-files] Transcription:', transcription);
 
-      console.log('[process-audio-message] Uploading audio to storage');
+      console.log('[chat-audio-complex-files] Uploading audio to storage');
       const storageFileName = `${user.id}/${processo_id}_${timestamp}.webm`;
 
       const { error: uploadError } = await supabase.storage
@@ -273,7 +272,7 @@ Deno.serve(async (req: Request) => {
         });
 
       if (uploadError) {
-        console.error('[process-audio-message] Upload error:', uploadError);
+        console.error('[chat-audio-complex-files] Upload error:', uploadError);
       }
 
       const { data: signedUrlData } = await supabase.storage
@@ -297,18 +296,59 @@ Deno.serve(async (req: Request) => {
         });
 
       if (userMessageError) {
-        console.error('[process-audio-message] Error saving user message:', userMessageError);
+        console.error('[chat-audio-complex-files] Error saving user message:', userMessageError);
       }
 
-      console.log('[process-audio-message] User message saved');
+      console.log('[chat-audio-complex-files] User message saved');
 
-      if (!processo.pdf_base64 || processo.pdf_base64.trim() === '') {
-        console.log('[process-audio-message] No PDF available, returning transcription only');
+      const { data: analysisResults, error: analysisError } = await supabase
+        .from('analysis_results')
+        .select('prompt_title, result_content, execution_order')
+        .eq('processo_id', processo_id)
+        .eq('status', 'completed')
+        .not('result_content', 'is', null)
+        .order('execution_order', { ascending: true });
+
+      let useConsolidatedAnalysis = false;
+      let useChunks = false;
+      let chunks: any[] = [];
+
+      if (analysisResults && analysisResults.length >= 7) {
+        useConsolidatedAnalysis = true;
+        console.log(`[chat-audio-complex-files] Using consolidated analysis: ${analysisResults.length} analyses found`);
+      } else if (processo.is_chunked && processo.total_chunks_count > 0) {
+        useChunks = true;
+        console.log(`[chat-audio-complex-files] Large file detected: ${processo.total_chunks_count} chunks`);
+
+        const { data: chunksData, error: chunksError } = await supabase
+          .from('process_chunks')
+          .select('chunk_index, start_page, end_page, gemini_file_uri, pages_count, status')
+          .eq('processo_id', processo_id)
+          .eq('status', 'completed')
+          .order('chunk_index', { ascending: true });
+
+        chunks = chunksData || [];
+
+        if (chunksError) {
+          console.error('[chat-audio-complex-files] Error fetching chunks:', chunksError);
+        }
+
+        const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
+        if (chunksWithValidUris.length === 0) {
+          console.log('[chat-audio-complex-files] No valid chunk URIs available');
+          useChunks = false;
+        } else {
+          console.log(`[chat-audio-complex-files] Found ${chunksWithValidUris.length} chunks with valid URIs`);
+        }
+      }
+
+      if (!useConsolidatedAnalysis && !useChunks) {
+        console.log('[chat-audio-complex-files] No analyses or chunks available');
         return new Response(
           JSON.stringify({
             transcription,
             audio_url: audioUrl,
-            response: 'Áudio recebido e transcrito com sucesso. O PDF ainda está sendo processado.'
+            response: 'Áudio recebido e transcrito com sucesso. O processo ainda está sendo analisado. Aguarde a conclusão para fazer perguntas sobre o conteúdo.'
           }),
           {
             status: 200,
@@ -317,23 +357,23 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      console.log('[process-audio-message] Generating AI response');
+      console.log('[chat-audio-complex-files] Generating AI response');
 
       const { data: audioPromptData, error: promptError } = await supabase
         .from('chat_system_prompts')
         .select('system_prompt')
-        .eq('prompt_type', 'audio')
+        .eq('prompt_type', 'audio_complex')
         .eq('is_active', true)
         .order('priority', { ascending: true })
         .limit(1)
         .maybeSingle();
 
       if (promptError || !audioPromptData) {
-        console.error('[process-audio-message] Error fetching audio prompt:', promptError);
+        console.error('[chat-audio-complex-files] Error fetching audio complex prompt:', promptError);
         return new Response(
           JSON.stringify({
-            error: 'Prompt de áudio não encontrado',
-            details: 'Não há prompt ativo configurado para mensagens de áudio'
+            error: 'Prompt de áudio para arquivos complexos não encontrado',
+            details: 'Não há prompt ativo configurado para mensagens de áudio em arquivos complexos'
           }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -363,36 +403,53 @@ Deno.serve(async (req: Request) => {
 
       systemPrompt = systemPrompt.replace(/\{\{USUARIO_NOME\}\}/g, fullName);
       systemPrompt = systemPrompt.replace(/\{user_full_name\}/g, fullName);
-
       systemPrompt = systemPrompt.replace(/\{user_first_name\}/g, firstName);
       systemPrompt = systemPrompt.replace(/\{user_last_name\}/g, lastName);
-
       systemPrompt = systemPrompt.replace(/\{\{USUARIO_EMAIL\}\}/g, userProfile?.email || user.email || 'N/A');
       systemPrompt = systemPrompt.replace(/\{user_email\}/g, userProfile?.email || user.email || 'N/A');
-
       systemPrompt = systemPrompt.replace(/\{\{USUARIO_OAB\}\}/g, userProfile?.oab || 'N/A');
       systemPrompt = systemPrompt.replace(/\{user_oab\}/g, userProfile?.oab || 'N/A');
-
       systemPrompt = systemPrompt.replace(/\{user_cpf\}/g, userProfile?.cpf || 'N/A');
-
       systemPrompt = systemPrompt.replace(/\{user_city\}/g, userProfile?.city || 'N/A');
       systemPrompt = systemPrompt.replace(/\{user_state\}/g, userProfile?.state || 'N/A');
-
       systemPrompt = systemPrompt.replace(/\{user_phone\}/g, userProfile?.phone || 'N/A');
       systemPrompt = systemPrompt.replace(/\{user_phone_country_code\}/g, userProfile?.phone_country_code || '+55');
-
       systemPrompt = systemPrompt.replace(/\{processo_name\}/g, processo.nome_processo || processo.file_name);
       systemPrompt = systemPrompt.replace(/\{total_pages\}/g, String(processo.total_pages || 0));
-
+      systemPrompt = systemPrompt.replace(/\{chunks_count\}/g, String(processo.total_chunks_count || 0));
       systemPrompt = systemPrompt.replace(/\{processo_number\}/g, '');
 
-      const contextPrompt = `${systemPrompt}
+      let contextPrompt: string;
+
+      if (useConsolidatedAnalysis && analysisResults) {
+        const analysisContext = analysisResults.map((analysis, index) =>
+          `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
+        ).join('\n\n---\n');
+
+        contextPrompt = `${systemPrompt}
+
+# ANÁLISES CONSOLIDADAS DO PROCESSO
+
+Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo estão os resultados completos:
+${analysisContext}
+
+---
+
+# PERGUNTA DO USUÁRIO (TRANSCRIÇÃO DE ÁUDIO):
+"${transcription}"
+
+INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises consolidadas fornecidas. Seja direto, objetivo e cite qual análise você usou quando relevante.`;
+
+        console.log(`[chat-audio-complex-files] Using consolidated analysis context with ${analysisResults.length} analyses`);
+      } else {
+        contextPrompt = `${systemPrompt}
 
 Pergunta do usuário (transcrição de áudio): "${transcription}"
 
 Responda de forma direta, clara e objetiva com base no documento do processo.`;
+      }
 
-      const chatMaxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio', 8192);
+      const chatMaxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio_complex', 16384);
       const chatModel = genAI.getGenerativeModel({
         model: modelId,
         generationConfig: {
@@ -401,19 +458,45 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
         }
       });
 
-      const chatResult = await chatModel.generateContent([
-        {
-          inlineData: {
-            mimeType: 'application/pdf',
-            data: processo.pdf_base64
-          }
-        },
-        { text: contextPrompt }
-      ]);
+      let chatResult;
+
+      if (useConsolidatedAnalysis) {
+        console.log('[chat-audio-complex-files] Sending consolidated analysis context (text only)');
+        chatResult = await chatModel.generateContent([
+          { text: contextPrompt }
+        ]);
+      } else if (useChunks && chunks.length > 0) {
+        const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
+
+        if (chunksWithValidUris.length > 0) {
+          console.log(`[chat-audio-complex-files] Sending ${chunksWithValidUris.length} chunks as fileData (URIs)`);
+
+          const messageParts: any[] = chunksWithValidUris.map(chunk => ({
+            fileData: {
+              mimeType: 'application/pdf',
+              fileUri: chunk.gemini_file_uri
+            }
+          }));
+
+          messageParts.push({ text: contextPrompt });
+
+          chatResult = await chatModel.generateContent(messageParts);
+        } else {
+          console.log('[chat-audio-complex-files] No valid chunk URIs, sending text only');
+          chatResult = await chatModel.generateContent([
+            { text: contextPrompt }
+          ]);
+        }
+      } else {
+        console.log('[chat-audio-complex-files] Sending text only (no data available)');
+        chatResult = await chatModel.generateContent([
+          { text: contextPrompt }
+        ]);
+      }
 
       let assistantResponse = chatResult.response.text();
       assistantResponse = removeIntroductoryPhrases(assistantResponse);
-      console.log('[process-audio-message] AI response generated');
+      console.log('[chat-audio-complex-files] AI response generated');
 
       const assistantMessageId = crypto.randomUUID();
       await supabase
@@ -426,7 +509,7 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
           content: assistantResponse
         });
 
-      console.log('[process-audio-message] Assistant message saved');
+      console.log('[chat-audio-complex-files] Assistant message saved');
 
       return new Response(
         JSON.stringify({
@@ -441,15 +524,15 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
       );
 
     } catch (processingError) {
-      console.error('[process-audio-message] Processing error:', processingError);
+      console.error('[chat-audio-complex-files] Processing error:', processingError);
       throw processingError;
     }
 
   } catch (error) {
-    console.error('[process-audio-message] Fatal error:', error);
+    console.error('[chat-audio-complex-files] Fatal error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     const errorStack = error instanceof Error ? error.stack : '';
-    console.error('[process-audio-message] Error stack:', errorStack);
+    console.error('[chat-audio-complex-files] Error stack:', errorStack);
 
     return new Response(
       JSON.stringify({
