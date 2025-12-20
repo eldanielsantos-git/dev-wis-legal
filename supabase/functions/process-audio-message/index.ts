@@ -302,13 +302,54 @@ Deno.serve(async (req: Request) => {
 
       console.log('[process-audio-message] User message saved');
 
-      if (!processo.pdf_base64 || processo.pdf_base64.trim() === '') {
-        console.log('[process-audio-message] No PDF available, returning transcription only');
+      const { data: analysisResults, error: analysisError } = await supabase
+        .from('analysis_results')
+        .select('prompt_title, result_content, execution_order')
+        .eq('processo_id', processo_id)
+        .eq('status', 'completed')
+        .not('result_content', 'is', null)
+        .order('execution_order', { ascending: true });
+
+      let useConsolidatedAnalysis = false;
+      let useChunks = false;
+      let chunks: any[] = [];
+
+      if (analysisResults && analysisResults.length >= 7) {
+        useConsolidatedAnalysis = true;
+        console.log(`[process-audio-message] Using consolidated analysis: ${analysisResults.length} analyses found`);
+      } else if (processo.is_chunked && processo.total_chunks_count > 0) {
+        useChunks = true;
+        console.log(`[process-audio-message] Large file detected: ${processo.total_chunks_count} chunks`);
+
+        const { data: chunksData, error: chunksError } = await supabase
+          .from('process_chunks')
+          .select('chunk_index, start_page, end_page, gemini_file_uri, pages_count, status')
+          .eq('processo_id', processo_id)
+          .eq('status', 'completed')
+          .order('chunk_index', { ascending: true });
+
+        chunks = chunksData || [];
+
+        if (chunksError) {
+          console.error('[process-audio-message] Error fetching chunks:', chunksError);
+        }
+
+        const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
+        if (chunksWithValidUris.length === 0) {
+          console.log('[process-audio-message] No valid chunk URIs available');
+          useChunks = false;
+        } else {
+          console.log(`[process-audio-message] Found ${chunksWithValidUris.length} chunks with valid URIs`);
+        }
+      }
+
+      if (!useConsolidatedAnalysis && !useChunks && (!processo.pdf_base64 || processo.pdf_base64.trim() === '')) {
+        console.log('[process-audio-message] No data available (no analyses, chunks or PDF), returning transcription only');
         return new Response(
           JSON.stringify({
             transcription,
             audio_url: audioUrl,
-            response: 'Áudio recebido e transcrito com sucesso. O PDF ainda está sendo processado.'
+            response: 'Áudio recebido e transcrito com sucesso. O processo ainda está sendo processado.'
           }),
           {
             status: 200,
@@ -319,7 +360,6 @@ Deno.serve(async (req: Request) => {
 
       console.log('[process-audio-message] Generating AI response');
 
-      // Buscar prompt específico para áudio
       const { data: audioPromptData, error: promptError } = await supabase
         .from('chat_system_prompts')
         .select('system_prompt')
@@ -401,11 +441,35 @@ Deno.serve(async (req: Request) => {
       // Remover variáveis não suportadas (processo_number foi removido do sistema)
       systemPrompt = systemPrompt.replace(/\{processo_number\}/g, '');
 
-      const contextPrompt = `${systemPrompt}
+      let contextPrompt: string;
+
+      if (useConsolidatedAnalysis && analysisResults) {
+        const analysisContext = analysisResults.map((analysis, index) =>
+          `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
+        ).join('\n\n---\n');
+
+        contextPrompt = `${systemPrompt}
+
+# ANÁLISES CONSOLIDADAS DO PROCESSO
+
+Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo estão os resultados completos:
+${analysisContext}
+
+---
+
+# PERGUNTA DO USUÁRIO (TRANSCRIÇÃO DE ÁUDIO):
+"${transcription}"
+
+INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises consolidadas fornecidas. Seja direto, objetivo e cite qual análise você usou quando relevante.`;
+
+        console.log(`[process-audio-message] Using consolidated analysis context with ${analysisResults.length} analyses`);
+      } else {
+        contextPrompt = `${systemPrompt}
 
 Pergunta do usuário (transcrição de áudio): "${transcription}"
 
 Responda de forma direta, clara e objetiva com base no documento do processo.`;
+      }
 
       const chatMaxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio', 8192);
       const chatModel = genAI.getGenerativeModel({
@@ -416,15 +480,52 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
         }
       });
 
-      const chatResult = await chatModel.generateContent([
-        {
-          inlineData: {
-            mimeType: 'application/pdf',
-            data: processo.pdf_base64
-          }
-        },
-        { text: contextPrompt }
-      ]);
+      let chatResult;
+
+      if (useConsolidatedAnalysis) {
+        console.log('[process-audio-message] Sending consolidated analysis context (text only)');
+        chatResult = await chatModel.generateContent([
+          { text: contextPrompt }
+        ]);
+      } else if (useChunks && chunks.length > 0) {
+        const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
+
+        if (chunksWithValidUris.length > 0) {
+          console.log(`[process-audio-message] Sending ${chunksWithValidUris.length} chunks as fileData (URIs)`);
+
+          const messageParts: any[] = chunksWithValidUris.map(chunk => ({
+            fileData: {
+              mimeType: 'application/pdf',
+              fileUri: chunk.gemini_file_uri
+            }
+          }));
+
+          messageParts.push({ text: contextPrompt });
+
+          chatResult = await chatModel.generateContent(messageParts);
+        } else {
+          console.log('[process-audio-message] No valid chunk URIs, sending text only');
+          chatResult = await chatModel.generateContent([
+            { text: contextPrompt }
+          ]);
+        }
+      } else if (processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
+        console.log('[process-audio-message] Sending small file with inlineData (base64)');
+        chatResult = await chatModel.generateContent([
+          {
+            inlineData: {
+              mimeType: 'application/pdf',
+              data: processo.pdf_base64
+            }
+          },
+          { text: contextPrompt }
+        ]);
+      } else {
+        console.log('[process-audio-message] Sending text only (no files)');
+        chatResult = await chatModel.generateContent([
+          { text: contextPrompt }
+        ]);
+      }
 
       let assistantResponse = chatResult.response.text();
       assistantResponse = removeIntroductoryPhrases(assistantResponse);
