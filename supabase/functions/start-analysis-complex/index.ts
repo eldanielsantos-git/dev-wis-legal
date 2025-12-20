@@ -135,24 +135,115 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`[${callId}] Análise complexa iniciada com sucesso`);
-    console.log(`[${callId}] 🚀 Adicionando à fila de processamento...`);
+    console.log(`[${callId}] 🚀 Populando fila de processamento...`);
 
-    const { data: queueItem, error: queueError } = await supabase
+    const { data: existingQueueItems, error: existingQueueError } = await supabase
       .from('processing_queue')
-      .insert({
-        processo_id,
-        priority: 1,
-        status: 'queued',
-        total_chunks: processo.total_chunks_count,
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('processo_id', processo_id)
+      .limit(1);
+
+    if (existingQueueError) {
+      console.error(`[${callId}] ⚠️ Erro ao verificar fila existente:`, existingQueueError);
+    }
+
+    if (existingQueueItems && existingQueueItems.length > 0) {
+      console.log(`[${callId}] ⏸️ Fila já foi populada anteriormente, pulando criação`);
+
+      fetch(`${supabaseUrl}/functions/v1/process-complex-worker`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ processo_id }),
+      }).catch(err => {
+        console.error(`[${callId}] ⚠️ Erro ao disparar worker:`, err);
+      });
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: 'Processamento retomado',
+          total_prompts: prompts.length,
+          total_chunks: processo.total_chunks_count,
+          status: 'queued',
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { data: chunks, error: chunksError } = await supabase
+      .from('process_chunks')
+      .select('*')
+      .eq('processo_id', processo_id)
+      .order('chunk_index', { ascending: true });
+
+    if (chunksError || !chunks || chunks.length === 0) {
+      throw new Error('Nenhum chunk encontrado para o processo');
+    }
+
+    console.log(`[${callId}] 📦 Encontrados ${chunks.length} chunks para processar`);
+
+    if (chunks.length !== processo.total_chunks_count) {
+      console.warn(`[${callId}] ⚠️ Número de chunks (${chunks.length}) não corresponde ao esperado (${processo.total_chunks_count})`);
+    }
+
+    const queueItems = [];
+    for (const chunk of chunks) {
+      for (const prompt of prompts) {
+        queueItems.push({
+          processo_id,
+          chunk_id: chunk.id,
+          prompt_id: prompt.id,
+          queue_type: 'chunk_processing',
+          priority: prompt.execution_order,
+          status: 'pending',
+          prompt_content: prompt.prompt_content,
+          context_data: {
+            chunk_index: chunk.chunk_index,
+            total_chunks: chunk.total_chunks,
+            start_page: chunk.start_page,
+            end_page: chunk.end_page,
+            pages_count: chunk.pages_count,
+            has_previous_context: chunk.chunk_index > 1,
+            prompt_title: prompt.title,
+            execution_order: prompt.execution_order,
+          },
+          max_attempts: 3,
+        });
+      }
+    }
+
+    console.log(`[${callId}] 📝 Criando ${queueItems.length} itens na fila (${chunks.length} chunks × ${prompts.length} prompts)`);
+
+    const { error: queueError } = await supabase
+      .from('processing_queue')
+      .insert(queueItems);
 
     if (queueError) {
-      console.error(`[${callId}] ⚠️ Erro ao adicionar à fila:`, queueError);
-    } else {
-      console.log(`[${callId}] ✅ Adicionado à fila com prioridade ${queueItem.priority}`);
+      console.error(`[${callId}] ❌ Erro ao popular fila:`, queueError);
+      throw new Error(`Erro ao popular fila: ${queueError.message}`);
     }
+
+    console.log(`[${callId}] ✅ Fila populada com sucesso`);
+    console.log(`[${callId}] 🚀 Disparando primeiro worker...`);
+
+    fetch(`${supabaseUrl}/functions/v1/process-complex-worker`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseServiceKey}`,
+      },
+      body: JSON.stringify({ processo_id }),
+    }).catch(err => {
+      console.error(`[${callId}] ⚠️ Erro ao disparar worker:`, err);
+    });
+
+    console.log(`[${callId}] ✅ Worker disparado`)
 
     return new Response(
       JSON.stringify({
