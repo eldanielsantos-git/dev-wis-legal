@@ -622,21 +622,6 @@ function MyProcessDetailPageInner({
     ? processingPrompt.execution_order
     : completedPrompts;
 
-  // Log para debug do progresso
-  React.useEffect(() => {
-    console.log('📊 Progress Update:', {
-      totalPrompts,
-      completedPrompts,
-      processingPrompt: processingPrompt ? {
-        order: processingPrompt.execution_order,
-        title: processingPrompt.prompt_title,
-        status: processingPrompt.status
-      } : null,
-      currentPrompt,
-      timestamp: new Date().toISOString()
-    });
-  }, [totalPrompts, completedPrompts, processingPrompt?.execution_order, currentPrompt]);
-
   // Buscar o modelo atual em uso
   const llmModelName = processo.current_llm_model_name || null;
   const isModelSwitching = processo.llm_model_switching || false;

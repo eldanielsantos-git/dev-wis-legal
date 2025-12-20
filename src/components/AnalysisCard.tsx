@@ -56,23 +56,6 @@ export function AnalysisCard({
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
-  const [lastStatus, setLastStatus] = React.useState(status);
-
-  React.useEffect(() => {
-    if (lastStatus !== status) {
-      console.log(`🔄 AnalysisCard #${number} [${title}] STATUS CHANGED:`, {
-        from: lastStatus,
-        to: status,
-        shouldShowSpinner: status === 'running' || status === 'processing',
-        isAvailable,
-        isSelected,
-        executionTimeMs,
-        timestamp: new Date().toISOString()
-      });
-      setLastStatus(status);
-    }
-  }, [status, lastStatus, number, title, isAvailable, isSelected, executionTimeMs]);
-
   const getMainIcon = () => {
     const iconColor = getIconColor(number);
 
