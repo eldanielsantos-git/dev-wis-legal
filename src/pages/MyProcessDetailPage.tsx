@@ -210,11 +210,8 @@ function MyProcessDetailPageInner({
       resultsChannelRef.current = AnalysisResultsService.subscribeToResultsChanges(
         processoId,
         () => {
-          if (isFullyCompletedRef.current || isLoadingResultsRef.current) {
-            console.log('⏭️ Realtime results ignorado:', {
-              isCompleted: isFullyCompletedRef.current,
-              isLoading: isLoadingResultsRef.current
-            });
+          if (isFullyCompletedRef.current) {
+            console.log('⏭️ Realtime results ignorado - processo completo');
             return;
           }
 
@@ -335,11 +332,13 @@ function MyProcessDetailPageInner({
   };
 
   const loadAnalysisResults = async () => {
-    if (isLoadingResultsRef.current || isFullyCompletedRef.current) {
-      console.log('⏭️ Skipping loadAnalysisResults:', {
-        isLoading: isLoadingResultsRef.current,
-        isCompleted: isFullyCompletedRef.current
-      });
+    if (isFullyCompletedRef.current) {
+      console.log('⏭️ Skipping loadAnalysisResults - processo completo');
+      return;
+    }
+
+    // Não bloquear se já está carregando - apenas skip silenciosamente para evitar chamadas duplicadas
+    if (isLoadingResultsRef.current) {
       return;
     }
 
