@@ -810,9 +810,22 @@ Deno.serve(async (req: Request) => {
           console.error(`[${callId}] ⚠️ Erro ao verificar prompts restantes:`, remainingError);
         }
 
-        const hasMorePrompts = !!remainingPrompts;
+        const { data: runningPrompts, error: runningError } = await supabase
+          .from('analysis_results')
+          .select('id')
+          .eq('processo_id', processo_id)
+          .in('status', ['processing', 'running'])
+          .limit(1)
+          .maybeSingle();
 
-        if (hasMorePrompts) {
+        if (runningError) {
+          console.error(`[${callId}] ⚠️ Erro ao verificar prompts em execução:`, runningError);
+        }
+
+        const hasMorePrompts = !!remainingPrompts;
+        const hasPromptInProgress = !!runningPrompts;
+
+        if (hasMorePrompts && !hasPromptInProgress) {
           console.log(`[${callId}] 🔄 Disparando processamento do próximo prompt...`);
 
           fetch(`${supabaseUrl}/functions/v1/process-next-prompt`, {
@@ -825,6 +838,8 @@ Deno.serve(async (req: Request) => {
           }).catch(err => {
             console.error(`[${callId}] ❌ Erro ao disparar próximo prompt:`, err?.message);
           });
+        } else if (hasMorePrompts && hasPromptInProgress) {
+          console.log(`[${callId}] ⏳ Há mais prompts pendentes, mas um já está em execução. Aguardando...`);
         } else {
           console.log(`[${callId}] 🎉 Todos os prompts concluídos! Finalizando processo...`);
 
