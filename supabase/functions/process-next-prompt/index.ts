@@ -474,19 +474,7 @@ Deno.serve(async (req: Request) => {
     console.log(`[${callId}] 📄 Processo: ${processoData.file_name}`);
     console.log(`[${callId}] 📝 Prompt: ${analysisResult.prompt_title}`);
     console.log(`[${callId}]    - Is chunked: ${processoData.is_chunked}`);
-
-    console.log(`[${callId}] 🏃 Marcando prompt como 'running'`);
-    const { error: runningUpdateError } = await supabase
-      .from('analysis_results')
-      .update({
-        status: 'running',
-        processing_at: new Date().toISOString()
-      })
-      .eq('id', analysis_result_id);
-
-    if (runningUpdateError) {
-      console.error(`[${callId}] ❌ Erro ao marcar como running:`, runningUpdateError);
-    }
+    console.log(`[${callId}] 🏃 Prompt já marcado como 'processing' pela função acquire_next_prompt_lock`);
 
     const useFileApi = processoData.is_chunked
       ? (processoData.total_chunks_count || 0) > 0
@@ -810,7 +798,7 @@ Deno.serve(async (req: Request) => {
         const totalPrompts = promptsStatus?.length || 0;
         const completedPrompts = promptsStatus?.filter(p => p.status === 'completed').length || 0;
         const pendingPrompts = promptsStatus?.filter(p => p.status === 'pending').length || 0;
-        const runningPrompts = promptsStatus?.filter(p => p.status === 'processing' || p.status === 'running').length || 0;
+        const runningPrompts = promptsStatus?.filter(p => p.status === 'processing').length || 0;
 
         console.log(`[${callId}] 📊 Status dos prompts: ${completedPrompts}/${totalPrompts} concluídos, ${pendingPrompts} pendentes, ${runningPrompts} em execução`);
 

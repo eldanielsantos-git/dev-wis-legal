@@ -1,10 +1,10 @@
-export async function notifyAdminSafe(data: any) {
+export async function notifyAdminSafe(payload: any) {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.warn('⚠️ Admin notification skipped: missing env vars');
+      console.log('⏭️ Notificação admin ignorada: env vars ausentes');
       return;
     }
 
@@ -14,13 +14,15 @@ export async function notifyAdminSafe(data: any) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseServiceKey}`,
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      console.warn('⚠️ Admin notification failed:', await response.text());
+    if (response.ok) {
+      console.log('✅ Notificação admin enviada');
+    } else {
+      console.warn('⚠️ Falha ao enviar notificação admin:', response.status);
     }
   } catch (error) {
-    console.warn('⚠️ Admin notification error:', error);
+    console.warn('⚠️ Erro ao notificar admin (não-crítico):', error);
   }
 }
