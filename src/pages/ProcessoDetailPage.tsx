@@ -61,14 +61,16 @@ const ErrorCard: React.FC<ErrorCardProps> = ({ title, message, type = 'error', a
 interface ProcessoDetailPageProps {
   processoId: string;
   onBack: () => void;
+  onNavigateToNotFound?: () => void;
 }
 
-export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPageProps) {
+export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }: ProcessoDetailPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [processo, setProcesso] = useState<Processo | null>(null);
   const [paginas, setPaginas] = useState<Pagina[]>([]);
   const [loading, setLoading] = useState(true);
+  const [processoNotFound, setProcessoNotFound] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copiedPageId, setCopiedPageId] = useState<string | null>(null);
   const [isEditingName, setIsEditingName] = useState(false);
@@ -102,6 +104,12 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
     },
     enabled: !!processo && ['queuing', 'processing_batch', 'finalizing', 'processing_forensic'].includes(processo.status)
   });
+
+  useEffect(() => {
+    if (processoNotFound && onNavigateToNotFound) {
+      onNavigateToNotFound();
+    }
+  }, [processoNotFound, onNavigateToNotFound]);
 
   useEffect(() => {
     loadProcessoAndPaginas();
@@ -144,6 +152,8 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
           setProcesso(fallbackData as any);
           setPaginas(fallbackData.paginas || []);
           setPaginasCount(fallbackData.paginas?.length || 0);
+        } else {
+          setProcessoNotFound(true);
         }
         return;
       }
@@ -177,9 +187,12 @@ export function ProcessoDetailPage({ processoId, onBack }: ProcessoDetailPagePro
           setProcesso(fallbackData as any);
           setPaginas(fallbackData.paginas || []);
           setPaginasCount(fallbackData.paginas?.length || 0);
+        } else {
+          setProcessoNotFound(true);
         }
       } catch (fallbackErr) {
         console.error('Erro no fallback:', fallbackErr);
+        setProcessoNotFound(true);
       }
     } finally {
       setLoading(false);

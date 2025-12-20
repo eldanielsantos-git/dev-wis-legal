@@ -143,6 +143,7 @@ function AppContent() {
       <ProcessoDetailPage
         processoId={pathMatch[1]}
         onBack={() => navigate('/app')}
+        onNavigateToNotFound={() => navigate('/404')}
       />
     );
   }
@@ -161,6 +162,7 @@ function AppContent() {
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
+        onNavigateToNotFound={() => navigate('/404')}
       />
     );
   }
@@ -592,6 +594,10 @@ function AppContent() {
         onNavigateToCookies={() => navigate('/cookies')}
       />
     );
+  }
+
+  if (currentPath === '/404') {
+    return <NotFoundPage onNavigateToHome={() => navigate('/app')} />;
   }
 
   if (currentPath === '/app' || currentPath === '/') {

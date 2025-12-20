@@ -37,6 +37,7 @@ interface MyProcessDetailPageProps {
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
+  onNavigateToNotFound?: () => void;
 }
 
 class SilentErrorBoundary extends Component<
@@ -74,7 +75,8 @@ function MyProcessDetailPageInner({
   onNavigateToProfile,
   onNavigateToTerms,
   onNavigateToPrivacy,
-  onNavigateToCookies
+  onNavigateToCookies,
+  onNavigateToNotFound
 }: MyProcessDetailPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -83,6 +85,7 @@ function MyProcessDetailPageInner({
   const [loading, setLoading] = useState(true);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processoNotFound, setProcessoNotFound] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
@@ -154,6 +157,12 @@ function MyProcessDetailPageInner({
 
     isFullyCompletedRef.current = true;
   };
+
+  useEffect(() => {
+    if (processoNotFound && onNavigateToNotFound) {
+      onNavigateToNotFound();
+    }
+  }, [processoNotFound, onNavigateToNotFound]);
 
   useEffect(() => {
     loadProcesso();
@@ -262,6 +271,8 @@ function MyProcessDetailPageInner({
           const processoData = fallbackData as any;
           setProcesso(processoData);
           processoRef.current = processoData;
+        } else {
+          setProcessoNotFound(true);
         }
         return;
       }
@@ -300,9 +311,12 @@ function MyProcessDetailPageInner({
           const processoData = fallbackData as any;
           setProcesso(processoData);
           processoRef.current = processoData;
+        } else {
+          setProcessoNotFound(true);
         }
       } catch (fallbackErr) {
         console.error('Erro no fallback:', fallbackErr);
+        setProcessoNotFound(true);
       }
     } finally {
       if (retryCount === 0) {
