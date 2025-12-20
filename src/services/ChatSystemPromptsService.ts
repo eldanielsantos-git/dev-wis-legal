@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-export type PromptType = 'small_file' | 'large_file_chunks' | 'audio';
+export type PromptType = 'small_file' | 'large_file_chunks' | 'audio' | 'consolidated_analysis' | 'audio_complex';
 
 export interface ChatSystemPrompt {
   id: string;
@@ -289,9 +289,11 @@ export class ChatSystemPromptsService {
 
   static getPromptTypeLabel(type: PromptType): string {
     const labels: Record<PromptType, string> = {
-      'small_file': 'Chat Padrão',
-      'large_file_chunks': 'Chat Arquivos Grandes',
-      'audio': 'Chat com Áudio'
+      'small_file': 'Chat Arquivos Pequenos texto',
+      'large_file_chunks': 'Chat Arquivos Grandes texto Chunk',
+      'consolidated_analysis': 'Chat Arquivos Grandes texto Análise',
+      'audio': 'Chat Arquivos Pequenos Áudio',
+      'audio_complex': 'Chat Arquivos Grandes Áudio'
     };
     return labels[type] || type;
   }
@@ -300,7 +302,9 @@ export class ChatSystemPromptsService {
     const descriptions: Record<PromptType, string> = {
       'small_file': 'Para processos com menos de 1000 páginas (usa transcrição completa)',
       'large_file_chunks': 'Para processos com 1000 páginas ou mais (usa chunks como contexto)',
-      'audio': 'Para mensagens de áudio enviadas no chat'
+      'consolidated_analysis': 'Para processos com análises consolidadas (usa análises já processadas)',
+      'audio': 'Para mensagens de áudio em processos pequenos',
+      'audio_complex': 'Para mensagens de áudio em processos complexos (1000+ páginas)'
     };
     return descriptions[type] || '';
   }
@@ -309,7 +313,9 @@ export class ChatSystemPromptsService {
     const order: Record<PromptType, number> = {
       'small_file': 1,
       'large_file_chunks': 2,
-      'audio': 3
+      'consolidated_analysis': 3,
+      'audio': 4,
+      'audio_complex': 5
     };
     return order[type] || 999;
   }
@@ -318,7 +324,9 @@ export class ChatSystemPromptsService {
     const colors: Record<PromptType, string> = {
       'small_file': 'green',
       'large_file_chunks': 'blue',
-      'audio': 'orange'
+      'consolidated_analysis': 'purple',
+      'audio': 'orange',
+      'audio_complex': 'red'
     };
     return colors[type] || 'gray';
   }

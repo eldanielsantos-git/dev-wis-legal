@@ -1159,9 +1159,11 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                             color: colors.textPrimary
                           }}
                         >
-                          <option value="small_file">Chat Padrão (menos de 1000 páginas)</option>
-                          <option value="large_file_chunks">Chat Arquivos Grandes (1000 ou mais páginas)</option>
-                          <option value="audio">Chat com Áudio</option>
+                          <option value="small_file">Chat Arquivos Pequenos texto (menos de 1000 páginas)</option>
+                          <option value="large_file_chunks">Chat Arquivos Grandes texto Chunk (1000+ páginas)</option>
+                          <option value="consolidated_analysis">Chat Arquivos Grandes texto Análise (análises consolidadas)</option>
+                          <option value="audio">Chat Arquivos Pequenos Áudio</option>
+                          <option value="audio_complex">Chat Arquivos Grandes Áudio (1000+ páginas)</option>
                         </select>
                         <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
                           {ChatSystemPromptsService.getPromptTypeDescription(chatSystemFormData.prompt_type)}
@@ -1319,9 +1321,11 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
                                   color: colors.textPrimary
                                 }}
                               >
-                                <option value="small_file">Chat Padrão</option>
-                                <option value="large_file_chunks">Chat Arquivos Grandes</option>
-                                <option value="audio">Chat com Áudio</option>
+                                <option value="small_file">Chat Arquivos Pequenos texto</option>
+                                <option value="large_file_chunks">Chat Arquivos Grandes texto Chunk</option>
+                                <option value="consolidated_analysis">Chat Arquivos Grandes texto Análise</option>
+                                <option value="audio">Chat Arquivos Pequenos Áudio</option>
+                                <option value="audio_complex">Chat Arquivos Grandes Áudio</option>
                               </select>
                             ) : (
                               <div className="flex items-center gap-2 flex-wrap">
