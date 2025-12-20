@@ -151,8 +151,9 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
   let finalPlanTokens = planTokens;
   let finalExtraTokens = existingSub?.extra_tokens || 0;
-  let finalTokensUsed = 0;
-  let tokensCarriedForward = 0;
+  let finalTokensUsed = existingSub?.tokens_used || 0;
+  let tokensCarriedForward = existingSub?.tokens_carried_forward || 0;
+  let shouldResetTokens = false;
 
   if (existingSub) {
     const oldPriceId = existingSub.price_id;
@@ -160,12 +161,13 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     if (priceId !== oldPriceId) {
       console.info(`${logPrefix} Plan change detected: ${oldPriceId} -> ${priceId}`);
       lastPlanChangeAt = new Date().toISOString();
+      shouldResetTokens = true;
 
       const remainingTokens = existingSub.tokens_total - existingSub.tokens_used;
 
       if (remainingTokens > 0) {
-        tokensCarriedForward = remainingTokens;
-        finalExtraTokens += remainingTokens;
+        tokensCarriedForward = (existingSub.tokens_carried_forward || 0) + remainingTokens;
+        finalExtraTokens = (existingSub.extra_tokens || 0) + remainingTokens;
         console.info(`${logPrefix} Carrying forward ${remainingTokens} unused tokens as extra_tokens`);
       }
 
@@ -268,6 +270,11 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
   if (lastPlanChangeAt) {
     subscriptionData.last_plan_change_at = lastPlanChangeAt;
+  }
+
+  if (shouldResetTokens) {
+    subscriptionData.last_token_reset_at = new Date().toISOString();
+    console.info(`${logPrefix} Setting last_token_reset_at due to plan change`);
   }
 
   console.info(`${logPrefix} Upserting subscription with data:`, subscriptionData);

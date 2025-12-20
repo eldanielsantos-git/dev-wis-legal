@@ -137,12 +137,15 @@ Deno.serve(async (req) => {
 
         let action = 'skipped';
         let finalPlanTokens = newTokensTotal;
-        let finalExtraTokens = 0;
-        let finalTokensUsed = 0;
-        let tokensCarriedForward = 0;
+        let finalExtraTokens = existingSub?.extra_tokens || 0;
+        let finalTokensUsed = existingSub?.tokens_used || 0;
+        let tokensCarriedForward = existingSub?.tokens_carried_forward || 0;
 
         if (!existingSub) {
           action = 'created';
+          finalExtraTokens = 0;
+          finalTokensUsed = 0;
+          tokensCarriedForward = 0;
         } else {
           const isNewBillingPeriod = existingSub.current_period_start !== subscription.current_period_start;
           const isPlanChange = existingSub.price_id !== priceId;
@@ -157,22 +160,25 @@ Deno.serve(async (req) => {
             finalPlanTokens = newTokensTotal;
             finalExtraTokens = (existingSub.extra_tokens || 0) + remainingPlanTokens;
             finalTokensUsed = 0;
-            tokensCarriedForward = remainingPlanTokens;
+            tokensCarriedForward = (existingSub.tokens_carried_forward || 0) + remainingPlanTokens;
           } else if (isNewBillingPeriod) {
             action = 'reset_tokens';
             finalPlanTokens = newTokensTotal;
             finalExtraTokens = existingSub.extra_tokens || 0;
             finalTokensUsed = 0;
+            tokensCarriedForward = existingSub.tokens_carried_forward || 0;
           } else if (isSubscriptionChange) {
             action = 'updated';
             finalPlanTokens = newTokensTotal;
             finalExtraTokens = existingSub.extra_tokens || 0;
             finalTokensUsed = existingSub.tokens_used || 0;
+            tokensCarriedForward = existingSub.tokens_carried_forward || 0;
           } else {
             action = 'skipped';
             finalPlanTokens = existingSub.plan_tokens || newTokensTotal;
             finalExtraTokens = existingSub.extra_tokens || 0;
             finalTokensUsed = existingSub.tokens_used || 0;
+            tokensCarriedForward = existingSub.tokens_carried_forward || 0;
           }
         }
 
@@ -191,12 +197,12 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           };
 
-          if (tokensCarriedForward > 0) {
+          if (tokensCarriedForward > 0 && action === 'upgraded') {
             subscriptionData.tokens_carried_forward = tokensCarriedForward;
             subscriptionData.last_plan_change_at = new Date().toISOString();
           }
 
-          if (action === 'reset_tokens') {
+          if (action === 'reset_tokens' || action === 'upgraded') {
             subscriptionData.last_token_reset_at = new Date().toISOString();
           }
 

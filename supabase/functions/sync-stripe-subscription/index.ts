@@ -256,10 +256,11 @@ Deno.serve(async (req: Request) => {
     }
 
     let finalPlanTokens = newTokensTotal;
-    let finalExtraTokens = 0;
-    let finalTokensUsed = 0;
-    let tokensCarriedForward = 0;
+    let finalExtraTokens = existingSub?.extra_tokens || 0;
+    let finalTokensUsed = existingSub?.tokens_used || 0;
+    let tokensCarriedForward = existingSub?.tokens_carried_forward || 0;
     let lastPlanChangeAt = null;
+    let shouldResetTokens = false;
 
     if (existingSub) {
       const isNewBillingPeriod = existingSub.current_period_start !== subscription.current_period_start;
@@ -287,6 +288,7 @@ Deno.serve(async (req: Request) => {
         finalTokensUsed = 0;
         tokensCarriedForward = (existingSub.tokens_carried_forward || 0) + remainingPlanTokens;
         lastPlanChangeAt = new Date().toISOString();
+        shouldResetTokens = true;
 
         console.info(`- New plan_tokens: ${finalPlanTokens}`);
         console.info(`- New extra_tokens (with carried forward): ${finalExtraTokens}`);
@@ -299,6 +301,7 @@ Deno.serve(async (req: Request) => {
         finalExtraTokens = existingSub.extra_tokens || 0;
         finalTokensUsed = 0;
         tokensCarriedForward = existingSub.tokens_carried_forward || 0;
+        shouldResetTokens = true;
       } else {
         console.info(`No changes detected - preserving existing state`);
         finalPlanTokens = existingSub.plan_tokens || newTokensTotal;
@@ -320,9 +323,13 @@ Deno.serve(async (req: Request) => {
       extra_tokens: finalExtraTokens,
       tokens_used: finalTokensUsed,
       tokens_carried_forward: tokensCarriedForward,
-      last_token_reset_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
+
+    if (shouldResetTokens) {
+      subscriptionData.last_token_reset_at = new Date().toISOString();
+      console.info(`Setting last_token_reset_at for customer ${customerId}`);
+    }
 
     if (lastPlanChangeAt) {
       subscriptionData.last_plan_change_at = lastPlanChangeAt;
