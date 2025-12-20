@@ -798,34 +798,26 @@ Deno.serve(async (req: Request) => {
 
         console.log(`[${callId}] ✅ Sucesso com modelo: ${modelName}`);
 
-        const { data: remainingPrompts, error: remainingError } = await supabase
+        const { data: promptsStatus, error: statusError } = await supabase
           .from('analysis_results')
-          .select('id')
-          .eq('processo_id', processo_id)
-          .eq('status', 'pending')
-          .limit(1)
-          .maybeSingle();
+          .select('status')
+          .eq('processo_id', processo_id);
 
-        if (remainingError) {
-          console.error(`[${callId}] ⚠️ Erro ao verificar prompts restantes:`, remainingError);
+        if (statusError) {
+          console.error(`[${callId}] ⚠️ Erro ao verificar status dos prompts:`, statusError);
         }
 
-        const { data: runningPrompts, error: runningError } = await supabase
-          .from('analysis_results')
-          .select('id')
-          .eq('processo_id', processo_id)
-          .in('status', ['processing', 'running'])
-          .limit(1)
-          .maybeSingle();
+        const totalPrompts = promptsStatus?.length || 0;
+        const completedPrompts = promptsStatus?.filter(p => p.status === 'completed').length || 0;
+        const pendingPrompts = promptsStatus?.filter(p => p.status === 'pending').length || 0;
+        const runningPrompts = promptsStatus?.filter(p => p.status === 'processing' || p.status === 'running').length || 0;
 
-        if (runningError) {
-          console.error(`[${callId}] ⚠️ Erro ao verificar prompts em execução:`, runningError);
-        }
+        console.log(`[${callId}] 📊 Status dos prompts: ${completedPrompts}/${totalPrompts} concluídos, ${pendingPrompts} pendentes, ${runningPrompts} em execução`);
 
-        const hasMorePrompts = !!remainingPrompts;
-        const hasPromptInProgress = !!runningPrompts;
+        const allPromptsCompleted = totalPrompts > 0 && completedPrompts === totalPrompts;
+        const hasMoreToProcess = pendingPrompts > 0 || runningPrompts > 0;
 
-        if (hasMorePrompts && !hasPromptInProgress) {
+        if (pendingPrompts > 0 && runningPrompts === 0) {
           console.log(`[${callId}] 🔄 Disparando processamento do próximo prompt...`);
 
           fetch(`${supabaseUrl}/functions/v1/process-next-prompt`, {
@@ -838,10 +830,10 @@ Deno.serve(async (req: Request) => {
           }).catch(err => {
             console.error(`[${callId}] ❌ Erro ao disparar próximo prompt:`, err?.message);
           });
-        } else if (hasMorePrompts && hasPromptInProgress) {
+        } else if (hasMoreToProcess && runningPrompts > 0) {
           console.log(`[${callId}] ⏳ Há mais prompts pendentes, mas um já está em execução. Aguardando...`);
-        } else {
-          console.log(`[${callId}] 🎉 Todos os prompts concluídos! Finalizando processo...`);
+        } else if (allPromptsCompleted) {
+          console.log(`[${callId}] 🎉 Todos os ${totalPrompts} prompts concluídos com sucesso! Finalizando processo...`);
 
           const { error: processoUpdateError } = await supabase
             .from('processos')
@@ -916,7 +908,7 @@ Deno.serve(async (req: Request) => {
             : `${durationSeconds}s`;
 
           notifyAdminSafe({
-            type: 'analysis_completed',
+            type_slug: 'analysis_completed',
             title: 'Análise Concluída',
             message: 'Análise de processo concluída com sucesso',
             severity: 'success',
@@ -928,8 +920,8 @@ Deno.serve(async (req: Request) => {
               duration: durationText,
               is_complex: processoData.is_chunked,
             },
-            userId: processoData.user_id,
-            processoId: processo_id,
+            user_id: processoData.user_id,
+            processo_id: processo_id,
           });
 
           console.log(`[${callId}] ✅ Processo finalizado com sucesso!`);
@@ -945,7 +937,7 @@ Deno.serve(async (req: Request) => {
             execution_order: analysisResult.execution_order,
             tokens_used: totalTokensUsed,
             execution_time_ms: executionTime,
-            has_more_prompts: hasMorePrompts,
+            has_more_prompts: hasMoreToProcess,
             model_used: modelName,
             attempt_number: attemptNumber,
             method: useFileApi ? 'file_api' : 'base64_inline',
