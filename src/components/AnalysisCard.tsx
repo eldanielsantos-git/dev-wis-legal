@@ -56,26 +56,44 @@ export function AnalysisCard({
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
+  const [lastStatus, setLastStatus] = React.useState(status);
+
   React.useEffect(() => {
-    console.log(`🎴 AnalysisCard #${number} [${title}]:`, {
-      status,
-      isAvailable,
-      isSelected,
-      executionTimeMs,
-      shouldShowSpinner: status === 'running' || status === 'processing'
-    });
-  }, [status, isAvailable, number, title, isSelected, executionTimeMs]);
+    if (lastStatus !== status) {
+      console.log(`🔄 AnalysisCard #${number} [${title}] STATUS CHANGED:`, {
+        from: lastStatus,
+        to: status,
+        shouldShowSpinner: status === 'running' || status === 'processing',
+        isAvailable,
+        isSelected,
+        executionTimeMs,
+        timestamp: new Date().toISOString()
+      });
+      setLastStatus(status);
+    }
+  }, [status, lastStatus, number, title, isAvailable, isSelected, executionTimeMs]);
 
   const getMainIcon = () => {
     const iconColor = getIconColor(number);
 
-    // Loading state (running or processing)
-    if (status === 'running' || status === 'processing') {
+    // Loading state (running or processing) - sempre mostra spinner para esses estados
+    const isProcessing = status === 'running' || status === 'processing';
+
+    if (isProcessing) {
       return <Loader className="w-3.5 h-3.5 sm:w-6 sm:h-6 animate-spin" style={{ color: iconColor }} />;
     }
 
-    // Completed or pending state
-    const baseOpacity = status === 'pending' ? 0.4 : 1;
+    // Completed state - mostra ícone normal com check
+    if (status === 'completed') {
+      return (
+        <div style={{ color: iconColor, opacity: 1 }}>
+          {getAnalysisIcon(number)}
+        </div>
+      );
+    }
+
+    // Pending state - mostra ícone com opacidade reduzida
+    const baseOpacity = 0.4;
     const finalOpacity = theme === 'dark' ? baseOpacity * 0.5 : baseOpacity;
 
     return (
@@ -86,6 +104,15 @@ export function AnalysisCard({
   };
 
   const isClickable = status === 'completed';
+  const isProcessing = status === 'running' || status === 'processing';
+
+  // Opacidade do botão baseada no status
+  const getButtonOpacity = () => {
+    if (status === 'completed') return 1;
+    if (isProcessing) return 1;
+    if (status === 'pending') return 0.6;
+    return 1;
+  };
 
   return (
     <button
@@ -97,7 +124,7 @@ export function AnalysisCard({
         backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary,
         border: 'none',
         cursor: isClickable ? 'pointer' : 'default',
-        opacity: status === 'pending' ? 0.6 : 1,
+        opacity: getButtonOpacity(),
         padding: 0,
         display: 'flex',
         alignItems: 'center',
