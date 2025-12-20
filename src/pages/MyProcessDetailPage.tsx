@@ -5,7 +5,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ProcessContentSearch } from '../components/ProcessContentSearch';
 import { ProcessosService } from '../services/ProcessosService';
 import { AnalysisResultsService, type AnalysisResult } from '../services/AnalysisResultsService';
-import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, Edit3, Trash2, Tag } from 'lucide-react';
+import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, CreditCard as Edit3, Trash2, Tag } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
