@@ -87,7 +87,7 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
       try {
         const { data: processo, error: processoError } = await supabase
           .from('processos')
-          .select('status, is_chunked, total_chunks_count, detected_tier, transcricao')
+          .select('status, is_chunked, total_chunks_count, tier_name, transcricao')
           .eq('id', processoId)
           .single();
 
@@ -114,7 +114,7 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
 
           setComplexStatus(complexData);
           setTierData({
-            tier: processo.detected_tier || null,
+            tier: processo.tier_name || null,
             totalPages: processo.transcricao?.totalPages || null,
           });
 

@@ -129,11 +129,11 @@ export const ProcessoListItem: React.FC<ProcessoListItemProps> = ({ processo, on
                   <span>{formatFileSize(processo.file_size || 0)}</span>
                   <span>•</span>
                   <span>{processo.transcricao?.totalPages || 0} páginas</span>
-                  {processo.detected_tier && (
+                  {processo.tier_name && (
                     <>
                       <span>•</span>
                       <TierBadge
-                        tierName={processo.detected_tier}
+                        tierName={processo.tier_name}
                         size="sm"
                         showIcon={true}
                         showLabel={true}

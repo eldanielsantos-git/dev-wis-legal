@@ -195,9 +195,9 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
               >
                 {processo.file_name}
               </h3>
-              {processo.detected_tier && (
+              {processo.tier_name && (
                 <TierBadge
-                  tierName={processo.detected_tier}
+                  tierName={processo.tier_name}
                   size="sm"
                   showIcon={true}
                   showLabel={false}

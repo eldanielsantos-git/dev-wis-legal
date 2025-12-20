@@ -36,7 +36,7 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
             progress_info,
             background_mode,
             current_llm_model_name,
-            detected_tier,
+            tier_name,
             transcricao
           `)
           .eq('id', processoId)
@@ -222,10 +222,10 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
         </>
       )}
 
-      {progressData?.detected_tier && progressData?.transcricao?.totalPages && (
+      {progressData?.tier_name && progressData?.transcricao?.totalPages && (
         <div className="mt-3">
           <TierProgressIndicator
-            tierName={progressData.detected_tier as TierName}
+            tierName={progressData.tier_name as TierName}
             totalPages={progressData.transcricao.totalPages}
             showDetails={isAdmin}
           />
