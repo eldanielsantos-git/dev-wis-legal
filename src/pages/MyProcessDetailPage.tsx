@@ -332,6 +332,8 @@ function MyProcessDetailPageInner({
   };
 
   const loadAnalysisResults = async () => {
+    const startTime = Date.now();
+
     if (isFullyCompletedRef.current) {
       console.log('⏭️ Skipping loadAnalysisResults - processo completo');
       return;
@@ -339,15 +341,17 @@ function MyProcessDetailPageInner({
 
     // Não bloquear se já está carregando - apenas skip silenciosamente para evitar chamadas duplicadas
     if (isLoadingResultsRef.current) {
+      console.log('⏭️ [loadAnalysisResults] BLOQUEADO - já em execução');
       return;
     }
 
     try {
       isLoadingResultsRef.current = true;
-      console.log('📄 Carregando resultados de análise para processo:', processoId);
+      console.log('📄 [loadAnalysisResults] INICIANDO carregamento...');
       const results = await AnalysisResultsService.getResultsByProcessoId(processoId);
 
-      console.log('✅ Resultados carregados:', {
+      const loadTime = Date.now() - startTime;
+      console.log(`✅ [loadAnalysisResults] Resultados carregados em ${loadTime}ms:`, {
         total: results.length,
         byStatus: results.reduce((acc, r) => {
           acc[r.status] = (acc[r.status] || 0) + 1;
@@ -356,9 +360,7 @@ function MyProcessDetailPageInner({
         details: results.map(r => ({
           order: r.execution_order,
           title: r.prompt_title,
-          status: r.status,
-          hasContent: !!r.result_content,
-          contentLength: r.result_content?.length || 0
+          status: r.status
         }))
       });
 
@@ -367,8 +369,17 @@ function MyProcessDetailPageInner({
                         JSON.stringify(analysisResultsRef.current.map(r => ({ id: r.id, status: r.status })));
 
       if (hasChanged) {
-        console.log('🔄 Detectadas mudanças nos resultados - atualizando estado');
+        console.log('🔄 [loadAnalysisResults] MUDANÇAS DETECTADAS - atualizando estado React');
+      } else {
+        console.log('ℹ️ [loadAnalysisResults] Sem mudanças nos resultados');
       }
+
+      console.log('🔄 [loadAnalysisResults] Atualizando estado com:', {
+        newCount: results.length,
+        oldCount: analysisResultsRef.current.length,
+        newStatuses: results.map(r => `${r.execution_order}:${r.status}`),
+        oldStatuses: analysisResultsRef.current.map(r => `${r.execution_order}:${r.status}`)
+      });
 
       setAnalysisResults(results);
       analysisResultsRef.current = results;
@@ -620,6 +631,20 @@ function MyProcessDetailPageInner({
   const currentPrompt = processingPrompt
     ? processingPrompt.execution_order
     : completedPrompts;
+
+  // Debug log para ver o cálculo do progresso
+  console.log('📊 [RENDER] Cálculo de progresso:', {
+    totalResults: analysisResults.length,
+    totalPrompts,
+    completedPrompts,
+    processingPrompt: processingPrompt ? {
+      order: processingPrompt.execution_order,
+      title: processingPrompt.prompt_title,
+      status: processingPrompt.status
+    } : null,
+    currentPrompt,
+    allStatuses: analysisResults.map(r => `${r.execution_order}:${r.status}`)
+  });
 
   // Buscar o modelo atual em uso
   const llmModelName = processo.current_llm_model_name || null;
