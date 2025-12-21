@@ -115,19 +115,282 @@ export class PDFExportService {
     }
   }
 
-  private static checkNewPage(ctx: RenderContext, requiredSpace: number): RenderContext {
-    if (ctx.yPosition < requiredSpace + 80) {
-      const newPage = ctx.pdfDoc.addPage(PageSizes.A4);
-      newPage.drawRectangle({
-        x: 0,
-        y: 0,
-        width: ctx.pageWidth,
-        height: ctx.pageHeight,
-        color: rgb(ctx.colors.background.r, ctx.colors.background.g, ctx.colors.background.b),
-      });
-      return { ...ctx, page: newPage, yPosition: ctx.pageHeight - 60 };
+  private static measureContentHeight(
+    ctx: RenderContext,
+    analysisResults: AnalysisResult[]
+  ): number {
+    let totalHeight = 0;
+
+    const sortedResults = analysisResults
+      .filter((r) => r.status === 'completed' && r.result_content)
+      .sort((a, b) => a.execution_order - b.execution_order);
+
+    for (const result of sortedResults) {
+      const data = this.parseContent(result.result_content);
+      if (!data) continue;
+
+      totalHeight += 70;
+      totalHeight += this.SECTION_SPACING;
+
+      if (data.visaoGeralProcesso) {
+        const analysis = data.visaoGeralProcesso;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.campos && secao.campos.length > 0) {
+            totalHeight += this.estimateFieldGridHeight(ctx, secao.campos, 3);
+          }
+
+          if (secao.lista && secao.lista.length > 0) {
+            for (const parte of secao.lista) {
+              const cardContent = [
+                { value: String(parte.nome || ''), type: 'title' as const },
+                { label: 'CPF/CNPJ', value: parte.cpfCnpj || 'N/A' },
+                { label: 'Polo', value: parte.Polo || 'N/A' },
+              ];
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.resumoEstrategico) {
+        const analysis = data.resumoEstrategico;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.campos && secao.campos.length > 0) {
+            totalHeight += this.estimateFieldGridHeight(ctx, secao.campos, 2);
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.comunicacoesPrazos) {
+        const analysis = data.comunicacoesPrazos;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.listaAtos && secao.listaAtos.length > 0) {
+            for (const ato of secao.listaAtos) {
+              const cardContent = [
+                { value: `Ato - ${ato.tipoAto || ''}`, type: 'title' as const },
+                { label: 'Modalidade', value: ato.modalidade || 'N/A' },
+              ];
+
+              if (ato.destinatario) {
+                const dest = Array.isArray(ato.destinatario) ? ato.destinatario[0] : ato.destinatario;
+                cardContent.push({
+                  label: 'Destinatario',
+                  value: `${dest?.nome || 'N/A'} - ${dest?.status || 'N/A'}`,
+                });
+              }
+
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.recursosAdmissibilidade) {
+        const analysis = data.recursosAdmissibilidade;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.listaRecursosIdentificados && secao.listaRecursosIdentificados.length > 0) {
+            for (const recurso of secao.listaRecursosIdentificados) {
+              const cardContent = [
+                { value: `Recurso - ${recurso.tipoRecurso || ''}`, type: 'title' as const },
+                { label: 'Tempestividade', value: recurso.tempestividade || 'N/A' },
+                { label: 'Situacao Atual', value: recurso.situacaoAtual || 'N/A' },
+              ];
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.estrategiasJuridicas) {
+        const analysis = data.estrategiasJuridicas;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.listaEstrategias && secao.listaEstrategias.length > 0) {
+            for (const estrategia of secao.listaEstrategias) {
+              const cardContent = [
+                { value: estrategia.polo || 'N/A', type: 'title' as const },
+              ];
+
+              if (estrategia.estrategiaPrincipal) {
+                cardContent.push({
+                  label: 'Estrategia Principal',
+                  value: estrategia.estrategiaPrincipal.descricao || 'N/A',
+                });
+              }
+
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.riscosAlertasProcessuais) {
+        const analysis = data.riscosAlertasProcessuais;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.listaAlertas && secao.listaAlertas.length > 0) {
+            for (const alerta of secao.listaAlertas) {
+              const cardContent = [
+                { value: `Alerta - ${alerta.categoria || ''}`, type: 'title' as const },
+                { label: 'Gravidade', value: alerta.gravidade || 'N/A' },
+                { label: 'Polo Afetado', value: alerta.poloAfetado || 'N/A' },
+                { label: 'Descricao do Risco', value: alerta.descricaoRisco || 'N/A' },
+              ];
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.balancoFinanceiro) {
+        const analysis = data.balancoFinanceiro;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.campos && secao.campos.length > 0) {
+            totalHeight += this.estimateFieldGridHeight(ctx, secao.campos, 2);
+          }
+
+          if (secao.listaHonorarios && secao.listaHonorarios.length > 0) {
+            for (const hon of secao.listaHonorarios) {
+              const cardContent = [
+                { value: `Honorario - ${hon.tipo || ''}`, type: 'title' as const },
+                { label: 'Valor Estimado', value: hon.valorEstimado || 'N/A' },
+                { label: 'Polo Beneficiado', value: hon.poloBeneficiado || 'N/A' },
+              ];
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.mapaPreclusoesProcessuais) {
+        const analysis = data.mapaPreclusoesProcessuais;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.listaPreclusoesRecentes && secao.listaPreclusoesRecentes.length > 0) {
+            for (const prec of secao.listaPreclusoesRecentes) {
+              const cardContent = [
+                { value: `Preclusao - ${prec.tipo || ''}`, type: 'title' as const },
+                { label: 'Polo Afetado', value: prec.poloAfetado || 'N/A' },
+                { label: 'Ato ou Fase Atingida', value: prec.atoOuFaseAtingida || 'N/A' },
+              ];
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      } else if (data.conclusoesPerspectivas) {
+        const analysis = data.conclusoesPerspectivas;
+        for (const secao of analysis.secoes || []) {
+          totalHeight += 55 + this.SUBSECTION_SPACING;
+
+          if (secao.campos && secao.campos.length > 0) {
+            for (const campo of secao.campos) {
+              if (campo.label) {
+                totalHeight += 55 + this.SUBSECTION_SPACING;
+              }
+
+              const cardContent = [];
+
+              if (Array.isArray(campo.valor)) {
+                for (const item of campo.valor) {
+                  cardContent.push({ value: `• ${item}` });
+                }
+              } else {
+                cardContent.push({ value: String(campo.valor) });
+              }
+
+              totalHeight += this.estimateCardHeight(ctx, cardContent) + this.CARD_SPACING;
+            }
+          }
+
+          totalHeight += 8;
+        }
+      }
+
+      totalHeight += 16;
     }
-    return ctx;
+
+    return totalHeight;
+  }
+
+  private static estimateCardHeight(
+    ctx: RenderContext,
+    content: Array<{ label?: string; value: string; type?: 'title' | 'text' }>
+  ): number {
+    const cardWidth = ctx.pageWidth - 2 * ctx.margin;
+    const contentMaxWidth = cardWidth - 2 * this.CARD_PADDING - 6;
+    let contentHeight = this.CARD_PADDING;
+
+    for (const item of content) {
+      if (item.label) {
+        const labelMeasure = this.measureText(item.label, ctx.fonts.bold, 9, contentMaxWidth);
+        contentHeight += labelMeasure.totalHeight + 4;
+      }
+
+      const fontSize = item.type === 'title' ? 12 : 9;
+      const font = item.type === 'title' ? ctx.fonts.bold : ctx.fonts.regular;
+      const valueMeasure = this.measureText(item.value, font, fontSize, contentMaxWidth);
+      contentHeight += valueMeasure.totalHeight;
+
+      if (content.indexOf(item) < content.length - 1) {
+        contentHeight += this.CARD_INNER_SPACING;
+      }
+    }
+
+    contentHeight += this.CARD_PADDING;
+    return contentHeight;
+  }
+
+  private static estimateFieldGridHeight(
+    ctx: RenderContext,
+    fields: Array<{ label: string; value: string }>,
+    columns: number
+  ): number {
+    if (!fields || fields.length === 0) return 0;
+
+    const gap = 12;
+    const cardWidth = ctx.pageWidth - 2 * ctx.margin;
+    const fieldWidth = (cardWidth - gap * (columns - 1)) / columns;
+    const fieldPadding = 12;
+    let totalHeight = 0;
+
+    for (let i = 0; i < fields.length; i++) {
+      const field = fields[i];
+      const labelMeasure = this.measureText(field.label, ctx.fonts.bold, 8, fieldWidth - 2 * fieldPadding);
+      const valueMeasure = this.measureText(
+        String(field.value),
+        ctx.fonts.regular,
+        9,
+        fieldWidth - 2 * fieldPadding
+      );
+
+      const totalContentHeight = labelMeasure.totalHeight + 6 + valueMeasure.totalHeight;
+      const fieldHeight = Math.max(65, totalContentHeight + 2 * fieldPadding);
+
+      if (totalContentHeight > 80 || valueMeasure.lines.length > 3) {
+        totalHeight += fieldHeight + gap;
+      } else {
+        if (i % columns === 0) {
+          totalHeight += fieldHeight + gap;
+        }
+      }
+    }
+
+    return totalHeight;
   }
 
   private static measureText(
@@ -234,8 +497,6 @@ export class PDFExportService {
   }
 
   private static drawSectionHeader(ctx: RenderContext, title: string): RenderContext {
-    ctx = this.checkNewPage(ctx, 70);
-
     ctx.page.drawText(this.normalizeText(title), {
       x: ctx.margin,
       y: ctx.yPosition,
@@ -262,8 +523,6 @@ export class PDFExportService {
     title: string,
     color?: { r: number; g: number; b: number }
   ): RenderContext {
-    ctx = this.checkNewPage(ctx, 55);
-
     ctx.page.drawText(this.normalizeText(title), {
       x: ctx.margin,
       y: ctx.yPosition,
@@ -320,8 +579,6 @@ export class PDFExportService {
     }
 
     contentHeight += this.CARD_PADDING;
-
-    ctx = this.checkNewPage(ctx, contentHeight + 20);
 
     const cardY = ctx.yPosition - contentHeight;
 
@@ -400,8 +657,6 @@ export class PDFExportService {
       const fieldHeight = Math.max(65, totalContentHeight + 2 * fieldPadding);
 
       if (totalContentHeight > 80 || valueMeasure.lines.length > 3) {
-        ctx = this.checkNewPage(ctx, fieldHeight + 20);
-
         const x = ctx.margin;
         const y = ctx.yPosition - fieldHeight;
 
@@ -451,7 +706,6 @@ export class PDFExportService {
           }
         }
 
-        ctx = this.checkNewPage(ctx, fieldHeight + 20);
         rowY = ctx.yPosition;
 
         for (let j = 0; j < fieldsInRow.length; j++) {
@@ -759,19 +1013,54 @@ export class PDFExportService {
     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    let page = pdfDoc.addPage(PageSizes.A4);
-    const { width: pageWidth, height: pageHeight } = page.getSize();
+    const pageWidth = 595;
     const margin = 40;
+
+    const tempCtx: RenderContext = {
+      pdfDoc,
+      page: null as any,
+      yPosition: 0,
+      theme,
+      colors,
+      fonts: { regular: regularFont, bold: boldFont },
+      margin,
+      pageWidth,
+      pageHeight: 0,
+    };
+
+    let coverHeight = 60;
+    try {
+      const logoBytes = await this.loadLogo(theme);
+      if (logoBytes) {
+        coverHeight += 60 + 35;
+      } else {
+        coverHeight += 35;
+      }
+    } catch {
+      coverHeight += 35;
+    }
+
+    coverHeight += 26 + 35;
+    const subtitle = this.normalizeText(processoName);
+    const subtitleMeasure = this.measureText(subtitle, regularFont, 12, pageWidth - 2 * margin);
+    coverHeight += subtitleMeasure.totalHeight + 55;
+
+    const contentHeight = this.measureContentHeight(tempCtx, analysisResults);
+
+    const footerHeight = 50;
+    const totalPageHeight = coverHeight + contentHeight + footerHeight;
+
+    const page = pdfDoc.addPage([pageWidth, totalPageHeight]);
 
     page.drawRectangle({
       x: 0,
       y: 0,
       width: pageWidth,
-      height: pageHeight,
+      height: totalPageHeight,
       color: rgb(colors.background.r, colors.background.g, colors.background.b),
     });
 
-    let currentY = pageHeight - 60;
+    let currentY = totalPageHeight - 60;
 
     try {
       const logoBytes = await this.loadLogo(theme);
@@ -813,8 +1102,6 @@ export class PDFExportService {
     });
     currentY -= 35;
 
-    const subtitle = this.normalizeText(processoName);
-    const subtitleMeasure = this.measureText(subtitle, regularFont, 12, pageWidth - 2 * margin);
     const subtitleX = (pageWidth - regularFont.widthOfTextAtSize(subtitleMeasure.lines[0] || '', 12)) / 2;
 
     page.drawText(subtitleMeasure.lines[0] || '', {
@@ -835,7 +1122,7 @@ export class PDFExportService {
       fonts: { regular: regularFont, bold: boldFont },
       margin,
       pageWidth,
-      pageHeight,
+      pageHeight: totalPageHeight,
     };
 
     const sortedResults = analysisResults
@@ -855,22 +1142,19 @@ export class PDFExportService {
       minute: '2-digit',
     });
 
-    const allPages = pdfDoc.getPages();
-    allPages.forEach((p) => {
-      p.drawText(this.normalizeText(`Gerado em: ${dateStr}`), {
-        x: margin,
-        y: 25,
-        size: 7,
-        font: regularFont,
-        color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
-      });
-      p.drawText(this.normalizeText('(c) 2025 Wis Legal. Todos os direitos reservados.'), {
-        x: pageWidth - 240,
-        y: 25,
-        size: 7,
-        font: regularFont,
-        color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
-      });
+    page.drawText(this.normalizeText(`Gerado em: ${dateStr}`), {
+      x: margin,
+      y: 25,
+      size: 7,
+      font: regularFont,
+      color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
+    });
+    page.drawText(this.normalizeText('(c) 2025 Wis Legal. Todos os direitos reservados.'), {
+      x: pageWidth - 240,
+      y: 25,
+      size: 7,
+      font: regularFont,
+      color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
     });
 
     const pdfBytes = await pdfDoc.save();
