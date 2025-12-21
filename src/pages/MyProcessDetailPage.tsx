@@ -5,7 +5,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ProcessContentSearch } from '../components/ProcessContentSearch';
 import { ProcessosService } from '../services/ProcessosService';
 import { AnalysisResultsService, type AnalysisResult } from '../services/AnalysisResultsService';
-import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, CreditCard as Edit3, Trash2, Tag } from 'lucide-react';
+import { FileText, Calendar, Clock, Brain, Loader, AlertCircle, Pencil, Check, X, ChevronDown, ChevronUp, MessageSquare, List, ChevronLeft, Share2, Users, Lock, CreditCard as Edit3, Trash2, Tag, Download } from 'lucide-react';
 import type { Processo } from '../lib/supabase';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
@@ -25,6 +25,7 @@ import { ProcessoTagsList } from '../components/tags/ProcessoTagsList';
 import { ProcessoTagsPopup } from '../components/tags/ProcessoTagsPopup';
 import { ReadOnlyPermissionModal } from '../components/ReadOnlyPermissionModal';
 import type { ProcessoTag } from '../lib/supabase';
+import { PDFExportService } from '../services/PDFExportService';
 
 interface MyProcessDetailPageProps {
   processoId: string;
@@ -107,6 +108,7 @@ function MyProcessDetailPageInner({
   const [canEditTags, setCanEditTags] = useState(false);
   const [showReadOnlyModal, setShowReadOnlyModal] = useState(false);
   const [userPermissionLevel, setUserPermissionLevel] = useState<'owner' | 'editor' | 'read_only' | null>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const { user, isAdmin } = useAuth();
   const isLoadingResultsRef = React.useRef(false);
   const processoChannelRef = React.useRef<(() => void) | null>(null);
@@ -577,6 +579,33 @@ function MyProcessDetailPageInner({
     setShowDeleteModal(true);
   };
 
+  const handleDownloadPDF = async () => {
+    if (!processo || analysisResults.length === 0) return;
+
+    try {
+      setIsGeneratingPDF(true);
+
+      const pdfBytes = await PDFExportService.generatePDF(
+        processo.file_name,
+        analysisResults,
+        theme
+      );
+
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = PDFExportService.generateFileName(processo.file_name);
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      setError('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleConfirmDelete = async () => {
     if (!processo) return;
 
@@ -770,6 +799,25 @@ function MyProcessDetailPageInner({
                 </div>
               </div>
               <div className="flex items-center space-x-3">
+                {processo.status === 'completed' && analysisResults.length > 0 && (
+                  <button
+                    onClick={handleDownloadPDF}
+                    disabled={isGeneratingPDF}
+                    className="flex items-center space-x-1.5 px-3 py-2.5 rounded-lg transition-all duration-200 hover:opacity-80 whitespace-nowrap w-fit disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}
+                    title="Baixar análise em PDF"
+                  >
+                    {isGeneratingPDF ? (
+                      <Loader className="w-5 h-5 animate-spin" style={{ color: '#1C9BF1' }} />
+                    ) : (
+                      <Download className="w-5 h-5" style={{ color: '#1C9BF1' }} />
+                    )}
+                    <span className="text-sm font-normal hidden sm:inline" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
+                      Download PDF
+                    </span>
+                  </button>
+                )}
+
                 <button
                   onClick={handleShareClick}
                   disabled={!canShare}
