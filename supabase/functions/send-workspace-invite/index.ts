@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { notifyAdminSafe } from "./_shared/notify-admin-safe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -212,6 +213,27 @@ Deno.serve(async (req: Request) => {
     } else {
       console.log("✓ Email send logged to database");
     }
+
+    console.log("Step 6: Sending admin notification to Slack...");
+    notifyAdminSafe({
+      type: 'workspace_invite_sent',
+      title: 'Convite Workspace foi enviado',
+      message: `${ownerFirstName} ${ownerLastName} | ${ownerProfile?.email || 'sem email'} | Convidou: ${invitedName} (${invitedEmail}) | Processo: ${processo.file_name}`,
+      severity: 'success',
+      metadata: {
+        owner_name: `${ownerFirstName} ${ownerLastName}`,
+        owner_email: ownerProfile?.email,
+        invited_name: invitedName,
+        invited_email: invitedEmail,
+        processo_name: processo.file_name,
+        processo_id: processoId,
+        permission_level: permissionLevel,
+        user_exists: userExists,
+        email_sent: resendSuccess,
+      },
+      userId: user.id,
+      processoId: processoId,
+    });
 
     console.log("=== SEND WORKSPACE INVITE - SUCCESS ===");
 
