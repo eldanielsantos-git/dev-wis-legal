@@ -818,7 +818,7 @@ function MyProcessDetailPageInner({
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                {processo.status === 'completed' && analysisResults.length > 0 && (
+                {processo.status === 'completed' && analysisResults.length > 0 && isAdmin && (
                   <button
                     onClick={handleDownloadPDF}
                     disabled={isGeneratingPDF}
