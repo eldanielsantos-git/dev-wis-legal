@@ -776,7 +776,7 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
         </div>
       )}
 
-      {complexStatus?.current_phase === 'completed' && (
+      {complexStatus?.current_phase === 'completed' && stages.length > 0 && stages.every(s => s.status === 'completed') && (
         <div
           className="rounded-lg p-3 flex items-center space-x-3"
           style={{

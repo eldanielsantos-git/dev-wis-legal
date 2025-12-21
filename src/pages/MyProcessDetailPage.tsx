@@ -255,6 +255,32 @@ function MyProcessDetailPageInner({
     };
   }, [processoId]);
 
+  useEffect(() => {
+    const checkAndProcessPendingPrompts = async () => {
+      if (!processo || processo.status !== 'analyzing') return;
+
+      const { supabase } = await import('../lib/supabase');
+      const { data: pendingPrompts } = await supabase
+        .from('analysis_results')
+        .select('id, status')
+        .eq('processo_id', processoId)
+        .eq('status', 'pending')
+        .limit(1);
+
+      if (pendingPrompts && pendingPrompts.length > 0) {
+        console.log('🔄 Detectadas etapas pendentes, iniciando processamento automático...');
+
+        try {
+          await ProcessosService.processSequentialPrompts(processoId);
+        } catch (error) {
+          console.error('❌ Erro ao processar prompts pendentes:', error);
+        }
+      }
+    };
+
+    checkAndProcessPendingPrompts();
+  }, [processoId, processo?.status]);
+
   const loadProcesso = async (retryCount = 0) => {
     try {
       setLoading(true);
