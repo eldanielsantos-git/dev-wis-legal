@@ -40,6 +40,30 @@ const LOGO_URLS = {
   light: 'https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/wislegal-logo-PDF-white.png',
 };
 
+const ANALYSIS_COLORS: Record<number, { r: number; g: number; b: number }> = {
+  1: { r: 59 / 255, g: 130 / 255, b: 246 / 255 },
+  2: { r: 168 / 255, g: 85 / 255, b: 247 / 255 },
+  3: { r: 234 / 255, g: 179 / 255, b: 8 / 255 },
+  4: { r: 239 / 255, g: 68 / 255, b: 68 / 255 },
+  5: { r: 34 / 255, g: 197 / 255, b: 94 / 255 },
+  6: { r: 249 / 255, g: 115 / 255, b: 22 / 255 },
+  7: { r: 6 / 255, g: 182 / 255, b: 212 / 255 },
+  8: { r: 139 / 255, g: 92 / 255, b: 246 / 255 },
+  9: { r: 16 / 255, g: 185 / 255, b: 129 / 255 },
+};
+
+const ANALYSIS_SYMBOLS: Record<number, string> = {
+  1: '\u25A0',
+  2: '\u25C6',
+  3: '\u25B2',
+  4: '\u25CF',
+  5: '\u2605',
+  6: '\u26A0',
+  7: '\u25B6',
+  8: '\u25C9',
+  9: '\u2713',
+};
+
 export class PDFExportService {
   private static normalizeText(text: string): string {
     return text
@@ -255,16 +279,42 @@ export class PDFExportService {
       currentY = pageHeight - 60;
     }
 
-    const titleY = currentY - cardPadding;
+    const analysisColor = ANALYSIS_COLORS[card.order] || colors.accent;
+    const analysisSymbol = ANALYSIS_SYMBOLS[card.order] || '\u25A0';
+
+    const badgeWidth = 30;
+    const badgeHeight = 24;
+    const badgeX = margin;
+    const badgeY = currentY - badgeHeight;
+
+    page.drawRectangle({
+      x: badgeX,
+      y: badgeY,
+      width: badgeWidth,
+      height: badgeHeight,
+      color: rgb(analysisColor.r, analysisColor.g, analysisColor.b),
+      borderRadius: 4,
+    });
+
+    page.drawText(analysisSymbol, {
+      x: badgeX + 10,
+      y: badgeY + 7,
+      size: 12,
+      font: fonts.bold,
+      color: rgb(1, 1, 1),
+    });
+
+    const titleX = margin + badgeWidth + 10;
+    const titleY = currentY - 18;
     page.drawText(this.normalizeText(`${card.order}. ${card.title}`), {
-      x: margin,
+      x: titleX,
       y: titleY,
       size: 14,
       font: fonts.bold,
-      color: rgb(colors.accent.r, colors.accent.g, colors.accent.b),
+      color: rgb(analysisColor.r, analysisColor.g, analysisColor.b),
     });
 
-    currentY = titleY - 25;
+    currentY = badgeY - 15;
 
     const cleanedContent = this.cleanContent(card.content);
     const contentLines = cleanedContent.split('\n').filter(line => line.trim().length > 0);
@@ -330,47 +380,69 @@ export class PDFExportService {
       if (logoBytes) {
         try {
           const logoImage = await pdfDoc.embedPng(logoBytes);
-          const logoHeight = 40;
+          const logoHeight = 70;
           const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+          const logoX = (pageWidth - logoWidth) / 2;
 
           page.drawImage(logoImage, {
-            x: 50,
+            x: logoX,
             y: currentY - logoHeight,
             width: logoWidth,
             height: logoHeight,
           });
 
-          currentY -= logoHeight + 30;
+          currentY -= logoHeight + 35;
         } catch (error) {
-          currentY -= 30;
+          currentY -= 35;
         }
       } else {
-        currentY -= 30;
+        currentY -= 35;
       }
     } catch (error) {
-      currentY -= 30;
+      currentY -= 35;
     }
 
-    page.drawText(this.normalizeText('Wis Legal Analise de Processo'), {
-      x: 50,
+    const title = this.normalizeText('Wis Legal Analise de Processo');
+    const titleWidth = boldFont.widthOfTextAtSize(title, 26);
+    const titleX = (pageWidth - titleWidth) / 2;
+
+    page.drawText(title, {
+      x: titleX,
       y: currentY,
-      size: 24,
+      size: 26,
       font: boldFont,
       color: rgb(colors.textPrimary.r, colors.textPrimary.g, colors.textPrimary.b),
     });
-    currentY -= 40;
+    currentY -= 35;
 
-    const maxNameWidth = pageWidth - 100;
-    currentY = this.drawTextBlock(
-      page,
-      this.normalizeText(processoName),
-      50,
-      currentY,
-      maxNameWidth,
-      14,
-      regularFont,
-      colors.textSecondary
-    );
+    const subtitle = this.normalizeText(processoName);
+    const maxSubtitleWidth = Math.min(boldFont.widthOfTextAtSize(subtitle, 14), pageWidth - 100);
+
+    if (boldFont.widthOfTextAtSize(subtitle, 14) > pageWidth - 100) {
+      const maxNameWidth = pageWidth - 100;
+      currentY = this.drawTextBlock(
+        page,
+        subtitle,
+        50,
+        currentY,
+        maxNameWidth,
+        14,
+        regularFont,
+        colors.textSecondary
+      );
+    } else {
+      const subtitleWidth = regularFont.widthOfTextAtSize(subtitle, 14);
+      const subtitleX = (pageWidth - subtitleWidth) / 2;
+
+      page.drawText(subtitle, {
+        x: subtitleX,
+        y: currentY,
+        size: 14,
+        font: regularFont,
+        color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
+      });
+      currentY -= 25;
+    }
     currentY -= 40;
 
     const cardsData = this.extractAnalysisData(analysisResults);
