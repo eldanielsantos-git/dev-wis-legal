@@ -469,8 +469,8 @@ export class PDFExportService {
         font: regularFont,
         color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
       });
-      p.drawText(this.normalizeText('Wis Legal (c) 2024'), {
-        x: pageWidth - 150,
+      p.drawText(this.normalizeText('© 2025 Wis Legal. Todos os direitos reservados.'), {
+        x: pageWidth - 280,
         y: 30,
         size: 8,
         font: regularFont,
