@@ -231,20 +231,33 @@ export function TokensPage({
 
                   <div className="mb-4 sm:mb-6">
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline mb-3 gap-1">
-                      <p className="text-base sm:text-lg font-medium" style={{ color: colors.textPrimary }}>
-                        Você tem <span className="text-xl sm:text-2xl font-bold">{formatNumber(tokensRemaining)}</span> tokens
-                      </p>
-                      <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                        de {formatNumber(tokensTotal)} tokens
-                      </p>
+                      {tokensRemaining >= 0 ? (
+                        <>
+                          <p className="text-base sm:text-lg font-medium" style={{ color: colors.textPrimary }}>
+                            Você tem <span className="text-xl sm:text-2xl font-bold">{formatNumber(tokensRemaining)}</span> tokens
+                          </p>
+                          <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
+                            de {formatNumber(tokensTotal)} tokens
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-base sm:text-lg font-medium" style={{ color: '#EF4444' }}>
+                            Saldo negativo: <span className="text-xl sm:text-2xl font-bold">{formatNumber(tokensRemaining)}</span> tokens
+                          </p>
+                          <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
+                            Usado: {formatNumber(tokensUsed)} de {formatNumber(tokensTotal)} tokens
+                          </p>
+                        </>
+                      )}
                     </div>
 
                     <div className="w-full h-6 rounded-full overflow-hidden" style={{ backgroundColor: colors.bgSecondary }}>
                       <div
                         className="h-full transition-all duration-500 ease-out rounded-full"
                         style={{
-                          width: `${calculatePercentage()}%`,
-                          backgroundColor: calculatePercentage() > 90 ? '#EF4444' : calculatePercentage() > 70 ? '#F59E0B' : '#10B981'
+                          width: `${Math.min(calculatePercentage(), 100)}%`,
+                          backgroundColor: calculatePercentage() > 100 ? '#EF4444' : calculatePercentage() > 90 ? '#EF4444' : calculatePercentage() > 70 ? '#F59E0B' : '#10B981'
                         }}
                       />
                     </div>
@@ -253,7 +266,7 @@ export function TokensPage({
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
                         {formatNumber(tokensUsed)} tokens usados
                       </p>
-                      <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+                      <p className="text-sm font-medium" style={{ color: calculatePercentage() > 100 ? '#EF4444' : colors.textPrimary }}>
                         {calculatePercentage().toFixed(1)}%
                       </p>
                     </div>
@@ -270,7 +283,7 @@ export function TokensPage({
                     </div>
                   )}
 
-                  {tokensTotal > 0 && (
+                  {tokensTotal > 0 && tokensRemaining >= 0 && (
                     <div
                       className="p-4 rounded-lg mb-6"
                       style={{ backgroundColor: theme === 'dark' ? colors.bgTertiary : '#EFF6FF' }}
@@ -290,6 +303,30 @@ export function TokensPage({
                       </p>
                       <p className="text-xs mt-2" style={{ color: colors.textSecondary }}>
                         Nosso sistema utiliza aproximadamente 5.500 tokens por página processada.
+                      </p>
+                    </div>
+                  )}
+
+                  {tokensRemaining < 0 && (
+                    <div
+                      className="p-4 rounded-lg mb-6 border-2"
+                      style={{
+                        backgroundColor: theme === 'dark' ? '#7F1D1D' : '#FEE2E2',
+                        borderColor: '#EF4444'
+                      }}
+                    >
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <FileText className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: '#EF4444' }} />
+                        <h3 className="text-sm sm:text-base font-semibold" style={{ color: '#EF4444' }}>
+                          Saldo Insuficiente
+                        </h3>
+                      </div>
+                      <p className="text-sm" style={{ color: theme === 'dark' ? '#FCA5A5' : '#DC2626' }}>
+                        Você utilizou mais tokens do que o disponível no seu plano. Para continuar processando documentos,
+                        adicione mais tokens ou faça upgrade do seu plano.
+                      </p>
+                      <p className="text-xs mt-2" style={{ color: theme === 'dark' ? '#FCA5A5' : '#DC2626' }}>
+                        Tokens em débito: <span className="font-bold">{formatNumber(Math.abs(tokensRemaining))}</span>
                       </p>
                     </div>
                   )}
