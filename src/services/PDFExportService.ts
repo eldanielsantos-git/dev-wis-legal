@@ -67,7 +67,19 @@ interface RenderContext {
   pageHeight: number;
 }
 
+interface TextMeasurement {
+  lines: string[];
+  totalHeight: number;
+}
+
 export class PDFExportService {
+  private static readonly CARD_PADDING = 16;
+  private static readonly CARD_INNER_SPACING = 12;
+  private static readonly LINE_HEIGHT_MULTIPLIER = 1.4;
+  private static readonly SECTION_SPACING = 24;
+  private static readonly SUBSECTION_SPACING = 20;
+  private static readonly CARD_SPACING = 12;
+
   private static normalizeText(text: string): string {
     if (!text) return '';
     return text
@@ -103,7 +115,7 @@ export class PDFExportService {
   }
 
   private static checkNewPage(ctx: RenderContext, requiredSpace: number): RenderContext {
-    if (ctx.yPosition < requiredSpace + 60) {
+    if (ctx.yPosition < requiredSpace + 80) {
       const newPage = ctx.pdfDoc.addPage(PageSizes.A4);
       newPage.drawRectangle({
         x: 0,
@@ -117,143 +129,130 @@ export class PDFExportService {
     return ctx;
   }
 
-  private static drawText(
-    ctx: RenderContext,
+  private static measureText(
     text: string,
-    x: number,
-    y: number,
-    options: {
-      size: number;
-      font?: PDFFont;
-      color?: { r: number; g: number; b: number };
-      maxWidth?: number;
-    }
-  ): { ctx: RenderContext; endY: number; lineCount: number } {
-    const font = options.font || ctx.fonts.regular;
-    const color = options.color || ctx.colors.textPrimary;
-    const maxWidth = options.maxWidth || ctx.pageWidth - 2 * ctx.margin;
-
+    font: PDFFont,
+    fontSize: number,
+    maxWidth: number
+  ): TextMeasurement {
     if (!text || text.trim() === '') {
-      return { ctx, endY: y, lineCount: 0 };
+      return { lines: [], totalHeight: 0 };
     }
 
     const normalized = this.normalizeText(text);
     const words = normalized.split(' ');
+    const lines: string[] = [];
     let currentLine = '';
-    let currentY = y;
-    const lineHeight = options.size * 1.5;
-    let lineCount = 0;
 
     for (const word of words) {
       const testLine = currentLine ? `${currentLine} ${word}` : word;
-      const width = font.widthOfTextAtSize(testLine, options.size);
+      const width = font.widthOfTextAtSize(testLine, fontSize);
 
       if (width > maxWidth && currentLine) {
-        ctx = this.checkNewPage(ctx, 100);
-
-        ctx.page.drawText(currentLine, {
-          x,
-          y: ctx.yPosition,
-          size: options.size,
-          font,
-          color: rgb(color.r, color.g, color.b),
-        });
-
+        lines.push(currentLine);
         currentLine = word;
-        ctx.yPosition -= lineHeight;
-        lineCount++;
       } else {
         currentLine = testLine;
       }
     }
 
     if (currentLine) {
-      ctx = this.checkNewPage(ctx, 100);
+      lines.push(currentLine);
+    }
 
-      ctx.page.drawText(currentLine, {
+    const lineHeight = fontSize * this.LINE_HEIGHT_MULTIPLIER;
+    const totalHeight = lines.length * lineHeight;
+
+    return { lines, totalHeight };
+  }
+
+  private static drawRoundedRect(
+    page: PDFPage,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    color: { r: number; g: number; b: number },
+    borderColor?: { r: number; g: number; b: number },
+    borderWidth: number = 1,
+    borderLeft: boolean = false,
+    borderLeftColor?: { r: number; g: number; b: number }
+  ): void {
+    page.drawRectangle({
+      x,
+      y,
+      width,
+      height,
+      color: rgb(color.r, color.g, color.b),
+      borderColor: borderColor ? rgb(borderColor.r, borderColor.g, borderColor.b) : undefined,
+      borderWidth: borderColor ? borderWidth : 0,
+    });
+
+    if (borderLeft && borderLeftColor) {
+      page.drawRectangle({
         x,
-        y: ctx.yPosition,
+        y,
+        width: 4,
+        height,
+        color: rgb(borderLeftColor.r, borderLeftColor.g, borderLeftColor.b),
+      });
+    }
+  }
+
+  private static drawTextBlock(
+    ctx: RenderContext,
+    text: string,
+    x: number,
+    startY: number,
+    options: {
+      size: number;
+      font?: PDFFont;
+      color?: { r: number; g: number; b: number };
+      maxWidth: number;
+    }
+  ): number {
+    const font = options.font || ctx.fonts.regular;
+    const color = options.color || ctx.colors.textPrimary;
+    const measurement = this.measureText(text, font, options.size, options.maxWidth);
+
+    let currentY = startY;
+    const lineHeight = options.size * this.LINE_HEIGHT_MULTIPLIER;
+
+    for (const line of measurement.lines) {
+      ctx.page.drawText(line, {
+        x,
+        y: currentY,
         size: options.size,
         font,
         color: rgb(color.r, color.g, color.b),
       });
-
-      ctx.yPosition -= lineHeight;
-      lineCount++;
+      currentY -= lineHeight;
     }
 
-    return { ctx, endY: ctx.yPosition, lineCount };
+    return currentY;
   }
 
-  private static drawCard(
-    ctx: RenderContext,
-    height: number,
-    options: {
-      bgColor?: { r: number; g: number; b: number };
-      borderColor?: { r: number; g: number; b: number };
-      borderWidth?: number;
-      borderLeft?: boolean;
-      padding?: number;
-    } = {}
-  ): RenderContext {
-    const bgColor = options.bgColor || ctx.colors.cardBg;
-    const borderColor = options.borderColor || ctx.colors.border;
-    const borderWidth = options.borderWidth || 1;
-    const padding = options.padding || 10;
-
-    ctx = this.checkNewPage(ctx, height + 20);
-
-    const cardWidth = ctx.pageWidth - 2 * ctx.margin;
-    const cardY = ctx.yPosition - height;
-
-    ctx.page.drawRectangle({
-      x: ctx.margin,
-      y: cardY,
-      width: cardWidth,
-      height,
-      color: rgb(bgColor.r, bgColor.g, bgColor.b),
-      borderColor: rgb(borderColor.r, borderColor.g, borderColor.b),
-      borderWidth,
-    });
-
-    if (options.borderLeft) {
-      ctx.page.drawRectangle({
-        x: ctx.margin,
-        y: cardY,
-        width: 4,
-        height,
-        color: rgb(borderColor.r, borderColor.g, borderColor.b),
-      });
-    }
-
-    ctx.yPosition -= padding;
-    return ctx;
-  }
-
-  private static drawSectionHeader(
-    ctx: RenderContext,
-    title: string
-  ): RenderContext {
-    ctx = this.checkNewPage(ctx, 50);
+  private static drawSectionHeader(ctx: RenderContext, title: string): RenderContext {
+    ctx = this.checkNewPage(ctx, 60);
 
     ctx.page.drawText(this.normalizeText(title), {
       x: ctx.margin,
       y: ctx.yPosition,
-      size: 16,
+      size: 18,
       font: ctx.fonts.bold,
       color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
     });
 
-    ctx.yPosition -= 20;
+    ctx.yPosition -= 24;
 
     ctx.page.drawLine({
       start: { x: ctx.margin, y: ctx.yPosition },
       end: { x: ctx.pageWidth - ctx.margin, y: ctx.yPosition },
-      thickness: 1,
+      thickness: 1.5,
       color: rgb(ctx.colors.border.r, ctx.colors.border.g, ctx.colors.border.b),
     });
 
-    ctx.yPosition -= 20;
+    ctx.yPosition -= this.SECTION_SPACING;
     return ctx;
   }
 
@@ -262,12 +261,12 @@ export class PDFExportService {
     title: string,
     color?: { r: number; g: number; b: number }
   ): RenderContext {
-    ctx = this.checkNewPage(ctx, 40);
+    ctx = this.checkNewPage(ctx, 50);
 
     ctx.page.drawText(this.normalizeText(title), {
-      x: ctx.margin + 5,
+      x: ctx.margin,
       y: ctx.yPosition,
-      size: 12,
+      size: 14,
       font: ctx.fonts.bold,
       color: rgb(
         (color || ctx.colors.blue).r,
@@ -276,7 +275,97 @@ export class PDFExportService {
       ),
     });
 
-    ctx.yPosition -= 25;
+    ctx.yPosition -= this.SUBSECTION_SPACING;
+    return ctx;
+  }
+
+  private static drawDynamicCard(
+    ctx: RenderContext,
+    content: Array<{ label?: string; value: string; type?: 'title' | 'text' }>,
+    options: {
+      borderColor?: { r: number; g: number; b: number };
+      bgColor?: { r: number; g: number; b: number };
+    } = {}
+  ): RenderContext {
+    const cardWidth = ctx.pageWidth - 2 * ctx.margin;
+    const contentMaxWidth = cardWidth - 2 * this.CARD_PADDING;
+    const borderColor = options.borderColor || ctx.colors.blue;
+    const bgColor = options.bgColor || ctx.colors.cardBg;
+
+    let contentHeight = this.CARD_PADDING;
+
+    const measurements: Array<{ label?: TextMeasurement; value: TextMeasurement }> = [];
+
+    for (const item of content) {
+      const itemMeasurements: { label?: TextMeasurement; value: TextMeasurement } = {
+        value: { lines: [], totalHeight: 0 },
+      };
+
+      if (item.label) {
+        itemMeasurements.label = this.measureText(item.label, ctx.fonts.bold, 9, contentMaxWidth);
+        contentHeight += itemMeasurements.label.totalHeight + 6;
+      }
+
+      const fontSize = item.type === 'title' ? 11 : 9;
+      const font = item.type === 'title' ? ctx.fonts.bold : ctx.fonts.regular;
+      itemMeasurements.value = this.measureText(item.value, font, fontSize, contentMaxWidth);
+      contentHeight += itemMeasurements.value.totalHeight;
+
+      measurements.push(itemMeasurements);
+      contentHeight += this.CARD_INNER_SPACING;
+    }
+
+    contentHeight += this.CARD_PADDING - this.CARD_INNER_SPACING;
+
+    ctx = this.checkNewPage(ctx, contentHeight + 20);
+
+    const cardY = ctx.yPosition - contentHeight;
+
+    this.drawRoundedRect(
+      ctx.page,
+      ctx.margin,
+      cardY,
+      cardWidth,
+      contentHeight,
+      bgColor,
+      ctx.colors.border,
+      1,
+      true,
+      borderColor
+    );
+
+    let innerY = ctx.yPosition - this.CARD_PADDING;
+    const innerX = ctx.margin + this.CARD_PADDING + 4;
+
+    for (let i = 0; i < content.length; i++) {
+      const item = content[i];
+      const measurement = measurements[i];
+
+      if (item.label && measurement.label) {
+        innerY = this.drawTextBlock(ctx, item.label, innerX, innerY, {
+          size: 9,
+          font: ctx.fonts.bold,
+          color: ctx.colors.textSecondary,
+          maxWidth: contentMaxWidth,
+        });
+        innerY -= 6;
+      }
+
+      const fontSize = item.type === 'title' ? 11 : 9;
+      const font = item.type === 'title' ? ctx.fonts.bold : ctx.fonts.regular;
+      const color = item.type === 'title' ? ctx.colors.textPrimary : ctx.colors.textPrimary;
+
+      innerY = this.drawTextBlock(ctx, item.value, innerX, innerY, {
+        size: fontSize,
+        font,
+        color,
+        maxWidth: contentMaxWidth,
+      });
+
+      innerY -= this.CARD_INNER_SPACING;
+    }
+
+    ctx.yPosition = cardY - this.CARD_SPACING;
     return ctx;
   }
 
@@ -287,46 +376,58 @@ export class PDFExportService {
   ): RenderContext {
     if (!fields || fields.length === 0) return ctx;
 
-    const gap = 8;
+    const gap = 10;
     const cardWidth = ctx.pageWidth - 2 * ctx.margin;
     const fieldWidth = (cardWidth - gap * (columns - 1)) / columns;
-    const fieldHeight = 50;
+    const fieldHeight = 60;
+    const fieldPadding = 10;
 
     let col = 0;
+    let rowY = 0;
 
     for (const field of fields) {
       if (col === 0) {
         ctx = this.checkNewPage(ctx, fieldHeight + 20);
+        rowY = ctx.yPosition;
       }
 
       const x = ctx.margin + col * (fieldWidth + gap);
-      const y = ctx.yPosition;
+      const y = rowY - fieldHeight;
 
-      ctx.page.drawRectangle({
+      this.drawRoundedRect(
+        ctx.page,
         x,
-        y: y - fieldHeight,
-        width: fieldWidth,
-        height: fieldHeight,
-        color: rgb(ctx.colors.cardBgTertiary.r, ctx.colors.cardBgTertiary.g, ctx.colors.cardBgTertiary.b),
-        borderColor: rgb(ctx.colors.border.r, ctx.colors.border.g, ctx.colors.border.b),
-        borderWidth: 1,
-      });
+        y,
+        fieldWidth,
+        fieldHeight,
+        ctx.colors.cardBgTertiary,
+        ctx.colors.border,
+        1
+      );
 
-      ctx.page.drawText(this.normalizeText(field.label).substring(0, 50), {
-        x: x + 6,
-        y: y - 15,
+      const labelMeasure = this.measureText(field.label, ctx.fonts.bold, 8, fieldWidth - 2 * fieldPadding);
+      const labelY = rowY - fieldPadding - 8;
+
+      this.drawTextBlock(ctx, field.label, x + fieldPadding, labelY, {
         size: 8,
         font: ctx.fonts.bold,
-        color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+        color: ctx.colors.textSecondary,
+        maxWidth: fieldWidth - 2 * fieldPadding,
       });
 
-      const valueText = this.normalizeText(String(field.value)).substring(0, 80);
-      ctx.page.drawText(valueText, {
-        x: x + 6,
-        y: y - 32,
+      const valueMeasure = this.measureText(
+        String(field.value),
+        ctx.fonts.regular,
+        9,
+        fieldWidth - 2 * fieldPadding
+      );
+      const valueY = labelY - labelMeasure.totalHeight - 6;
+
+      this.drawTextBlock(ctx, String(field.value), x + fieldPadding, valueY, {
         size: 9,
         font: ctx.fonts.regular,
-        color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
+        color: ctx.colors.textPrimary,
+        maxWidth: fieldWidth - 2 * fieldPadding,
       });
 
       col++;
@@ -340,7 +441,7 @@ export class PDFExportService {
       ctx.yPosition -= fieldHeight + gap;
     }
 
-    ctx.yPosition -= 10;
+    ctx.yPosition -= this.CARD_SPACING;
     return ctx;
   }
 
@@ -370,31 +471,19 @@ export class PDFExportService {
 
         if (secao.lista && secao.lista.length > 0) {
           for (const parte of secao.lista) {
-            ctx = this.drawCard(ctx, 60, { bgColor: ctx.colors.cardBgTertiary });
+            const cardContent = [
+              { value: String(parte.nome || ''), type: 'title' as const },
+              { label: 'CPF/CNPJ', value: parte.cpfCnpj || 'N/A' },
+              { label: 'Polo', value: parte.Polo || 'N/A' },
+            ];
 
-            ctx.page.drawText(this.normalizeText(String(parte.nome || '')).substring(0, 80), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 10,
-              font: ctx.fonts.bold,
-              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              bgColor: ctx.colors.cardBgTertiary,
             });
-
-            ctx.yPosition -= 18;
-
-            const infoText = `CPF/CNPJ: ${parte.cpfCnpj || ''} | Polo: ${parte.Polo || ''}`;
-            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 8,
-              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
-            });
-
-            ctx.yPosition -= 25;
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.resumoEstrategico) {
       const analysis = data.resumoEstrategico;
@@ -409,7 +498,7 @@ export class PDFExportService {
           ctx = this.renderFieldGrid(ctx, fields, 2);
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.comunicacoesPrazos) {
       const analysis = data.comunicacoesPrazos;
@@ -419,45 +508,26 @@ export class PDFExportService {
         if (secao.listaAtos && secao.listaAtos.length > 0) {
           for (let i = 0; i < secao.listaAtos.length; i++) {
             const ato = secao.listaAtos[i];
-            ctx = this.drawCard(ctx, 90, { borderLeft: true, borderColor: ctx.colors.blue });
-
-            ctx.page.drawText(this.normalizeText(`Ato ${i + 1} - ${ato.tipoAto || ''}`).substring(0, 70), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 10,
-              font: ctx.fonts.bold,
-              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
-            });
-
-            ctx.yPosition -= 18;
-
-            ctx.page.drawText(this.normalizeText(`Modalidade: ${ato.modalidade || ''}`).substring(0, 70), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 8,
-              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
-            });
-
-            ctx.yPosition -= 15;
+            const cardContent = [
+              { value: `Ato ${i + 1} - ${ato.tipoAto || ''}`, type: 'title' as const },
+              { label: 'Modalidade', value: ato.modalidade || 'N/A' },
+            ];
 
             if (ato.destinatario) {
               const dest = Array.isArray(ato.destinatario) ? ato.destinatario[0] : ato.destinatario;
-              const destText = `Destinatario: ${dest?.nome || ''} - ${dest?.status || ''}`;
-              ctx.page.drawText(this.normalizeText(destText).substring(0, 70), {
-                x: ctx.margin + 15,
-                y: ctx.yPosition,
-                size: 8,
-                color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+              cardContent.push({
+                label: 'Destinatario',
+                value: `${dest?.nome || 'N/A'} - ${dest?.status || 'N/A'}`,
               });
-
-              ctx.yPosition -= 15;
             }
 
-            ctx.yPosition -= 20;
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              borderColor: ctx.colors.blue,
+            });
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.recursosAdmissibilidade) {
       const analysis = data.recursosAdmissibilidade;
@@ -467,34 +537,19 @@ export class PDFExportService {
         if (secao.listaRecursosIdentificados && secao.listaRecursosIdentificados.length > 0) {
           for (let i = 0; i < secao.listaRecursosIdentificados.length; i++) {
             const recurso = secao.listaRecursosIdentificados[i];
-            ctx = this.drawCard(ctx, 70, { borderLeft: true, borderColor: ctx.colors.purple });
+            const cardContent = [
+              { value: `Recurso ${i + 1} - ${recurso.tipoRecurso || ''}`, type: 'title' as const },
+              { label: 'Tempestividade', value: recurso.tempestividade || 'N/A' },
+              { label: 'Situacao Atual', value: recurso.situacaoAtual || 'N/A' },
+            ];
 
-            ctx.page.drawText(
-              this.normalizeText(`Recurso ${i + 1} - ${recurso.tipoRecurso || ''}`).substring(0, 70),
-              {
-                x: ctx.margin + 15,
-                y: ctx.yPosition,
-                size: 10,
-                font: ctx.fonts.bold,
-                color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
-              }
-            );
-
-            ctx.yPosition -= 18;
-
-            const infoText = `Tempestividade: ${recurso.tempestividade || ''} | Situacao: ${recurso.situacaoAtual || ''}`;
-            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 8,
-              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              borderColor: ctx.colors.purple,
             });
-
-            ctx.yPosition -= 20;
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.estrategiasJuridicas) {
       const analysis = data.estrategiasJuridicas;
@@ -503,34 +558,24 @@ export class PDFExportService {
 
         if (secao.listaEstrategias && secao.listaEstrategias.length > 0) {
           for (const estrategia of secao.listaEstrategias) {
-            ctx = this.drawCard(ctx, 100, { borderLeft: true, borderColor: ctx.colors.green });
-
-            ctx.page.drawText(this.normalizeText(estrategia.polo || '').substring(0, 70), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 11,
-              font: ctx.fonts.bold,
-              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
-            });
-
-            ctx.yPosition -= 20;
+            const cardContent = [
+              { value: estrategia.polo || 'N/A', type: 'title' as const },
+            ];
 
             if (estrategia.estrategiaPrincipal) {
-              const ep = estrategia.estrategiaPrincipal;
-              const descText = `Estrategia: ${ep.descricao || ''}`;
-              const result = this.drawText(ctx, descText, ctx.margin + 15, ctx.yPosition, {
-                size: 8,
-                color: ctx.colors.textSecondary,
-                maxWidth: ctx.pageWidth - 2 * ctx.margin - 30,
+              cardContent.push({
+                label: 'Estrategia Principal',
+                value: estrategia.estrategiaPrincipal.descricao || 'N/A',
               });
-              ctx = result.ctx;
             }
 
-            ctx.yPosition -= 20;
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              borderColor: ctx.colors.green,
+            });
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.riscosAlertasProcessuais) {
       const analysis = data.riscosAlertasProcessuais;
@@ -540,40 +585,20 @@ export class PDFExportService {
         if (secao.listaAlertas && secao.listaAlertas.length > 0) {
           for (let i = 0; i < secao.listaAlertas.length; i++) {
             const alerta = secao.listaAlertas[i];
-            ctx = this.drawCard(ctx, 100, { borderLeft: true, borderColor: ctx.colors.red });
+            const cardContent = [
+              { value: `Alerta ${i + 1} - ${alerta.categoria || ''}`, type: 'title' as const },
+              { label: 'Gravidade', value: alerta.gravidade || 'N/A' },
+              { label: 'Polo Afetado', value: alerta.poloAfetado || 'N/A' },
+              { label: 'Descricao do Risco', value: alerta.descricaoRisco || 'N/A' },
+            ];
 
-            ctx.page.drawText(this.normalizeText(`Alerta ${i + 1} - ${alerta.categoria || ''}`).substring(0, 70), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 10,
-              font: ctx.fonts.bold,
-              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              borderColor: ctx.colors.red,
             });
-
-            ctx.yPosition -= 18;
-
-            const infoText = `Gravidade: ${alerta.gravidade || ''} | Polo: ${alerta.poloAfetado || ''}`;
-            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 8,
-              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
-            });
-
-            ctx.yPosition -= 18;
-
-            const result = this.drawText(ctx, alerta.descricaoRisco || '', ctx.margin + 15, ctx.yPosition, {
-              size: 8,
-              color: ctx.colors.textSecondary,
-              maxWidth: ctx.pageWidth - 2 * ctx.margin - 30,
-            });
-            ctx = result.ctx;
-
-            ctx.yPosition -= 15;
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.balancoFinanceiro) {
       const analysis = data.balancoFinanceiro;
@@ -591,31 +616,19 @@ export class PDFExportService {
         if (secao.listaHonorarios && secao.listaHonorarios.length > 0) {
           for (let i = 0; i < secao.listaHonorarios.length; i++) {
             const hon = secao.listaHonorarios[i];
-            ctx = this.drawCard(ctx, 70, { borderLeft: true, borderColor: ctx.colors.purple });
+            const cardContent = [
+              { value: `Honorario ${i + 1} - ${hon.tipo || ''}`, type: 'title' as const },
+              { label: 'Valor Estimado', value: hon.valorEstimado || 'N/A' },
+              { label: 'Polo Beneficiado', value: hon.poloBeneficiado || 'N/A' },
+            ];
 
-            ctx.page.drawText(this.normalizeText(`Honorario ${i + 1} - ${hon.tipo || ''}`).substring(0, 70), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 10,
-              font: ctx.fonts.bold,
-              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              borderColor: ctx.colors.purple,
             });
-
-            ctx.yPosition -= 18;
-
-            const infoText = `Valor: ${hon.valorEstimado || ''} | Polo: ${hon.poloBeneficiado || ''}`;
-            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 8,
-              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
-            });
-
-            ctx.yPosition -= 20;
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.mapaPreclusoesProcessuais) {
       const analysis = data.mapaPreclusoesProcessuais;
@@ -625,39 +638,19 @@ export class PDFExportService {
         if (secao.listaPreclusoesRecentes && secao.listaPreclusoesRecentes.length > 0) {
           for (let i = 0; i < secao.listaPreclusoesRecentes.length; i++) {
             const prec = secao.listaPreclusoesRecentes[i];
-            ctx = this.drawCard(ctx, 90, { borderLeft: true, borderColor: ctx.colors.amber });
+            const cardContent = [
+              { value: `Preclusao ${i + 1} - ${prec.tipo || ''}`, type: 'title' as const },
+              { label: 'Polo Afetado', value: prec.poloAfetado || 'N/A' },
+              { label: 'Ato ou Fase Atingida', value: prec.atoOuFaseAtingida || 'N/A' },
+            ];
 
-            ctx.page.drawText(this.normalizeText(`Preclusao ${i + 1} - ${prec.tipo || ''}`).substring(0, 70), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 10,
-              font: ctx.fonts.bold,
-              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              borderColor: ctx.colors.amber,
             });
-
-            ctx.yPosition -= 18;
-
-            ctx.page.drawText(this.normalizeText(`Polo: ${prec.poloAfetado || ''}`).substring(0, 70), {
-              x: ctx.margin + 15,
-              y: ctx.yPosition,
-              size: 8,
-              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
-            });
-
-            ctx.yPosition -= 18;
-
-            const result = this.drawText(ctx, prec.atoOuFaseAtingida || '', ctx.margin + 15, ctx.yPosition, {
-              size: 8,
-              color: ctx.colors.textSecondary,
-              maxWidth: ctx.pageWidth - 2 * ctx.margin - 30,
-            });
-            ctx = result.ctx;
-
-            ctx.yPosition -= 15;
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     } else if (data.conclusoesPerspectivas) {
       const analysis = data.conclusoesPerspectivas;
@@ -666,48 +659,31 @@ export class PDFExportService {
 
         if (secao.campos && secao.campos.length > 0) {
           for (const campo of secao.campos) {
-            ctx = this.checkNewPage(ctx, 60);
-
-            if (campo.label) {
-              ctx.page.drawText(this.normalizeText(campo.label).substring(0, 80), {
-                x: ctx.margin + 5,
-                y: ctx.yPosition,
-                size: 9,
-                font: ctx.fonts.bold,
-                color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
-              });
-
-              ctx.yPosition -= 18;
-            }
+            const cardContent = [];
 
             if (Array.isArray(campo.valor)) {
               for (const item of campo.valor) {
-                const result = this.drawText(ctx, `• ${item}`, ctx.margin + 10, ctx.yPosition, {
-                  size: 8,
-                  color: ctx.colors.textPrimary,
-                  maxWidth: ctx.pageWidth - 2 * ctx.margin - 20,
-                });
-                ctx = result.ctx;
-                ctx.yPosition -= 5;
+                cardContent.push({ value: `• ${item}` });
               }
             } else {
-              const result = this.drawText(ctx, String(campo.valor), ctx.margin + 10, ctx.yPosition, {
-                size: 8,
-                color: ctx.colors.textPrimary,
-                maxWidth: ctx.pageWidth - 2 * ctx.margin - 20,
-              });
-              ctx = result.ctx;
+              cardContent.push({ value: String(campo.valor) });
             }
 
-            ctx.yPosition -= 15;
+            if (campo.label) {
+              ctx = this.drawSubsectionTitle(ctx, campo.label, ctx.colors.slate);
+            }
+
+            ctx = this.drawDynamicCard(ctx, cardContent, {
+              bgColor: ctx.colors.cardBgTertiary,
+            });
           }
         }
 
-        ctx.yPosition -= 15;
+        ctx.yPosition -= this.SUBSECTION_SPACING;
       }
     }
 
-    ctx.yPosition -= 20;
+    ctx.yPosition -= this.SECTION_SPACING;
     return ctx;
   }
 
@@ -736,7 +712,6 @@ export class PDFExportService {
 
     let currentY = pageHeight - 60;
 
-    // Logo
     try {
       const logoBytes = await this.loadLogo(theme);
       if (logoBytes) {
@@ -764,26 +739,24 @@ export class PDFExportService {
       currentY -= 30;
     }
 
-    // Título
     const title = this.normalizeText('Analise Juridica - Wis Legal');
-    const titleWidth = boldFont.widthOfTextAtSize(title, 22);
+    const titleWidth = boldFont.widthOfTextAtSize(title, 24);
     const titleX = (pageWidth - titleWidth) / 2;
 
     page.drawText(title, {
       x: titleX,
       y: currentY,
-      size: 22,
+      size: 24,
       font: boldFont,
       color: rgb(colors.textPrimary.r, colors.textPrimary.g, colors.textPrimary.b),
     });
-    currentY -= 30;
+    currentY -= 32;
 
-    // Subtítulo
     const subtitle = this.normalizeText(processoName);
-    const subtitleWidth = regularFont.widthOfTextAtSize(subtitle, 12);
-    const subtitleX = (pageWidth - subtitleWidth) / 2;
+    const subtitleMeasure = this.measureText(subtitle, regularFont, 12, pageWidth - 2 * margin);
+    const subtitleX = (pageWidth - regularFont.widthOfTextAtSize(subtitleMeasure.lines[0] || '', 12)) / 2;
 
-    page.drawText(subtitle, {
+    page.drawText(subtitleMeasure.lines[0] || '', {
       x: subtitleX,
       y: currentY,
       size: 12,
@@ -792,7 +765,6 @@ export class PDFExportService {
     });
     currentY -= 50;
 
-    // Renderizar análises
     let ctx: RenderContext = {
       pdfDoc,
       page,
@@ -813,7 +785,6 @@ export class PDFExportService {
       ctx = await this.renderAnalysisContent(ctx, result);
     }
 
-    // Rodapé em todas as páginas
     const now = new Date();
     const dateStr = now.toLocaleDateString('pt-BR', {
       day: '2-digit',
