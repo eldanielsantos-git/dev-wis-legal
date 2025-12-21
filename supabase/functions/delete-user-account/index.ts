@@ -54,6 +54,12 @@ Deno.serve(async (req: Request) => {
 
     const userId = user.id;
 
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('full_name, email, type, company_name')
+      .eq('id', userId)
+      .maybeSingle();
+
     const { data: customer } = await supabase
       .from('stripe_customers')
       .select('customer_id')
@@ -223,6 +229,36 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
+    }
+
+    try {
+      const userDisplay = profile?.type === 'PJ' && profile?.company_name
+        ? profile.company_name
+        : profile?.full_name || 'Usuário';
+      const userType = profile?.type || 'PF';
+      const userEmail = profile?.email || user.email || 'email não encontrado';
+
+      await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type_slug: 'user_deleted',
+          title: 'Usuário Deletou Conta',
+          message: `${userDisplay} | ${userEmail} | ${userType}`,
+          severity: 'medium',
+          metadata: {
+            user_name: userDisplay,
+            user_email: userEmail,
+            user_type: userType,
+            deleted_at: new Date().toISOString()
+          }
+        })
+      });
+    } catch (notifError: any) {
+      console.error('Error sending admin notification:', notifError);
     }
 
     return new Response(
