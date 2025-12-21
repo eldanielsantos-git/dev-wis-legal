@@ -49,6 +49,7 @@ import { WorkspacePage } from './pages/WorkspacePage';
 import { VerifyEmailRequiredPage } from './pages/VerifyEmailRequiredPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { RequireEmailVerification } from './components/RequireEmailVerification';
+import { SuccessPage } from './components/subscription/SuccessPage';
 import { Loader } from 'lucide-react';
 
 function AppContent() {
@@ -594,6 +595,10 @@ function AppContent() {
         onNavigateToCookies={() => navigate('/cookies')}
       />
     );
+  }
+
+  if (currentPath === '/success') {
+    return <SuccessPage onNavigateToApp={() => navigate('/app')} />;
   }
 
   if (currentPath === '/404') {

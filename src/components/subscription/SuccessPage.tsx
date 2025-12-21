@@ -17,7 +17,6 @@ interface SuccessPageProps {
 export function SuccessPage({ onNavigateToApp }: SuccessPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
-  const [countdown, setCountdown] = useState(8);
   const [syncing, setSyncing] = useState(true);
   const [syncComplete, setSyncComplete] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
@@ -29,17 +28,7 @@ export function SuccessPage({ onNavigateToApp }: SuccessPageProps) {
 
   useEffect(() => {
     if (!syncing && syncComplete) {
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            onNavigateToApp();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
+      onNavigateToApp();
     }
   }, [syncing, syncComplete, onNavigateToApp]);
 
@@ -197,7 +186,7 @@ export function SuccessPage({ onNavigateToApp }: SuccessPageProps) {
                 </button>
 
                 <div className="text-sm" style={{ color: colors.textSecondary }}>
-                  Redirecionando automaticamente em {countdown} segundos...
+                  Redirecionando para o dashboard...
                 </div>
               </div>
             </>
