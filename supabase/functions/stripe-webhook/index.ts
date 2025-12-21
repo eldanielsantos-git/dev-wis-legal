@@ -106,7 +106,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           notifyAdminSafe({
             type: 'subscription_cancelled',
             title: 'Assinatura Cancelada',
-            message: `Assinatura cancelada | ${userName} | ${profile.email} | ${existingSub.tier || 'unknown'}`,
+            message: `${userName} | ${profile.email} | ${existingSub.tier || 'unknown'}`,
             severity: 'medium',
             metadata: {
               customer_id: customerId,
@@ -239,7 +239,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           notifyAdminSafe({
             type: notificationType,
             title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
-            message: `${isUpgrade ? 'Upgrade' : 'Downgrade'} de assinatura | ${userName} | ${profile.email} | ${oldPlan?.tier || 'undefined'} → ${newPlan?.tier || 'undefined'}`,
+            message: `${userName} | ${profile.email} | ${oldPlan?.tier || 'undefined'} → ${newPlan?.tier || 'undefined'}`,
             severity: isUpgrade ? 'success' : 'low',
             metadata: {
               customer_id: customerId,
@@ -596,7 +596,7 @@ async function handlePaymentFailure(event: Stripe.Event) {
       notifyAdminSafe({
         type: notificationType,
         title: titleText,
-        message: `Pagamento falhou | ${amountFormatted} | ${userName} | ${profile.email} | ${productName}`,
+        message: `${amountFormatted} | ${userName} | ${profile.email} | ${productName}`,
         severity: 'high',
         metadata: {
           payment_intent_id: paymentIntent.id,
@@ -761,7 +761,7 @@ Deno.serve(async (req: Request) => {
               notifyAdminSafe({
                 type: 'subscription_created',
                 title: 'Compra de Assinatura',
-                message: `Compra de assinatura | ${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
+                message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
                 severity: 'success',
                 metadata: {
                   customer_id: customerId,
@@ -909,7 +909,7 @@ Deno.serve(async (req: Request) => {
             notifyAdminSafe({
               type: 'token_purchase',
               title: 'Compra de Tokens',
-              message: `Compra de tokens | ${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
+              message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
               severity: 'success',
               metadata: {
                 customer_id: actualCustomerId,

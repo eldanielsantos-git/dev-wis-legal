@@ -898,7 +898,7 @@ Deno.serve(async (req: Request) => {
           notifyAdminSafe({
             type: 'analysis_completed',
             title: 'Análise Concluída',
-            message: `Análise concluída | ${userName || userEmail} | ${fileName} | ${durationText}`,
+            message: `${userName || userEmail} | ${fileName} | ${durationText}`,
             severity: 'success',
             metadata: {
               processo_id,
