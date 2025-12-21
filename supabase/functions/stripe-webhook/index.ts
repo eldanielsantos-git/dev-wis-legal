@@ -206,18 +206,23 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         .maybeSingle();
 
       if (userData) {
-        const fiveSecondsAgo = new Date(Date.now() - 5000).toISOString();
+        const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
 
-        const { data: recentNotification } = await supabase
+        const { data: recentNotifications } = await supabase
           .from('admin_notifications')
-          .select('id')
+          .select('id, metadata')
           .eq('user_id', userData.user_id)
           .in('type', ['subscription_upgraded', 'subscription_downgraded'])
-          .gte('created_at', fiveSecondsAgo)
-          .limit(1)
-          .maybeSingle();
+          .gte('created_at', tenSecondsAgo);
 
-        if (recentNotification) {
+        const isDuplicate = recentNotifications?.some(notif => {
+          const meta = notif.metadata as any;
+          return meta?.customer_id === customerId &&
+                 meta?.old_tokens === existingSub.plan_tokens.toLocaleString('pt-BR') &&
+                 meta?.new_tokens === finalPlanTokens.toLocaleString('pt-BR');
+        });
+
+        if (isDuplicate) {
           console.info(`${logPrefix} Notificação de upgrade/downgrade já enviada recentemente, pulando duplicata`);
         } else {
           const { data: profile } = await supabase
@@ -228,19 +233,19 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
           const { data: oldPlan } = await supabase
             .from('subscription_plans')
-            .select('tier, name')
+            .select('name')
             .eq('stripe_price_id', oldPriceId)
             .maybeSingle();
 
           const { data: newPlan } = await supabase
             .from('subscription_plans')
-            .select('tier, name')
+            .select('name')
             .eq('stripe_price_id', priceId)
             .maybeSingle();
 
           console.info(`${logPrefix} Old plan:`, oldPlan, 'New plan:', newPlan);
 
-          if (profile) {
+          if (profile && oldPlan && newPlan) {
             const isUpgrade = finalPlanTokens > existingSub.plan_tokens;
             const notificationType = isUpgrade ? 'subscription_upgraded' : 'subscription_downgraded';
 
@@ -252,25 +257,24 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
             const userName = fullProfile ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() || profile.email : profile.email;
 
-            const oldTierName = oldPlan?.name || oldPlan?.tier || existingSub.tier || 'N/A';
-            const newTierName = newPlan?.name || newPlan?.tier || 'N/A';
-
             notifyAdminSafe({
               type: notificationType,
               title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
-              message: `${userName} | ${profile.email} | ${oldTierName} → ${newTierName}`,
+              message: `${userName} | ${profile.email} | ${oldPlan.name} → ${newPlan.name}`,
               severity: isUpgrade ? 'success' : 'low',
               metadata: {
                 customer_id: customerId,
                 user_name: userName,
                 user_email: profile.email,
-                old_tier: oldTierName,
-                new_tier: newTierName,
+                old_plan: oldPlan.name,
+                new_plan: newPlan.name,
                 old_tokens: existingSub.plan_tokens.toLocaleString('pt-BR'),
                 new_tokens: finalPlanTokens.toLocaleString('pt-BR'),
               },
               userId: userData.user_id,
             });
+          } else {
+            console.warn(`${logPrefix} Não foi possível enviar notificação: profile=${!!profile}, oldPlan=${!!oldPlan}, newPlan=${!!newPlan}`);
           }
         }
       }
