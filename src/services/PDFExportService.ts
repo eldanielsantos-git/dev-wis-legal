@@ -50,24 +50,19 @@ export class PDFExportService {
 
   private static async loadLogo(theme: 'dark' | 'light'): Promise<Uint8Array | null> {
     try {
-      console.log('[PDF] Carregando logo:', LOGO_URLS[theme]);
       const response = await fetch(LOGO_URLS[theme], { mode: 'cors' });
       if (!response.ok) {
-        console.warn('[PDF] Failed to load logo:', response.statusText);
         return null;
       }
       const arrayBuffer = await response.arrayBuffer();
-      console.log('[PDF] Logo carregado com sucesso, tamanho:', arrayBuffer.byteLength);
       return new Uint8Array(arrayBuffer);
     } catch (error) {
-      console.warn('[PDF] Logo não disponível, continuando sem logo:', error);
       return null;
     }
   }
 
   private static extractAnalysisData(analysisResults: AnalysisResult[]): AnalysisCardData[] {
-    console.log('[PDF] Extraindo dados de análise, total de resultados:', analysisResults.length);
-    const extracted = analysisResults
+    return analysisResults
       .filter(result => result.status === 'completed' && result.result_content)
       .sort((a, b) => a.execution_order - b.execution_order)
       .map(result => ({
@@ -75,8 +70,69 @@ export class PDFExportService {
         title: result.prompt_title,
         content: result.result_content,
       }));
-    console.log('[PDF] Extraídos', extracted.length, 'cards de análise');
-    return extracted;
+  }
+
+  private static formatObjectToText(obj: any, level: number = 0): string {
+    if (obj === null || obj === undefined) {
+      return '';
+    }
+
+    if (typeof obj === 'string') {
+      return obj;
+    }
+
+    if (typeof obj === 'number' || typeof obj === 'boolean') {
+      return String(obj);
+    }
+
+    if (Array.isArray(obj)) {
+      if (obj.length === 0) return '';
+
+      const allStrings = obj.every(item => typeof item === 'string');
+
+      if (allStrings) {
+        return obj.map(item => `- ${item}`).join('\n');
+      }
+
+      return obj.map((item, index) => {
+        if (typeof item === 'object') {
+          return `\n${index + 1}. ${this.formatObjectToText(item, level + 1)}`;
+        }
+        return `- ${item}`;
+      }).join('\n');
+    }
+
+    if (typeof obj === 'object') {
+      const lines: string[] = [];
+
+      for (const [key, value] of Object.entries(obj)) {
+        const isEmpty =
+          value === null ||
+          value === undefined ||
+          (typeof value === 'string' && value.trim() === '') ||
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0);
+
+        if (isEmpty) continue;
+
+        const formattedKey = key
+          .replace(/_/g, ' ')
+          .replace(/([a-z])([A-Z])/g, '$1 $2')
+          .split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .join(' ');
+
+        const formattedValue = this.formatObjectToText(value, level + 1);
+
+        if (formattedValue) {
+          lines.push(`${formattedKey}: ${formattedValue}`);
+        }
+      }
+
+      return lines.join('\n');
+    }
+
+    return String(obj);
   }
 
   private static cleanContent(content: string): string {
@@ -85,20 +141,39 @@ export class PDFExportService {
         return this.normalizeText('Conteudo nao disponivel');
       }
 
-      const parsed = JSON.parse(content);
+      let cleaned = content.trim();
+
+      cleaned = cleaned.replace(/^```json\s*/i, '');
+      cleaned = cleaned.replace(/^```\s*/i, '');
+      cleaned = cleaned.replace(/\s*```\s*$/i, '');
+      cleaned = cleaned.trim();
+
+      const parsed = JSON.parse(cleaned);
 
       if (typeof parsed === 'string') {
-        return this.normalizeText(parsed.substring(0, 500));
+        return this.normalizeText(parsed);
       }
 
       if (typeof parsed === 'object' && parsed !== null) {
-        const jsonStr = JSON.stringify(parsed, null, 2);
-        return this.normalizeText(jsonStr.substring(0, 500));
+        const formatted = this.formatObjectToText(parsed);
+        return this.normalizeText(formatted);
       }
 
-      return this.normalizeText(content.substring(0, 500));
+      return this.normalizeText(cleaned);
     } catch {
-      return this.normalizeText(content.substring(0, 500));
+      const lines = content
+        .split('\n')
+        .map(line => {
+          let cleaned = line.trim();
+          cleaned = cleaned.replace(/^[-*]\s/, '');
+          cleaned = cleaned.replace(/^#+\s/, '');
+          cleaned = cleaned.replace(/\*\*(.+?)\*\*/g, '$1');
+          cleaned = cleaned.replace(/\*(.+?)\*/g, '$1');
+          return cleaned;
+        })
+        .filter(line => line.length > 0);
+
+      return this.normalizeText(lines.join('\n'));
     }
   }
 
@@ -151,57 +226,79 @@ export class PDFExportService {
   }
 
   private static async renderCard(
-    page: PDFPage,
+    pdfDoc: PDFDocument,
+    currentPage: PDFPage,
     card: AnalysisCardData,
     yPosition: number,
     theme: 'dark' | 'light',
     fonts: { regular: PDFFont; bold: PDFFont }
-  ): Promise<number> {
+  ): Promise<{ page: PDFPage; yPosition: number }> {
     const colors = PDF_COLORS[theme];
-    const pageWidth = page.getWidth();
+    const pageWidth = currentPage.getWidth();
+    const pageHeight = currentPage.getHeight();
     const margin = 50;
     const cardPadding = 20;
     const maxContentWidth = pageWidth - 2 * margin - 2 * cardPadding;
 
-    const titleHeight = fonts.bold.heightAtSize(16);
-    const cardMinHeight = 80;
+    let page = currentPage;
+    let currentY = yPosition;
 
-    page.drawRectangle({
-      x: margin,
-      y: yPosition - cardMinHeight,
-      width: pageWidth - 2 * margin,
-      height: cardMinHeight,
-      color: rgb(colors.cardBg.r, colors.cardBg.g, colors.cardBg.b),
-      borderColor: rgb(colors.border.r, colors.border.g, colors.border.b),
-      borderWidth: 1,
-    });
+    if (currentY < 150) {
+      page = pdfDoc.addPage(PageSizes.A4);
+      page.drawRectangle({
+        x: 0,
+        y: 0,
+        width: pageWidth,
+        height: pageHeight,
+        color: rgb(colors.background.r, colors.background.g, colors.background.b),
+      });
+      currentY = pageHeight - 60;
+    }
 
-    const titleY = yPosition - cardPadding - titleHeight;
+    const titleY = currentY - cardPadding;
     page.drawText(this.normalizeText(`${card.order}. ${card.title}`), {
-      x: margin + cardPadding,
+      x: margin,
       y: titleY,
-      size: 16,
+      size: 14,
       font: fonts.bold,
       color: rgb(colors.accent.r, colors.accent.g, colors.accent.b),
     });
 
+    currentY = titleY - 25;
+
     const cleanedContent = this.cleanContent(card.content);
-    const contentLines = cleanedContent.split('\n').slice(0, 3);
-    const contentPreview = contentLines.join(' ').substring(0, 200) + '...';
+    const contentLines = cleanedContent.split('\n').filter(line => line.trim().length > 0);
 
-    const contentY = titleY - 30;
-    const finalY = this.drawTextBlock(
-      page,
-      contentPreview,
-      margin + cardPadding,
-      contentY,
-      maxContentWidth,
-      10,
-      fonts.regular,
-      colors.textSecondary
-    );
+    for (let i = 0; i < contentLines.length; i++) {
+      const line = contentLines[i];
 
-    return finalY - 40;
+      if (currentY < 80) {
+        page = pdfDoc.addPage(PageSizes.A4);
+        page.drawRectangle({
+          x: 0,
+          y: 0,
+          width: pageWidth,
+          height: pageHeight,
+          color: rgb(colors.background.r, colors.background.g, colors.background.b),
+        });
+        currentY = pageHeight - 60;
+      }
+
+      currentY = this.drawTextBlock(
+        page,
+        line,
+        margin,
+        currentY,
+        maxContentWidth,
+        9,
+        fonts.regular,
+        colors.textSecondary
+      );
+
+      currentY -= 5;
+    }
+
+    return { page, yPosition: currentY - 20 };
   }
 
   static async generatePDF(
@@ -209,11 +306,6 @@ export class PDFExportService {
     analysisResults: AnalysisResult[],
     theme: 'dark' | 'light'
   ): Promise<Uint8Array> {
-    console.log('[PDF] Iniciando geração de PDF');
-    console.log('[PDF] Nome do processo:', processoName);
-    console.log('[PDF] Tema:', theme);
-    console.log('[PDF] Número de resultados:', analysisResults.length);
-
     const pdfDoc = await PDFDocument.create();
     const colors = PDF_COLORS[theme];
 
@@ -248,18 +340,14 @@ export class PDFExportService {
             height: logoHeight,
           });
 
-          console.log('[PDF] Logo adicionado com sucesso');
           currentY -= logoHeight + 30;
         } catch (error) {
-          console.warn('[PDF] Erro ao incorporar logo, continuando sem logo:', error);
           currentY -= 30;
         }
       } else {
-        console.log('[PDF] Logo não disponível, continuando sem logo');
         currentY -= 30;
       }
     } catch (error) {
-      console.warn('[PDF] Erro ao carregar logo, continuando sem logo:', error);
       currentY -= 30;
     }
 
@@ -287,28 +375,18 @@ export class PDFExportService {
 
     const cardsData = this.extractAnalysisData(analysisResults);
 
-    console.log('[PDF] Renderizando', cardsData.length, 'cards');
-
     for (const card of cardsData) {
-      if (currentY < 150) {
-        page = pdfDoc.addPage(PageSizes.A4);
-        page.drawRectangle({
-          x: 0,
-          y: 0,
-          width: pageWidth,
-          height: pageHeight,
-          color: rgb(colors.background.r, colors.background.g, colors.background.b),
-        });
-        currentY = pageHeight - 60;
-      }
-
-      currentY = await this.renderCard(
+      const result = await this.renderCard(
+        pdfDoc,
         page,
         card,
         currentY,
         theme,
         { regular: regularFont, bold: boldFont }
       );
+
+      page = result.page;
+      currentY = result.yPosition;
     }
 
     const now = new Date();
@@ -338,9 +416,7 @@ export class PDFExportService {
       });
     });
 
-    console.log('[PDF] Salvando documento PDF');
     const pdfBytes = await pdfDoc.save();
-    console.log('[PDF] PDF gerado com sucesso, tamanho:', pdfBytes.length, 'bytes');
     return pdfBytes;
   }
 
