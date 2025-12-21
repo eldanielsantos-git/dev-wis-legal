@@ -111,7 +111,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
           const planName = planData?.name || 'unknown';
 
-          notifyAdminSafe({
+          await notifyAdminSafe({
             type: 'subscription_cancelled',
             title: 'Assinatura Cancelada',
             message: `${userName} | ${profile.email} | ${planName}`,
@@ -273,7 +273,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
             const userName = fullProfile ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() || profile.email : profile.email;
 
-            notifyAdminSafe({
+            await notifyAdminSafe({
               type: notificationType,
               title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
               message: `${userName} | ${profile.email} | ${oldPlan.name} → ${newPlan.name}`,
@@ -633,7 +633,7 @@ async function handlePaymentFailure(event: Stripe.Event) {
       const notificationType = paymentType === 'compra_tokens' ? 'stripe_token_payment_failed' : 'stripe_payment_failed';
       const titleText = paymentType === 'compra_tokens' ? 'Pagamento de Tokens Falhou' : 'Pagamento de Assinatura Falhou';
 
-      notifyAdminSafe({
+      await notifyAdminSafe({
         type: notificationType,
         title: titleText,
         message: `${amountFormatted} | ${userName} | ${profile.email} | ${productName}`,
@@ -798,7 +798,7 @@ Deno.serve(async (req: Request) => {
               });
               const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
 
-              notifyAdminSafe({
+              await notifyAdminSafe({
                 type: 'subscription_created',
                 title: 'Compra de Assinatura',
                 message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
@@ -946,7 +946,7 @@ Deno.serve(async (req: Request) => {
             });
             const tokensFormatted = tokenPackage.tokens_amount.toLocaleString('pt-BR');
 
-            notifyAdminSafe({
+            await notifyAdminSafe({
               type: 'token_purchase',
               title: 'Compra de Tokens',
               message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
