@@ -1,7 +1,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import Stripe from 'npm:stripe@17.7.0';
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1';
-import { notifyAdminSafe } from '../_shared/notify-admin-safe.ts';
+import { notifyAdminSafe } from './notify-admin-safe.ts';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
   appInfo: {
@@ -103,16 +103,24 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         if (profile) {
           const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
 
+          const { data: planData } = await supabase
+            .from('subscription_plans')
+            .select('name')
+            .eq('stripe_price_id', existingSub.price_id)
+            .maybeSingle();
+
+          const planName = planData?.name || 'unknown';
+
           notifyAdminSafe({
             type: 'subscription_cancelled',
             title: 'Assinatura Cancelada',
-            message: `${userName} | ${profile.email} | ${existingSub.tier || 'unknown'}`,
+            message: `${userName} | ${profile.email} | ${planName}`,
             severity: 'medium',
             metadata: {
               customer_id: customerId,
               user_name: userName,
               user_email: profile.email,
-              tier: existingSub.tier,
+              plan_name: planName,
               cancellation_reason: 'Cancelled in Stripe',
             },
             userId: userData.user_id,
