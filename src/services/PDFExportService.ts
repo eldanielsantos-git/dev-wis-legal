@@ -41,6 +41,13 @@ const LOGO_URLS = {
 };
 
 export class PDFExportService {
+  private static normalizeText(text: string): string {
+    return text
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\x00-\x7F]/g, '');
+  }
+
   private static async loadLogo(theme: 'dark' | 'light'): Promise<Uint8Array | null> {
     try {
       console.log('[PDF] Carregando logo:', LOGO_URLS[theme]);
@@ -75,23 +82,23 @@ export class PDFExportService {
   private static cleanContent(content: string): string {
     try {
       if (!content || content.trim() === '') {
-        return 'Conteúdo não disponível';
+        return this.normalizeText('Conteudo nao disponivel');
       }
 
       const parsed = JSON.parse(content);
 
       if (typeof parsed === 'string') {
-        return parsed.substring(0, 500);
+        return this.normalizeText(parsed.substring(0, 500));
       }
 
       if (typeof parsed === 'object' && parsed !== null) {
         const jsonStr = JSON.stringify(parsed, null, 2);
-        return jsonStr.substring(0, 500);
+        return this.normalizeText(jsonStr.substring(0, 500));
       }
 
-      return content.substring(0, 500);
+      return this.normalizeText(content.substring(0, 500));
     } catch {
-      return content.substring(0, 500);
+      return this.normalizeText(content.substring(0, 500));
     }
   }
 
@@ -170,7 +177,7 @@ export class PDFExportService {
     });
 
     const titleY = yPosition - cardPadding - titleHeight;
-    page.drawText(`${card.order}. ${card.title}`, {
+    page.drawText(this.normalizeText(`${card.order}. ${card.title}`), {
       x: margin + cardPadding,
       y: titleY,
       size: 16,
@@ -256,7 +263,7 @@ export class PDFExportService {
       currentY -= 30;
     }
 
-    page.drawText('Wis Legal Análise de Processo', {
+    page.drawText(this.normalizeText('Wis Legal Analise de Processo'), {
       x: 50,
       y: currentY,
       size: 24,
@@ -268,7 +275,7 @@ export class PDFExportService {
     const maxNameWidth = pageWidth - 100;
     currentY = this.drawTextBlock(
       page,
-      processoName,
+      this.normalizeText(processoName),
       50,
       currentY,
       maxNameWidth,
@@ -315,14 +322,14 @@ export class PDFExportService {
 
     const allPages = pdfDoc.getPages();
     allPages.forEach(p => {
-      p.drawText(`Gerado em: ${dateStr}`, {
+      p.drawText(this.normalizeText(`Gerado em: ${dateStr}`), {
         x: 50,
         y: 30,
         size: 8,
         font: regularFont,
         color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
       });
-      p.drawText('Wis Legal © 2024', {
+      p.drawText(this.normalizeText('Wis Legal (c) 2024'), {
         x: pageWidth - 150,
         y: 30,
         size: 8,
