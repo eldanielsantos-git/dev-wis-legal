@@ -103,7 +103,7 @@ export class PDFExportService {
   }
 
   private static checkNewPage(ctx: RenderContext, requiredSpace: number): RenderContext {
-    if (ctx.yPosition < requiredSpace) {
+    if (ctx.yPosition < requiredSpace + 60) {
       const newPage = ctx.pdfDoc.addPage(PageSizes.A4);
       newPage.drawRectangle({
         x: 0,
@@ -112,7 +112,7 @@ export class PDFExportService {
         height: ctx.pageHeight,
         color: rgb(ctx.colors.background.r, ctx.colors.background.g, ctx.colors.background.b),
       });
-      return { ...ctx, page: newPage, yPosition: ctx.pageHeight - 50 };
+      return { ...ctx, page: newPage, yPosition: ctx.pageHeight - 60 };
     }
     return ctx;
   }
@@ -128,93 +128,88 @@ export class PDFExportService {
       color?: { r: number; g: number; b: number };
       maxWidth?: number;
     }
-  ): { ctx: RenderContext; endY: number } {
+  ): { ctx: RenderContext; endY: number; lineCount: number } {
     const font = options.font || ctx.fonts.regular;
     const color = options.color || ctx.colors.textPrimary;
     const maxWidth = options.maxWidth || ctx.pageWidth - 2 * ctx.margin;
 
-    if (!options.maxWidth) {
-      ctx.page.drawText(this.normalizeText(text), {
-        x,
-        y,
-        size: options.size,
-        font,
-        color: rgb(color.r, color.g, color.b),
-      });
-      return { ctx, endY: y - options.size * 1.5 };
+    if (!text || text.trim() === '') {
+      return { ctx, endY: y, lineCount: 0 };
     }
 
-    const words = this.normalizeText(text).split(' ');
+    const normalized = this.normalizeText(text);
+    const words = normalized.split(' ');
     let currentLine = '';
     let currentY = y;
     const lineHeight = options.size * 1.5;
+    let lineCount = 0;
 
     for (const word of words) {
       const testLine = currentLine ? `${currentLine} ${word}` : word;
       const width = font.widthOfTextAtSize(testLine, options.size);
 
       if (width > maxWidth && currentLine) {
-        let newCtx = this.checkNewPage(ctx, 100);
-        if (newCtx.page !== ctx.page) {
-          ctx = newCtx;
-          currentY = ctx.yPosition;
-        }
+        ctx = this.checkNewPage(ctx, 100);
 
         ctx.page.drawText(currentLine, {
           x,
-          y: currentY,
+          y: ctx.yPosition,
           size: options.size,
           font,
           color: rgb(color.r, color.g, color.b),
         });
+
         currentLine = word;
-        currentY -= lineHeight;
+        ctx.yPosition -= lineHeight;
+        lineCount++;
       } else {
         currentLine = testLine;
       }
     }
 
     if (currentLine) {
-      let newCtx = this.checkNewPage(ctx, 100);
-      if (newCtx.page !== ctx.page) {
-        ctx = newCtx;
-        currentY = ctx.yPosition;
-      }
+      ctx = this.checkNewPage(ctx, 100);
 
       ctx.page.drawText(currentLine, {
         x,
-        y: currentY,
+        y: ctx.yPosition,
         size: options.size,
         font,
         color: rgb(color.r, color.g, color.b),
       });
-      currentY -= lineHeight;
+
+      ctx.yPosition -= lineHeight;
+      lineCount++;
     }
 
-    return { ctx, endY: currentY };
+    return { ctx, endY: ctx.yPosition, lineCount };
   }
 
   private static drawCard(
     ctx: RenderContext,
-    x: number,
-    y: number,
-    width: number,
     height: number,
     options: {
       bgColor?: { r: number; g: number; b: number };
       borderColor?: { r: number; g: number; b: number };
       borderWidth?: number;
       borderLeft?: boolean;
+      padding?: number;
     } = {}
-  ): void {
+  ): RenderContext {
     const bgColor = options.bgColor || ctx.colors.cardBg;
     const borderColor = options.borderColor || ctx.colors.border;
     const borderWidth = options.borderWidth || 1;
+    const padding = options.padding || 10;
+
+    ctx = this.checkNewPage(ctx, height + 20);
+
+    const cardWidth = ctx.pageWidth - 2 * ctx.margin;
+    const cardY = ctx.yPosition - height;
 
     ctx.page.drawRectangle({
-      x,
-      y,
-      width,
+      x: ctx.margin,
+      y: cardY,
+      width: cardWidth,
       height,
       color: rgb(bgColor.r, bgColor.g, bgColor.b),
       borderColor: rgb(borderColor.r, borderColor.g, borderColor.b),
@@ -223,623 +218,497 @@ export class PDFExportService {
 
     if (options.borderLeft) {
       ctx.page.drawRectangle({
-        x,
-        y,
+        x: ctx.margin,
+        y: cardY,
         width: 4,
         height,
         color: rgb(borderColor.r, borderColor.g, borderColor.b),
       });
     }
-  }
 
-  private static drawBadge(
-    ctx: RenderContext,
-    text: string,
-    x: number,
-    y: number,
-    color: { r: number; g: number; b: number }
-  ): { width: number; height: number } {
-    const padding = 4;
-    const textWidth = ctx.fonts.regular.widthOfTextAtSize(this.normalizeText(text), 8);
-    const badgeWidth = textWidth + padding * 2;
-    const badgeHeight = 14;
-
-    ctx.page.drawRectangle({
-      x,
-      y,
-      width: badgeWidth,
-      height: badgeHeight,
-      color: rgb(color.r * 0.2, color.g * 0.2, color.b * 0.2),
-      borderColor: rgb(color.r, color.g, color.b),
-      borderWidth: 1,
-    });
-
-    ctx.page.drawText(this.normalizeText(text), {
-      x: x + padding,
-      y: y + 3,
-      size: 8,
-      font: ctx.fonts.regular,
-      color: rgb(color.r, color.g, color.b),
-    });
-
-    return { width: badgeWidth, height: badgeHeight };
+    ctx.yPosition -= padding;
+    return ctx;
   }
 
   private static drawSectionHeader(
     ctx: RenderContext,
-    title: string,
-    y: number
-  ): { ctx: RenderContext; endY: number } {
-    ctx = this.checkNewPage(ctx, 100);
+    title: string
+  ): RenderContext {
+    ctx = this.checkNewPage(ctx, 50);
 
-    const result = this.drawText(ctx, title, ctx.margin, y, {
+    ctx.page.drawText(this.normalizeText(title), {
+      x: ctx.margin,
+      y: ctx.yPosition,
       size: 16,
       font: ctx.fonts.bold,
-      color: ctx.colors.textPrimary,
+      color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
     });
 
+    ctx.yPosition -= 20;
+
     ctx.page.drawLine({
-      start: { x: ctx.margin, y: result.endY + 8 },
-      end: { x: ctx.pageWidth - ctx.margin, y: result.endY + 8 },
+      start: { x: ctx.margin, y: ctx.yPosition },
+      end: { x: ctx.pageWidth - ctx.margin, y: ctx.yPosition },
       thickness: 1,
       color: rgb(ctx.colors.border.r, ctx.colors.border.g, ctx.colors.border.b),
     });
 
-    return { ctx: result.ctx, endY: result.endY - 5 };
+    ctx.yPosition -= 20;
+    return ctx;
+  }
+
+  private static drawSubsectionTitle(
+    ctx: RenderContext,
+    title: string,
+    color?: { r: number; g: number; b: number }
+  ): RenderContext {
+    ctx = this.checkNewPage(ctx, 40);
+
+    ctx.page.drawText(this.normalizeText(title), {
+      x: ctx.margin + 5,
+      y: ctx.yPosition,
+      size: 12,
+      font: ctx.fonts.bold,
+      color: rgb(
+        (color || ctx.colors.blue).r,
+        (color || ctx.colors.blue).g,
+        (color || ctx.colors.blue).b
+      ),
+    });
+
+    ctx.yPosition -= 25;
+    return ctx;
   }
 
   private static renderFieldGrid(
     ctx: RenderContext,
     fields: Array<{ label: string; value: string }>,
-    y: number,
     columns: number = 3
-  ): { ctx: RenderContext; endY: number } {
-    const cardWidth = ctx.pageWidth - 2 * ctx.margin;
-    const gap = 8;
-    const fieldWidth = (cardWidth - gap * (columns - 1)) / columns;
-    const fieldHeight = 40;
+  ): RenderContext {
+    if (!fields || fields.length === 0) return ctx;
 
-    let currentY = y;
-    let currentX = ctx.margin;
+    const gap = 8;
+    const cardWidth = ctx.pageWidth - 2 * ctx.margin;
+    const fieldWidth = (cardWidth - gap * (columns - 1)) / columns;
+    const fieldHeight = 50;
+
     let col = 0;
 
     for (const field of fields) {
-      ctx = this.checkNewPage(ctx, fieldHeight + 20);
-      if (ctx.yPosition !== currentY && col > 0) {
-        currentY = ctx.yPosition;
-        currentX = ctx.margin;
-        col = 0;
+      if (col === 0) {
+        ctx = this.checkNewPage(ctx, fieldHeight + 20);
       }
 
-      this.drawCard(ctx, currentX, currentY - fieldHeight, fieldWidth, fieldHeight, {
-        bgColor: ctx.colors.cardBgTertiary,
+      const x = ctx.margin + col * (fieldWidth + gap);
+      const y = ctx.yPosition;
+
+      ctx.page.drawRectangle({
+        x,
+        y: y - fieldHeight,
+        width: fieldWidth,
+        height: fieldHeight,
+        color: rgb(ctx.colors.cardBgTertiary.r, ctx.colors.cardBgTertiary.g, ctx.colors.cardBgTertiary.b),
+        borderColor: rgb(ctx.colors.border.r, ctx.colors.border.g, ctx.colors.border.b),
+        borderWidth: 1,
       });
 
-      this.drawText(ctx, field.label, currentX + 6, currentY - 12, {
+      ctx.page.drawText(this.normalizeText(field.label).substring(0, 50), {
+        x: x + 6,
+        y: y - 15,
         size: 8,
         font: ctx.fonts.bold,
-        color: ctx.colors.textSecondary,
-        maxWidth: fieldWidth - 12,
+        color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
       });
 
-      this.drawText(ctx, field.value, currentX + 6, currentY - 26, {
-        size: 10,
-        color: ctx.colors.textPrimary,
-        maxWidth: fieldWidth - 12,
+      const valueText = this.normalizeText(String(field.value)).substring(0, 80);
+      ctx.page.drawText(valueText, {
+        x: x + 6,
+        y: y - 32,
+        size: 9,
+        font: ctx.fonts.regular,
+        color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
       });
 
       col++;
       if (col >= columns) {
         col = 0;
-        currentX = ctx.margin;
-        currentY -= fieldHeight + gap;
-      } else {
-        currentX += fieldWidth + gap;
+        ctx.yPosition -= fieldHeight + gap;
       }
     }
 
     if (col > 0) {
-      currentY -= fieldHeight + gap;
+      ctx.yPosition -= fieldHeight + gap;
     }
 
-    return { ctx, endY: currentY - 10 };
+    ctx.yPosition -= 10;
+    return ctx;
   }
 
   private static async renderAnalysisContent(
     ctx: RenderContext,
     result: AnalysisResult
-  ): Promise<{ ctx: RenderContext; endY: number }> {
+  ): Promise<RenderContext> {
     const data = this.parseContent(result.result_content);
     if (!data) {
-      return { ctx, endY: ctx.yPosition - 20 };
+      return ctx;
     }
 
-    let headerResult = this.drawSectionHeader(ctx, result.prompt_title, ctx.yPosition);
-    ctx = headerResult.ctx;
-    let currentY = headerResult.endY - 15;
+    ctx = this.drawSectionHeader(ctx, result.prompt_title);
 
-    const promptType = result.prompt_type;
-
-    // Detectar tipo de análise e renderizar apropriadamente
     if (data.visaoGeralProcesso) {
       const analysis = data.visaoGeralProcesso;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo);
 
-        // Título da seção
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.blue,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
-
-        // Campos
         if (secao.campos && secao.campos.length > 0) {
           const fields = secao.campos.map((c: any) => ({
-            label: c.label,
+            label: c.label || '',
             value: String(c.valor || ''),
           }));
-          const gridResult = this.renderFieldGrid(ctx, fields, currentY, 3);
-          ctx = gridResult.ctx;
-          currentY = gridResult.endY - 10;
+          ctx = this.renderFieldGrid(ctx, fields, 3);
         }
 
-        // Lista de partes
         if (secao.lista && secao.lista.length > 0) {
           for (const parte of secao.lista) {
-            ctx = this.checkNewPage(ctx, 60);
-            currentY = ctx.yPosition;
+            ctx = this.drawCard(ctx, 60, { bgColor: ctx.colors.cardBgTertiary });
 
-            const cardY = currentY - 55;
-            this.drawCard(ctx, ctx.margin, cardY, ctx.pageWidth - 2 * ctx.margin, 50, {
-              bgColor: ctx.colors.cardBgTertiary,
-            });
-
-            this.drawText(ctx, String(parte.nome || ''), ctx.margin + 10, currentY - 10, {
+            ctx.page.drawText(this.normalizeText(String(parte.nome || '')).substring(0, 80), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
               size: 10,
               font: ctx.fonts.bold,
+              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
             });
 
-            this.drawText(
-              ctx,
-              `CPF/CNPJ: ${parte.cpfCnpj || ''} | Polo: ${parte.Polo || ''}`,
-              ctx.margin + 10,
-              currentY - 28,
-              {
-                size: 8,
-                color: ctx.colors.textSecondary,
-              }
-            );
+            ctx.yPosition -= 18;
 
-            currentY -= 65;
+            const infoText = `CPF/CNPJ: ${parte.cpfCnpj || ''} | Polo: ${parte.Polo || ''}`;
+            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
+              size: 8,
+              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+            });
+
+            ctx.yPosition -= 25;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.resumoEstrategico) {
       const analysis = data.resumoEstrategico;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.blue,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo);
 
         if (secao.campos && secao.campos.length > 0) {
           const fields = secao.campos.map((c: any) => ({
             label: c.label || '',
             value: String(c.valor || ''),
           }));
-          const gridResult = this.renderFieldGrid(ctx, fields, currentY, 2);
-          ctx = gridResult.ctx;
-          currentY = gridResult.endY - 10;
+          ctx = this.renderFieldGrid(ctx, fields, 2);
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.comunicacoesPrazos) {
       const analysis = data.comunicacoesPrazos;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.blue,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo);
 
         if (secao.listaAtos && secao.listaAtos.length > 0) {
           for (let i = 0; i < secao.listaAtos.length; i++) {
             const ato = secao.listaAtos[i];
-            ctx = this.checkNewPage(ctx, 120);
-            currentY = ctx.yPosition;
+            ctx = this.drawCard(ctx, 90, { borderLeft: true, borderColor: ctx.colors.blue });
 
-            const cardHeight = 100;
-            const cardY = currentY - cardHeight;
-            this.drawCard(ctx, ctx.margin, cardY, ctx.pageWidth - 2 * ctx.margin, cardHeight, {
-              borderLeft: true,
-              borderColor: ctx.colors.blue,
-            });
-
-            this.drawText(ctx, `Ato ${i + 1} - ${ato.tipoAto || ''}`, ctx.margin + 10, currentY - 15, {
+            ctx.page.drawText(this.normalizeText(`Ato ${i + 1} - ${ato.tipoAto || ''}`).substring(0, 70), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
               size: 10,
               font: ctx.fonts.bold,
+              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
             });
 
-            this.drawText(ctx, `Modalidade: ${ato.modalidade || ''}`, ctx.margin + 10, currentY - 32, {
+            ctx.yPosition -= 18;
+
+            ctx.page.drawText(this.normalizeText(`Modalidade: ${ato.modalidade || ''}`).substring(0, 70), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
               size: 8,
-              color: ctx.colors.textSecondary,
+              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
             });
+
+            ctx.yPosition -= 15;
 
             if (ato.destinatario) {
               const dest = Array.isArray(ato.destinatario) ? ato.destinatario[0] : ato.destinatario;
-              this.drawText(
-                ctx,
-                `Destinatario: ${dest.nome || ''} - ${dest.status || ''}`,
-                ctx.margin + 10,
-                currentY - 48,
-                {
-                  size: 8,
-                  color: ctx.colors.textSecondary,
-                }
-              );
+              const destText = `Destinatario: ${dest?.nome || ''} - ${dest?.status || ''}`;
+              ctx.page.drawText(this.normalizeText(destText).substring(0, 70), {
+                x: ctx.margin + 15,
+                y: ctx.yPosition,
+                size: 8,
+                color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+              });
+
+              ctx.yPosition -= 15;
             }
 
-            currentY -= cardHeight + 10;
+            ctx.yPosition -= 20;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.recursosAdmissibilidade) {
       const analysis = data.recursosAdmissibilidade;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.blue,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo);
 
         if (secao.listaRecursosIdentificados && secao.listaRecursosIdentificados.length > 0) {
           for (let i = 0; i < secao.listaRecursosIdentificados.length; i++) {
             const recurso = secao.listaRecursosIdentificados[i];
-            ctx = this.checkNewPage(ctx, 100);
-            currentY = ctx.yPosition;
+            ctx = this.drawCard(ctx, 70, { borderLeft: true, borderColor: ctx.colors.purple });
 
-            const cardHeight = 90;
-            const cardY = currentY - cardHeight;
-            this.drawCard(ctx, ctx.margin, cardY, ctx.pageWidth - 2 * ctx.margin, cardHeight, {
-              borderLeft: true,
-              borderColor: ctx.colors.purple,
-            });
-
-            this.drawText(ctx, `Recurso ${i + 1} - ${recurso.tipoRecurso || ''}`, ctx.margin + 10, currentY - 15, {
-              size: 10,
-              font: ctx.fonts.bold,
-            });
-
-            this.drawText(
-              ctx,
-              `Tempestividade: ${recurso.tempestividade || ''} | Situacao: ${recurso.situacaoAtual || ''}`,
-              ctx.margin + 10,
-              currentY - 32,
+            ctx.page.drawText(
+              this.normalizeText(`Recurso ${i + 1} - ${recurso.tipoRecurso || ''}`).substring(0, 70),
               {
-                size: 8,
-                color: ctx.colors.textSecondary,
+                x: ctx.margin + 15,
+                y: ctx.yPosition,
+                size: 10,
+                font: ctx.fonts.bold,
+                color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
               }
             );
 
-            currentY -= cardHeight + 10;
+            ctx.yPosition -= 18;
+
+            const infoText = `Tempestividade: ${recurso.tempestividade || ''} | Situacao: ${recurso.situacaoAtual || ''}`;
+            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
+              size: 8,
+              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+            });
+
+            ctx.yPosition -= 20;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.estrategiasJuridicas) {
       const analysis = data.estrategiasJuridicas;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.blue,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo);
 
         if (secao.listaEstrategias && secao.listaEstrategias.length > 0) {
           for (const estrategia of secao.listaEstrategias) {
-            ctx = this.checkNewPage(ctx, 140);
-            currentY = ctx.yPosition;
+            ctx = this.drawCard(ctx, 100, { borderLeft: true, borderColor: ctx.colors.green });
 
-            const cardHeight = 130;
-            const cardY = currentY - cardHeight;
-            this.drawCard(ctx, ctx.margin, cardY, ctx.pageWidth - 2 * ctx.margin, cardHeight, {
-              borderLeft: true,
-              borderColor: ctx.colors.green,
-            });
-
-            this.drawText(ctx, estrategia.polo || '', ctx.margin + 10, currentY - 15, {
+            ctx.page.drawText(this.normalizeText(estrategia.polo || '').substring(0, 70), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
               size: 11,
               font: ctx.fonts.bold,
+              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
             });
+
+            ctx.yPosition -= 20;
 
             if (estrategia.estrategiaPrincipal) {
               const ep = estrategia.estrategiaPrincipal;
-              const descResult = this.drawText(
-                ctx,
-                `Estrategia: ${ep.descricao || ''}`,
-                ctx.margin + 10,
-                currentY - 35,
-                {
-                  size: 8,
-                  color: ctx.colors.textSecondary,
-                  maxWidth: ctx.pageWidth - 2 * ctx.margin - 20,
-                }
-              );
-              ctx = descResult.ctx;
+              const descText = `Estrategia: ${ep.descricao || ''}`;
+              const result = this.drawText(ctx, descText, ctx.margin + 15, ctx.yPosition, {
+                size: 8,
+                color: ctx.colors.textSecondary,
+                maxWidth: ctx.pageWidth - 2 * ctx.margin - 30,
+              });
+              ctx = result.ctx;
             }
 
-            currentY -= cardHeight + 10;
+            ctx.yPosition -= 20;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.riscosAlertasProcessuais) {
       const analysis = data.riscosAlertasProcessuais;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.blue,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo);
 
         if (secao.listaAlertas && secao.listaAlertas.length > 0) {
           for (let i = 0; i < secao.listaAlertas.length; i++) {
             const alerta = secao.listaAlertas[i];
-            ctx = this.checkNewPage(ctx, 120);
-            currentY = ctx.yPosition;
+            ctx = this.drawCard(ctx, 100, { borderLeft: true, borderColor: ctx.colors.red });
 
-            const cardHeight = 110;
-            const cardY = currentY - cardHeight;
-            this.drawCard(ctx, ctx.margin, cardY, ctx.pageWidth - 2 * ctx.margin, cardHeight, {
-              borderLeft: true,
-              borderColor: ctx.colors.red,
-            });
-
-            this.drawText(ctx, `Alerta ${i + 1} - ${alerta.categoria || ''}`, ctx.margin + 10, currentY - 15, {
+            ctx.page.drawText(this.normalizeText(`Alerta ${i + 1} - ${alerta.categoria || ''}`).substring(0, 70), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
               size: 10,
               font: ctx.fonts.bold,
+              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
             });
 
-            this.drawText(
-              ctx,
-              `Gravidade: ${alerta.gravidade || ''} | Polo: ${alerta.poloAfetado || ''}`,
-              ctx.margin + 10,
-              currentY - 32,
-              {
-                size: 8,
-                color: ctx.colors.textSecondary,
-              }
-            );
+            ctx.yPosition -= 18;
 
-            const descResult = this.drawText(ctx, alerta.descricaoRisco || '', ctx.margin + 10, currentY - 50, {
+            const infoText = `Gravidade: ${alerta.gravidade || ''} | Polo: ${alerta.poloAfetado || ''}`;
+            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
+              size: 8,
+              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+            });
+
+            ctx.yPosition -= 18;
+
+            const result = this.drawText(ctx, alerta.descricaoRisco || '', ctx.margin + 15, ctx.yPosition, {
               size: 8,
               color: ctx.colors.textSecondary,
-              maxWidth: ctx.pageWidth - 2 * ctx.margin - 20,
+              maxWidth: ctx.pageWidth - 2 * ctx.margin - 30,
             });
-            ctx = descResult.ctx;
+            ctx = result.ctx;
 
-            currentY -= cardHeight + 10;
+            ctx.yPosition -= 15;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.balancoFinanceiro) {
       const analysis = data.balancoFinanceiro;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.green,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo, ctx.colors.green);
 
         if (secao.campos && secao.campos.length > 0) {
           const fields = secao.campos.map((c: any) => ({
             label: c.label || '',
             value: String(c.valor || ''),
           }));
-          const gridResult = this.renderFieldGrid(ctx, fields, currentY, 2);
-          ctx = gridResult.ctx;
-          currentY = gridResult.endY - 10;
+          ctx = this.renderFieldGrid(ctx, fields, 2);
         }
 
         if (secao.listaHonorarios && secao.listaHonorarios.length > 0) {
           for (let i = 0; i < secao.listaHonorarios.length; i++) {
             const hon = secao.listaHonorarios[i];
-            ctx = this.checkNewPage(ctx, 80);
-            currentY = ctx.yPosition;
+            ctx = this.drawCard(ctx, 70, { borderLeft: true, borderColor: ctx.colors.purple });
 
-            const cardHeight = 70;
-            const cardY = currentY - cardHeight;
-            this.drawCard(ctx, ctx.margin, cardY, ctx.pageWidth - 2 * ctx.margin, cardHeight, {
-              borderLeft: true,
-              borderColor: ctx.colors.purple,
-            });
-
-            this.drawText(ctx, `Honorario ${i + 1} - ${hon.tipo || ''}`, ctx.margin + 10, currentY - 15, {
+            ctx.page.drawText(this.normalizeText(`Honorario ${i + 1} - ${hon.tipo || ''}`).substring(0, 70), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
               size: 10,
               font: ctx.fonts.bold,
+              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
             });
 
-            this.drawText(
-              ctx,
-              `Valor: ${hon.valorEstimado || ''} | Polo: ${hon.poloBeneficiado || ''}`,
-              ctx.margin + 10,
-              currentY - 32,
-              {
-                size: 8,
-                color: ctx.colors.textSecondary,
-              }
-            );
+            ctx.yPosition -= 18;
 
-            currentY -= cardHeight + 10;
+            const infoText = `Valor: ${hon.valorEstimado || ''} | Polo: ${hon.poloBeneficiado || ''}`;
+            ctx.page.drawText(this.normalizeText(infoText).substring(0, 80), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
+              size: 8,
+              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+            });
+
+            ctx.yPosition -= 20;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.mapaPreclusoesProcessuais) {
       const analysis = data.mapaPreclusoesProcessuais;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.amber,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo, ctx.colors.amber);
 
         if (secao.listaPreclusoesRecentes && secao.listaPreclusoesRecentes.length > 0) {
           for (let i = 0; i < secao.listaPreclusoesRecentes.length; i++) {
             const prec = secao.listaPreclusoesRecentes[i];
-            ctx = this.checkNewPage(ctx, 100);
-            currentY = ctx.yPosition;
+            ctx = this.drawCard(ctx, 90, { borderLeft: true, borderColor: ctx.colors.amber });
 
-            const cardHeight = 90;
-            const cardY = currentY - cardHeight;
-            this.drawCard(ctx, ctx.margin, cardY, ctx.pageWidth - 2 * ctx.margin, cardHeight, {
-              borderLeft: true,
-              borderColor: ctx.colors.amber,
-            });
-
-            this.drawText(ctx, `Preclusao ${i + 1} - ${prec.tipo || ''}`, ctx.margin + 10, currentY - 15, {
+            ctx.page.drawText(this.normalizeText(`Preclusao ${i + 1} - ${prec.tipo || ''}`).substring(0, 70), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
               size: 10,
               font: ctx.fonts.bold,
+              color: rgb(ctx.colors.textPrimary.r, ctx.colors.textPrimary.g, ctx.colors.textPrimary.b),
             });
 
-            this.drawText(ctx, `Polo: ${prec.poloAfetado || ''}`, ctx.margin + 10, currentY - 32, {
+            ctx.yPosition -= 18;
+
+            ctx.page.drawText(this.normalizeText(`Polo: ${prec.poloAfetado || ''}`).substring(0, 70), {
+              x: ctx.margin + 15,
+              y: ctx.yPosition,
+              size: 8,
+              color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
+            });
+
+            ctx.yPosition -= 18;
+
+            const result = this.drawText(ctx, prec.atoOuFaseAtingida || '', ctx.margin + 15, ctx.yPosition, {
               size: 8,
               color: ctx.colors.textSecondary,
+              maxWidth: ctx.pageWidth - 2 * ctx.margin - 30,
             });
+            ctx = result.ctx;
 
-            const atoResult = this.drawText(ctx, prec.atoOuFaseAtingida || '', ctx.margin + 10, currentY - 48, {
-              size: 8,
-              color: ctx.colors.textSecondary,
-              maxWidth: ctx.pageWidth - 2 * ctx.margin - 20,
-            });
-            ctx = atoResult.ctx;
-
-            currentY -= cardHeight + 10;
+            ctx.yPosition -= 15;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
     } else if (data.conclusoesPerspectivas) {
       const analysis = data.conclusoesPerspectivas;
       for (const secao of analysis.secoes || []) {
-        ctx = this.checkNewPage(ctx, 100);
-        currentY = ctx.yPosition;
-
-        const titleResult = this.drawText(ctx, secao.titulo, ctx.margin + 5, currentY, {
-          size: 12,
-          font: ctx.fonts.bold,
-          color: ctx.colors.blue,
-        });
-        ctx = titleResult.ctx;
-        currentY = titleResult.endY - 10;
+        ctx = this.drawSubsectionTitle(ctx, secao.titulo);
 
         if (secao.campos && secao.campos.length > 0) {
           for (const campo of secao.campos) {
-            ctx = this.checkNewPage(ctx, 80);
-            currentY = ctx.yPosition;
+            ctx = this.checkNewPage(ctx, 60);
 
             if (campo.label) {
-              const labelResult = this.drawText(ctx, campo.label, ctx.margin + 5, currentY, {
+              ctx.page.drawText(this.normalizeText(campo.label).substring(0, 80), {
+                x: ctx.margin + 5,
+                y: ctx.yPosition,
                 size: 9,
                 font: ctx.fonts.bold,
-                color: ctx.colors.textSecondary,
+                color: rgb(ctx.colors.textSecondary.r, ctx.colors.textSecondary.g, ctx.colors.textSecondary.b),
               });
-              ctx = labelResult.ctx;
-              currentY = labelResult.endY - 5;
+
+              ctx.yPosition -= 18;
             }
 
             if (Array.isArray(campo.valor)) {
               for (const item of campo.valor) {
-                const itemResult = this.drawText(ctx, `• ${item}`, ctx.margin + 10, currentY, {
+                const result = this.drawText(ctx, `• ${item}`, ctx.margin + 10, ctx.yPosition, {
                   size: 8,
                   color: ctx.colors.textPrimary,
                   maxWidth: ctx.pageWidth - 2 * ctx.margin - 20,
                 });
-                ctx = itemResult.ctx;
-                currentY = itemResult.endY - 3;
+                ctx = result.ctx;
+                ctx.yPosition -= 5;
               }
             } else {
-              const valueResult = this.drawText(ctx, String(campo.valor), ctx.margin + 10, currentY, {
+              const result = this.drawText(ctx, String(campo.valor), ctx.margin + 10, ctx.yPosition, {
                 size: 8,
                 color: ctx.colors.textPrimary,
                 maxWidth: ctx.pageWidth - 2 * ctx.margin - 20,
               });
-              ctx = valueResult.ctx;
-              currentY = valueResult.endY - 5;
+              ctx = result.ctx;
             }
 
-            currentY -= 10;
+            ctx.yPosition -= 15;
           }
         }
 
-        currentY -= 10;
+        ctx.yPosition -= 15;
       }
-    } else {
-      // Fallback genérico
-      const contentText = JSON.stringify(data, null, 2)
-        .substring(0, 500)
-        .replace(/[{}"[\],]/g, ' ');
-      const textResult = this.drawText(ctx, contentText, ctx.margin, currentY, {
-        size: 8,
-        color: ctx.colors.textSecondary,
-        maxWidth: ctx.pageWidth - 2 * ctx.margin,
-      });
-      ctx = textResult.ctx;
-      currentY = textResult.endY - 20;
     }
 
-    return { ctx, endY: currentY - 20 };
+    ctx.yPosition -= 20;
+    return ctx;
   }
 
   static async generatePDF(
@@ -921,7 +790,7 @@ export class PDFExportService {
       font: regularFont,
       color: rgb(colors.textSecondary.r, colors.textSecondary.g, colors.textSecondary.b),
     });
-    currentY -= 40;
+    currentY -= 50;
 
     // Renderizar análises
     let ctx: RenderContext = {
@@ -941,9 +810,7 @@ export class PDFExportService {
       .sort((a, b) => a.execution_order - b.execution_order);
 
     for (const result of sortedResults) {
-      const renderResult = await this.renderAnalysisContent(ctx, result);
-      ctx = renderResult.ctx;
-      ctx.yPosition = renderResult.endY;
+      ctx = await this.renderAnalysisContent(ctx, result);
     }
 
     // Rodapé em todas as páginas
