@@ -896,20 +896,20 @@ Deno.serve(async (req: Request) => {
             : `${durationSeconds}s`;
 
           notifyAdminSafe({
-            type_slug: 'analysis_completed',
+            type: 'analysis_completed',
             title: 'Análise Concluída',
-            message: `${userName} | ${fileName} | ${durationText}`,
+            message: `Análise concluída | ${userName || userEmail} | ${fileName} | ${durationText}`,
             severity: 'success',
             metadata: {
               processo_id,
               file_name: fileName,
               user_email: userEmail,
-              user_name: userName,
+              user_name: userName || userEmail,
               duration: durationText,
               is_complex: processoData.is_chunked,
             },
-            user_id: processoData.user_id,
-            processo_id: processo_id,
+            userId: processoData.user_id,
+            processoId: processo_id,
           });
 
           console.log(`[${callId}] ✅ Processo finalizado com sucesso!`);

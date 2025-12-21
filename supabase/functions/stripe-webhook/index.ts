@@ -96,23 +96,26 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       if (userData) {
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('email')
+          .select('email, first_name, last_name')
           .eq('id', userData.user_id)
           .maybeSingle();
 
         if (profile) {
+          const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+
           notifyAdminSafe({
             type: 'subscription_cancelled',
             title: 'Assinatura Cancelada',
-            message: `Assinatura do plano ${existingSub.tier || 'unknown'} foi cancelada.`,
+            message: `Assinatura cancelada | ${userName} | ${profile.email} | ${existingSub.tier || 'unknown'}`,
             severity: 'medium',
             metadata: {
               customer_id: customerId,
+              user_name: userName,
               user_email: profile.email,
               tier: existingSub.tier,
               cancellation_reason: 'Cancelled in Stripe',
             },
-            userId: profile.id,
+            userId: userData.user_id,
           });
         }
       }
@@ -574,6 +577,43 @@ async function handlePaymentFailure(event: Stripe.Event) {
       console.info(`${logPrefix} Email sent successfully`);
     }
 
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('email, first_name, last_name')
+      .eq('id', customer.user_id)
+      .maybeSingle();
+
+    if (profile) {
+      const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+      const amountFormatted = (paymentIntent.amount / 100).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: paymentIntent.currency.toUpperCase(),
+      });
+
+      const notificationType = paymentType === 'compra_tokens' ? 'stripe_token_payment_failed' : 'stripe_payment_failed';
+      const titleText = paymentType === 'compra_tokens' ? 'Pagamento de Tokens Falhou' : 'Pagamento de Assinatura Falhou';
+
+      notifyAdminSafe({
+        type: notificationType,
+        title: titleText,
+        message: `Pagamento falhou | ${amountFormatted} | ${userName} | ${profile.email} | ${productName}`,
+        severity: 'high',
+        metadata: {
+          payment_intent_id: paymentIntent.id,
+          user_name: userName,
+          user_email: profile.email,
+          amount: amountFormatted,
+          product_name: productName,
+          payment_type: paymentType,
+          error_code: errorCode || 'N/A',
+          error_message: errorMessage || 'N/A',
+          card_brand: cardBrand || 'N/A',
+          card_last4: cardLast4 || 'N/A',
+        },
+        userId: customer.user_id,
+      });
+    }
+
   } catch (error: any) {
     console.error(`${logPrefix} Error:`, error);
   }
@@ -854,25 +894,33 @@ Deno.serve(async (req: Request) => {
 
           const { data: profile } = await supabase
             .from('user_profiles')
-            .select('email')
+            .select('email, first_name, last_name')
             .eq('id', customerData.user_id)
             .maybeSingle();
 
           if (profile) {
+            const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+            const amountFormatted = ((session.amount_total || 0) / 100).toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            });
+            const tokensFormatted = tokenPackage.tokens_amount.toLocaleString('pt-BR');
+
             notifyAdminSafe({
               type: 'token_purchase',
               title: 'Compra de Tokens',
-              message: `Usuário comprou ${tokenPackage.tokens_amount} tokens.`,
+              message: `Compra de tokens | ${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
               severity: 'success',
               metadata: {
                 customer_id: actualCustomerId,
                 original_customer_id: customerId !== actualCustomerId ? customerId : undefined,
+                user_name: userName,
                 user_email: profile.email,
-                tokens_purchased: tokenPackage.tokens_amount,
-                amount: session.amount_total || 0,
+                tokens_purchased: tokensFormatted,
+                amount: amountFormatted,
                 package_name: tokenPackage.name,
-                before_tokens: currentExtraTokens,
-                after_tokens: newExtraTokens,
+                before_tokens: currentExtraTokens.toLocaleString('pt-BR'),
+                after_tokens: newExtraTokens.toLocaleString('pt-BR'),
               },
               userId: customerData.user_id,
             });

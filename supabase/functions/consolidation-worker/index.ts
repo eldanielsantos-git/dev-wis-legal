@@ -347,23 +347,23 @@ Deno.serve(async (req: Request) => {
         const userEmail = userData?.email || 'N/A';
         const fileName = processoData.file_name || 'N/A';
 
-        await notifyAdminSafe({
-          type_slug: 'analysis_completed',
+        notifyAdminSafe({
+          type: 'analysis_completed',
           title: 'Análise Concluída',
-          message: `${userName} | ${fileName} | ${durationText}`,
+          message: `Análise concluída | ${userName || userEmail} | ${fileName} | ${durationText}`,
           severity: 'success',
           metadata: {
             processo_id,
             file_name: fileName,
             user_email: userEmail,
-            user_name: userName,
+            user_name: userName || userEmail,
             duration: durationText,
             chunks_count: chunks.length,
             prompts_consolidated: analysisResults.length,
             is_complex: processoData.is_complex,
           },
-          user_id: processoData.user_id,
-          processo_id: processo_id,
+          userId: processoData.user_id,
+          processoId: processo_id,
         });
       }
     }
