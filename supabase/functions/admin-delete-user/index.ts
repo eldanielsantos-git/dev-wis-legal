@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: adminProfile } = await supabase
       .from('user_profiles')
-      .select('is_admin')
+      .select('is_admin, full_name, company_name, type')
       .eq('id', adminUser.id)
       .single();
 
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: targetUserProfile } = await supabase
       .from('user_profiles')
-      .select('id, email')
+      .select('id, email, full_name, company_name, type')
       .eq('id', targetUserId)
       .maybeSingle();
 
@@ -397,6 +397,12 @@ Deno.serve(async (req: Request) => {
 
     try {
       const userEmail = targetUserProfile?.email || targetAuthUser?.email || 'Email não disponível';
+      const deletedUserName = targetUserProfile?.type === 'PJ' && targetUserProfile?.company_name
+        ? targetUserProfile.company_name
+        : (targetUserProfile?.full_name || 'Nome não disponível');
+      const adminName = adminProfile?.type === 'PJ' && adminProfile?.company_name
+        ? adminProfile.company_name
+        : (adminProfile?.full_name || 'Admin');
 
       await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
         method: 'POST',
@@ -410,9 +416,9 @@ Deno.serve(async (req: Request) => {
           message: `Usuário ${userEmail} foi deletado pelo admin | ${processoCount} processos excluídos | Admin: ${adminUser.email}`,
           severity: 'medium',
           metadata: {
-            deleted_user_id: targetUserId,
+            deleted_user_name: deletedUserName,
             deleted_user_email: userEmail,
-            deleted_by_admin_id: adminUser.id,
+            deleted_by_admin_name: adminName,
             deleted_by_admin_email: adminUser.email,
             processos_count: processoCount,
             operation_id: operationId,
