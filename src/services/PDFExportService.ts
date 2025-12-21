@@ -1012,6 +1012,7 @@ export class PDFExportService {
 
     const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const titleFont = await pdfDoc.embedFont(StandardFonts.TimesRomanBold);
 
     const pageWidth = 595;
     const margin = 40;
@@ -1040,7 +1041,7 @@ export class PDFExportService {
       coverHeight += 35;
     }
 
-    coverHeight += 26 + 35;
+    coverHeight += 22 + 35;
     const subtitle = this.normalizeText(processoName);
     const subtitleMeasure = this.measureText(subtitle, regularFont, 12, pageWidth - 2 * margin);
     coverHeight += subtitleMeasure.totalHeight + 55;
@@ -1090,14 +1091,14 @@ export class PDFExportService {
     }
 
     const title = this.normalizeText('Analise Juridica - Wis Legal');
-    const titleWidth = boldFont.widthOfTextAtSize(title, 26);
+    const titleWidth = titleFont.widthOfTextAtSize(title, 22);
     const titleX = (pageWidth - titleWidth) / 2;
 
     page.drawText(title, {
       x: titleX,
       y: currentY,
-      size: 26,
-      font: boldFont,
+      size: 22,
+      font: titleFont,
       color: rgb(colors.textPrimary.r, colors.textPrimary.g, colors.textPrimary.b),
     });
     currentY -= 35;
