@@ -279,7 +279,7 @@ export class ProcessosService {
     });
   }
 
-  private static async processPromptsSequentially(processoId: string): Promise<void> {
+  public static async processPromptsSequentially(processoId: string): Promise<void> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
     console.log('🔄 Iniciando processamento sequencial de prompts para:', processoId);

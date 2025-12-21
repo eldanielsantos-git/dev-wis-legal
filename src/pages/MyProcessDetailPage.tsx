@@ -271,7 +271,7 @@ function MyProcessDetailPageInner({
         console.log('🔄 Detectadas etapas pendentes, iniciando processamento automático...');
 
         try {
-          await ProcessosService.processSequentialPrompts(processoId);
+          await ProcessosService.processPromptsSequentially(processoId);
         } catch (error) {
           console.error('❌ Erro ao processar prompts pendentes:', error);
         }
