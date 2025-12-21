@@ -187,10 +187,10 @@ function buildMobilePreview(
   metadata: Record<string, unknown>
 ): string {
   if (message.includes('|')) {
-    return `${config.emoji} ${title} | ${message}`;
+    return `${title} | ${message}`;
   }
 
-  const parts: string[] = [config.emoji, title];
+  const parts: string[] = [title];
 
   const userMatch = message.match(/\*Usuário:\*\s*([^\n]+)/);
   if (userMatch) {
