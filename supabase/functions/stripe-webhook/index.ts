@@ -225,20 +225,29 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           const isUpgrade = finalPlanTokens > existingSub.plan_tokens;
           const notificationType = isUpgrade ? 'subscription_upgraded' : 'subscription_downgraded';
 
+          const { data: fullProfile } = await supabase
+            .from('user_profiles')
+            .select('first_name, last_name')
+            .eq('id', userData.user_id)
+            .maybeSingle();
+
+          const userName = fullProfile ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() || profile.email : profile.email;
+
           notifyAdminSafe({
             type: notificationType,
             title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
-            message: `Plano alterado de ${oldPlan?.tier || existingSub.tier} para ${newPlan?.tier}.`,
+            message: `${isUpgrade ? 'Upgrade' : 'Downgrade'} de assinatura | ${userName} | ${profile.email} | ${oldPlan?.tier || 'undefined'} → ${newPlan?.tier || 'undefined'}`,
             severity: isUpgrade ? 'success' : 'low',
             metadata: {
               customer_id: customerId,
+              user_name: userName,
               user_email: profile.email,
               old_tier: oldPlan?.tier || existingSub.tier,
               new_tier: newPlan?.tier,
-              old_tokens: existingSub.plan_tokens,
-              new_tokens: finalPlanTokens,
+              old_tokens: existingSub.plan_tokens.toLocaleString('pt-BR'),
+              new_tokens: finalPlanTokens.toLocaleString('pt-BR'),
             },
-            userId: profile.id,
+            userId: userData.user_id,
           });
         }
       }
@@ -565,7 +574,7 @@ async function handlePaymentFailure(event: Stripe.Event) {
       console.info(`${logPrefix} Email sent successfully`);
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`${logPrefix} Error:`, error);
   }
 }
@@ -679,10 +688,13 @@ Deno.serve(async (req: Request) => {
         if (subscriptionId) {
           await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
 
-          const { data: subData } = await supabase
-            .from('stripe_subscriptions')
-            .select('tier, plan_tokens')
-            .eq('customer_id', customerId)
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+          const priceId = subscription.items.data[0]?.price?.id;
+
+          const { data: planData } = await supabase
+            .from('subscription_plans')
+            .select('name, tier, tokens_included')
+            .eq('stripe_price_id', priceId)
             .maybeSingle();
 
           const { data: userData } = await supabase
@@ -694,22 +706,31 @@ Deno.serve(async (req: Request) => {
           if (userData) {
             const { data: profile } = await supabase
               .from('user_profiles')
-              .select('email')
+              .select('email, first_name, last_name')
               .eq('id', userData.user_id)
               .maybeSingle();
 
-            if (profile && subData) {
+            if (profile && planData) {
+              const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+              const amountFormatted = ((session.amount_total || 0) / 100).toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL',
+              });
+              const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
+
               notifyAdminSafe({
                 type: 'subscription_created',
-                title: 'Nova Assinatura Criada',
-                message: `Nova assinatura do plano ${subData.tier} foi ativada.`,
+                title: 'Compra de Assinatura',
+                message: `Compra de assinatura | ${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
                 severity: 'success',
                 metadata: {
                   customer_id: customerId,
+                  user_name: userName,
                   user_email: profile.email,
-                  tier: subData.tier,
-                  plan_tokens: subData.plan_tokens,
-                  amount: session.amount_total || 0,
+                  plan_name: planData.name,
+                  plan_tier: planData.tier,
+                  plan_tokens: tokensFormatted,
+                  amount: amountFormatted,
                   status: 'active',
                 },
                 userId: userData.user_id,
