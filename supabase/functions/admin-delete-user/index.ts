@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: adminProfile } = await supabase
       .from('user_profiles')
-      .select('is_admin, full_name, company_name, type')
+      .select('is_admin, first_name, last_name, company_name, type')
       .eq('id', adminUser.id)
       .single();
 
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: targetUserProfile } = await supabase
       .from('user_profiles')
-      .select('id, email, full_name, company_name, type')
+      .select('id, email, first_name, last_name, company_name, type')
       .eq('id', targetUserId)
       .maybeSingle();
 
@@ -399,10 +399,14 @@ Deno.serve(async (req: Request) => {
       const userEmail = targetUserProfile?.email || targetAuthUser?.email || 'Email não disponível';
       const deletedUserName = targetUserProfile?.type === 'PJ' && targetUserProfile?.company_name
         ? targetUserProfile.company_name
-        : (targetUserProfile?.full_name || 'Nome não disponível');
+        : (targetUserProfile?.first_name && targetUserProfile?.last_name
+            ? `${targetUserProfile.first_name} ${targetUserProfile.last_name}`.trim()
+            : 'Nome não disponível');
       const adminName = adminProfile?.type === 'PJ' && adminProfile?.company_name
         ? adminProfile.company_name
-        : (adminProfile?.full_name || 'Admin');
+        : (adminProfile?.first_name && adminProfile?.last_name
+            ? `${adminProfile.first_name} ${adminProfile.last_name}`.trim()
+            : 'Admin');
 
       await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
         method: 'POST',
