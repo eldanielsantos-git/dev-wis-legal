@@ -629,8 +629,13 @@ function AppContent() {
     );
   }
 
-  logger.log('AppContent', 'No route matched, rendering NotFoundPage');
-  return <NotFoundPage onNavigateToHome={() => navigate('/app')} />;
+  logger.log('AppContent', 'No route matched, redirecting to app home');
+  setTimeout(() => navigate('/app'), 0);
+  return (
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
+      <Loader className="w-8 h-8 text-white animate-spin" />
+    </div>
+  );
 }
 
 logger.log('App.tsx', '🔥 Defining App function component');
