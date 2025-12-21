@@ -773,7 +773,7 @@ Deno.serve(async (req: Request) => {
 
           const { data: planData } = await supabase
             .from('subscription_plans')
-            .select('name, tier, tokens_included')
+            .select('name, tokens_included')
             .eq('stripe_price_id', priceId)
             .maybeSingle();
 
@@ -808,7 +808,6 @@ Deno.serve(async (req: Request) => {
                   user_name: userName,
                   user_email: profile.email,
                   plan_name: planData.name,
-                  plan_tier: planData.tier,
                   plan_tokens: tokensFormatted,
                   amount: amountFormatted,
                   status: 'active',
