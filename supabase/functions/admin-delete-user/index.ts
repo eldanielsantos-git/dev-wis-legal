@@ -395,6 +395,35 @@ Deno.serve(async (req: Request) => {
 
     await updateProgress(progress, 'completed');
 
+    try {
+      const userEmail = targetUserProfile?.email || targetAuthUser?.email || 'Email não disponível';
+
+      await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          type_slug: 'user_deleted',
+          title: 'Usuário Deletado pelo Admin',
+          message: `Usuário ${userEmail} foi deletado pelo admin | ${processoCount} processos excluídos | Admin: ${adminUser.email}`,
+          severity: 'medium',
+          metadata: {
+            deleted_user_id: targetUserId,
+            deleted_user_email: userEmail,
+            deleted_by_admin_id: adminUser.id,
+            deleted_by_admin_email: adminUser.email,
+            processos_count: processoCount,
+            operation_id: operationId,
+          },
+          user_id: targetUserId,
+        }),
+      });
+    } catch (notificationError) {
+      console.error('Failed to send admin notification (non-blocking):', notificationError);
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: 'User deleted successfully', progress, operationId }),
       {
