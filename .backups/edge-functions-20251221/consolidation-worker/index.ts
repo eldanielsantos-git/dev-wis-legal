@@ -146,20 +146,10 @@ Deno.serve(async (req: Request) => {
     if (!analysisResults || analysisResults.length === 0) {
       console.log(`[${workerId}] ✅ Nenhum prompt pendente para consolidar`);
 
-      const { data: processoInfo } = await supabase
-        .from('processos')
-        .select('transcricao')
-        .eq('id', processo_id)
-        .single();
-
-      const totalPages = processoInfo?.transcricao?.totalPages || 0;
-      console.log(`[${workerId}] 📄 Total de páginas processadas: ${totalPages}`);
-
       await supabase
         .from('processos')
         .update({
           status: 'completed',
-          pages_processed_successfully: totalPages,
           analysis_completed_at: new Date().toISOString(),
         })
         .eq('id', processo_id);
@@ -267,20 +257,10 @@ Deno.serve(async (req: Request) => {
     if (!remainingResults) {
       console.log(`[${workerId}] ✅ TODOS os prompts consolidados! Marcando processo como completo`);
 
-      const { data: processoInfo } = await supabase
-        .from('processos')
-        .select('transcricao')
-        .eq('id', processo_id)
-        .single();
-
-      const totalPages = processoInfo?.transcricao?.totalPages || 0;
-      console.log(`[${workerId}] 📄 Total de páginas processadas: ${totalPages}`);
-
       await supabase
         .from('processos')
         .update({
           status: 'completed',
-          pages_processed_successfully: totalPages,
           analysis_completed_at: new Date().toISOString(),
         })
         .eq('id', processo_id);

@@ -823,20 +823,10 @@ Deno.serve(async (req: Request) => {
         } else if (allPromptsCompleted) {
           console.log(`[${callId}] 🎉 Todos os ${totalPrompts} prompts concluídos com sucesso! Finalizando processo...`);
 
-          const { data: processoInfo } = await supabase
-            .from('processos')
-            .select('transcricao')
-            .eq('id', processo_id)
-            .single();
-
-          const totalPages = processoInfo?.transcricao?.totalPages || 0;
-          console.log(`[${callId}] 📄 Total de páginas processadas: ${totalPages}`);
-
           const { error: processoUpdateError } = await supabase
             .from('processos')
             .update({
               status: 'completed',
-              pages_processed_successfully: totalPages,
               analysis_completed_at: new Date().toISOString(),
             })
             .eq('id', processo_id);
