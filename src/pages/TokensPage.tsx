@@ -257,7 +257,7 @@ export function TokensPage({
                         className="h-full transition-all duration-500 ease-out rounded-full"
                         style={{
                           width: `${Math.min(calculatePercentage(), 100)}%`,
-                          backgroundColor: calculatePercentage() > 100 ? '#EF4444' : calculatePercentage() > 90 ? '#EF4444' : calculatePercentage() > 70 ? '#F59E0B' : '#10B981'
+                          backgroundColor: calculatePercentage() >= 85 ? '#EF4444' : calculatePercentage() >= 75 ? '#F59E0B' : '#10B981'
                         }}
                       />
                     </div>
@@ -266,7 +266,7 @@ export function TokensPage({
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
                         {formatNumber(tokensUsed)} tokens usados
                       </p>
-                      <p className="text-sm font-medium" style={{ color: calculatePercentage() > 100 ? '#EF4444' : colors.textPrimary }}>
+                      <p className="text-sm font-medium" style={{ color: calculatePercentage() >= 85 ? '#EF4444' : colors.textPrimary }}>
                         {calculatePercentage().toFixed(1)}%
                       </p>
                     </div>
