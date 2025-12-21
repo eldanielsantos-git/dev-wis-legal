@@ -43,21 +43,24 @@ const LOGO_URLS = {
 export class PDFExportService {
   private static async loadLogo(theme: 'dark' | 'light'): Promise<Uint8Array | null> {
     try {
-      const response = await fetch(LOGO_URLS[theme]);
+      console.log('[PDF] Carregando logo:', LOGO_URLS[theme]);
+      const response = await fetch(LOGO_URLS[theme], { mode: 'cors' });
       if (!response.ok) {
-        console.error('Failed to load logo:', response.statusText);
+        console.warn('[PDF] Failed to load logo:', response.statusText);
         return null;
       }
       const arrayBuffer = await response.arrayBuffer();
+      console.log('[PDF] Logo carregado com sucesso, tamanho:', arrayBuffer.byteLength);
       return new Uint8Array(arrayBuffer);
     } catch (error) {
-      console.error('Error loading logo:', error);
+      console.warn('[PDF] Logo não disponível, continuando sem logo:', error);
       return null;
     }
   }
 
   private static extractAnalysisData(analysisResults: AnalysisResult[]): AnalysisCardData[] {
-    return analysisResults
+    console.log('[PDF] Extraindo dados de análise, total de resultados:', analysisResults.length);
+    const extracted = analysisResults
       .filter(result => result.status === 'completed' && result.result_content)
       .sort((a, b) => a.execution_order - b.execution_order)
       .map(result => ({
@@ -65,23 +68,30 @@ export class PDFExportService {
         title: result.prompt_title,
         content: result.result_content,
       }));
+    console.log('[PDF] Extraídos', extracted.length, 'cards de análise');
+    return extracted;
   }
 
   private static cleanContent(content: string): string {
     try {
+      if (!content || content.trim() === '') {
+        return 'Conteúdo não disponível';
+      }
+
       const parsed = JSON.parse(content);
 
       if (typeof parsed === 'string') {
-        return parsed;
+        return parsed.substring(0, 500);
       }
 
       if (typeof parsed === 'object' && parsed !== null) {
-        return JSON.stringify(parsed, null, 2);
+        const jsonStr = JSON.stringify(parsed, null, 2);
+        return jsonStr.substring(0, 500);
       }
 
-      return content;
+      return content.substring(0, 500);
     } catch {
-      return content;
+      return content.substring(0, 500);
     }
   }
 
@@ -192,6 +202,11 @@ export class PDFExportService {
     analysisResults: AnalysisResult[],
     theme: 'dark' | 'light'
   ): Promise<Uint8Array> {
+    console.log('[PDF] Iniciando geração de PDF');
+    console.log('[PDF] Nome do processo:', processoName);
+    console.log('[PDF] Tema:', theme);
+    console.log('[PDF] Número de resultados:', analysisResults.length);
+
     const pdfDoc = await PDFDocument.create();
     const colors = PDF_COLORS[theme];
 
@@ -211,26 +226,33 @@ export class PDFExportService {
 
     let currentY = pageHeight - 60;
 
-    const logoBytes = await this.loadLogo(theme);
-    if (logoBytes) {
-      try {
-        const logoImage = await pdfDoc.embedPng(logoBytes);
-        const logoHeight = 40;
-        const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
+    try {
+      const logoBytes = await this.loadLogo(theme);
+      if (logoBytes) {
+        try {
+          const logoImage = await pdfDoc.embedPng(logoBytes);
+          const logoHeight = 40;
+          const logoWidth = (logoImage.width / logoImage.height) * logoHeight;
 
-        page.drawImage(logoImage, {
-          x: 50,
-          y: currentY - logoHeight,
-          width: logoWidth,
-          height: logoHeight,
-        });
+          page.drawImage(logoImage, {
+            x: 50,
+            y: currentY - logoHeight,
+            width: logoWidth,
+            height: logoHeight,
+          });
 
-        currentY -= logoHeight + 30;
-      } catch (error) {
-        console.error('Error embedding logo:', error);
+          console.log('[PDF] Logo adicionado com sucesso');
+          currentY -= logoHeight + 30;
+        } catch (error) {
+          console.warn('[PDF] Erro ao incorporar logo, continuando sem logo:', error);
+          currentY -= 30;
+        }
+      } else {
+        console.log('[PDF] Logo não disponível, continuando sem logo');
         currentY -= 30;
       }
-    } else {
+    } catch (error) {
+      console.warn('[PDF] Erro ao carregar logo, continuando sem logo:', error);
       currentY -= 30;
     }
 
@@ -257,6 +279,8 @@ export class PDFExportService {
     currentY -= 40;
 
     const cardsData = this.extractAnalysisData(analysisResults);
+
+    console.log('[PDF] Renderizando', cardsData.length, 'cards');
 
     for (const card of cardsData) {
       if (currentY < 150) {
@@ -307,7 +331,9 @@ export class PDFExportService {
       });
     });
 
+    console.log('[PDF] Salvando documento PDF');
     const pdfBytes = await pdfDoc.save();
+    console.log('[PDF] PDF gerado com sucesso, tamanho:', pdfBytes.length, 'bytes');
     return pdfBytes;
   }
 

@@ -580,10 +580,25 @@ function MyProcessDetailPageInner({
   };
 
   const handleDownloadPDF = async () => {
-    if (!processo || analysisResults.length === 0) return;
+    console.log('[PDF] Botão clicado');
+    console.log('[PDF] Processo:', processo);
+    console.log('[PDF] Analysis Results:', analysisResults.length);
+
+    if (!processo) {
+      console.error('[PDF] Processo não encontrado');
+      setError('Processo não encontrado');
+      return;
+    }
+
+    if (analysisResults.length === 0) {
+      console.error('[PDF] Nenhum resultado de análise disponível');
+      setError('Nenhum resultado de análise disponível');
+      return;
+    }
 
     try {
       setIsGeneratingPDF(true);
+      console.log('[PDF] Iniciando geração de PDF...');
 
       const pdfBytes = await PDFExportService.generatePDF(
         processo.file_name,
@@ -591,18 +606,40 @@ function MyProcessDetailPageInner({
         theme
       );
 
+      console.log('[PDF] PDF gerado, criando blob...');
       const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      console.log('[PDF] Blob criado, tamanho:', blob.size);
+
       const url = URL.createObjectURL(blob);
+      console.log('[PDF] URL criada:', url);
+
+      const fileName = PDFExportService.generateFileName(processo.file_name);
+      console.log('[PDF] Nome do arquivo:', fileName);
+
       const link = document.createElement('a');
       link.href = url;
-      link.download = PDFExportService.generateFileName(processo.file_name);
+      link.download = fileName;
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+
+      console.log('[PDF] Download iniciado com sucesso');
+
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        console.log('[PDF] URL revogada');
+      }, 100);
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      setError('Erro ao gerar PDF. Tente novamente.');
+      console.error('[PDF] Erro ao gerar PDF:', error);
+      if (error instanceof Error) {
+        console.error('[PDF] Stack trace:', error.stack);
+        setError(`Erro ao gerar PDF: ${error.message}`);
+      } else {
+        setError('Erro ao gerar PDF. Tente novamente.');
+      }
     } finally {
       setIsGeneratingPDF(false);
+      console.log('[PDF] Processo finalizado');
     }
   };
 
