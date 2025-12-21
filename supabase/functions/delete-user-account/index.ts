@@ -56,7 +56,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: profile } = await supabase
       .from('user_profiles')
-      .select('full_name, email, type, company_name')
+      .select('first_name, last_name, email, type, company_name')
       .eq('id', userId)
       .maybeSingle();
 
@@ -234,7 +234,9 @@ Deno.serve(async (req: Request) => {
     try {
       const userDisplay = profile?.type === 'PJ' && profile?.company_name
         ? profile.company_name
-        : profile?.full_name || 'Usuário';
+        : (profile?.first_name && profile?.last_name
+            ? `${profile.first_name} ${profile.last_name}`.trim()
+            : 'Usuário');
       const userType = profile?.type || 'PF';
       const userEmail = profile?.email || user.email || 'email não encontrado';
 
