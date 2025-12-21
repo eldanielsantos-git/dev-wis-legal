@@ -271,12 +271,10 @@ Deno.serve(async (req: Request) => {
       message: `${inviterFirstName} ${inviterLastName} | ${user.email || 'sem email'} | Convidou: ${invitedName} (${invitedEmail})`,
       severity: 'success',
       metadata: {
-        inviter_user_id: user.id,
-        inviter_email: user.email,
         inviter_name: `${inviterFirstName} ${inviterLastName}`,
+        inviter_email: user.email,
         invited_name: invitedName,
         invited_email: invitedEmail,
-        invite_id: invite.id,
         email_sent: resendSuccess,
       },
       userId: user.id,
