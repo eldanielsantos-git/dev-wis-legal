@@ -308,7 +308,7 @@ Deno.serve(async (req: Request) => {
     if (!remainingResults) {
       const { data: processoData } = await supabase
         .from('processos')
-        .select('user_id, file_name, created_at, is_complex')
+        .select('user_id, file_name, created_at, is_chunked')
         .eq('id', processo_id)
         .single();
 
@@ -345,47 +345,49 @@ Deno.serve(async (req: Request) => {
         } catch (emailError) {
           console.error(`[${workerId}] ❌ Erro ao chamar edge function de email:`, emailError);
         }
-
-        console.log(`[${workerId}] 🔔 Enviando notificação administrativa...`);
-
-        const { data: userData } = await supabase
-          .from('user_profiles')
-          .select('email, first_name, last_name')
-          .eq('id', processoData.user_id)
-          .maybeSingle();
-
-        const startTime = new Date(processoData.created_at);
-        const endTime = new Date();
-        const durationMs = endTime.getTime() - startTime.getTime();
-        const durationMinutes = Math.floor(durationMs / 60000);
-        const durationSeconds = Math.floor((durationMs % 60000) / 1000);
-        const durationText = durationMinutes > 0
-          ? `${durationMinutes}m ${durationSeconds}s`
-          : `${durationSeconds}s`;
-
-        const userName = userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() : 'N/A';
-        const userEmail = userData?.email || 'N/A';
-        const fileName = processoData.file_name || 'N/A';
-
-        notifyAdminSafe({
-          type: 'analysis_completed',
-          title: 'Análise Concluída',
-          message: `${userName || userEmail} | ${fileName} | ${durationText}`,
-          severity: 'success',
-          metadata: {
-            processo_id,
-            file_name: fileName,
-            user_email: userEmail,
-            user_name: userName || userEmail,
-            duration: durationText,
-            chunks_count: chunks.length,
-            prompts_consolidated: analysisResults.length,
-            is_complex: processoData.is_complex,
-          },
-          userId: processoData.user_id,
-          processoId: processo_id,
-        });
       }
+
+      console.log(`[${workerId}] 🔔 Enviando notificação administrativa Slack...`);
+
+      const { data: userData } = await supabase
+        .from('user_profiles')
+        .select('email, first_name, last_name')
+        .eq('id', processoData?.user_id)
+        .maybeSingle();
+
+      const userName = userData
+        ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
+        : 'N/A';
+      const userEmail = userData?.email || 'N/A';
+      const fileName = processoData?.file_name || 'N/A';
+
+      const startTime = new Date(processoData?.created_at || Date.now());
+      const endTime = new Date();
+      const durationMs = endTime.getTime() - startTime.getTime();
+      const durationMinutes = Math.floor(durationMs / 60000);
+      const durationSeconds = Math.floor((durationMs % 60000) / 1000);
+      const durationText = durationMinutes > 0
+        ? `${durationMinutes}m ${durationSeconds}s`
+        : `${durationSeconds}s`;
+
+      notifyAdminSafe({
+        type: 'analysis_completed',
+        title: 'Análise Concluída',
+        message: `${userName || userEmail} | ${fileName} | ${durationText}`,
+        severity: 'success',
+        metadata: {
+          processo_id,
+          file_name: fileName,
+          user_email: userEmail,
+          user_name: userName || userEmail,
+          duration: durationText,
+          chunks_count: chunks.length,
+          prompts_consolidated: analysisResults.length,
+          is_complex: processoData?.is_chunked,
+        },
+        userId: processoData?.user_id,
+        processoId: processo_id,
+      });
     }
 
     return new Response(
