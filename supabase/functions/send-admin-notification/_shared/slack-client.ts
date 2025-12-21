@@ -27,27 +27,27 @@ export interface SlackSendResult {
 const SEVERITY_CONFIG = {
   critical: {
     color: '#DC2626',
-    emoji: '',
+    emoji: '🔴',
     label: '[CRÍTICO]',
   },
   high: {
     color: '#F59E0B',
-    emoji: '',
+    emoji: '⚠️',
     label: '[ALTO]',
   },
   medium: {
     color: '#FBBF24',
-    emoji: '',
+    emoji: '⚡',
     label: '[MÉDIO]',
   },
   low: {
     color: '#3B82F6',
-    emoji: '',
+    emoji: 'ℹ️',
     label: '[BAIXO]',
   },
   success: {
     color: '#10B981',
-    emoji: '',
+    emoji: '✅',
     label: '[SUCESSO]',
   },
 };
@@ -167,10 +167,10 @@ function formatSlackMessage(
     ],
   });
 
-  const previewText = buildMobilePreview(config, title, message, metadata);
+  const mobilePreviewText = buildMobilePreview(config, title, message, metadata);
 
   return {
-    text: `${title} - ${message}`,
+    text: mobilePreviewText,
     attachments: [
       {
         color: config.color,
@@ -186,7 +186,11 @@ function buildMobilePreview(
   message: string,
   metadata: Record<string, unknown>
 ): string {
-  const parts: string[] = [title];
+  if (message.includes('|')) {
+    return `${config.emoji} ${title} | ${message}`;
+  }
+
+  const parts: string[] = [config.emoji, title];
 
   const userMatch = message.match(/\*Usuário:\*\s*([^\n]+)/);
   if (userMatch) {

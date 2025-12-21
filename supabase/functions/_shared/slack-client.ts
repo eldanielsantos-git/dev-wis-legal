@@ -167,10 +167,10 @@ function formatSlackMessage(
     ],
   });
 
-  const previewText = buildMobilePreview(config, title, message, metadata);
+  const mobilePreviewText = buildMobilePreview(config, title, message, metadata);
 
   return {
-    text: `${title} - ${message}`,
+    text: mobilePreviewText,
     attachments: [
       {
         color: config.color,
@@ -186,7 +186,11 @@ function buildMobilePreview(
   message: string,
   metadata: Record<string, unknown>
 ): string {
-  const parts: string[] = [title];
+  if (message.includes('|')) {
+    return `${config.emoji} ${title} | ${message}`;
+  }
+
+  const parts: string[] = [config.emoji, title];
 
   const userMatch = message.match(/\*Usuário:\*\s*([^\n]+)/);
   if (userMatch) {
