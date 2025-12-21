@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.4";
+import { notifyAdminSafe } from "./_shared/notify-admin-safe.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -262,6 +263,24 @@ Deno.serve(async (req: Request) => {
     } else {
       console.log("✓ Email send logged to database");
     }
+
+    console.log("Step 7: Sending admin notification to Slack...");
+    notifyAdminSafe({
+      type: 'friend_invite_sent',
+      title: 'Convite de amigo foi enviado',
+      message: `${inviterFirstName} ${inviterLastName} | ${user.email || 'sem email'} | Convidou: ${invitedName} (${invitedEmail})`,
+      severity: 'success',
+      metadata: {
+        inviter_user_id: user.id,
+        inviter_email: user.email,
+        inviter_name: `${inviterFirstName} ${inviterLastName}`,
+        invited_name: invitedName,
+        invited_email: invitedEmail,
+        invite_id: invite.id,
+        email_sent: resendSuccess,
+      },
+      userId: user.id,
+    });
 
     console.log("=== SEND FRIEND INVITE - SUCCESS ===");
 
