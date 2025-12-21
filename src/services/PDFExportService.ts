@@ -52,18 +52,6 @@ const ANALYSIS_COLORS: Record<number, { r: number; g: number; b: number }> = {
   9: { r: 16 / 255, g: 185 / 255, b: 129 / 255 },
 };
 
-const ANALYSIS_SYMBOLS: Record<number, string> = {
-  1: '\u25A0',
-  2: '\u25C6',
-  3: '\u25B2',
-  4: '\u25CF',
-  5: '\u2605',
-  6: '\u26A0',
-  7: '\u25B6',
-  8: '\u25C9',
-  9: '\u2713',
-};
-
 export class PDFExportService {
   private static normalizeText(text: string): string {
     return text
@@ -280,10 +268,9 @@ export class PDFExportService {
     }
 
     const analysisColor = ANALYSIS_COLORS[card.order] || colors.accent;
-    const analysisSymbol = ANALYSIS_SYMBOLS[card.order] || '\u25A0';
 
-    const badgeWidth = 30;
-    const badgeHeight = 24;
+    const badgeWidth = 32;
+    const badgeHeight = 26;
     const badgeX = margin;
     const badgeY = currentY - badgeHeight;
 
@@ -293,13 +280,16 @@ export class PDFExportService {
       width: badgeWidth,
       height: badgeHeight,
       color: rgb(analysisColor.r, analysisColor.g, analysisColor.b),
-      borderRadius: 4,
     });
 
-    page.drawText(analysisSymbol, {
-      x: badgeX + 10,
+    const badgeNumber = String(card.order);
+    const numberWidth = fonts.bold.widthOfTextAtSize(badgeNumber, 13);
+    const numberX = badgeX + (badgeWidth - numberWidth) / 2;
+
+    page.drawText(badgeNumber, {
+      x: numberX,
       y: badgeY + 7,
-      size: 12,
+      size: 13,
       font: fonts.bold,
       color: rgb(1, 1, 1),
     });
