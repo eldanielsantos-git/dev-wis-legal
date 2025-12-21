@@ -210,12 +210,20 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
         const { data: recentNotifications } = await supabase
           .from('admin_notifications')
-          .select('id, metadata')
+          .select(`
+            id,
+            metadata,
+            notification_type_id,
+            admin_notification_types!inner(slug)
+          `)
           .eq('user_id', userData.user_id)
-          .in('type', ['subscription_upgraded', 'subscription_downgraded'])
           .gte('created_at', tenSecondsAgo);
 
-        const isDuplicate = recentNotifications?.some(notif => {
+        const isDuplicate = recentNotifications?.some((notif: any) => {
+          const typeSlug = notif.admin_notification_types?.slug;
+          if (typeSlug !== 'subscription_upgraded' && typeSlug !== 'subscription_downgraded') {
+            return false;
+          }
           const meta = notif.metadata as any;
           return meta?.customer_id === customerId &&
                  meta?.old_tokens === existingSub.plan_tokens.toLocaleString('pt-BR') &&
