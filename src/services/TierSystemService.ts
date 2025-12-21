@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 
-export type TierName = 'SMALL' | 'MEDIUM' | 'LARGE' | 'VERY_LARGE' | 'MASSIVE';
+export type TierName = 'SMALL' | 'MEDIUM' | 'LARGE' | 'VERY_LARGE' | 'MASSIVE' | 'HIGH_LARGE' | 'ULTRA_LARGE';
 
 export interface TierConfig {
   tier_name: TierName;
@@ -34,7 +34,8 @@ export class TierSystemService {
     if (totalPages <= 2000) return 'MEDIUM';
     if (totalPages <= 5000) return 'LARGE';
     if (totalPages <= 10000) return 'VERY_LARGE';
-    return 'MASSIVE';
+    if (totalPages <= 20000) return 'HIGH_LARGE';
+    return 'ULTRA_LARGE';
   }
 
   static async getTierConfigs(): Promise<TierConfig[]> {
@@ -122,7 +123,9 @@ export class TierSystemService {
       case 'MEDIUM': return '#3B82F6';
       case 'LARGE': return '#F59E0B';
       case 'VERY_LARGE': return '#EF4444';
-      case 'MASSIVE': return '#8B5CF6';
+      case 'MASSIVE': return '#DC2626';
+      case 'HIGH_LARGE': return '#DC2626';
+      case 'ULTRA_LARGE': return '#991B1B';
       default: return '#6B7280';
     }
   }
@@ -134,6 +137,8 @@ export class TierSystemService {
       case 'LARGE': return '📦';
       case 'VERY_LARGE': return '🗃️';
       case 'MASSIVE': return '🏢';
+      case 'HIGH_LARGE': return '🏢';
+      case 'ULTRA_LARGE': return '🏛️';
       default: return '📋';
     }
   }
@@ -145,6 +150,8 @@ export class TierSystemService {
       case 'LARGE': return 'Grande';
       case 'VERY_LARGE': return 'Muito Grande';
       case 'MASSIVE': return 'Massivo';
+      case 'HIGH_LARGE': return 'Massivo';
+      case 'ULTRA_LARGE': return 'Ultra Grande';
       default: return 'Desconhecido';
     }
   }
@@ -173,7 +180,9 @@ export class TierSystemService {
       'MEDIUM': 90,
       'LARGE': 240,
       'VERY_LARGE': 420,
-      'MASSIVE': 750,
+      'MASSIVE': 600,
+      'HIGH_LARGE': 600,
+      'ULTRA_LARGE': 900,
     };
 
     const minutes = estimates[tierName];
@@ -203,29 +212,37 @@ export class TierSystemService {
         };
       case 'MEDIUM':
         return {
-          maxParallelWorkers: 2,
+          maxParallelWorkers: 3,
           timeoutMinutes: 20,
           hasCheckpoints: false,
           hasHierarchy: false,
         };
       case 'LARGE':
         return {
-          maxParallelWorkers: 3,
+          maxParallelWorkers: 4,
           timeoutMinutes: 25,
           hasCheckpoints: true,
           hasHierarchy: true,
         };
       case 'VERY_LARGE':
         return {
-          maxParallelWorkers: 4,
+          maxParallelWorkers: 5,
           timeoutMinutes: 30,
           hasCheckpoints: true,
           hasHierarchy: true,
         };
       case 'MASSIVE':
+      case 'HIGH_LARGE':
         return {
           maxParallelWorkers: 5,
           timeoutMinutes: 35,
+          hasCheckpoints: true,
+          hasHierarchy: true,
+        };
+      case 'ULTRA_LARGE':
+        return {
+          maxParallelWorkers: 6,
+          timeoutMinutes: 40,
           hasCheckpoints: true,
           hasHierarchy: true,
         };

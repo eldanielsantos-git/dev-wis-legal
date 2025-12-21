@@ -15,15 +15,18 @@ const LARGE_FILE_THRESHOLD = 1000;
 
 // Token-safe chunk sizes (assuming ~1500 tokens/page with context)
 // Max Gemini: 1.048.576 tokens (using 850k as safe limit)
-const CHUNK_SIZE_NORMAL = 400;   // ~600k tokens - For 1000-2000 pages
-const CHUNK_SIZE_LARGE = 250;    // ~375k tokens - For 2000-20000 pages
-const CHUNK_SIZE_XLARGE = 200;   // ~300k tokens - For >20000 pages
-const OVERLAP_PAGES = 75;         // ~112k tokens overlap for context
+const CHUNK_SIZE_MEDIUM = 400;        // ~600k tokens - For 1001-2000 pages
+const CHUNK_SIZE_LARGE = 180;         // ~270k tokens - For 2001-10000 pages
+const CHUNK_SIZE_HIGH_LARGE = 180;    // ~270k tokens - For 10001-20000 pages
+const CHUNK_SIZE_ULTRA_LARGE = 100;   // ~150k tokens - For >20000 pages
+const OVERLAP_PAGES = 75;             // ~112k tokens overlap for context
 
 function determineChunkSize(totalPages: number): number {
-  if (totalPages > 20000) return CHUNK_SIZE_XLARGE;
+  if (totalPages > 20000) return CHUNK_SIZE_ULTRA_LARGE;
+  if (totalPages > 10000) return CHUNK_SIZE_HIGH_LARGE;
   if (totalPages > 2000) return CHUNK_SIZE_LARGE;
-  return CHUNK_SIZE_NORMAL;
+  if (totalPages > 1000) return CHUNK_SIZE_MEDIUM;
+  return CHUNK_SIZE_MEDIUM;
 }
 
 export async function getPDFPageCount(file: File): Promise<number> {
