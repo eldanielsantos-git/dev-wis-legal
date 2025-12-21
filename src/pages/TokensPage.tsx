@@ -151,7 +151,7 @@ export function TokensPage({
 
   const calculatePercentage = (): number => {
     if (tokensTotal === 0) return 0;
-    return Math.min((tokensRemaining / tokensTotal) * 100, 100);
+    return Math.min((tokensUsed / tokensTotal) * 100, 100);
   };
 
   return (
@@ -244,7 +244,7 @@ export function TokensPage({
                         className="h-full transition-all duration-500 ease-out rounded-full"
                         style={{
                           width: `${calculatePercentage()}%`,
-                          backgroundColor: calculatePercentage() < 10 ? '#EF4444' : calculatePercentage() < 30 ? '#F59E0B' : '#10B981'
+                          backgroundColor: calculatePercentage() > 90 ? '#EF4444' : calculatePercentage() > 70 ? '#F59E0B' : '#10B981'
                         }}
                       />
                     </div>
