@@ -129,13 +129,13 @@ export class PDFExportService {
       const data = this.parseContent(result.result_content);
       if (!data) continue;
 
-      totalHeight += 70;
+      totalHeight += 48;
       totalHeight += this.SECTION_SPACING;
 
       if (data.visaoGeralProcesso) {
         const analysis = data.visaoGeralProcesso;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.campos && secao.campos.length > 0) {
             totalHeight += this.estimateFieldGridHeight(ctx, secao.campos, 3);
@@ -152,23 +152,23 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.resumoEstrategico) {
         const analysis = data.resumoEstrategico;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.campos && secao.campos.length > 0) {
             totalHeight += this.estimateFieldGridHeight(ctx, secao.campos, 2);
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.comunicacoesPrazos) {
         const analysis = data.comunicacoesPrazos;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.listaAtos && secao.listaAtos.length > 0) {
             for (const ato of secao.listaAtos) {
@@ -189,12 +189,12 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.recursosAdmissibilidade) {
         const analysis = data.recursosAdmissibilidade;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.listaRecursosIdentificados && secao.listaRecursosIdentificados.length > 0) {
             for (const recurso of secao.listaRecursosIdentificados) {
@@ -207,12 +207,12 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.estrategiasJuridicas) {
         const analysis = data.estrategiasJuridicas;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.listaEstrategias && secao.listaEstrategias.length > 0) {
             for (const estrategia of secao.listaEstrategias) {
@@ -231,12 +231,12 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.riscosAlertasProcessuais) {
         const analysis = data.riscosAlertasProcessuais;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.listaAlertas && secao.listaAlertas.length > 0) {
             for (const alerta of secao.listaAlertas) {
@@ -250,12 +250,12 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.balancoFinanceiro) {
         const analysis = data.balancoFinanceiro;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.campos && secao.campos.length > 0) {
             totalHeight += this.estimateFieldGridHeight(ctx, secao.campos, 2);
@@ -272,12 +272,12 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.mapaPreclusoesProcessuais) {
         const analysis = data.mapaPreclusoesProcessuais;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.listaPreclusoesRecentes && secao.listaPreclusoesRecentes.length > 0) {
             for (const prec of secao.listaPreclusoesRecentes) {
@@ -290,17 +290,17 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       } else if (data.conclusoesPerspectivas) {
         const analysis = data.conclusoesPerspectivas;
         for (const secao of analysis.secoes || []) {
-          totalHeight += 55 + this.SUBSECTION_SPACING;
+          totalHeight += 33 + this.SUBSECTION_SPACING;
 
           if (secao.campos && secao.campos.length > 0) {
             for (const campo of secao.campos) {
               if (campo.label) {
-                totalHeight += 55 + this.SUBSECTION_SPACING;
+                totalHeight += 33 + this.SUBSECTION_SPACING;
               }
 
               const cardContent = [];
@@ -317,14 +317,15 @@ export class PDFExportService {
             }
           }
 
-          totalHeight += 8;
+          totalHeight += 6;
         }
       }
 
-      totalHeight += 16;
+      totalHeight += 10;
     }
 
-    return totalHeight;
+    const safetyMargin = Math.min(50, totalHeight * 0.05);
+    return totalHeight + safetyMargin;
   }
 
   private static estimateCardHeight(
