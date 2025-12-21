@@ -944,17 +944,18 @@ function MyProcessDetailPageInner({
                     isAdmin={isAdmin}
                   />
                 ) : (
-                  <AnalysisProgress
-                    currentPrompt={currentPrompt}
-                    totalPrompts={totalPrompts}
-                    status={processo.status as any}
-                    llmModelName={llmModelName}
-                    isModelSwitching={isModelSwitching}
-                    isAdmin={isAdmin}
-                  />
+                  <>
+                    <AnalysisProgress
+                      currentPrompt={currentPrompt}
+                      totalPrompts={totalPrompts}
+                      status={processo.status as any}
+                      llmModelName={llmModelName}
+                      isModelSwitching={isModelSwitching}
+                      isAdmin={isAdmin}
+                    />
+                    <AnalysisStagesProgress processoId={processoId} />
+                  </>
                 )}
-
-                <AnalysisStagesProgress processoId={processoId} />
               </div>
             )}
 
