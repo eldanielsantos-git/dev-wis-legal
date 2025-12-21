@@ -355,6 +355,15 @@ Deno.serve(async (req: Request) => {
         .eq('id', processoData?.user_id)
         .maybeSingle();
 
+      const { data: completedPrompts } = await supabase
+        .from('analysis_results')
+        .select('id')
+        .eq('processo_id', processo_id)
+        .eq('status', 'completed');
+
+      const totalPromptsCompleted = completedPrompts?.length || 0;
+      console.log(`[${workerId}] 📊 Total de prompts completados: ${totalPromptsCompleted}`);
+
       const userName = userData
         ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
         : 'N/A';
@@ -382,7 +391,7 @@ Deno.serve(async (req: Request) => {
           user_name: userName || userEmail,
           duration: durationText,
           chunks_count: chunks.length,
-          prompts_consolidated: analysisResults.length,
+          prompts_consolidated: totalPromptsCompleted,
           is_complex: processoData?.is_chunked,
         },
         userId: processoData?.user_id,
