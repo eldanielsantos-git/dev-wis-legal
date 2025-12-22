@@ -818,35 +818,28 @@ export class ProcessosService {
 
     const uploadChunksInBackground = async () => {
       try {
-        const MAX_STORAGE_SIZE = 50 * 1024 * 1024;
+        console.log('📦 Salvando arquivo original...');
+        const sanitizedFileName = this.sanitizeFileName(file.name);
+        const originalPath = `${user.id}/${Date.now()}-original-${sanitizedFileName}`;
 
-        if (file.size <= MAX_STORAGE_SIZE) {
-          console.log('📦 Salvando arquivo original...');
-          const sanitizedFileName = this.sanitizeFileName(file.name);
-          const originalPath = `${user.id}/${Date.now()}-original-${sanitizedFileName}`;
+        const { error: originalUploadError } = await supabase.storage
+          .from('processos')
+          .upload(originalPath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-          const { error: originalUploadError } = await supabase.storage
-            .from('processos')
-            .upload(originalPath, file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-
-          if (originalUploadError) {
-            console.error('❌ Erro ao salvar arquivo original:', originalUploadError);
-            console.warn('⚠️ Continuando processamento sem arquivo original salvo');
-          } else {
-            await supabase
-              .from('processos')
-              .update({ original_file_path: originalPath })
-              .eq('id', processoId);
-
-            console.log('✅ Arquivo original salvo com sucesso');
-          }
-        } else {
-          console.log(`⚠️ Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(2)}MB) - pulando salvamento do arquivo original`);
-          console.log('✅ Processamento continuará apenas com os chunks');
+        if (originalUploadError) {
+          console.error('❌ Erro ao salvar arquivo original:', originalUploadError);
+          throw new Error(`Falha ao salvar arquivo original: ${originalUploadError.message}`);
         }
+
+        await supabase
+          .from('processos')
+          .update({ original_file_path: originalPath })
+          .eq('id', processoId);
+
+        console.log('✅ Arquivo original salvo com sucesso');
 
         const { splitPDFIntoChunksWithOverlap } = await import('../utils/pdfSplitter');
 
@@ -1008,8 +1001,7 @@ export class ProcessosService {
       console.log(`📊 Tentativa ${processo.resume_attempts}/3`);
 
       if (!processo.original_file_path) {
-        const fileSizeMB = (processo.file_size / 1024 / 1024).toFixed(2);
-        throw new Error(`Arquivo muito grande (${fileSizeMB}MB). Por favor, faça um novo upload do arquivo para continuar o processamento.`);
+        throw new Error('Arquivo original não encontrado. Reenvie o arquivo.');
       }
 
       console.log('📥 Baixando arquivo original...');
