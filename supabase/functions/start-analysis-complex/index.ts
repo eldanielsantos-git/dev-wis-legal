@@ -436,19 +436,49 @@ Deno.serve(async (req: Request) => {
 
     if (processo_id) {
       try {
-        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-admin-complex-analysis-error`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-          },
-          body: JSON.stringify({
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+        const { data: processo } = await supabase
+          .from('processos')
+          .select('user_id, total_chunks_count')
+          .eq('id', processo_id)
+          .maybeSingle();
+
+        await supabase
+          .from('processos')
+          .update({ status: 'error', last_error_type: error?.message })
+          .eq('id', processo_id);
+
+        const { data: errorRecord, error: errorInsertError } = await supabase
+          .from('complex_analysis_errors')
+          .insert({
             processo_id,
-            error_message: error?.message || 'Erro desconhecido',
-            error_code: error?.code,
-            stage: 'start_analysis_complex',
-          }),
-        });
+            user_id: processo?.user_id,
+            error_type: 'ProcessError',
+            error_category: 'initialization',
+            error_message: error?.message || 'Erro desconhecido no processamento',
+            severity: 'high',
+            current_phase: 'start_analysis_complex',
+            occurred_at: new Date().toISOString(),
+            total_chunks: processo?.total_chunks_count || 0,
+          })
+          .select()
+          .single();
+
+        if (!errorInsertError && errorRecord) {
+          await fetch(`${supabaseUrl}/functions/v1/send-admin-complex-analysis-error`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              error_id: errorRecord.id,
+            }),
+          });
+        }
       } catch (notifyError) {
         console.error('Erro ao enviar notificação de erro:', notifyError);
       }

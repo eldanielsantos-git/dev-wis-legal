@@ -45,7 +45,6 @@ Deno.serve(async (req: Request) => {
 
     console.log("Request data:", { error_id });
 
-    // Step 1: Buscar informações do erro complexo
     console.log("Step 1: Fetching complex error data from database...");
     const { data: errorData, error: errorFetchError } = await supabaseClient
       .from("complex_analysis_errors")
@@ -79,7 +78,6 @@ Deno.serve(async (req: Request) => {
       total_chunks: errorData.total_chunks
     });
 
-    // Step 2: Buscar informações do processo
     console.log("Step 2: Fetching processo data...");
     const { data: processo, error: processoError } = await supabaseClient
       .from("processos")
@@ -110,7 +108,6 @@ Deno.serve(async (req: Request) => {
       is_chunked: processo.is_chunked
     });
 
-    // Step 3: Buscar informações do usuário
     console.log("Step 3: Fetching user profile...");
     const { data: userProfile, error: profileError } = await supabaseClient
       .from("user_profiles")
@@ -128,7 +125,6 @@ Deno.serve(async (req: Request) => {
       email: userProfile.email
     });
 
-    // Step 4: Buscar plano ativo do usuário
     console.log("Step 4: Fetching user subscription...");
     const { data: customer } = await supabaseClient
       .from("stripe_customers")
@@ -157,7 +153,6 @@ Deno.serve(async (req: Request) => {
 
     console.log("User plan:", planName);
 
-    // Step 5: Buscar todos os admins
     console.log("Step 5: Fetching admin users...");
     const { data: admins, error: adminsError } = await supabaseClient
       .from("user_profiles")
@@ -171,7 +166,6 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Found ${admins.length} admin(s) to notify:`, admins.map(a => a.email));
 
-    // Step 6: Preparar variáveis do template
     console.log("Step 6: Preparing email template variables...");
 
     const formatDateTime = (timestamp: string): string => {
@@ -203,29 +197,24 @@ Deno.serve(async (req: Request) => {
     };
 
     const templateVariables = {
-      // Admin info
-      first_name_admin: "", // Será preenchido por admin
+      first_name_admin: "",
 
-      // User info
       first_name: userProfile.first_name || "Usuário",
       last_name: userProfile.last_name || "",
       user_email: userProfile.email,
       plan_name: planName,
 
-      // File info
       file_name: processo.file_name,
       processo_id: processo.id,
       total_pages: totalPages.toString(),
       total_chunks: (errorData.total_chunks || processo.total_chunks_count || 0).toString(),
 
-      // Failed chunk info
       failed_chunk_index: (errorData.failed_chunk_index || 0).toString(),
       chunk_start_page: (errorData.chunk_start_page || 0).toString(),
       chunk_end_page: (errorData.chunk_end_page || 0).toString(),
       chunk_pages_count: (errorData.chunk_pages_count || 0).toString(),
       error_datetime: formatDateTime(errorData.occurred_at),
 
-      // Processing status
       current_phase: getCurrentPhase(),
       chunks_completed: (errorData.chunks_completed || 0).toString(),
       progress_percent: (errorData.progress_percent || 0).toFixed(1) + "%",
@@ -236,13 +225,11 @@ Deno.serve(async (req: Request) => {
       chunks_failed: (errorData.chunks_failed || 1).toString(),
       processing_duration: formatDuration(errorData.processing_duration),
 
-      // Error details
       error_type: errorData.error_type,
       severity: errorData.severity.toUpperCase(),
       error_category: errorData.error_category,
       error_message: errorData.error_message,
 
-      // Technical info
       worker_id: errorData.worker_id || "N/A",
       chunk_id: errorData.chunk_id || "N/A",
       retry_attempt: (errorData.retry_attempt || 0).toString(),
@@ -253,13 +240,11 @@ Deno.serve(async (req: Request) => {
       gemini_file_uri: errorData.gemini_file_uri || "N/A",
       recovery_attempted: errorData.recovery_attempted ? "Sim" : "Não",
 
-      // Automatic actions
       auto_recovery_enabled: errorData.auto_recovery_enabled ? "Sim" : "Não",
       next_retry_at: errorData.next_retry_at ? formatDateTime(errorData.next_retry_at) : "N/A",
       chunk_subdivision_triggered: errorData.chunk_subdivision_triggered ? "Sim" : "Não",
       monitoring_active: "Sim",
 
-      // URLs
       processo_detail_url: `${appUrl}/lawsuits-detail/${processo.id}`
     };
 
@@ -271,7 +256,6 @@ Deno.serve(async (req: Request) => {
       severity: templateVariables.severity
     });
 
-    // Step 7: Enviar email para cada admin
     console.log("Step 7: Sending emails to admins...");
 
     const templateId = "f5256a8e-e0bd-4eaa-99f5-baf1e4b8ab3b";
@@ -313,7 +297,6 @@ Deno.serve(async (req: Request) => {
         console.log(`✓ Email sent to ${admin.email}:`, resendResult.id);
         emailResults.push(resendResult.id);
 
-        // Log email send
         const { error: logError } = await supabaseClient
           .from("email_logs")
           .insert({
@@ -344,7 +327,6 @@ Deno.serve(async (req: Request) => {
       throw new Error("Failed to send email to any admin");
     }
 
-    // Step 8: Marcar erro como notificado
     console.log("Step 8: Marking complex error as notified...");
 
     const { error: updateError } = await supabaseClient
@@ -360,6 +342,57 @@ Deno.serve(async (req: Request) => {
       console.error("Failed to mark complex error as notified:", updateError);
     } else {
       console.log("✓ Complex error marked as notified");
+    }
+
+    console.log("Step 9: Sending Slack notification...");
+
+    try {
+      const slackPayload = {
+        type_slug: "analysis_complex_failed",
+        title: `Erro em Análise Complexa - ${processo.file_name}`,
+        message: `*Usuário:* ${userProfile.first_name} ${userProfile.last_name} (${userProfile.email})
+*Plano:* ${planName}
+*Arquivo:* ${processo.file_name}
+*Páginas:* ${templateVariables.total_pages}
+*Chunks:* ${templateVariables.total_chunks}
+*Chunk Falho:* ${templateVariables.failed_chunk_index}
+*Fase:* ${templateVariables.current_phase}
+*Tipo:* ${templateVariables.error_type}
+*Severity:* ${templateVariables.severity}
+
+${templateVariables.error_message}`,
+        severity: errorData.severity,
+        metadata: {
+          user_id: errorData.user_id,
+          processo_id: errorData.processo_id,
+          error_id: errorData.id,
+          error_type: errorData.error_type,
+          failed_chunk_index: errorData.failed_chunk_index,
+          total_chunks: errorData.total_chunks,
+          current_phase: errorData.current_phase
+        },
+        user_id: errorData.user_id,
+        processo_id: errorData.processo_id
+      };
+
+      const slackResponse = await fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(slackPayload)
+      });
+
+      if (slackResponse.ok) {
+        const slackResult = await slackResponse.json();
+        console.log("✓ Slack notification sent:", slackResult);
+      } else {
+        const slackError = await slackResponse.text();
+        console.error("Failed to send Slack notification:", slackResponse.status, slackError);
+      }
+    } catch (slackError) {
+      console.error("Error sending Slack notification (non-blocking):", slackError);
     }
 
     console.log("=== SEND ADMIN COMPLEX ANALYSIS ERROR EMAIL - SUCCESS ===");
