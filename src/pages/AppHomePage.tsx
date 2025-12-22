@@ -5,6 +5,7 @@ import { FooterWis } from '../components/FooterWis';
 import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import { IntelligentSearch } from '../components/IntelligentSearch';
 import { UpgradeModal } from '../components/UpgradeModal';
+import { InterruptedUploadsModal } from '../components/InterruptedUploadsModal';
 import { ProcessoCard } from '../components/ProcessoCard';
 import { ProcessoListItem } from '../components/ProcessoListItem';
 import { StatusCard } from '../components/StatusCard';
@@ -74,6 +75,8 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
   const [sharedProcessCount, setSharedProcessCount] = useState<number>(0);
   const [sharedProcessIds, setSharedProcessIds] = useState<Set<string>>(new Set());
   const [shareCountByProcesso, setShareCountByProcesso] = useState<Map<string, number>>(new Map());
+  const [interruptedUploads, setInterruptedUploads] = useState<Array<{ id: string; file_name: string; uploaded: number; total: number }>>([]);
+  const [showInterruptedModal, setShowInterruptedModal] = useState(false);
 
   useEffectOnce(() => {
     const syncAndLoadData = async () => {
@@ -125,6 +128,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
     }
     detectProcessosEmAndamento();
     loadSharedProcessCount();
+    checkInterruptedUploads();
 
   });
 
@@ -246,6 +250,37 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
       logger.error('AppHomePage', 'Erro ao carregar contagem de processos compartilhados:', err);
     }
   }, [user]);
+
+  const checkInterruptedUploads = useCallback(async () => {
+    try {
+      const interrupted = await ProcessosService.checkForInterruptedUploads();
+      if (interrupted.length > 0) {
+        setInterruptedUploads(interrupted);
+        setShowInterruptedModal(true);
+      }
+    } catch (err) {
+      logger.error('AppHomePage', 'Erro ao verificar uploads interrompidos:', err);
+    }
+  }, []);
+
+  const handleDeleteInterruptedUpload = async (processoId: string) => {
+    try {
+      const result = await ProcessosService.deleteProcesso(processoId);
+      if (result.success) {
+        setInterruptedUploads(prev => prev.filter(u => u.id !== processoId));
+        if (interruptedUploads.length <= 1) {
+          setShowInterruptedModal(false);
+        }
+        showSuccess('Upload interrompido excluído com sucesso');
+        loadProcessos();
+      } else {
+        showError(result.error || 'Erro ao excluir upload');
+      }
+    } catch (error) {
+      logger.error('AppHomePage', 'Erro ao excluir upload interrompido:', error);
+      showError('Erro ao excluir upload');
+    }
+  };
 
   const handleReloadApp = useCallback(async () => {
     logger.log('AppHomePage', 'Recarregando app via botão +');
@@ -641,6 +676,12 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         title={errorModal.title}
         message={errorModal.message}
         onClose={() => setErrorModal({ isOpen: false, title: '', message: '' })}
+      />
+      <InterruptedUploadsModal
+        isOpen={showInterruptedModal}
+        onClose={() => setShowInterruptedModal(false)}
+        uploads={interruptedUploads}
+        onDelete={handleDeleteInterruptedUpload}
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>

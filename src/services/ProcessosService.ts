@@ -739,7 +739,8 @@ export class ProcessosService {
   static async uploadAndStartComplexProcessing(
     file: File,
     totalPages: number,
-    onProcessoCreated?: (processoId: string) => void
+    onProcessoCreated?: (processoId: string) => void,
+    onProgress?: (uploaded: number, total: number) => void
   ): Promise<string> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -765,6 +766,8 @@ export class ProcessosService {
         total_chunks_count: config.totalChunks,
         current_processing_chunk: 0,
         total_pages: totalPages,
+        chunks_uploaded_count: 0,
+        upload_interrupted: false,
         transcricao: { totalPages, totalChunks: config.totalChunks, chunkSize: config.chunkSize }
       })
       .select()
@@ -779,22 +782,25 @@ export class ProcessosService {
       onProcessoCreated(processoId);
     }
 
-    console.log('✅ Processo criado, iniciando divisão do PDF em background...');
+    console.log('✅ Processo criado, estamos preparando seu arquivo para análise...');
     console.log('🚀 Upload de chunks iniciado - você pode navegar livremente durante o processo');
     console.log('📊 O progresso será monitorado automaticamente');
 
-    // Função assíncrona para upload de chunks em background
     const uploadChunksInBackground = async () => {
       try {
         const { splitPDFIntoChunksWithOverlap } = await import('../utils/pdfSplitter');
 
-        console.log('📄 Dividindo PDF em chunks com overlap...');
+        console.log('📄 Estamos preparando seu arquivo para análise...');
         const chunks = await splitPDFIntoChunksWithOverlap(file);
-        console.log(`✅ PDF dividido em ${chunks.length} chunks`);
+        console.log(`✅ Arquivo preparado: ${chunks.length} partes`);
 
         for (let i = 0; i < chunks.length; i++) {
           const chunk = chunks[i];
-          console.log(`📤 Fazendo upload do chunk ${i + 1}/${chunks.length}...`);
+          console.log(`📤 Enviando parte ${i + 1}/${chunks.length}...`);
+
+          if (onProgress) {
+            onProgress(i, chunks.length);
+          }
 
           const sanitizedFileName = this.sanitizeFileName(file.name);
           const timestamp = Date.now();
@@ -808,8 +814,12 @@ export class ProcessosService {
             });
 
           if (uploadError) {
-            console.error(`❌ Erro no upload do chunk ${i + 1}:`, uploadError);
-            throw new Error(`Erro no upload do chunk ${i + 1}: ${uploadError.message}`);
+            console.error(`❌ Erro no upload da parte ${i + 1}:`, uploadError);
+            await supabase
+              .from('processos')
+              .update({ upload_interrupted: true })
+              .eq('id', processoId);
+            throw new Error(`Erro no upload da parte ${i + 1}: ${uploadError.message}`);
           }
 
           const { error: chunkError } = await supabase.from('process_chunks').insert({
@@ -827,20 +837,36 @@ export class ProcessosService {
           });
 
           if (chunkError) {
-            console.error(`❌ Erro ao salvar chunk ${i + 1}:`, chunkError);
-            throw new Error(`Erro ao salvar chunk ${i + 1}: ${chunkError.message}`);
+            console.error(`❌ Erro ao salvar parte ${i + 1}:`, chunkError);
+            await supabase
+              .from('processos')
+              .update({ upload_interrupted: true })
+              .eq('id', processoId);
+            throw new Error(`Erro ao salvar parte ${i + 1}: ${chunkError.message}`);
           }
 
-          console.log(`✅ Chunk ${i + 1}/${chunks.length} enviado com sucesso`);
+          await supabase
+            .from('processos')
+            .update({
+              chunks_uploaded_count: i + 1,
+              last_chunk_uploaded_at: new Date().toISOString()
+            })
+            .eq('id', processoId);
+
+          console.log(`✅ Parte ${i + 1}/${chunks.length} enviada com sucesso`);
         }
 
-        // Todos os chunks foram enviados
+        if (onProgress) {
+          onProgress(chunks.length, chunks.length);
+        }
+
         await supabase
           .from('processos')
           .update({
             status: 'created',
             transcricao: { totalPages, totalChunks: chunks.length, chunkSize: config.chunkSize },
-            total_pages: totalPages
+            total_pages: totalPages,
+            upload_interrupted: false
           })
           .eq('id', processoId);
 
@@ -869,18 +895,78 @@ export class ProcessosService {
         console.error('❌ Erro no upload de chunks:', error);
         await supabase
           .from('processos')
-          .update({ status: 'error' })
+          .update({
+            status: 'error',
+            upload_interrupted: true
+          })
           .eq('id', processoId);
         throw error;
       }
     };
 
-    // Iniciar upload em background sem aguardar
     uploadChunksInBackground().catch(error => {
       console.error('❌ Erro fatal no upload de chunks:', error);
     });
 
-    // Retornar imediatamente para permitir navegação
     return processoId;
+  }
+
+  static async resumeInterruptedUpload(processoId: string): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { data: processo, error: processoError } = await supabase
+      .from('processos')
+      .select('*')
+      .eq('id', processoId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (processoError || !processo) {
+      throw new Error('Processo não encontrado');
+    }
+
+    if (processo.status !== 'uploading' || !processo.upload_interrupted) {
+      console.log('Processo não precisa de retomada');
+      return;
+    }
+
+    console.log(`🔄 Retomando upload interrompido: ${processoId}`);
+    console.log(`📊 Progresso: ${processo.chunks_uploaded_count}/${processo.total_chunks_count} partes enviadas`);
+
+    const { data: existingChunks } = await supabase
+      .from('process_chunks')
+      .select('chunk_index, file_path')
+      .eq('processo_id', processoId)
+      .order('chunk_index');
+
+    const uploadedIndexes = new Set(existingChunks?.map(c => c.chunk_index) || []);
+
+    console.log(`✅ ${uploadedIndexes.size} partes já foram enviadas, retomando do ponto de parada...`);
+
+    throw new Error('A retomada automática requer o arquivo original. Por favor, reenvie o arquivo.');
+  }
+
+  static async checkForInterruptedUploads(): Promise<Array<{ id: string; file_name: string; uploaded: number; total: number }>> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data: interrupted } = await supabase
+      .from('processos')
+      .select('id, file_name, chunks_uploaded_count, total_chunks_count')
+      .eq('user_id', user.id)
+      .eq('status', 'uploading')
+      .eq('upload_interrupted', true)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    return interrupted?.map(p => ({
+      id: p.id,
+      file_name: p.file_name,
+      uploaded: p.chunks_uploaded_count || 0,
+      total: p.total_chunks_count || 0
+    })) || [];
   }
 }
