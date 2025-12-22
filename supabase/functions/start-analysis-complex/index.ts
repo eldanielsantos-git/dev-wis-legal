@@ -40,6 +40,8 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  let processo_id: string | null = null;
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -51,7 +53,8 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const fileManager = new GoogleAIFileManager(geminiApiKey);
-    const { processo_id } = await req.json();
+    const requestData = await req.json();
+    processo_id = requestData.processo_id;
 
     if (!processo_id) {
       return new Response(
@@ -430,6 +433,26 @@ Deno.serve(async (req: Request) => {
     );
   } catch (error: any) {
     console.error('Erro ao iniciar análise complexa:', error);
+
+    if (processo_id) {
+      try {
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-admin-complex-analysis-error`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+          },
+          body: JSON.stringify({
+            processo_id,
+            error_message: error?.message || 'Erro desconhecido',
+            error_code: error?.code,
+            stage: 'start_analysis_complex',
+          }),
+        });
+      } catch (notifyError) {
+        console.error('Erro ao enviar notificação de erro:', notifyError);
+      }
+    }
 
     return new Response(
       JSON.stringify({
