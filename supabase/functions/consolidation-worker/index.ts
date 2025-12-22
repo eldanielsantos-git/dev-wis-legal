@@ -40,7 +40,7 @@ async function getMaxOutputTokens(
 }
 
 async function getActiveModel(supabase: any) {
-  const { data, error } = await supabase
+  const { data, error} = await supabase
     .from('admin_system_models')
     .select('*')
     .eq('is_active', true)
@@ -178,56 +178,39 @@ Deno.serve(async (req: Request) => {
           message: 'Consolidação concluída - todos os prompts já processados',
         }),
         {
-          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    console.log(`[${workerId}] 📝 ${analysisResults.length} prompts para consolidar`);
-
-    const model = await getActiveModel(supabase);
-    console.log(`[${workerId}] 🤖 Usando modelo: ${model.name}`);
-
     const genAI = new GoogleGenerativeAI(geminiApiKey);
-    const geminiModel = genAI.getGenerativeModel({ model: model.modelId });
+    const model = await getActiveModel(supabase);
+
+    console.log(`[${workerId}] 🤖 Usando modelo: ${model.name} (${model.modelId})`);
+
+    const generativeModel = genAI.getGenerativeModel({
+      model: model.modelId,
+      generationConfig: {
+        temperature: model.temperature,
+        maxOutputTokens: model.maxTokens,
+      },
+    });
 
     for (const analysisResult of analysisResults) {
-      console.log(`[${workerId}] 🔄 Consolidando: ${analysisResult.prompt_title}`);
+      console.log(`[${workerId}] 🔍 Consolidando: ${analysisResult.prompt_title}`);
+
+      const fullPrompt = `${analysisResult.system_prompt || ''}\n\n${analysisResult.prompt_content}\n\nDOCUMENTO EM LOTES:\n${allSummaries}`;
 
       const startTime = Date.now();
+      const result = await generativeModel.generateContent(fullPrompt);
+      const response = result.response;
+      const text = response.text();
 
-      const consolidationPrompt = `PROMPT ORIGINAL:\n${analysisResult.prompt_content}\n\nANÁLISES PARCIAIS DOS CHUNKS:\n${allSummaries}\n\nINSTRUÇÕES DE CONSOLIDAÇÃO:\n1. Combine as informações de todos os ${chunks.length} chunks em uma análise unificada\n2. Remova duplicações e contradições\n3. Garanta consistência e coerência no resultado final\n4. Siga estritamente o formato e estrutura solicitados no prompt original\n5. Considere todo o contexto do documento completo\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado solicitado no prompt original. NÃO inclua texto introdutório, explicações ou observações antes ou depois do conteúdo. Inicie sua resposta diretamente com o formato esperado.`;
+      const tokensUsed = (
+        (response.usageMetadata?.promptTokenCount || 0) +
+        (response.usageMetadata?.candidatesTokenCount || 0)
+      );
 
-      await supabase
-        .from('analysis_results')
-        .update({ status: 'running' })
-        .eq('id', analysisResult.id);
-
-      const result = await geminiModel.generateContent({
-        contents: [{ role: 'user', parts: [{ text: consolidationPrompt }] }],
-        systemInstruction: analysisResult.system_prompt || undefined,
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: model.maxTokens,
-        },
-      });
-
-      const response = await result.response;
-      let text = response.text().trim();
-
-      if (text.startsWith('```json')) {
-        text = text.replace(/^```json\n?/, '');
-      }
-      if (text.startsWith('```')) {
-        text = text.replace(/^```\n?/, '');
-      }
-      if (text.endsWith('```')) {
-        text = text.replace(/\n?```$/, '');
-      }
-      text = text.trim();
-
-      const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
       const executionTime = Date.now() - startTime;
 
       await supabase
@@ -303,126 +286,33 @@ Deno.serve(async (req: Request) => {
           last_heartbeat: new Date().toISOString(),
         })
         .eq('processo_id', processo_id);
-    }
 
-    if (!remainingResults) {
-      const { data: processoData } = await supabase
-        .from('processos')
-        .select('user_id, file_name, created_at, is_chunked')
-        .eq('id', processo_id)
-        .single();
+      console.log(`[${workerId}] 🔄 Disparando processamento do próximo prompt pendente...`);
 
-      if (processoData?.user_id) {
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: processoData.user_id,
-            type: 'analysis_completed',
-            message: 'Análise de documento complexo concluída com sucesso',
-            related_processo_id: processo_id,
-          });
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-        console.log(`[${workerId}] 📬 Notificação enviada ao usuário`);
-
-        console.log(`[${workerId}] 📧 Enviando email de processo concluído...`);
-        try {
-          const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-            },
-            body: JSON.stringify({ processo_id }),
-          });
-
-          if (emailResponse.ok) {
-            const emailResult = await emailResponse.json();
-            console.log(`[${workerId}] ✅ Email enviado com sucesso:`, emailResult.resend_id);
-          } else {
-            const errorText = await emailResponse.text();
-            console.error(`[${workerId}] ❌ Falha ao enviar email:`, errorText);
-          }
-        } catch (emailError) {
-          console.error(`[${workerId}] ❌ Erro ao chamar edge function de email:`, emailError);
-        }
-      }
-
-      console.log(`[${workerId}] 🔔 Enviando notificação administrativa Slack...`);
-
-      const { data: userData } = await supabase
-        .from('user_profiles')
-        .select('email, first_name, last_name')
-        .eq('id', processoData?.user_id)
-        .maybeSingle();
-
-      const { data: completedPrompts } = await supabase
-        .from('analysis_results')
-        .select('id')
-        .eq('processo_id', processo_id)
-        .eq('status', 'completed');
-
-      const totalPromptsCompleted = completedPrompts?.length || 0;
-      console.log(`[${workerId}] 📊 Total de prompts completados: ${totalPromptsCompleted}`);
-
-      const userName = userData
-        ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim()
-        : 'N/A';
-      const userEmail = userData?.email || 'N/A';
-      const fileName = processoData?.file_name || 'N/A';
-
-      const startTime = new Date(processoData?.created_at || Date.now());
-      const endTime = new Date();
-      const durationMs = endTime.getTime() - startTime.getTime();
-      const durationMinutes = Math.floor(durationMs / 60000);
-      const durationSeconds = Math.floor((durationMs % 60000) / 1000);
-      const durationText = durationMinutes > 0
-        ? `${durationMinutes}m ${durationSeconds}s`
-        : `${durationSeconds}s`;
-
-      notifyAdminSafe({
-        type: 'analysis_completed',
-        title: 'Análise Concluída',
-        message: `${userName || userEmail} | ${fileName} | ${durationText}`,
-        severity: 'success',
-        metadata: {
-          processo_id,
-          file_name: fileName,
-          user_email: userEmail,
-          user_name: userName || userEmail,
-          duration: durationText,
-          chunks_count: chunks.length,
-          prompts_consolidated: totalPromptsCompleted,
-          is_complex: processoData?.is_chunked,
+      fetch(`${supabaseUrl}/functions/v1/process-complex-worker`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
         },
-        userId: processoData?.user_id,
-        processoId: processo_id,
+        body: JSON.stringify({ processo_id }),
+      }).catch(err => {
+        console.error(`[${workerId}] ❌ Erro ao disparar próximo prompt:`, err?.message);
       });
     }
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        message: 'Consolidação concluída',
-        prompts_consolidated: analysisResults.length,
-      }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ success: true }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
-
   } catch (error: any) {
-    console.error(`[${workerId}] ❌ Erro na consolidação:`, error);
-
+    console.error(`[${workerId}] ❌ Erro:`, error);
     return new Response(
-      JSON.stringify({
-        error: error?.message || 'Erro na consolidação',
-        worker_id: workerId,
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
