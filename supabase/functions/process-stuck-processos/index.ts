@@ -19,13 +19,29 @@ Deno.serve(async (req: Request) => {
     console.log('🔍 Buscando processos travados...');
 
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
 
-    const { data: stuckProcessos, error } = await supabase
+    const { data: analyzingProcessos, error: error1 } = await supabase
       .from('processos')
-      .select('id, file_name, user_id, analysis_started_at, current_prompt_number, total_prompts')
+      .select('id, file_name, user_id, analysis_started_at, current_prompt_number, total_prompts, status')
       .eq('status', 'analyzing')
       .lt('analysis_started_at', fiveMinutesAgo)
       .limit(10);
+
+    const { data: queuedProcessos, error: error2 } = await supabase
+      .from('processos')
+      .select('id, file_name, user_id, analysis_started_at, current_prompt_number, total_prompts, status, updated_at')
+      .eq('status', 'queued')
+      .not('analysis_started_at', 'is', null)
+      .lt('updated_at', threeMinutesAgo)
+      .limit(10);
+
+    const stuckProcessos = [
+      ...(analyzingProcessos || []),
+      ...(queuedProcessos || [])
+    ];
+
+    const error = error1 || error2;
 
     if (error) {
       throw new Error(`Erro ao buscar processos: ${error.message}`);

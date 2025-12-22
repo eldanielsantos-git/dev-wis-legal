@@ -808,15 +808,42 @@ Deno.serve(async (req: Request) => {
         if (pendingPrompts > 0 && runningPrompts === 0) {
           console.log(`[${callId}] 🔄 Disparando processamento do próximo prompt...`);
 
-          fetch(`${supabaseUrl}/functions/v1/process-next-prompt`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseServiceKey}`,
-            },
-            body: JSON.stringify({ processo_id }),
-          }).catch(err => {
-            console.error(`[${callId}] ❌ Erro ao disparar próximo prompt:`, err?.message);
+          const dispatchNextPrompt = async (retries = 3) => {
+            for (let attempt = 1; attempt <= retries; attempt++) {
+              try {
+                const response = await fetch(`${supabaseUrl}/functions/v1/process-next-prompt`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${supabaseServiceKey}`,
+                  },
+                  body: JSON.stringify({ processo_id }),
+                });
+
+                if (response.ok) {
+                  console.log(`[${callId}] ✅ Próximo prompt disparado com sucesso`);
+                  return;
+                } else {
+                  console.warn(`[${callId}] ⚠️ Resposta não-OK ao disparar próximo prompt (tentativa ${attempt}/${retries}): ${response.status}`);
+                }
+              } catch (err: any) {
+                console.error(`[${callId}] ❌ Erro ao disparar próximo prompt (tentativa ${attempt}/${retries}):`, err?.message);
+              }
+
+              if (attempt < retries) {
+                await new Promise(resolve => setTimeout(resolve, 2000 * attempt));
+              }
+            }
+
+            console.error(`[${callId}] 💥 FALHA CRÍTICA: Não foi possível disparar próximo prompt após ${retries} tentativas`);
+            await supabase
+              .from('processos')
+              .update({ status: 'analyzing' })
+              .eq('id', processo_id);
+          };
+
+          dispatchNextPrompt().catch(err => {
+            console.error(`[${callId}] 💥 Erro fatal no dispatchNextPrompt:`, err);
           });
         } else if (hasMoreToProcess && runningPrompts > 0) {
           console.log(`[${callId}] ⏳ Há mais prompts pendentes, mas um já está em execução. Aguardando...`);
