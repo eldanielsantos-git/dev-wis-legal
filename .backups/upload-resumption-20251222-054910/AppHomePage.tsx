@@ -255,28 +255,13 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
     try {
       const interrupted = await ProcessosService.checkForInterruptedUploads();
       if (interrupted.length > 0) {
-        console.log(`🔄 ${interrupted.length} upload(s) interrompido(s) detectado(s)`);
-
-        for (const process of interrupted) {
-          try {
-            console.log(`🔄 Retomando automaticamente: ${process.file_name}`);
-
-            showInfo(`Retomando upload: ${process.file_name}`);
-
-            await ProcessosService.resumeInterruptedUpload(process.id);
-
-            showSuccess(`Upload retomado: ${process.file_name}`);
-            loadProcessos();
-          } catch (error) {
-            logger.error('AppHomePage', 'Erro ao retomar upload:', error);
-            showError(`Falha ao retomar: ${process.file_name}. Tente reenviar o arquivo.`);
-          }
-        }
+        setInterruptedUploads(interrupted);
+        setShowInterruptedModal(true);
       }
     } catch (err) {
       logger.error('AppHomePage', 'Erro ao verificar uploads interrompidos:', err);
     }
-  }, [loadProcessos, showInfo, showSuccess, showError]);
+  }, []);
 
   const handleDeleteInterruptedUpload = async (processoId: string) => {
     try {
