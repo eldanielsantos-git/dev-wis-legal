@@ -304,15 +304,113 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (!remainingResults) {
+      const { data: processoData } = await supabase
+        .from('processos')
+        .select('user_id, file_name, created_at, is_complex')
+        .eq('id', processo_id)
+        .single();
+
+      if (processoData?.user_id) {
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: processoData.user_id,
+            type: 'analysis_completed',
+            message: 'Análise de documento complexo concluída com sucesso',
+            related_processo_id: processo_id,
+          });
+
+        console.log(`[${workerId}] 📬 Notificação enviada ao usuário`);
+
+        console.log(`[${workerId}] 📧 Enviando email de processo concluído...`);
+        try {
+          const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({ processo_id }),
+          });
+
+          if (emailResponse.ok) {
+            const emailResult = await emailResponse.json();
+            console.log(`[${workerId}] ✅ Email enviado com sucesso:`, emailResult.resend_id);
+          } else {
+            const errorText = await emailResponse.text();
+            console.error(`[${workerId}] ❌ Falha ao enviar email:`, errorText);
+          }
+        } catch (emailError) {
+          console.error(`[${workerId}] ❌ Erro ao chamar edge function de email:`, emailError);
+        }
+
+        console.log(`[${workerId}] 🔔 Enviando notificação administrativa...`);
+
+        const { data: userData } = await supabase
+          .from('user_profiles')
+          .select('email, first_name, last_name')
+          .eq('id', processoData.user_id)
+          .maybeSingle();
+
+        const startTime = new Date(processoData.created_at);
+        const endTime = new Date();
+        const durationMs = endTime.getTime() - startTime.getTime();
+        const durationMinutes = Math.floor(durationMs / 60000);
+        const durationSeconds = Math.floor((durationMs % 60000) / 1000);
+        const durationText = durationMinutes > 0
+          ? `${durationMinutes}m ${durationSeconds}s`
+          : `${durationSeconds}s`;
+
+        const userName = userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() : 'N/A';
+        const userEmail = userData?.email || 'N/A';
+        const fileName = processoData.file_name || 'N/A';
+
+        notifyAdminSafe({
+          type: 'analysis_completed',
+          title: 'Análise Concluída',
+          message: `${userName || userEmail} | ${fileName} | ${durationText}`,
+          severity: 'success',
+          metadata: {
+            processo_id,
+            file_name: fileName,
+            user_email: userEmail,
+            user_name: userName || userEmail,
+            duration: durationText,
+            chunks_count: chunks.length,
+            prompts_consolidated: analysisResults.length,
+            is_complex: processoData.is_complex,
+          },
+          userId: processoData.user_id,
+          processoId: processo_id,
+        });
+      }
+    }
+
     return new Response(
-      JSON.stringify({ success: true }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: true,
+        message: 'Consolidação concluída',
+        prompts_consolidated: analysisResults.length,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
+
   } catch (error: any) {
-    console.error(`[${workerId}] ❌ Erro:`, error);
+    console.error(`[${workerId}] ❌ Erro na consolidação:`, error);
+
     return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        error: error?.message || 'Erro na consolidação',
+        worker_id: workerId,
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
     );
   }
 });
