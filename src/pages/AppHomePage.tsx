@@ -278,6 +278,26 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
     }
   }, [loadProcessos, showInfo, showSuccess, showError]);
 
+  const handleResumeInterruptedUpload = async (processoId: string) => {
+    try {
+      const upload = interruptedUploads.find(u => u.id === processoId);
+      if (!upload) return;
+
+      showInfo(`Retomando upload: ${upload.file_name}`);
+      setShowInterruptedModal(false);
+
+      await ProcessosService.resumeInterruptedUpload(processoId);
+
+      setInterruptedUploads(prev => prev.filter(u => u.id !== processoId));
+      showSuccess(`Upload retomado com sucesso: ${upload.file_name}`);
+      loadProcessos();
+    } catch (error) {
+      logger.error('AppHomePage', 'Erro ao retomar upload:', error);
+      const upload = interruptedUploads.find(u => u.id === processoId);
+      showError(`Erro ao retomar upload${upload ? `: ${upload.file_name}` : ''}. Tente novamente.`);
+    }
+  };
+
   const handleDeleteInterruptedUpload = async (processoId: string) => {
     try {
       const result = await ProcessosService.deleteProcesso(processoId);
@@ -706,6 +726,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         onClose={() => setShowInterruptedModal(false)}
         uploads={interruptedUploads}
         onDelete={handleDeleteInterruptedUpload}
+        onResume={handleResumeInterruptedUpload}
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>

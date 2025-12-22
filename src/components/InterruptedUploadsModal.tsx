@@ -16,13 +16,15 @@ interface InterruptedUploadsModalProps {
   onClose: () => void;
   uploads: InterruptedUpload[];
   onDelete: (processoId: string) => void;
+  onResume?: (processoId: string) => void;
 }
 
 export function InterruptedUploadsModal({
   isOpen,
   onClose,
   uploads,
-  onDelete
+  onDelete,
+  onResume
 }: InterruptedUploadsModalProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -152,19 +154,38 @@ export function InterruptedUploadsModal({
                         </p>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteClick(upload)}
-                      className="p-2 rounded-lg transition-colors flex-shrink-0 ml-2"
-                      style={{ backgroundColor: colors.bgTertiary }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = colors.bgTertiary;
-                      }}
-                    >
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                      {onResume && (
+                        <button
+                          onClick={() => onResume(upload.id)}
+                          className="p-2 rounded-lg transition-colors"
+                          style={{ backgroundColor: colors.bgTertiary }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = colors.bgTertiary;
+                          }}
+                          title="Retomar upload"
+                        >
+                          <Upload className="w-4 h-4 text-green-600" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteClick(upload)}
+                        className="p-2 rounded-lg transition-colors"
+                        style={{ backgroundColor: colors.bgTertiary }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = colors.bgTertiary;
+                        }}
+                        title="Deletar"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                      </button>
+                    </div>
                   </div>
 
                   <div
