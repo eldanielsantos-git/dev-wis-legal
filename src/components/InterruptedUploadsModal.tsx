@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, AlertTriangle, FileText, Trash2, Upload } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+import { ConfirmDeleteModal } from './ConfirmDeleteModal';
 
 interface InterruptedUpload {
   id: string;
@@ -25,12 +26,31 @@ export function InterruptedUploadsModal({
 }: InterruptedUploadsModalProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; upload: InterruptedUpload | null }>({
+    isOpen: false,
+    upload: null
+  });
 
   if (!isOpen || uploads.length === 0) return null;
 
   const getProgressPercent = (uploaded: number, total: number) => {
     if (total === 0) return 0;
     return Math.round((uploaded / total) * 100);
+  };
+
+  const handleDeleteClick = (upload: InterruptedUpload) => {
+    setDeleteConfirm({ isOpen: true, upload });
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteConfirm.upload) {
+      onDelete(deleteConfirm.upload.id);
+      setDeleteConfirm({ isOpen: false, upload: null });
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteConfirm({ isOpen: false, upload: null });
   };
 
   return (
@@ -133,11 +153,7 @@ export function InterruptedUploadsModal({
                       </div>
                     </div>
                     <button
-                      onClick={() => {
-                        if (confirm(`Tem certeza que deseja excluir "${upload.file_name}"?`)) {
-                          onDelete(upload.id);
-                        }
-                      }}
+                      onClick={() => handleDeleteClick(upload)}
                       className="p-2 rounded-lg transition-colors flex-shrink-0 ml-2"
                       style={{ backgroundColor: colors.bgTertiary }}
                       onMouseEnter={(e) => {
@@ -194,6 +210,13 @@ export function InterruptedUploadsModal({
           </button>
         </div>
       </div>
+
+      <ConfirmDeleteModal
+        isOpen={deleteConfirm.isOpen}
+        fileName={deleteConfirm.upload?.file_name}
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 }
