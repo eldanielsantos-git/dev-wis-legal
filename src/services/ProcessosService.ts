@@ -474,7 +474,7 @@ export class ProcessosService {
         user_profile:user_profiles(first_name, last_name, email)
       `)
       .eq('id', id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Erro ao buscar processo:', error);
@@ -484,33 +484,39 @@ export class ProcessosService {
     return data;
   }
 
-  static async deleteProcesso(id: string): Promise<void> {
-    const processo = await this.getProcessoById(id);
-    if (!processo) {
-      throw new Error('Processo não encontrado');
-    }
-
-    if (processo.file_path) {
-      const { error: storageError } = await supabase.storage
-        .from('processos')
-        .remove([processo.file_path]);
-
-      if (storageError) {
-        console.error('Erro ao deletar arquivo:', storageError);
+  static async deleteProcesso(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const processo = await this.getProcessoById(id);
+      if (!processo) {
+        return { success: false, error: 'Processo não encontrado' };
       }
-    }
 
-    const { error } = await supabase
-      .from('processos')
-      .delete()
-      .eq('id', id);
+      if (processo.file_path) {
+        const { error: storageError } = await supabase.storage
+          .from('processos')
+          .remove([processo.file_path]);
 
-    if (error) {
+        if (storageError) {
+          console.error('Erro ao deletar arquivo:', storageError);
+        }
+      }
+
+      const { error } = await supabase
+        .from('processos')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        console.error('Erro ao deletar processo:', error);
+        return { success: false, error: 'Não foi possível deletar o processo' };
+      }
+
+      console.log('✅ Processo deletado com sucesso:', id);
+      return { success: true };
+    } catch (error) {
       console.error('Erro ao deletar processo:', error);
-      throw new Error('Não foi possível deletar o processo');
+      return { success: false, error: 'Erro inesperado ao deletar o processo' };
     }
-
-    console.log('✅ Processo deletado com sucesso:', id);
   }
 
   static async updateProcessoName(id: string, newName: string): Promise<void> {

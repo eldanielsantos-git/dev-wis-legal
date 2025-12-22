@@ -183,10 +183,16 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
 
     try {
       setError(null);
-      await ProcessosService.deleteProcesso(processoToDelete.id);
-      setProcessos(prev => prev.filter(p => p.id !== processoToDelete.id));
-      setDeleteModalOpen(false);
-      setProcessoToDelete(null);
+      const result = await ProcessosService.deleteProcesso(processoToDelete.id);
+      if (result.success) {
+        setProcessos(prev => prev.filter(p => p.id !== processoToDelete.id));
+        setDeleteModalOpen(false);
+        setProcessoToDelete(null);
+      } else {
+        setError(result.error || 'Erro ao excluir processo');
+        setDeleteModalOpen(false);
+        setProcessoToDelete(null);
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao excluir processo');
       setDeleteModalOpen(false);
