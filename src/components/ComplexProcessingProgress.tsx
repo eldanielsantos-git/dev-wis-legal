@@ -13,8 +13,7 @@ import {
   Package,
   Activity,
   AlertCircle,
-  Lock,
-  RefreshCw
+  Lock
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
@@ -69,7 +68,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
   const [stages, setStages] = useState<PromptStage[]>([]);
   const [complexStatus, setComplexStatus] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [restartingStages, setRestartingStages] = useState<Set<string>>(new Set());
   const [stageProgressHistory, setStageProgressHistory] = useState<Map<string, {progress: number, timestamp: number}>>(new Map());
   const [tierData, setTierData] = useState<{ tier: TierName | null; totalPages: number | null }>({ tier: null, totalPages: null });
 
@@ -361,69 +359,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
     return stages.find(s => s.status === 'processing') || stages.find(s => s.status === 'pending');
   };
 
-  const handleRestartStage = async (stage: PromptStage) => {
-    if (!stage.result_id) {
-      console.error('Stage sem result_id:', stage);
-      return;
-    }
-
-    setRestartingStages(prev => new Set(prev).add(stage.id));
-
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Usuário não autenticado');
-      }
-
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/restart-stage-manual`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            processo_id: processoId,
-            stage_id: stage.id,
-            result_id: stage.result_id,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Erro ao reiniciar etapa');
-      }
-
-      console.log(`✅ Etapa "${stage.title}" reiniciada com sucesso`);
-
-      // Limpar histórico de progresso da etapa
-      const newHistory = new Map(stageProgressHistory);
-      newHistory.delete(stage.id);
-      setStageProgressHistory(newHistory);
-
-      // Aguardar um pouco e recarregar o progresso
-      setTimeout(() => {
-        setRestartingStages(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(stage.id);
-          return newSet;
-        });
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('Erro ao reiniciar etapa:', error);
-      alert(`Erro ao reiniciar etapa: ${error.message}`);
-
-      setRestartingStages(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(stage.id);
-        return newSet;
-      });
-    }
-  };
-
   if (isLoading) {
     return (
       <div
@@ -688,62 +623,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
                             backgroundColor: '#3B82F6',
                           }}
                         />
-                      </div>
-                    )}
-
-                    {/* Mensagem de erro para etapa travada */}
-                    {stage.is_stuck && stage.status === 'processing' && (
-                      <div
-                        className="mt-2 p-2 rounded-lg"
-                        style={{
-                          backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.05)',
-                          border: `1px solid ${theme === 'dark' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)'}`,
-                        }}
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: '#3B82F6' }} />
-                            <span
-                              className="text-xs"
-                              style={{ color: theme === 'dark' ? '#93C5FD' : '#3B82F6' }}
-                            >
-                              Houve um erro no processamento
-                            </span>
-                          </div>
-                          <button
-                            onClick={() => handleRestartStage(stage)}
-                            disabled={restartingStages.has(stage.id)}
-                            className="flex items-center space-x-1.5 px-2.5 py-1 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                            style={{
-                              backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)',
-                              border: `1px solid ${theme === 'dark' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)'}`,
-                            }}
-                            onMouseEnter={(e) => {
-                              if (!restartingStages.has(stage.id)) {
-                                e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(59, 130, 246, 0.25)' : 'rgba(59, 130, 246, 0.15)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = theme === 'dark' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.1)';
-                            }}
-                          >
-                            {restartingStages.has(stage.id) ? (
-                              <>
-                                <Loader className="w-3 h-3 animate-spin" style={{ color: '#3B82F6' }} />
-                                <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>
-                                  Reiniciando...
-                                </span>
-                              </>
-                            ) : (
-                              <>
-                                <RefreshCw className="w-3 h-3" style={{ color: '#3B82F6' }} />
-                                <span className="text-xs font-medium" style={{ color: '#3B82F6' }}>
-                                  Reiniciar
-                                </span>
-                              </>
-                            )}
-                          </button>
-                        </div>
                       </div>
                     )}
                   </div>
