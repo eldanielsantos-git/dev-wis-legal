@@ -13,7 +13,8 @@ import {
   Package,
   Activity,
   AlertCircle,
-  Lock
+  Lock,
+  RefreshCw
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
