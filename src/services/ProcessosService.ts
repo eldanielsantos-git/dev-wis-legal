@@ -1065,19 +1065,21 @@ export class ProcessosService {
 
             if (retryCount < MAX_RETRIES) {
               const backoffSeconds = Math.min(Math.pow(2, retryCount), 300);
-              console.log(`⏳ Erro no upload da parte ${i + 1} (tentativa ${retryCount}/${MAX_RETRIES}). Tentando novamente em ${backoffSeconds}s...`, uploadError.message);
+              console.log(`⏳ Tentativa ${retryCount}/${MAX_RETRIES} falhou para parte ${i + 1}. Aguardando ${backoffSeconds}s...`);
+              console.log(`   Erro: ${uploadError.message}`);
 
               await supabase
                 .from('processos')
                 .update({
                   chunk_retry_count: retryCount,
                   current_failed_chunk: i,
-                  last_chunk_error: uploadError.message,
+                  last_chunk_error: `Tentativa ${retryCount}/${MAX_RETRIES}: ${uploadError.message}`,
                   upload_interrupted: true
                 })
                 .eq('id', processoId);
 
               await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
+              console.log(`🔄 Retentando parte ${i + 1}...`);
             }
           }
 

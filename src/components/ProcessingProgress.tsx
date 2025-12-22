@@ -37,7 +37,13 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
             background_mode,
             current_llm_model_name,
             tier_name,
-            transcricao
+            transcricao,
+            chunks_uploaded_count,
+            total_chunks_count,
+            chunk_retry_count,
+            current_failed_chunk,
+            last_chunk_error,
+            upload_interrupted
           `)
           .eq('id', processoId)
           .single();
@@ -71,6 +77,8 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
 
   const getStatusLabel = () => {
     switch (currentStatus) {
+      case 'uploading':
+        return 'Enviando arquivo';
       case 'transcribing':
         return 'Transcrevendo documento';
       case 'processing_batch':
@@ -219,6 +227,41 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
               </div>
             )}
           </div>
+
+          {currentStatus === 'uploading' && progressData?.chunks_uploaded_count !== undefined && (
+            <div className="mt-3 pt-3 border-t" style={{ borderColor: theme === 'dark' ? '#374151' : '#E5E7EB' }}>
+              <div className="flex items-center justify-between text-xs">
+                <span style={{ color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>
+                  Partes enviadas
+                </span>
+                <span
+                  className="font-semibold"
+                  style={{ color: theme === 'dark' ? '#E5E7EB' : '#111827' }}
+                >
+                  {progressData.chunks_uploaded_count} / {progressData.total_chunks_count}
+                </span>
+              </div>
+
+              {progressData.chunk_retry_count > 0 && progressData.current_failed_chunk !== null && (
+                <div className="mt-2 p-2 rounded-lg" style={{ backgroundColor: theme === 'dark' ? '#1F2937' : '#F3F4F6' }}>
+                  <div className="flex items-center space-x-2">
+                    <Loader className="w-3 h-3 animate-spin text-yellow-500" />
+                    <span className="text-xs font-medium text-yellow-600">
+                      Tentando reenviar parte {progressData.current_failed_chunk + 1}
+                    </span>
+                  </div>
+                  <p className="text-xs mt-1" style={{ color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>
+                    Tentativa {progressData.chunk_retry_count} de 30
+                  </p>
+                  {progressData.last_chunk_error && (
+                    <p className="text-xs mt-1 truncate" style={{ color: theme === 'dark' ? '#9CA3AF' : '#6B7280' }}>
+                      {progressData.last_chunk_error}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </>
       )}
 

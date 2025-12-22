@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, AlertTriangle, FileText, Trash2, Upload } from 'lucide-react';
+import { X, AlertTriangle, FileText, Trash2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { ConfirmDeleteModal } from './ConfirmDeleteModal';
@@ -16,15 +16,13 @@ interface InterruptedUploadsModalProps {
   onClose: () => void;
   uploads: InterruptedUpload[];
   onDelete: (processoId: string) => void;
-  onResume?: (processoId: string) => void;
 }
 
 export function InterruptedUploadsModal({
   isOpen,
   onClose,
   uploads,
-  onDelete,
-  onResume
+  onDelete
 }: InterruptedUploadsModalProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -111,11 +109,11 @@ export function InterruptedUploadsModal({
               <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
               <div className="text-sm" style={{ color: colors.textSecondary }}>
                 <p className="font-medium mb-1" style={{ color: colors.textPrimary }}>
-                  Esses envios foram interrompidos
+                  Uploads em progresso
                 </p>
                 <p>
-                  Isso pode ter acontecido porque você fechou o navegador, perdeu a conexão ou houve um erro durante o processo.
-                  Para continuar a análise, você precisará reenviar o arquivo.
+                  O sistema está tentando automaticamente retomar esses envios (até 30 tentativas por parte).
+                  Se desejar cancelar, use o botão de deletar.
                 </p>
               </div>
             </div>
@@ -154,38 +152,20 @@ export function InterruptedUploadsModal({
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                      {onResume && (
-                        <button
-                          onClick={() => onResume(upload.id)}
-                          className="p-2 rounded-lg transition-colors"
-                          style={{ backgroundColor: colors.bgTertiary }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(34, 197, 94, 0.1)';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = colors.bgTertiary;
-                          }}
-                          title="Retomar upload"
-                        >
-                          <Upload className="w-4 h-4 text-green-600" />
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteClick(upload)}
-                        className="p-2 rounded-lg transition-colors"
-                        style={{ backgroundColor: colors.bgTertiary }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = colors.bgTertiary;
-                        }}
-                        title="Deletar"
-                      >
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleDeleteClick(upload)}
+                      className="p-2 rounded-lg transition-colors flex-shrink-0 ml-2"
+                      style={{ backgroundColor: colors.bgTertiary }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = colors.bgTertiary;
+                      }}
+                      title="Cancelar e deletar"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </button>
                   </div>
 
                   <div
@@ -211,7 +191,7 @@ export function InterruptedUploadsModal({
           style={{ borderColor: colors.border }}
         >
           <p className="text-sm" style={{ color: colors.textSecondary }}>
-            Para continuar, você precisa reenviar os arquivos
+            O sistema continuará tentando automaticamente
           </p>
           <button
             onClick={onClose}
@@ -227,7 +207,7 @@ export function InterruptedUploadsModal({
               e.currentTarget.style.backgroundColor = theme === 'dark' ? '#FFFFFF' : '#000000';
             }}
           >
-            Entendi
+            OK
           </button>
         </div>
       </div>
