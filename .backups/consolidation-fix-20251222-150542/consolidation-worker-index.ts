@@ -144,58 +144,7 @@ Deno.serve(async (req: Request) => {
     })));
 
     if (!analysisResults || analysisResults.length === 0) {
-      console.log(`[${workerId}] ✅ Nenhum prompt pendente para consolidar nesta chamada`);
-
-      const { data: allResults } = await supabase
-        .from('analysis_results')
-        .select('id, status, prompt_title')
-        .eq('processo_id', processo_id);
-
-      const allCompleted = allResults?.every(r => r.status === 'completed');
-      const hasRunning = allResults?.some(r => r.status === 'running');
-      const hasPending = allResults?.some(r => r.status === 'pending');
-
-      console.log(`[${workerId}] 📊 Status das etapas:`, {
-        total: allResults?.length,
-        completed: allResults?.filter(r => r.status === 'completed').length,
-        running: allResults?.filter(r => r.status === 'running').length,
-        pending: allResults?.filter(r => r.status === 'pending').length,
-      });
-
-      if (hasRunning || hasPending) {
-        console.log(`[${workerId}] ⚠️ Há etapas ainda em processamento. NÃO marcar como completed.`);
-
-        if (hasRunning) {
-          const runningPrompts = allResults?.filter(r => r.status === 'running');
-          console.log(`[${workerId}] 🔍 Etapas em running:`, runningPrompts?.map(r => r.prompt_title));
-        }
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: 'Nenhum prompt para consolidar nesta chamada, mas há etapas ainda em processamento',
-            has_running: hasRunning,
-            has_pending: hasPending,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      if (!allCompleted) {
-        console.log(`[${workerId}] ⚠️ Nem todas as etapas estão completed. NÃO marcar como concluído.`);
-        return new Response(
-          JSON.stringify({
-            success: true,
-            message: 'Nem todas as etapas estão concluídas',
-            all_completed: false,
-          }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
+      console.log(`[${workerId}] ✅ Nenhum prompt pendente para consolidar`);
 
       const { data: processoInfo } = await supabase
         .from('processos')
@@ -205,7 +154,6 @@ Deno.serve(async (req: Request) => {
 
       const totalPages = processoInfo?.transcricao?.totalPages || 0;
       console.log(`[${workerId}] 📄 Total de páginas processadas: ${totalPages}`);
-      console.log(`[${workerId}] ✅ TODAS as etapas estão completed. Marcando processo como concluído.`);
 
       await supabase
         .from('processos')
@@ -222,7 +170,7 @@ Deno.serve(async (req: Request) => {
           current_phase: 'completed',
           last_heartbeat: new Date().toISOString(),
         })
-        .eq('id', processo_id);
+        .eq('processo_id', processo_id);
 
       return new Response(
         JSON.stringify({
@@ -291,23 +239,15 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[${workerId}] 🎉 Consolidação concluída com sucesso`);
 
-    const { data: allResultsAfterConsolidation } = await supabase
+    const { data: remainingResults } = await supabase
       .from('analysis_results')
-      .select('id, status, prompt_title')
-      .eq('processo_id', processo_id);
+      .select('id')
+      .eq('processo_id', processo_id)
+      .in('status', ['pending', 'running'])
+      .limit(1)
+      .maybeSingle();
 
-    const allCompleted = allResultsAfterConsolidation?.every(r => r.status === 'completed');
-    const hasRunning = allResultsAfterConsolidation?.some(r => r.status === 'running');
-    const hasPending = allResultsAfterConsolidation?.some(r => r.status === 'pending');
-
-    console.log(`[${workerId}] 📊 Status final das etapas:`, {
-      total: allResultsAfterConsolidation?.length,
-      completed: allResultsAfterConsolidation?.filter(r => r.status === 'completed').length,
-      running: allResultsAfterConsolidation?.filter(r => r.status === 'running').length,
-      pending: allResultsAfterConsolidation?.filter(r => r.status === 'pending').length,
-    });
-
-    if (allCompleted && !hasRunning && !hasPending) {
+    if (!remainingResults) {
       console.log(`[${workerId}] ✅ TODOS os prompts consolidados! Marcando processo como completo`);
 
       const { data: processoInfo } = await supabase
@@ -364,7 +304,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    if (allCompleted && !hasRunning && !hasPending) {
+    if (!remainingResults) {
       const { data: processoData } = await supabase
         .from('processos')
         .select('user_id, file_name, created_at, is_complex')
