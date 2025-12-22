@@ -44,6 +44,19 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
   const currentPrompt = processo.current_prompt_number || 0;
   const errorNotifiedRef = useRef<Set<string>>(new Set());
 
+  const getTokensConsumed = (): number => {
+    if (processo.tokens_consumed && processo.tokens_consumed > 0) {
+      return processo.tokens_consumed;
+    }
+
+    const totalPages = processo.transcricao?.totalPages || processo.total_pages || 0;
+    if (totalPages > 0) {
+      return totalPages * 5500;
+    }
+
+    return 0;
+  };
+
   // Detectar processos em erro e notificar admins automaticamente
   useEffect(() => {
     const notifyAdminOnError = async () => {
@@ -363,7 +376,7 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
                   className="text-lg max-h-[790px]:text-sm font-bold"
                   style={{ color: theme === 'dark' ? '#FFFFFF' : '#141312' }}
                 >
-                  {TokenValidationService.formatTokenCount(processo.tokens_consumed || 0)}
+                  {TokenValidationService.formatTokenCount(getTokensConsumed())}
                 </p>
                 <p
                   className="text-xs max-h-[790px]:text-[9px]"
