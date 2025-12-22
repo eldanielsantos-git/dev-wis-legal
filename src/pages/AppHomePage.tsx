@@ -407,10 +407,19 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
   const handleConfirmDelete = useCallback(async () => {
     try {
-      await ProcessosService.deleteProcesso(deleteModal.processoId);
-      setProcessos(prev => prev.filter(p => p.id !== deleteModal.processoId));
-      setDeleteModal({ isOpen: false, processoId: '', fileName: '' });
-      showSuccess('Processo excluído com sucesso');
+      const result = await ProcessosService.deleteProcesso(deleteModal.processoId);
+      if (result.success) {
+        setProcessos(prev => prev.filter(p => p.id !== deleteModal.processoId));
+        setDeleteModal({ isOpen: false, processoId: '', fileName: '' });
+        showSuccess('Processo excluído com sucesso');
+      } else {
+        setDeleteModal({ isOpen: false, processoId: '', fileName: '' });
+        setErrorModal({
+          isOpen: true,
+          title: 'Erro ao excluir processo',
+          message: result.error || 'Não foi possível excluir o processo. Por favor, tente novamente.'
+        });
+      }
     } catch (err: any) {
       setDeleteModal({ isOpen: false, processoId: '', fileName: '' });
       setErrorModal({

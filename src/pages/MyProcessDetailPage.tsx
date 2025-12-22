@@ -656,9 +656,13 @@ function MyProcessDetailPageInner({
 
     try {
       setIsDeleting(true);
-      await ProcessosService.deleteProcesso(processo.id);
-      setShowDeleteModal(false);
-      onNavigateToMyProcess();
+      const result = await ProcessosService.deleteProcesso(processo.id);
+      if (result.success) {
+        setShowDeleteModal(false);
+        onNavigateToMyProcess();
+      } else {
+        alert(result.error || 'Erro ao excluir processo. Tente novamente.');
+      }
     } catch (err) {
       console.error('Erro ao excluir processo:', err);
       alert('Erro ao excluir processo. Tente novamente.');

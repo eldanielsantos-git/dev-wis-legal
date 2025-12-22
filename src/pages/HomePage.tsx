@@ -171,8 +171,12 @@ export function HomePage({ onNavigateToDetail, onNavigateToAdmin }: HomePageProp
 
     try {
       setError(null);
-      await ProcessosService.deleteProcesso(processo.id);
-      await loadProcessos();
+      const result = await ProcessosService.deleteProcesso(processo.id);
+      if (result.success) {
+        await loadProcessos();
+      } else {
+        setError(result.error || 'Erro ao excluir processo');
+      }
     } catch (err: any) {
       setError(err.message || 'Erro ao excluir processo');
     }
