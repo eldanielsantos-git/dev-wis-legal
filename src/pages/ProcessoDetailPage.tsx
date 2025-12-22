@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { ArrowLeft, FileText, Calendar, Clock, CheckCircle, AlertCircle, Loader, Download, Copy, Check, Pencil, Save, ChevronDown, ChevronUp } from 'lucide-react';
 import type { Processo, Pagina } from '../lib/supabase';
 import { supabase } from '../lib/supabase';
@@ -97,10 +97,13 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
     processoId,
     status: processo?.status || '',
     onUpdate: (updatedProcesso) => {
-      setProcesso(prev => ({
-        ...prev,
-        ...updatedProcesso
-      } as Processo));
+      setProcesso(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          ...updatedProcesso
+        } as Processo;
+      });
     },
     enabled: !!processo && ['queuing', 'processing_batch', 'finalizing', 'processing_forensic'].includes(processo.status)
   });
@@ -120,8 +123,13 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
         (payload) => {
           console.log('Realtime update for processo:', payload);
           try {
-            const updatedProcesso = payload.new as Processo;
-            setProcesso(updatedProcesso);
+            if (payload.new && typeof payload.new === 'object') {
+              const updatedProcesso = payload.new as Processo;
+              setProcesso(prev => {
+                if (!prev) return updatedProcesso;
+                return { ...prev, ...updatedProcesso };
+              });
+            }
           } catch (err) {
             console.error('Erro ao processar update realtime:', err);
           }
@@ -323,29 +331,31 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
     );
   }
 
+  const totalChars = useMemo(() => {
+    if (!processo) return 0;
+
+    try {
+      console.log('[ProcessoDetailPage] Calculando totalChars:', {
+        paginasLength: paginas?.length || 0,
+        processContentLength: processo.process_content?.length || 0
+      });
+
+      const chars = paginas && paginas.length > 0
+        ? paginas.reduce((acc, page) => acc + (page.text?.length || 0), 0)
+        : (processo.process_content && Array.isArray(processo.process_content)
+            ? processo.process_content.reduce((acc, page) => acc + (page.content?.length || 0), 0)
+            : 0);
+
+      console.log('[ProcessoDetailPage] totalChars calculado:', chars);
+      return chars;
+    } catch (err) {
+      console.error('[ProcessoDetailPage] Erro ao calcular totalChars:', err);
+      return 0;
+    }
+  }, [processo, paginas]);
+
   if (!processo) {
     return null;
-  }
-
-  let totalChars = 0;
-  try {
-    console.log('[ProcessoDetailPage] Calculando totalChars:', {
-      paginasLength: paginas?.length || 0,
-      processContentLength: processo.process_content?.length || 0,
-      paginasData: paginas,
-      processContent: processo.process_content
-    });
-
-    totalChars = paginas && paginas.length > 0
-      ? paginas.reduce((acc, page) => acc + (page.text?.length || 0), 0)
-      : (processo.process_content && Array.isArray(processo.process_content)
-          ? processo.process_content.reduce((acc, page) => acc + (page.content?.length || 0), 0)
-          : 0);
-
-    console.log('[ProcessoDetailPage] totalChars calculado:', totalChars);
-  } catch (err) {
-    console.error('[ProcessoDetailPage] Erro ao calcular totalChars:', err);
-    totalChars = 0;
   }
 
   return (
@@ -524,10 +534,14 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
                   <div className="flex items-center justify-end mb-3 gap-2">
                     <button
                       onClick={() => {
-                        const fullText = processo.process_content
-                          ?.map(page => `--- Página ${page.pagina} ---\n${page.content}`)
-                          .join('\n\n') || '';
-                        handleCopyText(fullText, 'full-transcription');
+                        try {
+                          const fullText = processo.process_content
+                            ?.map(page => `--- Página ${page?.pagina || 'N/A'} ---\n${page?.content || ''}`)
+                            .join('\n\n') || '';
+                          handleCopyText(fullText, 'full-transcription');
+                        } catch (err) {
+                          console.error('Erro ao copiar transcrição:', err);
+                        }
                       }}
                       className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
                       title="Copiar transcrição completa"
@@ -546,18 +560,22 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
                     </button>
                     <button
                       onClick={() => {
-                        const fullText = processo.process_content
-                          ?.map(page => `--- Página ${page.pagina} ---\n${page.content}`)
-                          .join('\n\n') || '';
-                        const blob = new Blob([fullText], { type: 'text/plain' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${processo.file_name}_transcricao_completa.txt`;
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
+                        try {
+                          const fullText = processo.process_content
+                            ?.map(page => `--- Página ${page?.pagina || 'N/A'} ---\n${page?.content || ''}`)
+                            .join('\n\n') || '';
+                          const blob = new Blob([fullText], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `${processo.file_name}_transcricao_completa.txt`;
+                          document.body.appendChild(a);
+                          a.click();
+                          document.body.removeChild(a);
+                          URL.revokeObjectURL(url);
+                        } catch (err) {
+                          console.error('Erro ao baixar transcrição:', err);
+                        }
                       }}
                       className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
                       title="Baixar transcrição completa"
@@ -568,16 +586,29 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
                   </div>
                   <div className="bg-white rounded-lg p-4 sm:p-6 border border-gray-200 max-h-96 overflow-y-auto">
                     <div className="space-y-4">
-                      {processo.process_content && Array.isArray(processo.process_content) ? (
+                      {processo.process_content && Array.isArray(processo.process_content) && processo.process_content.length > 0 ? (
                         processo.process_content.map((page, index) => {
                           try {
+                            if (!page || typeof page !== 'object') {
+                              return (
+                                <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
+                                  <div className="text-xs font-semibold text-yellow-600 mb-2">
+                                    Página {index + 1}
+                                  </div>
+                                  <p className="text-xs text-gray-500">
+                                    [Dados da página inválidos]
+                                  </p>
+                                </div>
+                              );
+                            }
+
                             return (
                               <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
                                 <div className="text-xs font-semibold text-blue-600 mb-2">
-                                  Página {page?.pagina || index + 1}
+                                  Página {page.pagina || index + 1}
                                 </div>
                                 <p className="text-xs sm:text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed">
-                                  {page?.content || '[Conteúdo não disponível]'}
+                                  {page.content || '[Conteúdo não disponível]'}
                                 </p>
                               </div>
                             );
