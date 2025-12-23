@@ -1476,7 +1476,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           >
                             <div className="text-center">
                               <div className="flex justify-center mb-2">
-                                <Moon className="w-8 h-8" style={{ color: colors.textPrimary }} />
+                                <Moon className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.textPrimary }} />
                               </div>
                               <p className="font-medium" style={{ color: colors.textPrimary }}>Escuro</p>
                             </div>
@@ -1493,7 +1493,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                           >
                             <div className="text-center">
                               <div className="flex justify-center mb-2">
-                                <Sun className="w-8 h-8" style={{ color: colors.textPrimary }} />
+                                <Sun className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.textPrimary }} />
                               </div>
                               <p className="font-medium" style={{ color: colors.textPrimary }}>Claro</p>
                             </div>
