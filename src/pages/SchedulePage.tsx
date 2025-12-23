@@ -7,6 +7,7 @@ import { CreateDeadlineModal } from '../components/CreateDeadlineModal';
 import { EditDeadlineModal } from '../components/EditDeadlineModal';
 import { DeadlineBadge } from '../components/DeadlineBadge';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { CustomSelect } from '../components/CustomSelect';
 import { processDeadlinesService } from '../services/ProcessDeadlinesService';
 import { ProcessosService } from '../services/ProcessosService';
 import { ProcessDeadline, DeadlineStatus } from '../types/analysis';
@@ -242,21 +243,24 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
                 <Filter className="w-5 h-5" style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Filtro</span>
               </div>
-              <select
+              <CustomSelect
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as DeadlineStatus | 'all')}
-                className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 transition-all"
-                style={{
-                  backgroundColor: colors.bgPrimary,
-                  color: colors.textPrimary,
-                  borderColor: colors.border
+                onChange={(value) => setFilterStatus(value as DeadlineStatus | 'all')}
+                options={[
+                  { value: 'all', label: 'Todos' },
+                  { value: 'pending', label: 'Pendentes' },
+                  { value: 'completed', label: 'Concluídos' },
+                  { value: 'expired', label: 'Vencidos' }
+                ]}
+                placeholder="Selecione o status"
+                colors={{
+                  card: colors.bgPrimary,
+                  text: colors.textPrimary,
+                  textSecondary: colors.textSecondary,
+                  border: colors.border,
+                  primary: colors.accent
                 }}
-              >
-                <option value="all">Todos</option>
-                <option value="pending">Pendentes</option>
-                <option value="completed">Concluídos</option>
-                <option value="expired">Vencidos</option>
-              </select>
+              />
             </div>
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
