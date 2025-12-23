@@ -1,10 +1,12 @@
-import React, { useState, useMemo } from 'react';
-import { X, Calendar, Clock, FileText, Tag, Users } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { X, Calendar, Clock, FileText, Tag, Users, Search } from 'lucide-react';
 import { processDeadlinesService, CreateDeadlineInput } from '../services/ProcessDeadlinesService';
 import { DeadlineCategory, DeadlinePartyType } from '../types/analysis';
 import { useToast } from '../hooks/useToast';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+import { ProcessosService } from '../services/ProcessosService';
+import type { Processo } from '../lib/supabase';
 
 interface CreateDeadlineModalProps {
   isOpen: boolean;
@@ -37,6 +39,11 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const { theme } = useTheme();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Processo[]>([]);
+  const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
     processo_id: processoId || '',
@@ -48,6 +55,50 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     notes: ''
   });
 
+  useEffect(() => {
+    if (processoId && isOpen) {
+      ProcessosService.getProcessoById(processoId).then(processo => {
+        if (processo) {
+          setSelectedProcesso(processo);
+          setSearchQuery(processo.numero_processo || processo.nome_processo || '');
+        }
+      });
+    }
+  }, [processoId, isOpen]);
+
+  useEffect(() => {
+    const searchProcessos = async () => {
+      if (!searchQuery.trim() || searchQuery.length < 2) {
+        setSearchResults([]);
+        setShowResults(false);
+        return;
+      }
+
+      setIsSearching(true);
+      try {
+        const processos = await ProcessosService.getAllProcessos();
+        const filtered = processos.filter(p => {
+          const query = searchQuery.toLowerCase();
+          return (
+            p.numero_processo?.toLowerCase().includes(query) ||
+            p.nome_processo?.toLowerCase().includes(query) ||
+            p.partes?.toLowerCase().includes(query)
+          );
+        }).slice(0, 10);
+
+        setSearchResults(filtered);
+        setShowResults(filtered.length > 0);
+      } catch (error) {
+        console.error('Error searching processos:', error);
+      } finally {
+        setIsSearching(false);
+      }
+    };
+
+    const debounce = setTimeout(searchProcessos, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -55,7 +106,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      if (!formData.processo_id) {
+      if (!selectedProcesso) {
         showToast('Por favor, selecione um processo', 'error');
         setIsSubmitting(false);
         return;
@@ -75,6 +126,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
       await processDeadlinesService.createDeadline({
         ...formData,
+        processo_id: selectedProcesso.id,
         subject: formData.subject.trim()
       });
 
@@ -82,14 +134,18 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       onDeadlineCreated();
       onClose();
       setFormData({
-        processo_id: processoId || '',
-        deadline_date: prefilledDate || '',
+        processo_id: '',
+        deadline_date: '',
         deadline_time: '',
         subject: '',
         category: undefined,
         party_type: 'both',
         notes: ''
       });
+      setSearchQuery('');
+      setSelectedProcesso(null);
+      setSearchResults([]);
+      setShowResults(false);
     } catch (error) {
       console.error('Error creating deadline:', error);
       showToast('Erro ao criar prazo. Tente novamente.', 'error');
@@ -103,6 +159,19 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     value: string | DeadlineCategory | DeadlinePartyType | undefined
   ) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSelectProcesso = (processo: Processo) => {
+    setSelectedProcesso(processo);
+    setSearchQuery(processo.numero_processo || processo.nome_processo || '');
+    setShowResults(false);
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (selectedProcesso && value !== (selectedProcesso.numero_processo || selectedProcesso.nome_processo)) {
+      setSelectedProcesso(null);
+    }
   };
 
   return (
@@ -125,6 +194,90 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          <div className="relative">
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+              <Search className="w-4 h-4 inline mr-2" />
+              Buscar Processo *
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                style={{
+                  backgroundColor: colors.bgPrimary,
+                  color: colors.textPrimary,
+                  border: `1px solid ${colors.border}`
+                }}
+                placeholder="Digite número, nome ou parte do processo..."
+                required
+              />
+              {isSearching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: colors.accent }}></div>
+                </div>
+              )}
+            </div>
+
+            {showResults && searchResults.length > 0 && (
+              <div
+                className="absolute z-10 w-full mt-1 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                style={{ backgroundColor: colors.bgPrimary, border: `1px solid ${colors.border}` }}
+              >
+                {searchResults.map(processo => (
+                  <div
+                    key={processo.id}
+                    onClick={() => handleSelectProcesso(processo)}
+                    className="px-4 py-3 cursor-pointer transition-colors"
+                    style={{ borderBottom: `1px solid ${colors.border}` }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgSecondary}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <div className="font-medium" style={{ color: colors.textPrimary }}>
+                      {processo.numero_processo || processo.nome_processo}
+                    </div>
+                    {processo.partes && (
+                      <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                        {processo.partes}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {selectedProcesso && (
+              <div
+                className="mt-2 p-3 rounded-lg flex items-start justify-between"
+                style={{ backgroundColor: colors.bgPrimary, border: `1px solid ${colors.accent}20` }}
+              >
+                <div className="flex-1">
+                  <div className="font-medium" style={{ color: colors.textPrimary }}>
+                    {selectedProcesso.numero_processo || selectedProcesso.nome_processo}
+                  </div>
+                  {selectedProcesso.partes && (
+                    <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                      {selectedProcesso.partes}
+                    </div>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProcesso(null);
+                    setSearchQuery('');
+                  }}
+                  className="ml-2 p-1 rounded hover:opacity-80"
+                  style={{ color: colors.textSecondary }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
               <FileText className="w-4 h-4 inline mr-2" />
