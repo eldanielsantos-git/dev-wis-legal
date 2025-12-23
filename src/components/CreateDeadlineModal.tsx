@@ -146,6 +146,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('=== handleSubmit called ===');
+    console.log('Event:', e);
     setIsSubmitting(true);
 
     try {
@@ -154,6 +155,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
       if (!selectedProcesso) {
         console.error('Validation failed: No processo selected');
+        alert('Por favor, selecione um processo');
         showToast('Por favor, selecione um processo', 'error');
         setIsSubmitting(false);
         return;
@@ -181,18 +183,26 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       }
 
       const deadlineData = {
-        ...formData,
         processo_id: selectedProcesso.id,
-        subject: formData.subject.trim()
+        deadline_date: formData.deadline_date,
+        deadline_time: formData.deadline_time,
+        subject: formData.subject.trim(),
+        category: formData.category,
+        party_type: formData.party_type,
+        notes: formData.notes
       };
 
       console.log('Creating deadline with data:', deadlineData);
+      console.log('Calling processDeadlinesService.createDeadline...');
 
       const result = await processDeadlinesService.createDeadline(deadlineData);
       console.log('Deadline created successfully:', result);
 
+      alert('Prazo criado com sucesso! ID: ' + result.id);
       showToast('Prazo criado com sucesso!', 'success');
+      console.log('Calling onDeadlineCreated callback...');
       onDeadlineCreated();
+      console.log('Calling onClose...');
       onClose();
       setFormData({
         processo_id: '',
