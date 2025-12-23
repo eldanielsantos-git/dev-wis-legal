@@ -53,6 +53,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
@@ -480,7 +481,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 <CalendarIcon className="w-4 h-4 inline mr-2" />
                 Data do Prazo *
               </label>
-              <Popover>
+              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -500,10 +501,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
+                    mode="single"
                     selected={formData.deadline_date ? new Date(formData.deadline_date) : undefined}
                     onSelect={(date) => {
                       if (date) {
-                        handleChange('deadline_date', format(date, 'yyyy-MM-dd'))
+                        handleChange('deadline_date', format(date, 'yyyy-MM-dd'));
+                        setDatePickerOpen(false);
                       }
                     }}
                   />
