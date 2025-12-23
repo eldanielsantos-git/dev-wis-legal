@@ -6,6 +6,7 @@ import { ProcessCalendar } from '../components/ProcessCalendar';
 import { CreateDeadlineModal } from '../components/CreateDeadlineModal';
 import { EditDeadlineModal } from '../components/EditDeadlineModal';
 import { DeadlineBadge } from '../components/DeadlineBadge';
+import { LoadingSpinner } from '../components/LoadingSpinner';
 import { processDeadlinesService } from '../services/ProcessDeadlinesService';
 import { ProcessosService } from '../services/ProcessosService';
 import { ProcessDeadline, DeadlineStatus } from '../types/analysis';
@@ -140,42 +141,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
   const selectedDateDeadlines = getSelectedDateDeadlines();
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
-        <SidebarWis
-          onNavigateToApp={onNavigateToApp}
-          onNavigateToMyProcess={onNavigateToMyProcess}
-          onNavigateToChat={onNavigateToChat}
-          onNavigateToWorkspace={onNavigateToWorkspace}
-          onNavigateToSchedule={() => {}}
-          onNavigateToAdmin={onNavigateToAdmin}
-          onNavigateToProfile={onNavigateToProfile}
-          onNavigateToSettings={() => {
-            window.history.pushState({}, '', '/admin-settings');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-          onNavigateToNotifications={() => {
-            window.history.pushState({}, '', '/notifications');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-          onNavigateToTokens={() => {
-            window.history.pushState({}, '', '/tokens');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-          onNavigateToSubscription={() => {
-            window.history.pushState({}, '', '/signature');
-            window.dispatchEvent(new PopStateEvent('popstate'));
-          }}
-          onCollapsedChange={setIsSidebarCollapsed}
-          activePage="schedule"
-        />
-        <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
-          <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2" style={{ borderColor: colors.accent }}></div>
-          </main>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
