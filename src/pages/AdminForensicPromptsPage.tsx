@@ -496,25 +496,17 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
-          onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
+        onNavigateToSettings={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
-        onNavigateToSettings={() => {
-          window.history.pushState({}, '', '/admin-settings');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToNotifications={() => {
-          window.history.pushState({}, '', '/notifications');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToTokens={() => {
-          window.history.pushState({}, '', '/tokens');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToSubscription={() => {
-          window.history.pushState({}, '', '/signature');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
+        onNavigateToNotifications={onNavigateToNotifications}
+        onNavigateToTokens={onNavigateToTokens}
+        onNavigateToSubscription={onNavigateToSubscription}
+        onNavigateToTerms={onNavigateToTerms}
+        onNavigateToPrivacy={onNavigateToPrivacy}
+        onNavigateToCookies={onNavigateToCookies}
         onCollapsedChange={setIsSidebarCollapsed}
         onSearchClick={() => setIsSearchOpen(true)}
       />
