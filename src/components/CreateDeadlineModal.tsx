@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Calendar, Clock, FileText, Tag, Users, Search } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Clock, FileText, Tag, Users, Search } from 'lucide-react';
 import { processDeadlinesService, CreateDeadlineInput } from '../services/ProcessDeadlinesService';
 import { DeadlineCategory, DeadlinePartyType } from '../types/analysis';
 import { useToast } from '../hooks/useToast';
@@ -9,6 +9,12 @@ import { ProcessosService } from '../services/ProcessosService';
 import type { Processo } from '../lib/supabase';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Button } from './ui/button';
+import { Calendar } from './ui/calendar';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface CreateDeadlineModalProps {
   isOpen: boolean;
@@ -305,15 +311,38 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                <Calendar className="w-4 h-4 inline mr-2" />
+                <CalendarIcon className="w-4 h-4 inline mr-2" />
                 Data do Prazo *
               </label>
-              <Input
-                type="date"
-                value={formData.deadline_date}
-                onChange={(e) => handleChange('deadline_date', e.target.value)}
-                required
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !formData.deadline_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.deadline_date ? (
+                      format(new Date(formData.deadline_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+                    ) : (
+                      <span>Selecione uma data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    selected={formData.deadline_date ? new Date(formData.deadline_date) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        handleChange('deadline_date', format(date, 'yyyy-MM-dd'))
+                      }
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <div>
