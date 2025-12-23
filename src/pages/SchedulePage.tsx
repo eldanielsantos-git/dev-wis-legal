@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Calendar as CalendarIcon, Filter, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
@@ -15,6 +15,21 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+
+let scheduleDataCache: {
+  deadlines: ProcessDeadline[];
+  processos: Processo[];
+  stats: {
+    pending: number;
+    completed: number;
+    expired: number;
+    today: number;
+    thisWeek: number;
+  };
+  timestamp: number;
+} | null = null;
+
+const CACHE_DURATION = 30000;
 
 interface SchedulePageProps {
   onNavigateToAdmin?: () => void;
@@ -33,7 +48,7 @@ interface SchedulePageProps {
   onNavigateToCookies?: () => void;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({
+export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
   onNavigateToAdmin,
   onNavigateToApp,
   onNavigateToMyProcess,
@@ -74,7 +89,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (forceRefresh = false) => {
+    const now = Date.now();
+
+    if (!forceRefresh && scheduleDataCache && (now - scheduleDataCache.timestamp < CACHE_DURATION)) {
+      setDeadlines(scheduleDataCache.deadlines);
+      setProcessos(scheduleDataCache.processos);
+      setStats(scheduleDataCache.stats);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const [deadlinesData, processosData, statsData] = await Promise.all([
@@ -82,6 +107,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
         ProcessosService.getAllProcessos(),
         processDeadlinesService.getDeadlineStats()
       ]);
+
+      scheduleDataCache = {
+        deadlines: deadlinesData,
+        processos: processosData,
+        stats: statsData,
+        timestamp: now
+      };
 
       setDeadlines(deadlinesData);
       setProcessos(processosData);
@@ -132,7 +164,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
         await processDeadlinesService.markAsCompleted(deadline.id);
         showToast('Prazo marcado como concluído', 'success');
       }
-      loadData();
+      loadData(true);
     } catch (error) {
       console.error('Error toggling deadline status:', error);
       showToast('Erro ao atualizar status', 'error');
@@ -355,7 +387,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
       <CreateDeadlineModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        onDeadlineCreated={loadData}
+        onDeadlineCreated={() => loadData(true)}
         prefilledDate={selectedDate?.toISOString().split('T')[0]}
       />
 
@@ -366,9 +398,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
           setSelectedDeadline(null);
         }}
         deadline={selectedDeadline}
-        onDeadlineUpdated={loadData}
-        onDeadlineDeleted={loadData}
+        onDeadlineUpdated={() => loadData(true)}
+        onDeadlineDeleted={() => loadData(true)}
       />
     </div>
   );
-};
+});
