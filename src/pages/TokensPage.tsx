@@ -25,6 +25,7 @@ interface TokensPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile: () => void;
   onNavigateToSignature: () => void;
@@ -44,7 +45,9 @@ interface TokenUsage {
 export function TokensPage({
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat, onNavigateToWorkspace,
+  onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToSignature,
@@ -160,7 +163,8 @@ export function TokensPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
-          onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

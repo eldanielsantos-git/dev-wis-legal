@@ -247,6 +247,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin')}
         onNavigateToSettings={() => navigate('/admin')}
         onNavigateToProfile={() => navigate('/profile')}
@@ -521,6 +522,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -554,6 +556,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToSettings={() => navigate('/admin-settings')}
@@ -573,6 +576,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -589,6 +593,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToSignature={() => navigate('/signature')}

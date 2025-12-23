@@ -23,6 +23,7 @@ interface ProfilePageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToSettings?: () => void;
   onNavigateToProfile?: () => void;
@@ -32,7 +33,7 @@ interface ProfilePageProps {
   onNavigateToSignIn?: () => void;
 }
 
-export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToSettings, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToSignIn }: ProfilePageProps) {
+export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToSchedule, onNavigateToAdmin, onNavigateToSettings, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToSignIn }: ProfilePageProps) {
   const { profile, user, refreshProfile, loading, isAdmin, signOut } = useAuth();
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -727,6 +728,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
           onNavigateToMyProcess={onNavigateToMyProcess}
           onNavigateToChat={onNavigateToChat}
           onNavigateToWorkspace={onNavigateToWorkspace}
+          onNavigateToSchedule={onNavigateToSchedule}
           onNavigateToAdmin={onNavigateToAdmin}
           onNavigateToSettings={onNavigateToSettings}
           onNavigateToProfile={onNavigateToProfile}
