@@ -32,6 +32,7 @@ interface ChatPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToNotifications?: () => void;
@@ -48,6 +49,7 @@ export function ChatPage({
   onNavigateToMyProcess,
   onNavigateToChat,
   onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToNotifications,
@@ -234,7 +236,8 @@ export function ChatPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
-          onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToNotifications={onNavigateToNotifications}

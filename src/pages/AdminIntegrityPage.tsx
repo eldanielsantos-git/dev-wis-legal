@@ -12,14 +12,22 @@ interface AdminIntegrityPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile?: () => void;
+  onNavigateToNotifications?: () => void;
+  onNavigateToTokens?: () => void;
+  onNavigateToSubscription?: () => void;
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
 }
 
-export function AdminIntegrityPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminIntegrityPageProps) {
+export function AdminIntegrityPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace,
+  onNavigateToSchedule, onNavigateToAdmin, onNavigateToProfile,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminIntegrityPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);

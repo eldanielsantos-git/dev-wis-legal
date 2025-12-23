@@ -14,8 +14,12 @@ interface AdminForensicPromptsPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile?: () => void;
+  onNavigateToNotifications?: () => void;
+  onNavigateToTokens?: () => void;
+  onNavigateToSubscription?: () => void;
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
@@ -23,7 +27,11 @@ interface AdminForensicPromptsPageProps {
 
 type TabType = 'analysis' | 'chat_intro' | 'chat_system';
 
-export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminForensicPromptsPageProps) {
+export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace,
+  onNavigateToSchedule, onNavigateToAdmin, onNavigateToProfile,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminForensicPromptsPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);

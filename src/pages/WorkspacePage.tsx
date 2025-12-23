@@ -17,8 +17,13 @@ interface WorkspacePageProps {
   onNavigateToApp: () => void;
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
+  onNavigateToNotifications?: () => void;
+  onNavigateToTokens?: () => void;
+  onNavigateToSubscription?: () => void;
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
@@ -29,8 +34,13 @@ export function WorkspacePage({
   onNavigateToApp,
   onNavigateToMyProcess,
   onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToAdmin,
   onNavigateToProfile,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription,
   onNavigateToTerms,
   onNavigateToPrivacy,
   onNavigateToCookies,
@@ -130,21 +140,17 @@ export function WorkspacePage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={onNavigateToAdmin}
-        onNavigateToNotifications={() => {
-          window.history.pushState({}, '', '/notifications');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToTokens={() => {
-          window.history.pushState({}, '', '/tokens');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToSubscription={() => {
-          window.history.pushState({}, '', '/signature');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
+        onNavigateToNotifications={onNavigateToNotifications}
+        onNavigateToTokens={onNavigateToTokens}
+        onNavigateToSubscription={onNavigateToSubscription}
+        onNavigateToTerms={onNavigateToTerms}
+        onNavigateToPrivacy={onNavigateToPrivacy}
+        onNavigateToCookies={onNavigateToCookies}
         onCollapsedChange={setIsSidebarCollapsed}
         onSearchClick={() => setIsSearchOpen(true)}
         activePage="workspace"

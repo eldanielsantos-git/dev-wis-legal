@@ -16,7 +16,11 @@ interface AdminTagsManagementPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToProfile?: () => void;
+  onNavigateToNotifications?: () => void;
+  onNavigateToTokens?: () => void;
+  onNavigateToSubscription?: () => void;
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
@@ -28,7 +32,11 @@ export function AdminTagsManagementPage({
   onNavigateToMyProcess,
   onNavigateToChat,
   onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToProfile,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription,
   onNavigateToTerms,
   onNavigateToPrivacy,
   onNavigateToCookies
