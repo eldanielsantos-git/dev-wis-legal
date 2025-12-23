@@ -136,8 +136,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
         subject: formData.subject.trim()
       });
 
+      await onDeadlineUpdated();
       showToast('Prazo atualizado com sucesso!', 'success');
-      onDeadlineUpdated();
       onClose();
     } catch (error) {
       console.error('Error updating deadline:', error);
@@ -152,8 +152,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
     try {
       await processDeadlinesService.deleteDeadline(deadline.id);
+      await onDeadlineDeleted();
       showToast('Prazo excluído com sucesso!', 'success');
-      onDeadlineDeleted();
       onClose();
     } catch (error) {
       console.error('Error deleting deadline:', error);
