@@ -68,7 +68,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
   const { isAdmin } = useAuth();
   const { theme } = useTheme();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
-  const { showToast } = useToast();
+  const toast = useToast();
   const [deadlines, setDeadlines] = useState<ProcessDeadline[]>([]);
   const [processos, setProcessos] = useState<Processo[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -123,7 +123,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
       setStats(statsData);
     } catch (error) {
       console.error('Error loading schedule data:', error);
-      showToast('Erro ao carregar agenda', 'error');
+      toast.error('Erro ao carregar agenda');
     } finally {
       setIsLoading(false);
     }
@@ -162,15 +162,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
     try {
       if (deadline.status === 'completed') {
         await processDeadlinesService.markAsPending(deadline.id);
-        showToast('Prazo marcado como pendente', 'success');
+        toast.success('Prazo marcado como pendente');
       } else {
         await processDeadlinesService.markAsCompleted(deadline.id);
-        showToast('Prazo marcado como concluído', 'success');
+        toast.success('Prazo marcado como concluído');
       }
       loadData(true);
     } catch (error) {
       console.error('Error toggling deadline status:', error);
-      showToast('Erro ao atualizar status', 'error');
+      toast.error('Erro ao atualizar status');
     }
   };
 

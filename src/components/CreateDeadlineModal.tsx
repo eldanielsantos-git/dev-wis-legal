@@ -39,7 +39,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   processoId,
   prefilledDate
 }) => {
-  const { showToast } = useToast();
+  const toast = useToast();
   const { theme } = useTheme();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -192,28 +192,28 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       if (!selectedProcesso) {
         console.error('Validation failed: No processo selected');
         alert('Por favor, selecione um processo');
-        showToast('Por favor, selecione um processo', 'error');
+        toast.error('Por favor, selecione um processo');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_date) {
         console.error('Validation failed: No deadline_date');
-        showToast('Por favor, informe a data do prazo', 'error');
+        toast.error('Por favor, informe a data do prazo');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_time) {
         console.error('Validation failed: No deadline_time');
-        showToast('Por favor, informe o horário do prazo', 'error');
+        toast.error('Por favor, informe o horário do prazo');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.subject || formData.subject.trim().length < 3) {
         console.error('Validation failed: Invalid subject');
-        showToast('Por favor, informe um assunto válido', 'error');
+        toast.error('Por favor, informe um assunto válido');
         setIsSubmitting(false);
         return;
       }
@@ -234,7 +234,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       const result = await processDeadlinesService.createDeadline(deadlineData);
       console.log('Deadline created successfully:', result);
 
-      showToast('Prazo criado com sucesso!', 'success');
+      toast.success('Prazo criado com sucesso!');
 
       setFormData({
         processo_id: '',
@@ -258,7 +258,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       console.error('Error message:', error?.message);
       console.error('Error details:', error?.details);
       console.error('Error hint:', error?.hint);
-      showToast(`Erro ao criar prazo: ${error?.message || 'Tente novamente.'}`, 'error');
+      toast.error(`Erro ao criar prazo: ${error?.message || 'Tente novamente.'}`);
     } finally {
       setIsSubmitting(false);
       console.log('=== handleSubmit completed ===');

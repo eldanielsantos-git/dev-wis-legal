@@ -40,7 +40,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   onDeadlineUpdated,
   onDeadlineDeleted
 }) => {
-  const { showToast } = useToast();
+  const toast = useToast();
   const { theme } = useTheme();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -126,7 +126,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
     try {
       if (!formData.subject || formData.subject.trim().length < 3) {
-        showToast('Por favor, informe um assunto válido', 'error');
+        toast.error('Por favor, informe um assunto válido');
         setIsSubmitting(false);
         return;
       }
@@ -136,12 +136,12 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
         subject: formData.subject.trim()
       });
 
-      showToast('Prazo atualizado com sucesso!', 'success');
+      toast.success('Prazo atualizado com sucesso!');
       onClose();
       setTimeout(() => onDeadlineUpdated(), 0);
     } catch (error) {
       console.error('Error updating deadline:', error);
-      showToast('Erro ao atualizar prazo. Tente novamente.', 'error');
+      toast.error('Erro ao atualizar prazo. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -152,12 +152,12 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
     try {
       await processDeadlinesService.deleteDeadline(deadline.id);
-      showToast('Prazo excluído com sucesso!', 'success');
+      toast.success('Prazo excluído com sucesso!');
       onClose();
       setTimeout(() => onDeadlineDeleted(), 0);
     } catch (error) {
       console.error('Error deleting deadline:', error);
-      showToast('Erro ao excluir prazo. Tente novamente.', 'error');
+      toast.error('Erro ao excluir prazo. Tente novamente.');
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
