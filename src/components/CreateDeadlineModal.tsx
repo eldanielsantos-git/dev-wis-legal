@@ -88,13 +88,30 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       try {
         const processos = await ProcessosService.getAllProcessos();
         console.log('Total processos:', processos.length);
+
+        const query = searchQuery.toLowerCase();
         const filtered = processos.filter(p => {
-          const query = searchQuery.toLowerCase();
-          return (
-            p.numero_processo?.toLowerCase().includes(query) ||
-            p.nome_processo?.toLowerCase().includes(query) ||
-            p.partes?.toLowerCase().includes(query)
-          );
+          if (p.file_name?.toLowerCase().includes(query)) {
+            return true;
+          }
+
+          if (p.visao_geral_processo) {
+            try {
+              const visaoGeral = JSON.parse(p.visao_geral_processo);
+              const numeroProcesso = visaoGeral.numero_processo?.toLowerCase() || '';
+              const partesAutor = visaoGeral.partes?.autor?.toLowerCase() || '';
+              const partesReu = visaoGeral.partes?.reu?.toLowerCase() || '';
+              const partesString = `${partesAutor} ${partesReu}`.toLowerCase();
+
+              if (numeroProcesso.includes(query) || partesString.includes(query)) {
+                return true;
+              }
+            } catch (e) {
+              console.log('Error parsing visao_geral_processo for processo', p.id);
+            }
+          }
+
+          return false;
         }).slice(0, 10);
 
         console.log('Search query:', searchQuery);
@@ -212,14 +229,38 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
   const handleSelectProcesso = (processo: Processo) => {
     setSelectedProcesso(processo);
-    setSearchQuery(processo.numero_processo || processo.nome_processo || '');
+
+    let displayName = processo.file_name;
+    if (processo.visao_geral_processo) {
+      try {
+        const visaoGeral = JSON.parse(processo.visao_geral_processo);
+        if (visaoGeral.numero_processo) {
+          displayName = visaoGeral.numero_processo;
+        }
+      } catch (e) {
+        console.log('Error parsing visao_geral for display');
+      }
+    }
+
+    setSearchQuery(displayName || '');
     setShowResults(false);
   };
 
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
-    if (selectedProcesso && value !== (selectedProcesso.numero_processo || selectedProcesso.nome_processo)) {
-      setSelectedProcesso(null);
+    if (selectedProcesso) {
+      let currentDisplay = selectedProcesso.file_name;
+      if (selectedProcesso.visao_geral_processo) {
+        try {
+          const visaoGeral = JSON.parse(selectedProcesso.visao_geral_processo);
+          if (visaoGeral.numero_processo) {
+            currentDisplay = visaoGeral.numero_processo;
+          }
+        } catch (e) {}
+      }
+      if (value !== currentDisplay) {
+        setSelectedProcesso(null);
+      }
     }
   };
 
@@ -280,28 +321,54 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                   borderColor: colors.border
                 }}
               >
-                {searchResults.map(processo => (
-                  <div
-                    key={processo.id}
-                    onClick={() => handleSelectProcesso(processo)}
-                    className="px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0"
-                    style={{
-                      borderColor: colors.border,
-                      color: colors.textPrimary
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                  >
-                    <div className="font-medium">
-                      {processo.numero_processo || processo.nome_processo}
-                    </div>
-                    {processo.partes && (
-                      <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                        {processo.partes}
+                {searchResults.map(processo => {
+                  let numeroProcesso = '';
+                  let partes = '';
+
+                  if (processo.visao_geral_processo) {
+                    try {
+                      const visaoGeral = JSON.parse(processo.visao_geral_processo);
+                      numeroProcesso = visaoGeral.numero_processo || '';
+                      if (visaoGeral.partes) {
+                        const autor = visaoGeral.partes.autor || '';
+                        const reu = visaoGeral.partes.reu || '';
+                        partes = [autor, reu].filter(Boolean).join(' × ');
+                      }
+                    } catch (e) {
+                      console.log('Error parsing processo data');
+                    }
+                  }
+
+                  const displayTitle = numeroProcesso || processo.file_name;
+
+                  return (
+                    <div
+                      key={processo.id}
+                      onClick={() => handleSelectProcesso(processo)}
+                      className="px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0"
+                      style={{
+                        borderColor: colors.border,
+                        color: colors.textPrimary
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <div className="font-medium">
+                        {displayTitle}
                       </div>
-                    )}
-                  </div>
-                ))}
+                      {partes && (
+                        <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                          {partes}
+                        </div>
+                      )}
+                      {!numeroProcesso && (
+                        <div className="text-xs mt-1" style={{ color: colors.textSecondary }}>
+                          {processo.file_name}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -312,13 +379,38 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               >
                 <div className="flex-1">
                   <div className="font-medium" style={{ color: colors.textPrimary }}>
-                    {selectedProcesso.numero_processo || selectedProcesso.nome_processo}
+                    {(() => {
+                      if (selectedProcesso.visao_geral_processo) {
+                        try {
+                          const visaoGeral = JSON.parse(selectedProcesso.visao_geral_processo);
+                          return visaoGeral.numero_processo || selectedProcesso.file_name;
+                        } catch (e) {
+                          return selectedProcesso.file_name;
+                        }
+                      }
+                      return selectedProcesso.file_name;
+                    })()}
                   </div>
-                  {selectedProcesso.partes && (
-                    <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                      {selectedProcesso.partes}
-                    </div>
-                  )}
+                  {(() => {
+                    if (selectedProcesso.visao_geral_processo) {
+                      try {
+                        const visaoGeral = JSON.parse(selectedProcesso.visao_geral_processo);
+                        if (visaoGeral.partes) {
+                          const autor = visaoGeral.partes.autor || '';
+                          const reu = visaoGeral.partes.reu || '';
+                          const partes = [autor, reu].filter(Boolean).join(' × ');
+                          if (partes) {
+                            return (
+                              <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                                {partes}
+                              </div>
+                            );
+                          }
+                        }
+                      } catch (e) {}
+                    }
+                    return null;
+                  })()}
                 </div>
                 <button
                   type="button"
