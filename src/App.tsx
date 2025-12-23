@@ -605,7 +605,14 @@ function AppContent() {
         onNavigateToSignIn={() => navigate('/sign-in')}
         onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
       >
-        <SchedulePage />
+        <SchedulePage
+          onNavigateToAdmin={() => navigate('/admin')}
+          onNavigateToApp={() => navigate('/app')}
+          onNavigateToMyProcess={() => navigate('/lawsuits')}
+          onNavigateToChat={() => navigate('/chat')}
+          onNavigateToWorkspace={() => navigate('/workspace')}
+          onNavigateToProfile={() => navigate('/profile')}
+        />
       </RequireEmailVerification>
     );
   }
