@@ -126,7 +126,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           `}
           style={{
             backgroundColor: isToday(date)
-              ? theme === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(26, 26, 26, 0.25)'
+              ? theme === 'dark' ? 'rgba(255, 255, 255, 0.10)' : 'rgba(26, 26, 26, 0.10)'
               : isSelected(date)
                 ? `${colors.accent}30`
                 : 'transparent',
