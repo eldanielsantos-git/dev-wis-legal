@@ -149,7 +149,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
 
   const getProcessoTitle = (processoId: string): string => {
     const processo = processos.find(p => p.id === processoId);
-    return processo?.titulo || 'Processo sem título';
+    return processo?.file_name || 'Processo sem título';
   };
 
   const handleEditDeadline = (deadline: ProcessDeadline) => {
