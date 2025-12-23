@@ -54,7 +54,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
     processo_id: processoId || '',
@@ -102,14 +101,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         console.log('Filtered processos:', filtered.length);
         console.log('Will show results:', filtered.length > 0);
         setSearchResults(filtered);
-        if (filtered.length > 0) {
-          setTimeout(() => {
-            updateDropdownPosition();
-            setShowResults(true);
-          }, 0);
-        } else {
-          setShowResults(false);
-        }
+        setShowResults(filtered.length > 0);
       } catch (error) {
         console.error('Error searching processos:', error);
       } finally {
@@ -132,54 +124,55 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (showResults) {
-      updateDropdownPosition();
-      window.addEventListener('scroll', updateDropdownPosition, true);
-      window.addEventListener('resize', updateDropdownPosition);
-      return () => {
-        window.removeEventListener('scroll', updateDropdownPosition, true);
-        window.removeEventListener('resize', updateDropdownPosition);
-      };
-    }
-  }, [showResults]);
-
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('=== handleSubmit called ===');
     setIsSubmitting(true);
 
     try {
+      console.log('Selected processo:', selectedProcesso);
+      console.log('Form data:', formData);
+
       if (!selectedProcesso) {
+        console.error('Validation failed: No processo selected');
         showToast('Por favor, selecione um processo', 'error');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_date) {
+        console.error('Validation failed: No deadline_date');
         showToast('Por favor, informe a data do prazo', 'error');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_time) {
+        console.error('Validation failed: No deadline_time');
         showToast('Por favor, informe o horário do prazo', 'error');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.subject || formData.subject.trim().length < 3) {
+        console.error('Validation failed: Invalid subject');
         showToast('Por favor, informe um assunto válido', 'error');
         setIsSubmitting(false);
         return;
       }
 
-      await processDeadlinesService.createDeadline({
+      const deadlineData = {
         ...formData,
         processo_id: selectedProcesso.id,
         subject: formData.subject.trim()
-      });
+      };
+
+      console.log('Creating deadline with data:', deadlineData);
+
+      const result = await processDeadlinesService.createDeadline(deadlineData);
+      console.log('Deadline created successfully:', result);
 
       showToast('Prazo criado com sucesso!', 'success');
       onDeadlineCreated();
@@ -197,11 +190,16 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       setSelectedProcesso(null);
       setSearchResults([]);
       setShowResults(false);
-    } catch (error) {
-      console.error('Error creating deadline:', error);
-      showToast('Erro ao criar prazo. Tente novamente.', 'error');
+    } catch (error: any) {
+      console.error('=== Error creating deadline ===');
+      console.error('Error object:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error details:', error?.details);
+      console.error('Error hint:', error?.hint);
+      showToast(`Erro ao criar prazo: ${error?.message || 'Tente novamente.'}`, 'error');
     } finally {
       setIsSubmitting(false);
+      console.log('=== handleSubmit completed ===');
     }
   };
 
@@ -225,65 +223,10 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     }
   };
 
-  const updateDropdownPosition = () => {
-    if (searchContainerRef.current) {
-      const rect = searchContainerRef.current.getBoundingClientRect();
-      const inputElement = searchContainerRef.current.querySelector('input');
-      if (inputElement) {
-        const inputRect = inputElement.getBoundingClientRect();
-        const newPosition = {
-          top: inputRect.bottom + 8,
-          left: inputRect.left,
-          width: inputRect.width
-        };
-        console.log('Dropdown position:', newPosition);
-        setDropdownPosition(newPosition);
-      }
-    }
-  };
-
-  console.log('Render - showResults:', showResults, 'searchResults:', searchResults.length, 'dropdownPosition:', dropdownPosition);
+  console.log('Render - showResults:', showResults, 'searchResults:', searchResults.length);
 
   return (
-    <>
-      {showResults && searchResults.length > 0 && dropdownPosition.width > 0 && (
-        <div
-          className="fixed rounded-lg border shadow-xl max-h-60 overflow-y-auto"
-          style={{
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
-            zIndex: 9999,
-            backgroundColor: colors.bgSecondary,
-            borderColor: colors.border
-          }}
-        >
-          {searchResults.map(processo => (
-            <div
-              key={processo.id}
-              onClick={() => handleSelectProcesso(processo)}
-              className="px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0"
-              style={{
-                borderColor: colors.border,
-                color: colors.textPrimary
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <div className="font-medium">
-                {processo.numero_processo || processo.nome_processo}
-              </div>
-              {processo.partes && (
-                <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-                  {processo.partes}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="sticky top-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
@@ -313,7 +256,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => {
-                  updateDropdownPosition();
                   if (searchResults.length > 0) {
                     console.log('Focus - showing results:', searchResults.length);
                     setShowResults(true);
@@ -330,6 +272,38 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               )}
             </div>
 
+            {showResults && searchResults.length > 0 && (
+              <div
+                className="absolute left-0 right-0 mt-2 rounded-lg border shadow-xl max-h-60 overflow-y-auto z-[100]"
+                style={{
+                  backgroundColor: colors.bgSecondary,
+                  borderColor: colors.border
+                }}
+              >
+                {searchResults.map(processo => (
+                  <div
+                    key={processo.id}
+                    onClick={() => handleSelectProcesso(processo)}
+                    className="px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0"
+                    style={{
+                      borderColor: colors.border,
+                      color: colors.textPrimary
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <div className="font-medium">
+                      {processo.numero_processo || processo.nome_processo}
+                    </div>
+                    {processo.partes && (
+                      <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                        {processo.partes}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {selectedProcesso && (
               <div
@@ -512,6 +486,5 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         </form>
       </div>
     </div>
-    </>
   );
 };
