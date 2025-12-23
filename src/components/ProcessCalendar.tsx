@@ -75,86 +75,103 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
     const days = [];
     const totalCells = Math.ceil((firstDayOfMonth + daysInMonth) / 7) * 7;
 
+    const prevMonthDays = new Date(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth(),
+      0
+    ).getDate();
+
     for (let i = 0; i < totalCells; i++) {
       const dayNumber = i - firstDayOfMonth + 1;
+      let date: Date;
+      let displayDay: number;
+      let isCurrentMonth = true;
 
-      if (dayNumber < 1 || dayNumber > daysInMonth) {
-        days.push(
-          <div
-            key={i}
-            className="aspect-square p-2"
-            style={{
-              borderRight: `1px solid ${colors.border}20`,
-              borderBottom: `1px solid ${colors.border}20`
-            }}
-          />
+      if (dayNumber < 1) {
+        displayDay = prevMonthDays + dayNumber;
+        date = new Date(
+          currentMonth.getFullYear(),
+          currentMonth.getMonth() - 1,
+          displayDay
         );
+        isCurrentMonth = false;
+      } else if (dayNumber > daysInMonth) {
+        displayDay = dayNumber - daysInMonth;
+        date = new Date(
+          currentMonth.getFullYear(),
+          currentMonth.getMonth() + 1,
+          displayDay
+        );
+        isCurrentMonth = false;
       } else {
-        const date = new Date(
+        displayDay = dayNumber;
+        date = new Date(
           currentMonth.getFullYear(),
           currentMonth.getMonth(),
           dayNumber
         );
-        const dayDeadlines = getDeadlinesForDate(date);
-        const hasPending = dayDeadlines.some(d => d.status === 'pending');
-        const hasExpired = dayDeadlines.some(d => d.status === 'expired');
-
-        days.push(
-          <button
-            key={i}
-            onClick={() => onDateSelect(date)}
-            className={`
-              aspect-square p-2 text-sm font-medium transition-all
-              ${dayDeadlines.length > 0 ? 'font-bold' : ''}
-            `}
-            style={{
-              backgroundColor: isToday(date)
-                ? colors.accent
-                : isSelected(date)
-                  ? `${colors.accent}30`
-                  : 'transparent',
-              color: isToday(date)
-                ? '#ffffff'
-                : isSelected(date)
-                  ? colors.accent
-                  : colors.textPrimary,
-              borderTop: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
-              borderLeft: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
-              borderRight: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
-              borderBottom: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: isToday(date) ? '8px' : '0',
-              margin: isToday(date) ? '2px' : '0'
-            }}
-            onMouseEnter={(e) => {
-              if (!isToday(date) && !isSelected(date)) {
-                e.currentTarget.style.backgroundColor = `${colors.accent}10`;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isToday(date) && !isSelected(date)) {
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }
-            }}
-          >
-            <div className="flex flex-col items-center justify-center h-full">
-              <span>{dayNumber}</span>
-              {dayDeadlines.length > 0 && (
-                <div className="flex gap-1 mt-1">
-                  {hasPending && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                  )}
-                  {hasExpired && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  )}
-                  {dayDeadlines.some(d => d.status === 'completed') && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                  )}
-                </div>
-              )}
-            </div>
-          </button>
-        );
       }
+
+      const dayDeadlines = getDeadlinesForDate(date);
+      const hasPending = dayDeadlines.some(d => d.status === 'pending');
+      const hasExpired = dayDeadlines.some(d => d.status === 'expired');
+
+      days.push(
+        <button
+          key={i}
+          onClick={() => onDateSelect(date)}
+          className={`
+            aspect-square p-2 text-sm font-medium transition-all
+            ${dayDeadlines.length > 0 ? 'font-bold' : ''}
+          `}
+          style={{
+            backgroundColor: isToday(date)
+              ? colors.accent
+              : isSelected(date)
+                ? `${colors.accent}30`
+                : 'transparent',
+            color: isToday(date)
+              ? '#ffffff'
+              : isSelected(date)
+                ? colors.accent
+                : colors.textPrimary,
+            opacity: isCurrentMonth ? 1 : 0.4,
+            borderTop: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
+            borderLeft: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
+            borderRight: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
+            borderBottom: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: isToday(date) ? '8px' : '0',
+            margin: isToday(date) ? '2px' : '0'
+          }}
+          onMouseEnter={(e) => {
+            if (!isToday(date) && !isSelected(date)) {
+              e.currentTarget.style.backgroundColor = `${colors.accent}10`;
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!isToday(date) && !isSelected(date)) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
+        >
+          <div className="flex flex-col items-center justify-center h-full">
+            <span>{displayDay}</span>
+            {dayDeadlines.length > 0 && (
+              <div className="flex gap-1 mt-1">
+                {hasPending && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                )}
+                {hasExpired && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                )}
+                {dayDeadlines.some(d => d.status === 'completed') && (
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                )}
+              </div>
+            )}
+          </div>
+        </button>
+      );
     }
 
     return days;
