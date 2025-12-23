@@ -26,6 +26,7 @@ interface AdminUserProcessesPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToSettings?: () => void;
   onNavigateToProfile?: () => void;
@@ -40,7 +41,9 @@ export function AdminUserProcessesPage({
   onNavigateToProcessDetail,
   onNavigateToApp,
   onNavigateToMyProcess,
-  onNavigateToChat, onNavigateToWorkspace,
+  onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToAdmin,
   onNavigateToSettings,
   onNavigateToProfile,
@@ -136,6 +139,7 @@ export function AdminUserProcessesPage({
           onNavigateToMyProcess={onNavigateToMyProcess}
           onNavigateToChat={onNavigateToChat}
           onNavigateToWorkspace={onNavigateToWorkspace}
+          onNavigateToSchedule={onNavigateToSchedule}
           onNavigateToAdmin={onNavigateToAdmin}
           onNavigateToSettings={onNavigateToSettings}
           onNavigateToProfile={onNavigateToProfile}
@@ -158,7 +162,8 @@ export function AdminUserProcessesPage({
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
-          onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}
