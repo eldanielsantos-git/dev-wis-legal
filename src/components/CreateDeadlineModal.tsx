@@ -322,6 +322,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
             Novo Prazo
           </h2>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 rounded-lg transition-colors"
             style={{ color: colors.textPrimary }}

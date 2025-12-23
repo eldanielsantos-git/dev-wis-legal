@@ -195,6 +195,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
               <Trash2 className="w-5 h-5" />
             </button>
             <button
+              type="button"
               onClick={onClose}
               className="p-2 rounded-lg transition-colors"
               style={{ color: colors.textPrimary }}
