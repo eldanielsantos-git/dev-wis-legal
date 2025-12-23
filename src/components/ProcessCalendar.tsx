@@ -136,10 +136,10 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
                 ? colors.accent
                 : colors.textPrimary,
             opacity: isCurrentMonth ? 1 : 0.4,
-            borderTop: isToday(date) ? `2px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(26, 26, 26, 0.25)'}` : '1px solid rgba(255, 255, 255, 0.05)',
-            borderLeft: isToday(date) ? `2px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(26, 26, 26, 0.25)'}` : '1px solid rgba(255, 255, 255, 0.05)',
-            borderRight: isToday(date) ? `2px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(26, 26, 26, 0.25)'}` : '1px solid rgba(255, 255, 255, 0.05)',
-            borderBottom: isToday(date) ? `2px solid ${theme === 'dark' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(26, 26, 26, 0.25)'}` : '1px solid rgba(255, 255, 255, 0.05)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.05)',
+            borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
             borderRadius: isToday(date) ? '8px' : '0',
             margin: isToday(date) ? '2px' : '0'
           }}
