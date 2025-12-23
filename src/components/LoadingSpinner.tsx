@@ -1,5 +1,7 @@
-import React from 'react';
-import { Loader } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Loader2 } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
+import { getThemeColors } from '../utils/themeUtils';
 
 interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg';
@@ -7,17 +9,26 @@ interface LoadingSpinnerProps {
 }
 
 export function LoadingSpinner({ size = 'md', color }: LoadingSpinnerProps = {}) {
+  const { theme } = useTheme();
+  const colors = useMemo(() => getThemeColors(theme), [theme]);
+
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8'
+    sm: 'w-8 h-8',
+    md: 'w-12 h-12',
+    lg: 'w-16 h-16'
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ backgroundColor: colors.bgPrimary }}
+    >
       <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Carregando...</p>
+        <Loader2
+          className={`${sizeClasses[size]} mx-auto mb-4 animate-spin`}
+          style={{ color: color || colors.accent }}
+        />
+        <p style={{ color: colors.textSecondary }}>Carregando...</p>
       </div>
     </div>
   );
