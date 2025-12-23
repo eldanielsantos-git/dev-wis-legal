@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { X, Calendar, Clock, FileText, Tag, Users, Search } from 'lucide-react';
 import { processDeadlinesService, CreateDeadlineInput } from '../services/ProcessDeadlinesService';
 import { DeadlineCategory, DeadlinePartyType } from '../types/analysis';
@@ -7,6 +7,8 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { ProcessosService } from '../services/ProcessosService';
 import type { Processo } from '../lib/supabase';
+import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 interface CreateDeadlineModalProps {
   isOpen: boolean;
@@ -44,6 +46,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
     processo_id: processoId || '',
@@ -86,6 +89,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           );
         }).slice(0, 10);
 
+        console.log('Filtered processos:', filtered.length);
         setSearchResults(filtered);
         setShowResults(filtered.length > 0);
       } catch (error) {
@@ -98,6 +102,17 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     const debounce = setTimeout(searchProcessos, 300);
     return () => clearTimeout(debounce);
   }, [searchQuery]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   if (!isOpen) return null;
 
@@ -194,56 +209,46 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
-          <div className="relative">
+          <div className="relative" ref={searchContainerRef}>
             <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
               <Search className="w-4 h-4 inline mr-2" />
               Buscar Processo *
             </label>
             <div className="relative">
-              <input
+              <Input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                onFocus={() => searchResults.length > 0 && setShowResults(true)}
-                className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-                style={{
-                  backgroundColor: colors.bgPrimary,
-                  color: colors.textPrimary,
-                  border: `1px solid ${colors.border}`
+                onFocus={() => {
+                  if (searchResults.length > 0) {
+                    console.log('Focus - showing results:', searchResults.length);
+                    setShowResults(true);
+                  }
                 }}
                 placeholder="Digite número, nome ou parte do processo..."
                 required
+                className="pr-10"
               />
               {isSearching && (
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2" style={{ borderColor: colors.accent }}></div>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
                 </div>
               )}
             </div>
 
             {showResults && searchResults.length > 0 && (
-              <div
-                className="absolute w-full mt-1 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                style={{
-                  backgroundColor: colors.bgPrimary,
-                  border: `1px solid ${colors.border}`,
-                  zIndex: 9999
-                }}
-              >
+              <div className="absolute w-full mt-2 rounded-lg border bg-popover shadow-lg max-h-60 overflow-y-auto z-[10000]">
                 {searchResults.map(processo => (
                   <div
                     key={processo.id}
                     onClick={() => handleSelectProcesso(processo)}
-                    className="px-4 py-3 cursor-pointer transition-colors"
-                    style={{ borderBottom: `1px solid ${colors.border}` }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgSecondary}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    className="px-4 py-3 cursor-pointer transition-colors hover:bg-accent border-b last:border-b-0"
                   >
-                    <div className="font-medium" style={{ color: colors.textPrimary }}>
+                    <div className="font-medium text-foreground">
                       {processo.numero_processo || processo.nome_processo}
                     </div>
                     {processo.partes && (
-                      <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                      <div className="text-sm mt-1 text-muted-foreground">
                         {processo.partes}
                       </div>
                     )}
@@ -287,16 +292,10 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               <FileText className="w-4 h-4 inline mr-2" />
               Assunto do Prazo *
             </label>
-            <input
+            <Input
               type="text"
               value={formData.subject}
               onChange={(e) => handleChange('subject', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.textPrimary,
-                border: `1px solid ${colors.border}`
-              }}
               placeholder="Ex: Prazo para contestação"
               required
               maxLength={200}
@@ -309,16 +308,10 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 <Calendar className="w-4 h-4 inline mr-2" />
                 Data do Prazo *
               </label>
-              <input
+              <Input
                 type="date"
                 value={formData.deadline_date}
                 onChange={(e) => handleChange('deadline_date', e.target.value)}
-                className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-                style={{
-                  backgroundColor: colors.bgPrimary,
-                  color: colors.textPrimary,
-                  border: `1px solid ${colors.border}`
-                }}
                 required
               />
             </div>
@@ -328,16 +321,10 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 <Clock className="w-4 h-4 inline mr-2" />
                 Hora (Opcional)
               </label>
-              <input
+              <Input
                 type="time"
                 value={formData.deadline_time}
                 onChange={(e) => handleChange('deadline_time', e.target.value)}
-                className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-                style={{
-                  backgroundColor: colors.bgPrimary,
-                  color: colors.textPrimary,
-                  border: `1px solid ${colors.border}`
-                }}
               />
             </div>
           </div>
@@ -347,21 +334,19 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               <Tag className="w-4 h-4 inline mr-2" />
               Categoria (Opcional)
             </label>
-            <select
+            <Select
               value={formData.category || ''}
-              onChange={(e) => handleChange('category', e.target.value as DeadlineCategory || undefined)}
-              className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.textPrimary,
-                border: `1px solid ${colors.border}`
-              }}
+              onValueChange={(value) => handleChange('category', value as DeadlineCategory || undefined)}
             >
-              <option value="">Selecione uma categoria</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Selecione uma categoria" />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORIES.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -369,20 +354,19 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               <Users className="w-4 h-4 inline mr-2" />
               Parte Relacionada
             </label>
-            <select
+            <Select
               value={formData.party_type}
-              onChange={(e) => handleChange('party_type', e.target.value as DeadlinePartyType)}
-              className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.textPrimary,
-                border: `1px solid ${colors.border}`
-              }}
+              onValueChange={(value) => handleChange('party_type', value as DeadlinePartyType)}
             >
-              <option value="both">Ambas as Partes</option>
-              <option value="accusation">Acusação</option>
-              <option value="defendant">Defesa</option>
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="both">Ambas as Partes</SelectItem>
+                <SelectItem value="accusation">Acusação</SelectItem>
+                <SelectItem value="defendant">Defesa</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div>
@@ -392,12 +376,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
             <textarea
               value={formData.notes}
               onChange={(e) => handleChange('notes', e.target.value)}
-              className="w-full px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.textPrimary,
-                border: `1px solid ${colors.border}`
-              }}
+              className="flex min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
               rows={3}
               placeholder="Adicione observações sobre este prazo..."
               maxLength={500}
