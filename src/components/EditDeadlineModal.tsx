@@ -151,9 +151,9 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
-        <div className="sticky top-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
+        <div className="sticky top-0 px-5 py-3 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
+            <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
               Editar Prazo
             </h2>
             <DeadlineBadge status={deadline.status} size="sm" />
@@ -166,15 +166,15 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             aria-label="Fechar"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
           {processo && (
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                <FileText className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
+                <FileText className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
                 Processo Associado
               </label>
               <div
@@ -206,8 +206,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              <FileText className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
+              <FileText className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
               Assunto do Prazo *
             </label>
             <Input
@@ -220,10 +220,10 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                <Calendar className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
+                <Calendar className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
                 Data do Prazo *
               </label>
               <DatePickerField
@@ -235,8 +235,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                <Clock className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
+              <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
+                <Clock className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
                 Hora (Opcional)
               </label>
               <TimePicker
@@ -247,8 +247,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              <Tag className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
+              <Tag className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
               Categoria (Opcional)
             </label>
             <DropdownField
@@ -261,8 +261,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              <Users className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
+              <Users className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
               Parte Relacionada
             </label>
             <DropdownField
@@ -278,7 +278,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+            <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
               Status
             </label>
             <DropdownField
@@ -294,8 +294,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium" style={{ color: colors.textSecondary }}>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium" style={{ color: colors.textSecondary }}>
                 Observações (Opcional)
               </label>
               <span
@@ -310,8 +310,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             <textarea
               value={formData.notes}
               onChange={(e) => handleChange('notes', e.target.value)}
-              className="flex min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
-              rows={3}
+              className="flex min-h-[60px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
+              rows={2}
               placeholder="Adicione observações sobre este prazo..."
               maxLength={500}
             />
@@ -326,7 +326,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium"
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium text-sm"
                   style={{
                     border: `1px solid ${colors.border}`,
                     color: colors.textPrimary,
@@ -341,7 +341,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     backgroundColor: '#dc2626',
                     color: '#ffffff'
@@ -357,7 +357,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+              className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium text-sm"
               style={{
                 border: '1px solid #fca5a5',
                 color: '#dc2626',
@@ -371,11 +371,11 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             </button>
           )}
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-2">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 rounded-lg transition-colors font-medium"
+              className="flex-1 px-5 py-2.5 rounded-lg transition-colors font-medium text-sm"
               style={{
                 border: `1px solid ${colors.border}`,
                 color: colors.textPrimary,
@@ -389,7 +389,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-5 py-2.5 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: '#000000',
                 color: '#ffffff'
