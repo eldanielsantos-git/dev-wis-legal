@@ -118,10 +118,10 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
                 : isSelected(date)
                   ? colors.accent
                   : colors.textPrimary,
-              borderTop: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
-              borderLeft: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
-              borderRight: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
-              borderBottom: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
+              borderTop: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}10`,
+              borderLeft: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}10`,
+              borderRight: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}10`,
+              borderBottom: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}10`,
               borderRadius: isToday(date) ? '8px' : '0',
               margin: isToday(date) ? '2px' : '0'
             }}
