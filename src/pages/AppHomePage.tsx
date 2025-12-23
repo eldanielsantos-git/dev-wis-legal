@@ -38,9 +38,10 @@ interface AppHomePageProps {
   onNavigateToCookies?: () => void;
   onNavigateToApp?: () => void;
   onNavigateToTokens?: () => void;
+  onNavigateToSchedule?: () => void;
 }
 
-export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToApp, onNavigateToTokens }: AppHomePageProps) {
+export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToApp, onNavigateToTokens, onNavigateToSchedule }: AppHomePageProps) {
   logger.log('AppHomePage', 'Renderizando componente');
   const { user, isAdmin } = useAuth();
   const { theme } = useTheme();
@@ -491,6 +492,10 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         }}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={() => {
+          window.history.pushState({}, '', '/schedule');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

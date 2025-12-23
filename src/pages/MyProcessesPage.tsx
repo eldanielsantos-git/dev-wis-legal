@@ -28,9 +28,10 @@ interface MyProcessesPageProps {
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
+  onNavigateToSchedule?: () => void;
 }
 
-export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNavigateToAdmin, onNavigateToApp, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: MyProcessesPageProps) {
+export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNavigateToAdmin, onNavigateToApp, onNavigateToChat, onNavigateToWorkspace, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies, onNavigateToSchedule }: MyProcessesPageProps) {
   const onNavigateToDetail = (processoId: string) => {
     window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
     window.dispatchEvent(new PopStateEvent('popstate'));
@@ -212,6 +213,10 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
         onNavigateToMyProcess={() => {}}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={() => {
+          window.history.pushState({}, '', '/schedule');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={onNavigateToAdmin}
