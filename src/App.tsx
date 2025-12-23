@@ -434,6 +434,18 @@ function AppContent() {
     return (
       <AdminTokenManagementPage
         onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
+        onNavigateToAdmin={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToNotifications={() => navigate('/notifications')}
+        onNavigateToTokens={() => navigate('/tokens')}
+        onNavigateToSubscription={() => navigate('/signature')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
       />
     );
   }
@@ -525,11 +537,43 @@ function AppContent() {
   }
 
   if (currentPath === '/admin-tier-monitoring') {
-    return <AdminTierMonitoringPage />;
+    return (
+      <AdminTierMonitoringPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
+        onNavigateToAdmin={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToNotifications={() => navigate('/notifications')}
+        onNavigateToTokens={() => navigate('/tokens')}
+        onNavigateToSubscription={() => navigate('/signature')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
   }
 
   if (currentPath === '/admin-deployment-verification') {
-    return <AdminDeploymentVerificationPage />;
+    return (
+      <AdminDeploymentVerificationPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
+        onNavigateToAdmin={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToNotifications={() => navigate('/notifications')}
+        onNavigateToTokens={() => navigate('/tokens')}
+        onNavigateToSubscription={() => navigate('/signature')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
   }
 
   if (currentPath === '/admin-settings') {

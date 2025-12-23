@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Play, RefreshCw } from 'lucide-react';
+import { SidebarWis } from '../components/SidebarWis';
 import { useTheme } from '../contexts/ThemeContext';
+import { getThemeColors } from '../utils/themeUtils';
 import { supabase } from '../lib/supabase';
 
 interface CheckResult {
@@ -10,8 +12,40 @@ interface CheckResult {
   details?: string;
 }
 
-const AdminDeploymentVerificationPage: React.FC = () => {
+interface AdminDeploymentVerificationPageProps {
+  onNavigateToApp: () => void;
+  onNavigateToMyProcess: () => void;
+  onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
+  onNavigateToAdmin: () => void;
+  onNavigateToProfile?: () => void;
+  onNavigateToNotifications?: () => void;
+  onNavigateToTokens?: () => void;
+  onNavigateToSubscription?: () => void;
+  onNavigateToTerms?: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToCookies?: () => void;
+}
+
+const AdminDeploymentVerificationPage: React.FC<AdminDeploymentVerificationPageProps> = ({
+  onNavigateToApp,
+  onNavigateToMyProcess,
+  onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToSchedule,
+  onNavigateToAdmin,
+  onNavigateToProfile,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription,
+  onNavigateToTerms,
+  onNavigateToPrivacy,
+  onNavigateToCookies
+}) => {
   const { theme } = useTheme();
+  const colors = getThemeColors(theme);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [checks, setChecks] = useState<CheckResult[]>([]);
   const [running, setRunning] = useState(false);
   const [overallStatus, setOverallStatus] = useState<'pending' | 'success' | 'error' | 'warning'>('pending');
@@ -250,16 +284,33 @@ const AdminDeploymentVerificationPage: React.FC = () => {
   const errorCount = checks.filter(c => c.status === 'error').length;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: theme === 'dark' ? '#0F0E0D' : '#FAFAFA' }}>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold" style={{ color: theme === 'dark' ? '#FAFAFA' : '#0F0E0D' }}>
-            Verificação de Implantação
-          </h1>
-          <p className="text-sm mt-1" style={{ color: theme === 'dark' ? '#8B8B8B' : '#6B7280' }}>
-            Verifique os componentes do sistema de níveis antes de ativar as funcionalidades
-          </p>
-        </div>
+    <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
+      <SidebarWis
+        onNavigateToApp={onNavigateToApp}
+        onNavigateToMyProcess={onNavigateToMyProcess}
+        onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
+        onNavigateToAdmin={onNavigateToAdmin}
+        onNavigateToProfile={onNavigateToProfile}
+        onNavigateToNotifications={onNavigateToNotifications}
+        onNavigateToTokens={onNavigateToTokens}
+        onNavigateToSubscription={onNavigateToSubscription}
+        onNavigateToTerms={onNavigateToTerms}
+        onNavigateToPrivacy={onNavigateToPrivacy}
+        onNavigateToCookies={onNavigateToCookies}
+        onCollapsedChange={setIsSidebarCollapsed}
+      />
+      <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold" style={{ color: colors.textPrimary }}>
+              Verificação de Implantação
+            </h1>
+            <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+              Verifique os componentes do sistema de níveis antes de ativar as funcionalidades
+            </p>
+          </div>
 
         <div
           className="rounded-xl p-6 mb-6"
@@ -375,6 +426,7 @@ const AdminDeploymentVerificationPage: React.FC = () => {
             </p>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

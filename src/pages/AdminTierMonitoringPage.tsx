@@ -49,6 +49,9 @@ interface AdminTierMonitoringPageProps {
   onNavigateToAdmin: () => void;
   onNavigateToSettings?: () => void;
   onNavigateToProfile?: () => void;
+  onNavigateToNotifications?: () => void;
+  onNavigateToTokens?: () => void;
+  onNavigateToSubscription?: () => void;
   onNavigateToTerms?: () => void;
   onNavigateToPrivacy?: () => void;
   onNavigateToCookies?: () => void;
@@ -63,6 +66,9 @@ export function AdminTierMonitoringPage({
   onNavigateToAdmin,
   onNavigateToSettings,
   onNavigateToProfile,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription,
   onNavigateToTerms,
   onNavigateToPrivacy,
   onNavigateToCookies
@@ -196,18 +202,12 @@ export function AdminTierMonitoringPage({
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}
-        onNavigateToNotifications={() => {
-          window.history.pushState({}, '', '/notifications');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToTokens={() => {
-          window.history.pushState({}, '', '/tokens');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToSubscription={() => {
-          window.history.pushState({}, '', '/subscription');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
+        onNavigateToNotifications={onNavigateToNotifications}
+        onNavigateToTokens={onNavigateToTokens}
+        onNavigateToSubscription={onNavigateToSubscription}
+        onNavigateToTerms={onNavigateToTerms}
+        onNavigateToPrivacy={onNavigateToPrivacy}
+        onNavigateToCookies={onNavigateToCookies}
         onCollapsedChange={setIsSidebarCollapsed}
       />
 
