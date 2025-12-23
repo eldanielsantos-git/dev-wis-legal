@@ -218,7 +218,38 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+            <button
+              onClick={() => setIsCreateModalOpen(true)}
+              className="rounded-xl shadow-sm p-4 transition-all hover:opacity-80 cursor-pointer flex flex-col items-center justify-center"
+              style={{ backgroundColor: colors.accent }}
+            >
+              <Plus className="w-8 h-8 text-white mb-2" />
+              <span className="text-sm font-medium text-white text-center">Criar Prazo</span>
+            </button>
+
+            <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center gap-2 mb-2">
+                <Filter className="w-5 h-5" style={{ color: colors.accent }} />
+                <span className="text-sm" style={{ color: colors.textSecondary }}>Filtro</span>
+              </div>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value as DeadlineStatus | 'all')}
+                className="w-full px-2 py-1 text-sm border rounded-lg focus:ring-2 transition-all"
+                style={{
+                  backgroundColor: colors.bgPrimary,
+                  color: colors.textPrimary,
+                  borderColor: colors.border
+                }}
+              >
+                <option value="all">Todos</option>
+                <option value="pending">Pendentes</option>
+                <option value="completed">Concluídos</option>
+                <option value="expired">Vencidos</option>
+              </select>
+            </div>
+
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
                 <Clock className="w-5 h-5" style={{ color: colors.accent }} />
@@ -250,68 +281,34 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.today}</p>
             </div>
-
-            <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center gap-2 mb-2">
-                <AlertCircle className="w-5 h-5 text-yellow-500" />
-                <span className="text-sm" style={{ color: colors.textSecondary }}>Esta Semana</span>
-              </div>
-              <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.thisWeek}</p>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <ProcessCalendar
-                deadlines={deadlines}
-                selectedDate={selectedDate}
-                onDateSelect={setSelectedDate}
-              />
-            </div>
+          <div className="mb-8">
+            <ProcessCalendar
+              deadlines={deadlines}
+              selectedDate={selectedDate}
+              onDateSelect={setSelectedDate}
+            />
+          </div>
 
-            <div className="space-y-4">
-              <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bgSecondary }}>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                    {selectedDate ? formatDate(selectedDate.toISOString().split('T')[0]) : 'Selecione uma data'}
-                  </h3>
-                  <button
-                    onClick={() => setIsCreateModalOpen(true)}
-                    className="p-2 text-white rounded-lg hover:opacity-80 transition-all"
-                    style={{ backgroundColor: colors.accent }}
-                    title="Adicionar prazo"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </div>
+          {selectedDate && (
+            <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
+                  Prazos de {selectedDate ? formatDate(selectedDate.toISOString().split('T')[0]) : ''}
+                </h3>
+              </div>
 
-                <div className="flex items-center gap-2 mb-4">
-                  <Filter className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                  <select
-                    value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value as DeadlineStatus | 'all')}
-                    className="flex-1 px-3 py-1.5 text-sm border rounded-lg focus:ring-2 transition-all"
-                    style={{
-                      backgroundColor: colors.bgPrimary,
-                      color: colors.textPrimary,
-                      borderColor: colors.border
-                    }}
-                  >
-                    <option value="all">Todos os Status</option>
-                    <option value="pending">Pendentes</option>
-                    <option value="completed">Concluídos</option>
-                    <option value="expired">Vencidos</option>
-                  </select>
-                </div>
-
-                <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                  {selectedDateDeadlines.length === 0 ? (
-                    <div className="text-center py-8" style={{ color: colors.textSecondary }}>
-                      <CalendarIcon className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                      <p>Nenhum prazo para esta data</p>
-                    </div>
-                  ) : (
-                    selectedDateDeadlines.map(deadline => (
+              <div className="space-y-3">
+                {selectedDateDeadlines.length === 0 ? (
+                  <div className="text-center py-12" style={{ color: colors.textSecondary }}>
+                    <CalendarIcon className="w-16 h-16 mx-auto mb-4 opacity-50" style={{ color: colors.textSecondary }} />
+                    <p className="text-lg">Nenhum prazo para esta data</p>
+                    <p className="text-sm mt-2">Clique em "Criar Prazo" para adicionar um novo prazo</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedDateDeadlines.map(deadline => (
                       <div
                         key={deadline.id}
                         className="rounded-lg p-4 hover:shadow-md transition-all cursor-pointer"
@@ -369,12 +366,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
                           </button>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
+          )}
         </main>
         <FooterWis />
       </div>

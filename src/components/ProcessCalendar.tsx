@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { ProcessDeadline } from '../types/analysis';
+import { useTheme } from '../contexts/ThemeContext';
+import { getThemeColors } from '../utils/themeUtils';
 
 interface ProcessCalendarProps {
   deadlines: ProcessDeadline[];
@@ -13,6 +15,8 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
   selectedDate,
   onDateSelect
 }) => {
+  const { theme } = useTheme();
+  const colors = useMemo(() => getThemeColors(theme), [theme]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const daysInMonth = new Date(
@@ -94,14 +98,30 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
             onClick={() => onDateSelect(date)}
             className={`
               aspect-square p-2 rounded-lg text-sm font-medium transition-all
-              ${isToday(date)
-                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                : isSelected(date)
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-              }
               ${dayDeadlines.length > 0 ? 'font-bold' : ''}
             `}
+            style={{
+              backgroundColor: isToday(date)
+                ? colors.accent
+                : isSelected(date)
+                  ? `${colors.accent}30`
+                  : 'transparent',
+              color: isToday(date)
+                ? '#ffffff'
+                : isSelected(date)
+                  ? colors.accent
+                  : colors.textPrimary
+            }}
+            onMouseEnter={(e) => {
+              if (!isToday(date) && !isSelected(date)) {
+                e.currentTarget.style.backgroundColor = `${colors.accent}10`;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isToday(date) && !isSelected(date)) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
           >
             <div className="flex flex-col items-center justify-center h-full">
               <span>{dayNumber}</span>
@@ -128,30 +148,54 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+    <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bgSecondary }}>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-          <CalendarIcon className="w-5 h-5" />
+        <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: colors.textPrimary }}>
+          <CalendarIcon className="w-5 h-5" style={{ color: colors.accent }} />
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h2>
         <div className="flex gap-2">
           <button
             onClick={handleToday}
-            className="px-3 py-1 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+            className="px-3 py-1 text-sm font-medium rounded-lg transition-all"
+            style={{
+              color: colors.accent,
+              backgroundColor: `${colors.accent}15`
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = `${colors.accent}25`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = `${colors.accent}15`;
+            }}
           >
             Hoje
           </button>
           <button
             onClick={handlePreviousMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-all"
             aria-label="Mês anterior"
+            style={{ color: colors.textPrimary }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = `${colors.accent}15`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
           <button
             onClick={handleNextMonth}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-all"
             aria-label="Próximo mês"
+            style={{ color: colors.textPrimary }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = `${colors.accent}15`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -162,7 +206,8 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
         {weekDays.map(day => (
           <div
             key={day}
-            className="text-center text-sm font-semibold text-gray-600 dark:text-gray-400 py-2"
+            className="text-center text-sm font-semibold py-2"
+            style={{ color: colors.textSecondary }}
           >
             {day}
           </div>
@@ -173,19 +218,19 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
         {renderCalendarDays()}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <div className="mt-6 pt-4" style={{ borderTop: `1px solid ${colors.border}` }}>
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-orange-500" />
-            <span className="text-gray-600 dark:text-gray-400">Pendente</span>
+            <span style={{ color: colors.textSecondary }}>Pendente</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-gray-600 dark:text-gray-400">Concluído</span>
+            <span style={{ color: colors.textSecondary }}>Concluído</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-red-500" />
-            <span className="text-gray-600 dark:text-gray-400">Vencido</span>
+            <span style={{ color: colors.textSecondary }}>Vencido</span>
           </div>
         </div>
       </div>
