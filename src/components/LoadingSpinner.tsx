@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 
@@ -24,9 +24,9 @@ export function LoadingSpinner({ size = 'md', color }: LoadingSpinnerProps = {})
       style={{ backgroundColor: colors.bgPrimary }}
     >
       <div className="text-center">
-        <Loader2
+        <Loader
           className={`${sizeClasses[size]} mx-auto mb-4 animate-spin`}
-          style={{ color: color || colors.accent }}
+          style={{ color: color || colors.textPrimary }}
         />
         <p style={{ color: colors.textSecondary }}>Carregando...</p>
       </div>
