@@ -240,7 +240,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <Filter className="w-5 h-5" style={{ color: colors.accent }} />
+                <Filter className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Filtro</span>
               </div>
               <CustomSelect
@@ -265,7 +265,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-5 h-5" style={{ color: colors.accent }} />
+                <Clock className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Pendentes</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.pending}</p>
@@ -273,7 +273,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+                <CheckCircle className="w-4 h-4 text-green-500" strokeWidth={1.5} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Concluídos</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.completed}</p>
@@ -281,7 +281,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <XCircle className="w-5 h-5 text-red-500" />
+                <XCircle className="w-4 h-4 text-red-500" strokeWidth={1.5} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Vencidos</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.expired}</p>
@@ -289,7 +289,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <CalendarIcon className="w-5 h-5" style={{ color: colors.accent }} />
+                <CalendarIcon className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Hoje</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.today}</p>
