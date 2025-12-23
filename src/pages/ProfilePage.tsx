@@ -744,6 +744,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
             window.history.pushState({}, '', '/signature');
             window.dispatchEvent(new PopStateEvent('popstate'));
           }}
+          onNavigateToTerms={onNavigateToTerms}
+          onNavigateToPrivacy={onNavigateToPrivacy}
+          onNavigateToCookies={onNavigateToCookies}
           onCollapsedChange={setIsSidebarCollapsed}
         />
         <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
@@ -762,6 +765,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}
@@ -777,6 +781,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
           window.history.pushState({}, '', '/signature');
           window.dispatchEvent(new PopStateEvent('popstate'));
         }}
+        onNavigateToTerms={onNavigateToTerms}
+        onNavigateToPrivacy={onNavigateToPrivacy}
+        onNavigateToCookies={onNavigateToCookies}
         onCollapsedChange={setIsSidebarCollapsed}
         onSearchClick={() => setIsSearchOpen(true)}
       />
