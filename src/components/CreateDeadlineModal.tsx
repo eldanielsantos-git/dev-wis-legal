@@ -204,15 +204,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       const result = await processDeadlinesService.createDeadline(deadlineData);
       console.log('Deadline created successfully:', result);
 
-      showToast('Prazo criado com sucesso!', 'success');
-
       if (typeof onDeadlineCreated === 'function') {
         await onDeadlineCreated();
       }
 
-      if (typeof onClose === 'function') {
-        onClose();
-      }
+      showToast('Prazo criado com sucesso!', 'success');
+
       setFormData({
         processo_id: '',
         deadline_date: '',
@@ -226,6 +223,11 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       setSelectedProcesso(null);
       setSearchResults([]);
       setShowResults(false);
+      setDatePickerOpen(false);
+
+      if (typeof onClose === 'function') {
+        onClose();
+      }
     } catch (error: any) {
       console.error('=== Error creating deadline ===');
       console.error('Error object:', error);
@@ -565,9 +567,19 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              Observações (Opcional)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium" style={{ color: colors.textSecondary }}>
+                Observações (Opcional)
+              </label>
+              <span
+                className="text-xs"
+                style={{
+                  color: (formData.notes?.length || 0) >= 250 ? '#ef4444' : colors.textSecondary
+                }}
+              >
+                {formData.notes?.length || 0}/250
+              </span>
+            </div>
             <textarea
               value={formData.notes}
               onChange={(e) => handleChange('notes', e.target.value)}

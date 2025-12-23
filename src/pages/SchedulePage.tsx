@@ -108,11 +108,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
         processDeadlinesService.getDeadlineStats()
       ]);
 
+      const refreshTime = Date.now();
       scheduleDataCache = {
         deadlines: deadlinesData,
         processos: processosData,
         stats: statsData,
-        timestamp: now
+        timestamp: refreshTime
       };
 
       setDeadlines(deadlinesData);
