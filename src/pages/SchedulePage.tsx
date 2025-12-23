@@ -22,7 +22,15 @@ interface SchedulePageProps {
   onNavigateToMyProcess?: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToProfile?: () => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToNotifications?: () => void;
+  onNavigateToTokens?: () => void;
+  onNavigateToSubscription?: () => void;
+  onNavigateToTerms?: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToCookies?: () => void;
 }
 
 export const SchedulePage: React.FC<SchedulePageProps> = ({
@@ -31,7 +39,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
   onNavigateToMyProcess,
   onNavigateToChat,
   onNavigateToWorkspace,
-  onNavigateToProfile
+  onNavigateToSchedule,
+  onNavigateToProfile,
+  onNavigateToSettings,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription,
+  onNavigateToTerms,
+  onNavigateToPrivacy,
+  onNavigateToCookies
 }) => {
   const { isAdmin } = useAuth();
   const { theme } = useTheme();
@@ -151,25 +167,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
-        onNavigateToSchedule={() => {}}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
-        onNavigateToSettings={() => {
-          window.history.pushState({}, '', '/admin-settings');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToNotifications={() => {
-          window.history.pushState({}, '', '/notifications');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToTokens={() => {
-          window.history.pushState({}, '', '/tokens');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
-        onNavigateToSubscription={() => {
-          window.history.pushState({}, '', '/signature');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
+        onNavigateToSettings={onNavigateToSettings}
+        onNavigateToNotifications={onNavigateToNotifications}
+        onNavigateToTokens={onNavigateToTokens}
+        onNavigateToSubscription={onNavigateToSubscription}
+        onNavigateToTerms={onNavigateToTerms}
+        onNavigateToPrivacy={onNavigateToPrivacy}
+        onNavigateToCookies={onNavigateToCookies}
         onCollapsedChange={setIsSidebarCollapsed}
         activePage="schedule"
       />

@@ -628,12 +628,20 @@ function AppContent() {
         onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
       >
         <SchedulePage
-          onNavigateToAdmin={() => navigate('/admin')}
+          onNavigateToAdmin={() => navigate('/admin-settings')}
           onNavigateToApp={() => navigate('/app')}
           onNavigateToMyProcess={() => navigate('/lawsuits')}
           onNavigateToChat={() => navigate('/chat')}
           onNavigateToWorkspace={() => navigate('/workspace')}
+          onNavigateToSchedule={() => navigate('/schedule')}
           onNavigateToProfile={() => navigate('/profile')}
+          onNavigateToSettings={() => navigate('/admin-settings')}
+          onNavigateToNotifications={() => navigate('/notifications')}
+          onNavigateToTokens={() => navigate('/tokens')}
+          onNavigateToSubscription={() => navigate('/signature')}
+          onNavigateToTerms={() => navigate('/terms')}
+          onNavigateToPrivacy={() => navigate('/privacy')}
+          onNavigateToCookies={() => navigate('/cookies')}
         />
       </RequireEmailVerification>
     );
