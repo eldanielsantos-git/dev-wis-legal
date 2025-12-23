@@ -213,10 +213,7 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
         onNavigateToMyProcess={() => {}}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
-        onNavigateToSchedule={() => {
-          window.history.pushState({}, '', '/schedule');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={onNavigateToAdmin}

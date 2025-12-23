@@ -492,10 +492,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         }}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
-        onNavigateToSchedule={() => {
-          window.history.pushState({}, '', '/schedule');
-          window.dispatchEvent(new PopStateEvent('popstate'));
-        }}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {
