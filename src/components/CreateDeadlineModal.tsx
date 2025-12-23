@@ -97,7 +97,9 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
           if (p.visao_geral_processo) {
             try {
-              const visaoGeral = JSON.parse(p.visao_geral_processo);
+              const visaoGeral = typeof p.visao_geral_processo === 'string'
+                ? JSON.parse(p.visao_geral_processo)
+                : p.visao_geral_processo;
               const numeroProcesso = visaoGeral.numero_processo?.toLowerCase() || '';
               const partesAutor = visaoGeral.partes?.autor?.toLowerCase() || '';
               const partesReu = visaoGeral.partes?.reu?.toLowerCase() || '';
@@ -107,7 +109,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 return true;
               }
             } catch (e) {
-              console.log('Error parsing visao_geral_processo for processo', p.id);
             }
           }
 
@@ -198,12 +199,21 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       const result = await processDeadlinesService.createDeadline(deadlineData);
       console.log('Deadline created successfully:', result);
 
-      alert('Prazo criado com sucesso! ID: ' + result.id);
+      console.log('About to call showToast...');
+      console.log('showToast is:', typeof showToast);
       showToast('Prazo criado com sucesso!', 'success');
-      console.log('Calling onDeadlineCreated callback...');
-      onDeadlineCreated();
-      console.log('Calling onClose...');
-      onClose();
+
+      console.log('About to call onDeadlineCreated...');
+      console.log('onDeadlineCreated is:', typeof onDeadlineCreated);
+      if (typeof onDeadlineCreated === 'function') {
+        onDeadlineCreated();
+      }
+
+      console.log('About to call onClose...');
+      console.log('onClose is:', typeof onClose);
+      if (typeof onClose === 'function') {
+        onClose();
+      }
       setFormData({
         processo_id: '',
         deadline_date: '',
@@ -243,12 +253,13 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     let displayName = processo.file_name;
     if (processo.visao_geral_processo) {
       try {
-        const visaoGeral = JSON.parse(processo.visao_geral_processo);
+        const visaoGeral = typeof processo.visao_geral_processo === 'string'
+          ? JSON.parse(processo.visao_geral_processo)
+          : processo.visao_geral_processo;
         if (visaoGeral.numero_processo) {
           displayName = visaoGeral.numero_processo;
         }
       } catch (e) {
-        console.log('Error parsing visao_geral for display');
       }
     }
 
@@ -262,7 +273,9 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       let currentDisplay = selectedProcesso.file_name;
       if (selectedProcesso.visao_geral_processo) {
         try {
-          const visaoGeral = JSON.parse(selectedProcesso.visao_geral_processo);
+          const visaoGeral = typeof selectedProcesso.visao_geral_processo === 'string'
+            ? JSON.parse(selectedProcesso.visao_geral_processo)
+            : selectedProcesso.visao_geral_processo;
           if (visaoGeral.numero_processo) {
             currentDisplay = visaoGeral.numero_processo;
           }
@@ -337,7 +350,9 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
                   if (processo.visao_geral_processo) {
                     try {
-                      const visaoGeral = JSON.parse(processo.visao_geral_processo);
+                      const visaoGeral = typeof processo.visao_geral_processo === 'string'
+                        ? JSON.parse(processo.visao_geral_processo)
+                        : processo.visao_geral_processo;
                       numeroProcesso = visaoGeral.numero_processo || '';
                       if (visaoGeral.partes) {
                         const autor = visaoGeral.partes.autor || '';
@@ -345,7 +360,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                         partes = [autor, reu].filter(Boolean).join(' × ');
                       }
                     } catch (e) {
-                      console.log('Error parsing processo data');
                     }
                   }
 
@@ -392,7 +406,9 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                     {(() => {
                       if (selectedProcesso.visao_geral_processo) {
                         try {
-                          const visaoGeral = JSON.parse(selectedProcesso.visao_geral_processo);
+                          const visaoGeral = typeof selectedProcesso.visao_geral_processo === 'string'
+                            ? JSON.parse(selectedProcesso.visao_geral_processo)
+                            : selectedProcesso.visao_geral_processo;
                           return visaoGeral.numero_processo || selectedProcesso.file_name;
                         } catch (e) {
                           return selectedProcesso.file_name;
@@ -404,7 +420,9 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                   {(() => {
                     if (selectedProcesso.visao_geral_processo) {
                       try {
-                        const visaoGeral = JSON.parse(selectedProcesso.visao_geral_processo);
+                        const visaoGeral = typeof selectedProcesso.visao_geral_processo === 'string'
+                          ? JSON.parse(selectedProcesso.visao_geral_processo)
+                          : selectedProcesso.visao_geral_processo;
                         if (visaoGeral.partes) {
                           const autor = visaoGeral.partes.autor || '';
                           const reu = visaoGeral.partes.reu || '';
