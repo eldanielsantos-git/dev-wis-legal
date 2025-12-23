@@ -35,7 +35,11 @@ export const DatePickerField: React.FC<DatePickerFieldProps> = ({
           disabled={disabled}
           className={cn(
             "w-full justify-start text-left font-normal",
-            !value && "text-muted-foreground",
+            "!bg-white dark:!bg-zinc-900",
+            "!text-gray-900 dark:!text-white",
+            "!border-gray-300 dark:!border-zinc-700",
+            "hover:!bg-gray-50 dark:hover:!bg-zinc-800",
+            !value && "!text-gray-500 dark:!text-gray-400",
             className
           )}
         >
