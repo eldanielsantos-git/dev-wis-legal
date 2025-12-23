@@ -23,13 +23,10 @@ export function LoadingSpinner({ size = 'md', color }: LoadingSpinnerProps = {})
       className="min-h-screen flex items-center justify-center"
       style={{ backgroundColor: colors.bgPrimary }}
     >
-      <div className="text-center">
-        <Loader
-          className={`${sizeClasses[size]} mx-auto mb-4 animate-spin`}
-          style={{ color: color || colors.textPrimary }}
-        />
-        <p style={{ color: colors.textSecondary }}>Carregando...</p>
-      </div>
+      <Loader
+        className={`${sizeClasses[size]} animate-spin`}
+        style={{ color: color || colors.textPrimary }}
+      />
     </div>
   );
 }
