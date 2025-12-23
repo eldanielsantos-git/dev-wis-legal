@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Calendar as CalendarIcon, Filter, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Filter, Clock, CheckCircle, XCircle, AlertCircle, Loader } from 'lucide-react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { ProcessCalendar } from '../components/ProcessCalendar';
 import { CreateDeadlineModal } from '../components/CreateDeadlineModal';
 import { EditDeadlineModal } from '../components/EditDeadlineModal';
 import { DeadlineBadge } from '../components/DeadlineBadge';
-import { LoadingSpinner } from '../components/LoadingSpinner';
 import { CustomSelect } from '../components/CustomSelect';
 import { processDeadlinesService } from '../services/ProcessDeadlinesService';
 import { ProcessosService } from '../services/ProcessosService';
@@ -49,7 +48,7 @@ interface SchedulePageProps {
   onNavigateToCookies?: () => void;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
+export function SchedulePage({
   onNavigateToAdmin,
   onNavigateToApp,
   onNavigateToMyProcess,
@@ -64,7 +63,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
   onNavigateToTerms,
   onNavigateToPrivacy,
   onNavigateToCookies
-}) => {
+}: SchedulePageProps) {
   const { isAdmin } = useAuth();
   const { theme } = useTheme();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
@@ -191,10 +190,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
 
   const selectedDateDeadlines = getSelectedDateDeadlines();
 
-  if (isLoading) {
-    return <LoadingSpinner />;
-  }
-
   return (
     <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
       <SidebarWis
@@ -216,7 +211,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
         activePage="schedule"
       />
       <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto relative">
+          {isLoading && (
+            <div className="absolute inset-0 flex items-center justify-center z-10" style={{ backgroundColor: `${colors.bgPrimary}CC` }}>
+              <Loader className="w-8 h-8 animate-spin" style={{ color: colors.textPrimary }} />
+            </div>
+          )}
           <div className="mb-8 sm:mb-10 lg:mb-12">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
               <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textPrimary }} />
@@ -416,4 +416,4 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
       />
     </div>
   );
-});
+}
