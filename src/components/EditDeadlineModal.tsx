@@ -158,16 +158,30 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             </h2>
             <DeadlineBadge status={deadline.status} size="sm" />
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg transition-colors"
-            style={{ color: colors.textPrimary }}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            aria-label="Fechar"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: colors.textSecondary }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              aria-label="Excluir prazo"
+              title="Excluir prazo"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+            <button
+              onClick={onClose}
+              className="p-2 rounded-lg transition-colors"
+              style={{ color: colors.textPrimary }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              aria-label="Fechar"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
@@ -317,60 +331,6 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             />
           </div>
 
-          {showDeleteConfirm ? (
-            <div className="rounded-lg p-4" style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca' }}>
-              <p className="mb-3" style={{ color: '#991b1b' }}>
-                Tem certeza que deseja excluir este prazo? Esta ação não pode ser desfeita.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium text-sm"
-                  style={{
-                    border: `1px solid ${colors.border}`,
-                    color: colors.textPrimary,
-                    backgroundColor: 'transparent'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={isDeleting}
-                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    backgroundColor: '#dc2626',
-                    color: '#ffffff'
-                  }}
-                  onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = '#b91c1c')}
-                  onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = '#dc2626')}
-                >
-                  {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowDeleteConfirm(true)}
-              className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-              style={{
-                border: '1px solid #fca5a5',
-                color: '#dc2626',
-                backgroundColor: 'transparent'
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              <Trash2 className="w-4 h-4" />
-              Excluir Prazo
-            </button>
-          )}
-
           <div className="flex gap-3 pt-2">
             <button
               type="button"
@@ -402,6 +362,49 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
         </form>
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="rounded-lg shadow-xl max-w-md w-full mx-4 p-6" style={{ backgroundColor: colors.bgSecondary }}>
+            <h3 className="text-lg font-bold mb-3" style={{ color: colors.textPrimary }}>
+              Confirmar Exclusão
+            </h3>
+            <p className="mb-6" style={{ color: colors.textSecondary }}>
+              Tem certeza que deseja excluir este prazo? Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium text-sm"
+                style={{
+                  border: `1px solid ${colors.border}`,
+                  color: colors.textPrimary,
+                  backgroundColor: 'transparent'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{
+                  backgroundColor: '#dc2626',
+                  color: '#ffffff'
+                }}
+                onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = '#b91c1c')}
+                onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = '#dc2626')}
+              >
+                {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
