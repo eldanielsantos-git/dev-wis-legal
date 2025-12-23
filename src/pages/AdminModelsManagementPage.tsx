@@ -13,6 +13,7 @@ interface AdminModelsManagementPageProps {
   onNavigateToMyProcess?: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -28,6 +29,7 @@ export function AdminModelsManagementPage({
   onNavigateToMyProcess,
   onNavigateToChat,
   onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToTerms,
@@ -54,6 +56,7 @@ export function AdminModelsManagementPage({
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToTerms={onNavigateToTerms}

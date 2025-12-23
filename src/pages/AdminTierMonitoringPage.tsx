@@ -45,6 +45,7 @@ interface AdminTierMonitoringPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToSettings?: () => void;
   onNavigateToProfile?: () => void;
@@ -58,6 +59,7 @@ export function AdminTierMonitoringPage({
   onNavigateToMyProcess,
   onNavigateToChat,
   onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToAdmin,
   onNavigateToSettings,
   onNavigateToProfile,
@@ -190,6 +192,7 @@ export function AdminTierMonitoringPage({
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}

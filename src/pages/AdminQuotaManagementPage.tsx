@@ -59,6 +59,7 @@ interface AdminQuotaManagementPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -66,7 +67,7 @@ interface AdminQuotaManagementPageProps {
   onNavigateToCookies?: () => void;
 }
 
-export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminQuotaManagementPageProps) {
+export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToSchedule, onNavigateToAdmin, onNavigateToProfile, onNavigateToTerms, onNavigateToPrivacy, onNavigateToCookies }: AdminQuotaManagementPageProps) {
   const { user } = useAuth();
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -382,6 +383,7 @@ export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProces
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
           onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {

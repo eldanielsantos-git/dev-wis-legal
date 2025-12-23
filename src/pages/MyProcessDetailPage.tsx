@@ -33,6 +33,7 @@ interface MyProcessDetailPageProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: (processoId?: string) => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToTerms?: () => void;
@@ -72,6 +73,7 @@ function MyProcessDetailPageInner({
   onNavigateToApp,
   onNavigateToMyProcess,
   onNavigateToChat, onNavigateToWorkspace,
+  onNavigateToSchedule,
   onNavigateToAdmin,
   onNavigateToProfile,
   onNavigateToTerms,
@@ -749,6 +751,7 @@ function MyProcessDetailPageInner({
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
           onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToProfile={onNavigateToProfile}
         onNavigateToSettings={() => {
