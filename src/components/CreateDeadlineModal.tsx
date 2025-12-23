@@ -176,7 +176,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" style={{ backgroundColor: colors.bgSecondary }}>
+      <div className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="sticky top-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
             Novo Prazo
@@ -193,7 +193,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
           <div className="relative">
             <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
               <Search className="w-4 h-4 inline mr-2" />
@@ -223,8 +223,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
             {showResults && searchResults.length > 0 && (
               <div
-                className="absolute z-10 w-full mt-1 rounded-lg shadow-lg max-h-60 overflow-y-auto"
-                style={{ backgroundColor: colors.bgPrimary, border: `1px solid ${colors.border}` }}
+                className="absolute w-full mt-1 rounded-lg shadow-lg max-h-60 overflow-y-auto"
+                style={{
+                  backgroundColor: colors.bgPrimary,
+                  border: `1px solid ${colors.border}`,
+                  zIndex: 9999
+                }}
               >
                 {searchResults.map(processo => (
                   <div
