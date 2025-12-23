@@ -88,6 +88,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       setIsSearching(true);
       try {
         const processos = await ProcessosService.getAllProcessos();
+        console.log('Total processos:', processos.length);
         const filtered = processos.filter(p => {
           const query = searchQuery.toLowerCase();
           return (
@@ -97,9 +98,18 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           );
         }).slice(0, 10);
 
+        console.log('Search query:', searchQuery);
         console.log('Filtered processos:', filtered.length);
+        console.log('Will show results:', filtered.length > 0);
         setSearchResults(filtered);
-        setShowResults(filtered.length > 0);
+        if (filtered.length > 0) {
+          setTimeout(() => {
+            updateDropdownPosition();
+            setShowResults(true);
+          }, 0);
+        } else {
+          setShowResults(false);
+        }
       } catch (error) {
         console.error('Error searching processos:', error);
       } finally {
@@ -221,38 +231,50 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       const inputElement = searchContainerRef.current.querySelector('input');
       if (inputElement) {
         const inputRect = inputElement.getBoundingClientRect();
-        setDropdownPosition({
+        const newPosition = {
           top: inputRect.bottom + 8,
           left: inputRect.left,
           width: inputRect.width
-        });
+        };
+        console.log('Dropdown position:', newPosition);
+        setDropdownPosition(newPosition);
       }
     }
   };
 
+  console.log('Render - showResults:', showResults, 'searchResults:', searchResults.length, 'dropdownPosition:', dropdownPosition);
+
   return (
     <>
-      {showResults && searchResults.length > 0 && (
+      {showResults && searchResults.length > 0 && dropdownPosition.width > 0 && (
         <div
-          className="fixed rounded-lg border bg-popover shadow-lg max-h-60 overflow-y-auto"
+          className="fixed rounded-lg border shadow-xl max-h-60 overflow-y-auto"
           style={{
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
-            zIndex: 9999
+            zIndex: 9999,
+            backgroundColor: colors.bgSecondary,
+            borderColor: colors.border
           }}
         >
           {searchResults.map(processo => (
             <div
               key={processo.id}
               onClick={() => handleSelectProcesso(processo)}
-              className="px-4 py-3 cursor-pointer transition-colors hover:bg-accent border-b last:border-b-0"
+              className="px-4 py-3 cursor-pointer transition-colors border-b last:border-b-0"
+              style={{
+                borderColor: colors.border,
+                color: colors.textPrimary
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              <div className="font-medium text-foreground">
+              <div className="font-medium">
                 {processo.numero_processo || processo.nome_processo}
               </div>
               {processo.partes && (
-                <div className="text-sm mt-1 text-muted-foreground">
+                <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
                   {processo.partes}
                 </div>
               )}
