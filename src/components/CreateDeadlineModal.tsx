@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
 import { Calendar } from './ui/calendar';
+import { TimePicker } from './ui/time-picker';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -135,6 +136,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
       if (!formData.deadline_date) {
         showToast('Por favor, informe a data do prazo', 'error');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.deadline_time) {
+        showToast('Por favor, informe o horário do prazo', 'error');
         setIsSubmitting(false);
         return;
       }
@@ -348,12 +355,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
                 <Clock className="w-4 h-4 inline mr-2" />
-                Hora (Opcional)
+                Hora *
               </label>
-              <Input
-                type="time"
+              <TimePicker
                 value={formData.deadline_time}
-                onChange={(e) => handleChange('deadline_time', e.target.value)}
+                onChange={(time) => handleChange('deadline_time', time)}
+                required
               />
             </div>
           </div>
