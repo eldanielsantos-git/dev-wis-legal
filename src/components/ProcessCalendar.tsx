@@ -80,7 +80,14 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
 
       if (dayNumber < 1 || dayNumber > daysInMonth) {
         days.push(
-          <div key={i} className="aspect-square p-2" />
+          <div
+            key={i}
+            className="aspect-square p-2"
+            style={{
+              borderRight: `1px solid ${colors.border}20`,
+              borderBottom: `1px solid ${colors.border}20`
+            }}
+          />
         );
       } else {
         const date = new Date(
@@ -97,7 +104,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
             key={i}
             onClick={() => onDateSelect(date)}
             className={`
-              aspect-square p-2 rounded-lg text-sm font-medium transition-all
+              aspect-square p-2 text-sm font-medium transition-all
               ${dayDeadlines.length > 0 ? 'font-bold' : ''}
             `}
             style={{
@@ -110,7 +117,13 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
                 ? '#ffffff'
                 : isSelected(date)
                   ? colors.accent
-                  : colors.textPrimary
+                  : colors.textPrimary,
+              borderTop: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
+              borderLeft: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
+              borderRight: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
+              borderBottom: isToday(date) ? `2px solid ${colors.accent}` : `1px solid ${colors.border}20`,
+              borderRadius: isToday(date) ? '8px' : '0',
+              margin: isToday(date) ? '2px' : '0'
             }}
             onMouseEnter={(e) => {
               if (!isToday(date) && !isSelected(date)) {
@@ -202,19 +215,23 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
         </div>
       </div>
 
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 mb-2">
         {weekDays.map(day => (
           <div
             key={day}
             className="text-center text-sm font-semibold py-2"
-            style={{ color: colors.textSecondary }}
+            style={{
+              color: colors.textSecondary,
+              borderRight: `1px solid ${colors.border}20`,
+              borderBottom: `1px solid ${colors.border}30`
+            }}
           >
             {day}
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7">
         {renderCalendarDays()}
       </div>
 
