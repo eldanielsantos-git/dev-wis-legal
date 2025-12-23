@@ -136,7 +136,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <FileText className="w-4 h-4 inline mr-2" />
+              <FileText className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
               Assunto do Prazo *
             </label>
             <input
@@ -153,7 +153,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar className="w-4 h-4 inline mr-2" />
+                <Calendar className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
                 Data do Prazo *
               </label>
               <input
@@ -167,7 +167,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Clock className="w-4 h-4 inline mr-2" />
+                <Clock className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
                 Hora (Opcional)
               </label>
               <input
@@ -181,7 +181,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Tag className="w-4 h-4 inline mr-2" />
+              <Tag className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
               Categoria (Opcional)
             </label>
             <select
@@ -198,7 +198,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Users className="w-4 h-4 inline mr-2" />
+              <Users className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
               Parte Relacionada
             </label>
             <select

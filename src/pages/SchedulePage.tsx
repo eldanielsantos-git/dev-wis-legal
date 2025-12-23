@@ -338,7 +338,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
                         <div className="flex items-center gap-4 text-sm" style={{ color: colors.textSecondary }}>
                           {deadline.deadline_time && (
                             <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
+                              <Clock className="w-4 h-4" style={{ color: colors.textSecondary }} />
                               {formatTime(deadline.deadline_time)}
                             </div>
                           )}

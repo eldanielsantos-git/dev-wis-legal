@@ -204,18 +204,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       const result = await processDeadlinesService.createDeadline(deadlineData);
       console.log('Deadline created successfully:', result);
 
-      console.log('About to call showToast...');
-      console.log('showToast is:', typeof showToast);
       showToast('Prazo criado com sucesso!', 'success');
 
-      console.log('About to call onDeadlineCreated...');
-      console.log('onDeadlineCreated is:', typeof onDeadlineCreated);
       if (typeof onDeadlineCreated === 'function') {
-        onDeadlineCreated();
+        await onDeadlineCreated();
       }
 
-      console.log('About to call onClose...');
-      console.log('onClose is:', typeof onClose);
       if (typeof onClose === 'function') {
         onClose();
       }
@@ -316,7 +310,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
           <div className="relative" ref={searchContainerRef}>
             <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              <Search className="w-4 h-4 inline mr-2" />
+              <Search className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Buscar Processo *
             </label>
             <div className="relative">
@@ -462,7 +456,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              <FileText className="w-4 h-4 inline mr-2" />
+              <FileText className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Assunto do Prazo *
             </label>
             <Input
@@ -478,7 +472,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                <CalendarIcon className="w-4 h-4 inline mr-2" />
+                <CalendarIcon className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
                 Data do Prazo *
               </label>
               <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
@@ -502,10 +496,13 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 <PopoverContent className="w-auto p-0" align="start">
                   <Calendar
                     mode="single"
-                    selected={formData.deadline_date ? new Date(formData.deadline_date) : undefined}
+                    selected={formData.deadline_date ? new Date(formData.deadline_date + 'T00:00:00') : undefined}
                     onSelect={(date) => {
                       if (date) {
-                        handleChange('deadline_date', format(date, 'yyyy-MM-dd'));
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        handleChange('deadline_date', `${year}-${month}-${day}`);
                         setDatePickerOpen(false);
                       }
                     }}
@@ -516,7 +513,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                <Clock className="w-4 h-4 inline mr-2" />
+                <Clock className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
                 Hora *
               </label>
               <TimePicker
@@ -529,7 +526,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              <Tag className="w-4 h-4 inline mr-2" />
+              <Tag className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Categoria (Opcional)
             </label>
             <Select
@@ -549,7 +546,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-              <Users className="w-4 h-4 inline mr-2" />
+              <Users className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Parte Relacionada
             </label>
             <Select
@@ -577,7 +574,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               className="flex min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
               rows={3}
               placeholder="Adicione observações sobre este prazo..."
-              maxLength={500}
+              maxLength={250}
             />
           </div>
 
