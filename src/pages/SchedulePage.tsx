@@ -176,10 +176,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
       <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
         <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto">
           <div className="mb-8 sm:mb-10 lg:mb-12">
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-title font-normal mb-3 sm:mb-4" style={{ color: colors.textPrimary }}>
-              Agenda de Processos
-            </h1>
-            <p className="text-base sm:text-lg" style={{ color: colors.textSecondary }}>
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
+              <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textPrimary }} />
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-title font-normal" style={{ color: colors.textPrimary }}>
+                Agenda de Processos
+              </h1>
+            </div>
+            <p className="text-sm sm:text-base font-body text-center" style={{ color: colors.textSecondary }}>
               Gerencie prazos e compromissos dos seus processos
             </p>
           </div>
