@@ -191,10 +191,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({
             <button
               onClick={() => setIsCreateModalOpen(true)}
               className="rounded-xl shadow-sm p-4 transition-all hover:opacity-80 cursor-pointer flex flex-col items-center justify-center"
-              style={{ backgroundColor: colors.accent }}
+              style={{ backgroundColor: colors.bgSecondary }}
             >
-              <Plus className="w-8 h-8 text-white mb-2" />
-              <span className="text-sm font-medium text-white text-center">Criar Prazo</span>
+              <Plus className="w-8 h-8 mb-2" style={{ color: colors.accent }} />
+              <span className="text-sm font-medium text-center" style={{ color: colors.textPrimary }}>Criar Prazo</span>
             </button>
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
