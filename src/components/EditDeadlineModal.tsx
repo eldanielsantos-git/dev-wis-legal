@@ -1,9 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Calendar, Clock, FileText, Tag, Users, Trash2 } from 'lucide-react';
 import { processDeadlinesService, UpdateDeadlineInput } from '../services/ProcessDeadlinesService';
 import { ProcessDeadline, DeadlineCategory, DeadlinePartyType, DeadlineStatus } from '../types/analysis';
 import { DeadlineBadge } from './DeadlineBadge';
 import { useToast } from '../hooks/useToast';
+import { useTheme } from '../contexts/ThemeContext';
+import { getThemeColors } from '../utils/themeUtils';
+import { ProcessosService } from '../services/ProcessosService';
+import type { Processo } from '../lib/supabase';
+import { Input } from './ui/input';
 import { DatePickerField } from './ui/date-picker-field';
 import { DropdownField } from './ui/dropdown-field';
 import { TimePicker } from './ui/time-picker';
@@ -36,9 +41,12 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   onDeadlineDeleted
 }) => {
   const { showToast } = useToast();
+  const { theme } = useTheme();
+  const colors = useMemo(() => getThemeColors(theme), [theme]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [processo, setProcesso] = useState<Processo | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<UpdateDeadlineInput>({
@@ -61,6 +69,12 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
         party_type: deadline.party_type,
         status: deadline.status,
         notes: deadline.notes || ''
+      });
+
+      ProcessosService.getProcessoById(deadline.processo_id).then(proc => {
+        if (proc) {
+          setProcesso(proc);
+        }
       });
     }
   }, [deadline]);
@@ -136,34 +150,70 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div ref={modalRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
+      <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
+        <div className="sticky top-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
               Editar Prazo
             </h2>
             <DeadlineBadge status={deadline.status} size="sm" />
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors"
+            style={{ color: colors.textPrimary }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             aria-label="Fechar"
           >
             <X className="w-6 h-6" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 overflow-y-auto">
+          {processo && (
+            <div>
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                <FileText className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
+                Processo Associado
+              </label>
+              <div
+                className="p-3 rounded-lg"
+                style={{ backgroundColor: colors.bgPrimary, border: `1px solid ${colors.accent}20` }}
+              >
+                <div className="font-medium" style={{ color: colors.textPrimary }}>
+                  {processo.file_name}
+                </div>
+                {(() => {
+                  if (processo.visao_geral_processo) {
+                    try {
+                      const visaoGeral = typeof processo.visao_geral_processo === 'string'
+                        ? JSON.parse(processo.visao_geral_processo)
+                        : processo.visao_geral_processo;
+                      if (visaoGeral.numero_processo) {
+                        return (
+                          <div className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+                            {visaoGeral.numero_processo}
+                          </div>
+                        );
+                      }
+                    } catch (e) {}
+                  }
+                  return null;
+                })()}
+              </div>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <FileText className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+              <FileText className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Assunto do Prazo *
             </label>
-            <input
+            <Input
               type="text"
               value={formData.subject}
               onChange={(e) => handleChange('subject', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               placeholder="Ex: Prazo para contestação"
               required
               maxLength={200}
@@ -172,8 +222,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                <Calendar className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
                 Data do Prazo *
               </label>
               <DatePickerField
@@ -185,8 +235,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Clock className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
+              <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+                <Clock className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
                 Hora (Opcional)
               </label>
               <TimePicker
@@ -197,8 +247,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Tag className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+              <Tag className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Categoria (Opcional)
             </label>
             <DropdownField
@@ -211,8 +261,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Users className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
+              <Users className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Parte Relacionada
             </label>
             <DropdownField
@@ -228,7 +278,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
               Status
             </label>
             <DropdownField
@@ -244,13 +294,23 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Observações (Opcional)
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium" style={{ color: colors.textSecondary }}>
+                Observações (Opcional)
+              </label>
+              <span
+                className="text-xs"
+                style={{
+                  color: (formData.notes?.length || 0) >= 500 ? '#ef4444' : colors.textSecondary
+                }}
+              >
+                {formData.notes?.length || 0}/500
+              </span>
+            </div>
             <textarea
               value={formData.notes}
               onChange={(e) => handleChange('notes', e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="flex min-h-[80px] w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm shadow-black/5 transition-shadow placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/20 disabled:cursor-not-allowed disabled:opacity-50"
               rows={3}
               placeholder="Adicione observações sobre este prazo..."
               maxLength={500}
@@ -258,15 +318,22 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
 
           {showDeleteConfirm ? (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <p className="text-red-800 dark:text-red-300 mb-3">
+            <div className="rounded-lg p-4" style={{ backgroundColor: '#fee2e2', border: '1px solid #fecaca' }}>
+              <p className="mb-3" style={{ color: '#991b1b' }}>
                 Tem certeza que deseja excluir este prazo? Esta ação não pode ser desfeita.
               </p>
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium"
+                  style={{
+                    border: `1px solid ${colors.border}`,
+                    color: colors.textPrimary,
+                    backgroundColor: 'transparent'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 >
                   Cancelar
                 </button>
@@ -274,7 +341,13 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
                   type="button"
                   onClick={handleDelete}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 px-4 py-2 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: '#dc2626',
+                    color: '#ffffff'
+                  }}
+                  onMouseEnter={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = '#b91c1c')}
+                  onMouseLeave={(e) => !isDeleting && (e.currentTarget.style.backgroundColor = '#dc2626')}
                 >
                   {isDeleting ? 'Excluindo...' : 'Confirmar Exclusão'}
                 </button>
@@ -284,7 +357,14 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             <button
               type="button"
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full px-4 py-2 border border-red-300 dark:border-red-700 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2"
+              className="w-full px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 font-medium"
+              style={{
+                border: '1px solid #fca5a5',
+                color: '#dc2626',
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               <Trash2 className="w-4 h-4" />
               Excluir Prazo
@@ -295,14 +375,27 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium"
+              className="flex-1 px-6 py-3 rounded-lg transition-colors font-medium"
+              style={{
+                border: `1px solid ${colors.border}`,
+                color: colors.textPrimary,
+                backgroundColor: 'transparent'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.bgPrimary}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+              className="flex-1 px-6 py-3 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: '#000000',
+                color: '#ffffff'
+              }}
+              onMouseEnter={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = '#1a1a1a')}
+              onMouseLeave={(e) => !isSubmitting && (e.currentTarget.style.backgroundColor = '#000000')}
             >
               {isSubmitting ? 'Salvando...' : 'Salvar Alterações'}
             </button>
