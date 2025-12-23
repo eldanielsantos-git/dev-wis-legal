@@ -179,6 +179,7 @@ function AppContent() {
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -201,6 +202,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={(processoId) => navigate(processoId ? `/chat/${processoId}` : '/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToNotifications={() => navigate('/notifications')}
@@ -227,6 +229,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToNotifications={() => navigate('/notifications')}
@@ -267,6 +270,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -284,6 +288,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
@@ -300,6 +305,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToSettings={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -316,6 +322,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -332,6 +339,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -348,6 +356,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/my-processes')}
         onNavigateToChat={() => navigate('/chat-processo')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-users')}
         onNavigateToSettings={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
@@ -365,6 +374,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToSettings={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
@@ -390,6 +400,7 @@ function AppContent() {
           onNavigateToMyProcess={() => navigate('/lawsuits')}
           onNavigateToChat={() => navigate('/chat')}
           onNavigateToWorkspace={() => navigate('/workspace')}
+          onNavigateToSchedule={() => navigate('/schedule')}
           onNavigateToAdmin={() => navigate('/admin-settings')}
           onNavigateToSettings={() => navigate('/admin-settings')}
           onNavigateToProfile={() => navigate('/profile')}
@@ -408,6 +419,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToSettings={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
@@ -433,6 +445,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -449,6 +462,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -465,6 +479,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -481,6 +496,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
@@ -497,6 +513,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/profile#admin')}
         onNavigateToSettings={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
