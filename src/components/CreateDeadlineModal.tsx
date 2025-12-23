@@ -54,6 +54,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
     processo_id: processoId || '',
@@ -120,6 +121,18 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (showResults) {
+      updateDropdownPosition();
+      window.addEventListener('scroll', updateDropdownPosition, true);
+      window.addEventListener('resize', updateDropdownPosition);
+      return () => {
+        window.removeEventListener('scroll', updateDropdownPosition, true);
+        window.removeEventListener('resize', updateDropdownPosition);
+      };
+    }
+  }, [showResults]);
 
   if (!isOpen) return null;
 
@@ -202,8 +215,53 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     }
   };
 
+  const updateDropdownPosition = () => {
+    if (searchContainerRef.current) {
+      const rect = searchContainerRef.current.getBoundingClientRect();
+      const inputElement = searchContainerRef.current.querySelector('input');
+      if (inputElement) {
+        const inputRect = inputElement.getBoundingClientRect();
+        setDropdownPosition({
+          top: inputRect.bottom + 8,
+          left: inputRect.left,
+          width: inputRect.width
+        });
+      }
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <>
+      {showResults && searchResults.length > 0 && (
+        <div
+          className="fixed rounded-lg border bg-popover shadow-lg max-h-60 overflow-y-auto"
+          style={{
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            zIndex: 9999
+          }}
+        >
+          {searchResults.map(processo => (
+            <div
+              key={processo.id}
+              onClick={() => handleSelectProcesso(processo)}
+              className="px-4 py-3 cursor-pointer transition-colors hover:bg-accent border-b last:border-b-0"
+            >
+              <div className="font-medium text-foreground">
+                {processo.numero_processo || processo.nome_processo}
+              </div>
+              {processo.partes && (
+                <div className="text-sm mt-1 text-muted-foreground">
+                  {processo.partes}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="sticky top-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
@@ -233,6 +291,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 value={searchQuery}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => {
+                  updateDropdownPosition();
                   if (searchResults.length > 0) {
                     console.log('Focus - showing results:', searchResults.length);
                     setShowResults(true);
@@ -249,26 +308,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               )}
             </div>
 
-            {showResults && searchResults.length > 0 && (
-              <div className="absolute w-full mt-2 rounded-lg border bg-popover shadow-lg max-h-60 overflow-y-auto z-[10000]">
-                {searchResults.map(processo => (
-                  <div
-                    key={processo.id}
-                    onClick={() => handleSelectProcesso(processo)}
-                    className="px-4 py-3 cursor-pointer transition-colors hover:bg-accent border-b last:border-b-0"
-                  >
-                    <div className="font-medium text-foreground">
-                      {processo.numero_processo || processo.nome_processo}
-                    </div>
-                    {processo.partes && (
-                      <div className="text-sm mt-1 text-muted-foreground">
-                        {processo.partes}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
 
             {selectedProcesso && (
               <div
@@ -451,5 +490,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         </form>
       </div>
     </div>
+    </>
   );
 };
