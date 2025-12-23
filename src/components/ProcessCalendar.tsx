@@ -3,21 +3,35 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-reac
 import { ProcessDeadline } from '../types/analysis';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+import { DatePopover } from './DatePopover';
 
 interface ProcessCalendarProps {
   deadlines: ProcessDeadline[];
   selectedDate: Date | null;
   onDateSelect: (date: Date) => void;
+  onViewDeadline?: (deadline: ProcessDeadline) => void;
+  onCreateDeadline?: (date?: Date) => void;
 }
 
 export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
   deadlines,
   selectedDate,
-  onDateSelect
+  onDateSelect,
+  onViewDeadline,
+  onCreateDeadline
 }) => {
   const { theme } = useTheme();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [popoverState, setPopoverState] = useState<{
+    isOpen: boolean;
+    date: Date | null;
+    position: { x: number; y: number };
+  }>({
+    isOpen: false,
+    date: null,
+    position: { x: 0, y: 0 }
+  });
 
   const daysInMonth = new Date(
     currentMonth.getFullYear(),
@@ -71,6 +85,46 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
            date.getFullYear() === selectedDate.getFullYear();
   };
 
+  const handleDateClick = (date: Date, event: React.MouseEvent<HTMLButtonElement>) => {
+    onDateSelect(date);
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    let x = rect.left + rect.width / 2;
+    let y = rect.bottom + 8;
+
+    const popoverWidth = 320;
+    const popoverHeight = 300;
+
+    if (x + popoverWidth / 2 > viewportWidth) {
+      x = viewportWidth - popoverWidth - 16;
+    } else if (x - popoverWidth / 2 < 0) {
+      x = 16;
+    } else {
+      x = x - popoverWidth / 2;
+    }
+
+    if (y + popoverHeight > viewportHeight) {
+      y = rect.top - popoverHeight - 8;
+    }
+
+    setPopoverState({
+      isOpen: true,
+      date,
+      position: { x, y }
+    });
+  };
+
+  const handleClosePopover = () => {
+    setPopoverState({
+      isOpen: false,
+      date: null,
+      position: { x: 0, y: 0 }
+    });
+  };
+
   const renderCalendarDays = () => {
     const days = [];
     const totalCells = Math.ceil((firstDayOfMonth + daysInMonth) / 7) * 7;
@@ -119,7 +173,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
       days.push(
         <button
           key={i}
-          onClick={() => onDateSelect(date)}
+          onClick={(e) => handleDateClick(date, e)}
           className={`
             aspect-square p-2 text-sm font-medium transition-all
             ${dayDeadlines.length > 0 ? 'font-bold' : ''}
@@ -268,6 +322,25 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           </div>
         </div>
       </div>
+
+      {popoverState.isOpen && popoverState.date && (
+        <DatePopover
+          date={popoverState.date}
+          deadlines={getDeadlinesForDate(popoverState.date)}
+          position={popoverState.position}
+          onClose={handleClosePopover}
+          onViewDeadline={(deadline) => {
+            if (onViewDeadline) {
+              onViewDeadline(deadline);
+            }
+          }}
+          onCreateDeadline={() => {
+            if (onCreateDeadline) {
+              onCreateDeadline(popoverState.date || undefined);
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

@@ -297,6 +297,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
               deadlines={deadlines}
               selectedDate={selectedDate}
               onDateSelect={setSelectedDate}
+              onViewDeadline={handleEditDeadline}
+              onCreateDeadline={(date) => {
+                if (date) {
+                  setSelectedDate(date);
+                }
+                setIsCreateModalOpen(true);
+              }}
             />
           </div>
 
