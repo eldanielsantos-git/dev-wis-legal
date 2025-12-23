@@ -84,6 +84,10 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         return;
       }
 
+      if (selectedProcesso) {
+        return;
+      }
+
       setIsSearching(true);
       try {
         const processos = await ProcessosService.getAllProcessos();
@@ -129,7 +133,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
     const debounce = setTimeout(searchProcessos, 300);
     return () => clearTimeout(debounce);
-  }, [searchQuery]);
+  }, [searchQuery, selectedProcesso]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
