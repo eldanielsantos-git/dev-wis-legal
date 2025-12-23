@@ -46,3 +46,40 @@ export interface ErrorState {
   message: string;
   details?: any;
 }
+
+export type DeadlineCategory =
+  | 'Audiência'
+  | 'Recurso'
+  | 'Contestação'
+  | 'Petição'
+  | 'Réplica'
+  | 'Prazo de Defesa'
+  | 'Prazo de Apelação'
+  | 'Prazo de Manifestação'
+  | 'Outro';
+
+export type DeadlinePartyType = 'accusation' | 'defendant' | 'both';
+export type DeadlineSourceType = 'auto' | 'manual';
+export type DeadlineStatus = 'pending' | 'completed' | 'expired';
+
+export interface ProcessDeadline {
+  id: string;
+  processo_id: string;
+  user_id: string;
+  deadline_date: string;
+  deadline_time?: string;
+  subject: string;
+  category?: DeadlineCategory;
+  party_type: DeadlinePartyType;
+  source_type: DeadlineSourceType;
+  analysis_result_id?: string;
+  status: DeadlineStatus;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeadlineWithProcesso extends ProcessDeadline {
+  processo_titulo?: string;
+  processo_numero?: string;
+}

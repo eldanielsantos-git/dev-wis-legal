@@ -43,6 +43,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { NotificationsPage } from './pages/NotificationsPage';
 import { SubscriptionPage } from './pages/SubscriptionPage';
 import { TokensPage } from './pages/TokensPage';
+import { SchedulePage } from './pages/SchedulePage';
 import { ChatPage } from './pages/ChatPage';
 import { ChatProcessSelectionPage } from './pages/ChatProcessSelectionPage';
 import { WorkspacePage } from './pages/WorkspacePage';
@@ -594,6 +595,17 @@ function AppContent() {
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
       />
+    );
+  }
+
+  if (currentPath === '/schedule') {
+    return (
+      <RequireEmailVerification
+        onNavigateToSignIn={() => navigate('/sign-in')}
+        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
+      >
+        <SchedulePage />
+      </RequireEmailVerification>
     );
   }
 

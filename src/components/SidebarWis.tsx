@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Plus, FileText, Sun, Moon, Coins, Menu, X, Home, ChevronLeft, ChevronRight, MessageSquare, UserPlus, Users } from 'lucide-react';
+import { Search, Plus, FileText, Sun, Moon, Coins, Menu, X, Home, ChevronLeft, ChevronRight, MessageSquare, UserPlus, Users, Calendar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
@@ -15,6 +15,7 @@ interface SidebarWisProps {
   onNavigateToMyProcess: () => void;
   onNavigateToChat?: () => void;
   onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
   onNavigateToAdmin?: () => void;
   onNavigateToProfile?: () => void;
   onNavigateToSettings?: () => void;
@@ -23,10 +24,10 @@ interface SidebarWisProps {
   onNavigateToSubscription?: () => void;
   onCollapsedChange?: (isCollapsed: boolean) => void;
   onSearchClick?: () => void;
-  activePage?: 'home' | 'myProcesses' | 'chat' | 'workspace' | 'notifications' | 'settings' | 'profile' | 'tokens' | 'subscription';
+  activePage?: 'home' | 'myProcesses' | 'chat' | 'workspace' | 'schedule' | 'notifications' | 'settings' | 'profile' | 'tokens' | 'subscription';
 }
 
-export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToAdmin, onNavigateToProfile, onNavigateToSettings, onNavigateToNotifications, onNavigateToTokens, onNavigateToSubscription, onCollapsedChange, onSearchClick, activePage }: SidebarWisProps) {
+export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateToChat, onNavigateToWorkspace, onNavigateToSchedule, onNavigateToAdmin, onNavigateToProfile, onNavigateToSettings, onNavigateToNotifications, onNavigateToTokens, onNavigateToSubscription, onCollapsedChange, onSearchClick, activePage }: SidebarWisProps) {
   const { profile, isAdmin } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const colors = getThemeColors(theme);
@@ -201,6 +202,20 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
               <Users className="w-5 h-5 flex-shrink-0" />
               <span className="ml-3 text-sm font-medium">Meu workspace</span>
             </button>
+
+            <button
+              onClick={() => {
+                onNavigateToSchedule?.();
+                closeMobileMenu();
+              }}
+              className="w-full flex items-center px-4 py-3 rounded-lg transition-colors"
+              style={getButtonStyle('schedule')}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'schedule' ? activeBg : 'transparent'}
+            >
+              <Calendar className="w-5 h-5 flex-shrink-0" />
+              <span className="ml-3 text-sm font-medium">Agenda</span>
+            </button>
           </div>
 
           <div className="flex-1"></div>
@@ -362,6 +377,18 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
             >
               <Users className="w-5 h-5 max-h-[790px]:w-3 max-h-[790px]:h-3 flex-shrink-0" />
               {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-1 text-sm max-h-[790px]:text-[10px] font-medium">Meu workspace</span>}
+            </button>
+
+            <button
+              onClick={() => onNavigateToSchedule?.()}
+              className={`w-full flex items-center py-3 max-h-[790px]:py-0.5 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-2'}`}
+              style={getButtonStyle('schedule')}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hoverBg}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'schedule' ? activeBg : 'transparent'}
+              title="Agenda"
+            >
+              <Calendar className="w-5 h-5 max-h-[790px]:w-3 max-h-[790px]:h-3 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-1 text-sm max-h-[790px]:text-[10px] font-medium">Agenda</span>}
             </button>
           </div>
 
