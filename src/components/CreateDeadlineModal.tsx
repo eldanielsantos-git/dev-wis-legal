@@ -234,7 +234,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       const result = await processDeadlinesService.createDeadline(deadlineData);
       console.log('Deadline created successfully:', result);
 
-      await onDeadlineCreated();
       showToast('Prazo criado com sucesso!', 'success');
 
       setFormData({
@@ -252,6 +251,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       setShowResults(false);
 
       onClose();
+      setTimeout(() => onDeadlineCreated(), 0);
     } catch (error: any) {
       console.error('=== Error creating deadline ===');
       console.error('Error object:', error);

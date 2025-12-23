@@ -101,9 +101,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
       return;
     }
 
-    if (!forceRefresh) {
-      setIsLoading(true);
-    }
+    setIsLoading(true);
 
     try {
       const [deadlinesData, processosData, statsData] = await Promise.all([
@@ -127,9 +125,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = React.memo(({
       console.error('Error loading schedule data:', error);
       showToast('Erro ao carregar agenda', 'error');
     } finally {
-      if (!forceRefresh) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
