@@ -81,19 +81,42 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
   useEffect(() => {
     const handleModalClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+      const target = event.target as HTMLElement;
+
+      if (showDeleteConfirm) {
+        return;
+      }
+
+      const isPortalClick = target.closest('[role="dialog"]') ||
+                           target.closest('[data-radix-popper-content-wrapper]') ||
+                           target.closest('[data-radix-select-content]') ||
+                           target.closest('[data-radix-popover-content]');
+
+      if (isPortalClick) {
+        return;
+      }
+
+      if (modalRef.current && !modalRef.current.contains(target)) {
+        onClose();
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !showDeleteConfirm) {
         onClose();
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleModalClickOutside);
+      document.addEventListener('keydown', handleEscapeKey);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleModalClickOutside);
+      document.removeEventListener('keydown', handleEscapeKey);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, showDeleteConfirm]);
 
   if (!isOpen || !deadline) return null;
 
