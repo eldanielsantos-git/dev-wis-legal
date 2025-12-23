@@ -9,7 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { supabase } from '../lib/supabase';
-import { Camera, Save, Loader, Trash2, AlertTriangle, ChevronDown, Eye, EyeOff, CheckCircle2, XCircle, User, CreditCard, Settings, LogOut, Trophy, Sliders, Shield } from 'lucide-react';
+import { Camera, Save, Loader, Trash2, AlertTriangle, ChevronDown, Eye, EyeOff, CheckCircle2, XCircle, User, CreditCard, Settings, LogOut, Trophy, Sliders, Shield, Moon, Sun } from 'lucide-react';
 import Select from 'react-select';
 import { brazilianStates, type State } from '../data/brazilianLocations';
 import { UserPreferencesService, type UserPreferences } from '../services/UserPreferencesService';
@@ -1475,7 +1475,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                             }}
                           >
                             <div className="text-center">
-                              <div className="text-2xl mb-2">🌙</div>
+                              <div className="flex justify-center mb-2">
+                                <Moon className="w-8 h-8" style={{ color: colors.textPrimary }} />
+                              </div>
                               <p className="font-medium" style={{ color: colors.textPrimary }}>Escuro</p>
                             </div>
                           </button>
@@ -1490,7 +1492,9 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                             }}
                           >
                             <div className="text-center">
-                              <div className="text-2xl mb-2">☀️</div>
+                              <div className="flex justify-center mb-2">
+                                <Sun className="w-8 h-8" style={{ color: colors.textPrimary }} />
+                              </div>
                               <p className="font-medium" style={{ color: colors.textPrimary }}>Claro</p>
                             </div>
                           </button>
