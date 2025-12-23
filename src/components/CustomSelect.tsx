@@ -61,7 +61,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full border rounded-lg px-4 py-3 pr-10 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 transition-all"
+        className="w-full border rounded-lg px-4 py-3 pr-10 text-left cursor-pointer focus:outline-none transition-all"
         style={{ backgroundColor: colors.card, color: value ? colors.text : colors.textSecondary, borderColor: colors.border }}
       >
         {displayText}
