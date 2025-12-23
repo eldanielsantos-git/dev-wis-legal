@@ -126,20 +126,20 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           `}
           style={{
             backgroundColor: isToday(date)
-              ? colors.accent
+              ? `${colors.accent}20`
               : isSelected(date)
                 ? `${colors.accent}30`
                 : 'transparent',
             color: isToday(date)
-              ? '#ffffff'
+              ? colors.accent
               : isSelected(date)
                 ? colors.accent
                 : colors.textPrimary,
             opacity: isCurrentMonth ? 1 : 0.4,
-            borderTop: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.05)',
-            borderLeft: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.05)',
-            borderRight: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.05)',
-            borderBottom: isToday(date) ? `2px solid ${colors.accent}` : '1px solid rgba(255, 255, 255, 0.05)',
+            borderTop: isToday(date) ? `1px solid ${colors.accent}50` : '1px solid rgba(255, 255, 255, 0.05)',
+            borderLeft: isToday(date) ? `1px solid ${colors.accent}50` : '1px solid rgba(255, 255, 255, 0.05)',
+            borderRight: isToday(date) ? `1px solid ${colors.accent}50` : '1px solid rgba(255, 255, 255, 0.05)',
+            borderBottom: isToday(date) ? `1px solid ${colors.accent}50` : '1px solid rgba(255, 255, 255, 0.05)',
             borderRadius: isToday(date) ? '8px' : '0',
             margin: isToday(date) ? '2px' : '0'
           }}
