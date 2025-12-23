@@ -8,14 +8,9 @@ import { getThemeColors } from '../utils/themeUtils';
 import { ProcessosService } from '../services/ProcessosService';
 import type { Processo } from '../lib/supabase';
 import { Input } from './ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
-import { Button } from './ui/button';
-import { Calendar } from './ui/calendar';
+import { DatePickerField } from './ui/date-picker-field';
+import { DropdownField } from './ui/dropdown-field';
 import { TimePicker } from './ui/time-picker';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 
 interface CreateDeadlineModalProps {
   isOpen: boolean;
@@ -53,8 +48,8 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const [selectedProcesso, setSelectedProcesso] = useState<Processo | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
     processo_id: processoId || '',
@@ -147,6 +142,22 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const handleModalClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleModalClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleModalClickOutside);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -223,7 +234,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       setSelectedProcesso(null);
       setSearchResults([]);
       setShowResults(false);
-      setDatePickerOpen(false);
 
       if (typeof onClose === 'function') {
         onClose();
@@ -292,7 +302,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
+      <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="sticky top-0 px-6 py-4 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <h2 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
             Novo Prazo
@@ -477,40 +487,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 <CalendarIcon className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
                 Data do Prazo *
               </label>
-              <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !formData.deadline_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.deadline_date ? (
-                      format(new Date(formData.deadline_date), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-                    ) : (
-                      <span>Selecione uma data</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.deadline_date ? new Date(formData.deadline_date + 'T00:00:00') : undefined}
-                    onSelect={(date) => {
-                      if (date) {
-                        const year = date.getFullYear();
-                        const month = String(date.getMonth() + 1).padStart(2, '0');
-                        const day = String(date.getDate()).padStart(2, '0');
-                        handleChange('deadline_date', `${year}-${month}-${day}`);
-                        setDatePickerOpen(false);
-                      }
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
+              <DatePickerField
+                value={formData.deadline_date}
+                onChange={(date) => handleChange('deadline_date', date)}
+                placeholder="Selecione uma data"
+                required
+              />
             </div>
 
             <div>
@@ -531,19 +513,13 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               <Tag className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Categoria (Opcional)
             </label>
-            <Select
+            <DropdownField
               value={formData.category || ''}
-              onValueChange={(value) => handleChange('category', value as DeadlineCategory || undefined)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Selecione uma categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                {CATEGORIES.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(value) => handleChange('category', value as DeadlineCategory || undefined)}
+              options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+              placeholder="Selecione uma categoria"
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -551,19 +527,16 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               <Users className="w-4 h-4 inline mr-2" style={{ color: colors.textSecondary }} />
               Parte Relacionada
             </label>
-            <Select
+            <DropdownField
               value={formData.party_type}
-              onValueChange={(value) => handleChange('party_type', value as DeadlinePartyType)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="both">Ambas as Partes</SelectItem>
-                <SelectItem value="accusation">Acusação</SelectItem>
-                <SelectItem value="defendant">Defesa</SelectItem>
-              </SelectContent>
-            </Select>
+              onChange={(value) => handleChange('party_type', value as DeadlinePartyType)}
+              options={[
+                { value: 'both', label: 'Ambas as Partes' },
+                { value: 'accusation', label: 'Acusação' },
+                { value: 'defendant', label: 'Defesa' }
+              ]}
+              className="w-full"
+            />
           </div>
 
           <div>

@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Calendar, Clock, FileText, Tag, Users, Trash2 } from 'lucide-react';
 import { processDeadlinesService, UpdateDeadlineInput } from '../services/ProcessDeadlinesService';
 import { ProcessDeadline, DeadlineCategory, DeadlinePartyType, DeadlineStatus } from '../types/analysis';
 import { DeadlineBadge } from './DeadlineBadge';
 import { useToast } from '../hooks/useToast';
+import { DatePickerField } from './ui/date-picker-field';
+import { DropdownField } from './ui/dropdown-field';
+import { TimePicker } from './ui/time-picker';
 
 interface EditDeadlineModalProps {
   isOpen: boolean;
@@ -36,6 +39,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState<UpdateDeadlineInput>({
     deadline_date: '',
@@ -60,6 +64,22 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
       });
     }
   }, [deadline]);
+
+  useEffect(() => {
+    const handleModalClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('mousedown', handleModalClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleModalClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen || !deadline) return null;
 
@@ -116,7 +136,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div ref={modalRef} className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -156,11 +176,10 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
                 <Calendar className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
                 Data do Prazo *
               </label>
-              <input
-                type="date"
+              <DatePickerField
                 value={formData.deadline_date}
-                onChange={(e) => handleChange('deadline_date', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                onChange={(date) => handleChange('deadline_date', date)}
+                placeholder="Selecione uma data"
                 required
               />
             </div>
@@ -170,11 +189,9 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
                 <Clock className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
                 Hora (Opcional)
               </label>
-              <input
-                type="time"
+              <TimePicker
                 value={formData.deadline_time}
-                onChange={(e) => handleChange('deadline_time', e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                onChange={(time) => handleChange('deadline_time', time)}
               />
             </div>
           </div>
@@ -184,16 +201,13 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
               <Tag className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
               Categoria (Opcional)
             </label>
-            <select
+            <DropdownField
               value={formData.category || ''}
-              onChange={(e) => handleChange('category', e.target.value as DeadlineCategory || undefined)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">Selecione uma categoria</option>
-              {CATEGORIES.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
+              onChange={(value) => handleChange('category', value as DeadlineCategory || undefined)}
+              options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
+              placeholder="Selecione uma categoria"
+              className="w-full"
+            />
           </div>
 
           <div>
@@ -201,30 +215,32 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
               <Users className="w-4 h-4 inline mr-2 text-gray-700 dark:text-gray-300" />
               Parte Relacionada
             </label>
-            <select
+            <DropdownField
               value={formData.party_type}
-              onChange={(e) => handleChange('party_type', e.target.value as DeadlinePartyType)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="both">Ambas as Partes</option>
-              <option value="accusation">Acusação</option>
-              <option value="defendant">Defesa</option>
-            </select>
+              onChange={(value) => handleChange('party_type', value as DeadlinePartyType)}
+              options={[
+                { value: 'both', label: 'Ambas as Partes' },
+                { value: 'accusation', label: 'Acusação' },
+                { value: 'defendant', label: 'Defesa' }
+              ]}
+              className="w-full"
+            />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Status
             </label>
-            <select
+            <DropdownField
               value={formData.status}
-              onChange={(e) => handleChange('status', e.target.value as DeadlineStatus)}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="pending">Pendente</option>
-              <option value="completed">Concluído</option>
-              <option value="expired">Vencido</option>
-            </select>
+              onChange={(value) => handleChange('status', value as DeadlineStatus)}
+              options={[
+                { value: 'pending', label: 'Pendente' },
+                { value: 'completed', label: 'Concluído' },
+                { value: 'expired', label: 'Vencido' }
+              ]}
+              className="w-full"
+            />
           </div>
 
           <div>
