@@ -51,45 +51,45 @@ export const ACHIEVEMENTS: AchievementConfig[] = [
     title: 'Primeira Análise',
     description: 'Complete sua primeira análise',
     icon: Target,
-    color: '#10B981',
+    color: '#1469b8',
     requiredCount: 1,
-    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
+    badgeGradient: 'linear-gradient(135deg, #1469b8, #0d4a8a)'
   },
   {
     type: 'three_processes',
     title: 'Iniciante',
     description: 'Complete 3 análises',
     icon: Star,
-    color: '#10B981',
+    color: '#EC4899',
     requiredCount: 3,
-    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
+    badgeGradient: 'linear-gradient(135deg, #EC4899, #DB2777)'
   },
   {
     type: 'ten_processes',
     title: 'Experiente',
     description: 'Complete 10 análises',
     icon: Diamond,
-    color: '#10B981',
+    color: '#14B8A6',
     requiredCount: 10,
-    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
+    badgeGradient: 'linear-gradient(135deg, #14B8A6, #0D9488)'
   },
   {
     type: 'fifty_processes',
     title: 'Expert',
     description: 'Complete 50 análises',
     icon: Trophy,
-    color: '#10B981',
+    color: '#8B5CF6',
     requiredCount: 50,
-    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
+    badgeGradient: 'linear-gradient(135deg, #8B5CF6, #7C3AED)'
   },
   {
     type: 'hundred_processes',
     title: 'Mestre Jurídico',
     description: 'Complete 100 análises',
     icon: Crown,
-    color: '#10B981',
+    color: '#F59E0B',
     requiredCount: 100,
-    badgeGradient: 'linear-gradient(135deg, #10B981, #059669)'
+    badgeGradient: 'linear-gradient(135deg, #F59E0B, #D97706)'
   }
 ];
 
