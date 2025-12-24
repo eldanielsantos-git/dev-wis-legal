@@ -538,6 +538,19 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setMessage({ type: 'error', text: 'A imagem deve ter no máximo 5MB' });
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/heic', 'image/heif'];
+    if (!allowedTypes.includes(file.type) && !file.name.toLowerCase().endsWith('.heic') && !file.name.toLowerCase().endsWith('.heif')) {
+      setMessage({ type: 'error', text: 'Formato de imagem não suportado' });
+      return;
+    }
+
     try {
       setIsUploadingAvatar(true);
       setMessage(null);
@@ -925,7 +938,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/*,.heic,.heif"
                   onChange={handleAvatarUpload}
                   className="hidden"
                 />
