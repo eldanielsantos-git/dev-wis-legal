@@ -378,7 +378,7 @@ Deno.serve(async (req: Request) => {
             user_id: processoData.user_id,
             type: 'analysis_completed',
             message: 'Análise de documento complexo concluída com sucesso',
-            related_processo_id: processo_id,
+            processo_id: processo_id,
           });
 
         console.log(`[${workerId}] 📬 Notificação enviada ao usuário`);
