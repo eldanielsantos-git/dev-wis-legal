@@ -191,9 +191,8 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("Step 6: Preparing Resend template variables...");
+    console.log("Step 6: Generating complete HTML email...");
 
-    const templateId = "b6e5fbda-ecbb-4b97-a932-f94b2d48d770";
     const maxEventsInEmail = 10;
 
     const escapeHtml = (text: string): string => {
@@ -208,29 +207,41 @@ Deno.serve(async (req: Request) => {
     const generateEventCardHtml = (event: DeadlineEvent): string => {
       const timeHtml = event.deadline_time
         ? `<tr>
-            <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-              <strong>Horário:</strong> ${escapeHtml(event.deadline_time)}
+            <td style="padding-bottom: 12px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Horário:</td>
+                  <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">${escapeHtml(event.deadline_time)}</td>
+                </tr>
+              </table>
             </td>
           </tr>`
         : '';
 
       const categoryHtml = event.category
         ? `<tr>
-            <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-              <strong>Categoria:</strong> ${escapeHtml(event.category)}
+            <td style="padding-bottom: 12px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Categoria:</td>
+                  <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">${escapeHtml(event.category)}</td>
+                </tr>
+              </table>
             </td>
           </tr>`
         : '';
 
       const notesHtml = event.notes
         ? `<tr>
-            <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-              <strong>Observações:</strong>
-            </td>
-          </tr>
-          <tr>
-            <td style="color: #475569; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F8FAFC; border-radius: 4px; margin-bottom: 16px;">
-              ${escapeHtml(event.notes)}
+            <td style="padding-bottom: 16px;">
+              <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                  <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">Observações:</td>
+                </tr>
+                <tr>
+                  <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F9FAFB; border-radius: 12px;">${escapeHtml(event.notes)}</td>
+                </tr>
+              </table>
             </td>
           </tr>`
         : '';
@@ -248,31 +259,44 @@ Deno.serve(async (req: Request) => {
                       </td>
                     </tr>
                     <tr>
-                      <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-                        <strong>Assunto:</strong> ${escapeHtml(event.subject)}
+                      <td style="padding-bottom: 12px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                          <tr>
+                            <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Assunto:</td>
+                            <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">${escapeHtml(event.subject)}</td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                     <tr>
-                      <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-                        <strong>Data:</strong> ${escapeHtml(event.deadline_date)}
+                      <td style="padding-bottom: 12px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                          <tr>
+                            <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Data:</td>
+                            <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">${escapeHtml(event.deadline_date)}</td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                     ${timeHtml}
                     <tr>
-                      <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-                        <strong>Status:</strong> ${escapeHtml(event.status_label)}
+                      <td style="padding-bottom: 12px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                          <tr>
+                            <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Status:</td>
+                            <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">${escapeHtml(event.status_label)}</td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                     ${categoryHtml}
                     ${notesHtml}
                     <tr>
-                      <td style="padding-top: 16px;">
+                      <td align="center" style="padding-top: 8px;">
                         <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                           <tr>
-                            <td style="border-radius: 6px; background-color: #1D1C1B;">
-                              <a href="${event.view_event_url}" target="_blank" style="border: 1px solid #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px; padding: 12px 24px; text-decoration: none;">
-                                Ver Processo
-                              </a>
+                            <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
+                              <a href="${event.view_event_url}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 40px; text-align: center; text-decoration: none; padding: 0 24px; -webkit-text-size-adjust: none;">Ver Processo</a>
                             </td>
                           </tr>
                         </table>
@@ -291,7 +315,6 @@ Deno.serve(async (req: Request) => {
     const eventsHtml = eventsToShow.map(event => generateEventCardHtml(event)).join('');
 
     console.log(`Generated HTML for ${eventsToShow.length} events`);
-    console.log(`HTML length: ${eventsHtml.length} characters`);
 
     const moreEventsHtml = events.length > maxEventsInEmail
       ? `<tr>
@@ -306,7 +329,7 @@ Deno.serve(async (req: Request) => {
                       </td>
                     </tr>
                     <tr>
-                      <td style="color: #92400E; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px;">
+                      <td style="color: #78350F; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px;">
                         Total de ${events.length} eventos agendados. Acesse o calendário para ver todos.
                       </td>
                     </tr>
@@ -318,27 +341,120 @@ Deno.serve(async (req: Request) => {
         </tr>`
       : '';
 
-    const templateVariables: Record<string, string> = {
-      first_name: firstName,
-      view_full_schedule_url: viewFullScheduleUrl,
-      events_html: eventsHtml + moreEventsHtml
-    };
+    const fullHtmlEmail = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Eventos e Prazos do Dia - Wis Legal</title>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Open Sans', Arial, sans-serif; background-color: #ffffff; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        table { border-collapse: collapse; }
+        img { border: 0; display: block; outline: none; text-decoration: none; }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: #ffffff;">
+    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff;">
+        <tr>
+            <td align="center" style="padding: 40px 20px 0;">
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px;">
+                    <tr>
+                        <td align="center" style="padding-bottom: 32px;">
+                            <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/mail_logo_lettering.jpg" alt="Wis Legal" width="180" style="display: block; max-width: 180px; height: auto;">
+                        </td>
+                    </tr>
+                </table>
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px; background-color: #FAFAFA; border-radius: 12px;">
+                    <tr>
+                        <td style="padding: 48px 40px;">
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 24px; font-weight: 600; line-height: 32px; padding-bottom: 16px;">
+                                        Olá, <strong>${escapeHtml(firstName)}</strong>!
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 16px; line-height: 24px; padding-bottom: 32px;">
+                                        Estou passando aqui para lembrar você sobre sua agenda para o dia de hoje!
+                                    </td>
+                                </tr>
+                                ${eventsHtml}
+                                ${moreEventsHtml}
+                                <tr>
+                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 16px; line-height: 24px; padding-top: 16px; padding-bottom: 24px;">
+                                        Caso você já tenha realizado o evento, não esqueça de atualizar o status no seu calendário. Se já fez isso, desconsidere este email.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 16px; line-height: 24px; padding-bottom: 24px;">
+                                        Se desejar ver sua agenda completa para hoje e para os próximos dias, basta clicar no botão abaixo:
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
+                                                    <a href="${viewFullScheduleUrl}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 16px; font-weight: 600; line-height: 48px; text-align: center; text-decoration: none; padding: 0 32px; -webkit-text-size-adjust: none;">Ver Agenda Completa</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px;">
+                    <tr>
+                        <td style="padding: 32px 0 24px;">
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">Atenciosamente,</td>
+                                </tr>
+                                <tr>
+                                    <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; font-weight: 600;">Equipe Wis Legal</td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="600" style="max-width: 600px;">
+                    <tr>
+                        <td style="padding-top: 24px; border-top: 1px solid #E5E7EB;">
+                            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                <tr>
+                                    <td align="center" style="padding-bottom: 16px;">
+                                        <p style="margin: 0; color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 12px; line-height: 18px;">© 2025 Wis Legal. Todos os direitos reservados.</p>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="center" style="padding-bottom: 40px;">
+                                        <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/mail_logo_footer.jpg" alt="Wis Legal" width="60" style="display: block; max-width: 60px; height: auto;">
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>`;
 
     const resendPayload = {
       from: "Wis Legal <no-reply@wislegal.io>",
       to: [userEmail],
       subject: "Eventos e Prazos do Dia - Wis Legal",
-      template: {
-        id: templateId,
-        variables: templateVariables
-      }
+      html: fullHtmlEmail
     };
 
-    console.log("Sending email with Resend template");
-    console.log("Template ID:", templateId);
+    console.log("Sending email with complete HTML");
     console.log("Events count:", events.length);
-    console.log("Template variables keys:", Object.keys(templateVariables));
-    console.log("Events HTML preview (first 500 chars):", templateVariables.events_html.substring(0, 500));
+    console.log("HTML email length:", fullHtmlEmail.length, "characters");
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
