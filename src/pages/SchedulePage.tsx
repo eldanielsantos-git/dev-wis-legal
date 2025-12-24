@@ -236,7 +236,7 @@ export function SchedulePage({
               style={{ backgroundColor: colors.bgSecondary }}
             >
               <Plus className="w-8 h-8 mb-2" style={{ color: theme === 'dark' ? colors.accent : '#000000' }} />
-              <span className="text-sm font-medium text-center" style={{ color: colors.textPrimary }}>Criar Prazo</span>
+              <span className="text-sm font-medium text-center" style={{ color: theme === 'dark' ? colors.textPrimary : '#000000' }}>Criar Prazo</span>
             </button>
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
