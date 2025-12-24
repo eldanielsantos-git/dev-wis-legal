@@ -191,40 +191,133 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log("Step 6: Sending email via Resend with template...");
+    console.log("Step 6: Building dynamic HTML email...");
 
-    const templateId = "b6e5fbda-ecbb-4b97-a932-f94b2d48d770";
-
-    const templateVariables: Record<string, string> = {
-      first_name: firstName,
-      view_full_schedule_url: viewFullScheduleUrl
+    const getStatusColor = (status: string): string => {
+      switch (status) {
+        case 'expired':
+          return '#DC2626';
+        case 'completed':
+          return '#16A34A';
+        case 'pending':
+          return '#F59E0B';
+        default:
+          return '#6B7280';
+      }
     };
 
-    events.slice(0, 5).forEach((event, index) => {
-      const eventNum = index + 1;
-      templateVariables[`event_${eventNum}_processo_name`] = event.processo_name;
-      templateVariables[`event_${eventNum}_subject`] = event.subject;
-      templateVariables[`event_${eventNum}_deadline_date`] = event.deadline_date;
-      templateVariables[`event_${eventNum}_deadline_time`] = event.deadline_time;
-      templateVariables[`event_${eventNum}_status_label`] = event.status_label;
-      templateVariables[`event_${eventNum}_category`] = event.category;
-      templateVariables[`event_${eventNum}_notes`] = event.notes;
-      templateVariables[`event_${eventNum}_view_event_url`] = event.view_event_url;
-    });
+    const eventCardsHtml = events.map(event => `
+      <div style="background: #F9FAFB; border-radius: 8px; padding: 20px; margin-bottom: 16px;">
+        <h3 style="margin: 0 0 16px 0; font-size: 18px; font-weight: 600; color: #111827;">
+          ${event.processo_name}
+        </h3>
+
+        <div style="margin-bottom: 8px;">
+          <span style="font-weight: 600; color: #374151;">Assunto:</span>
+          <span style="color: #6B7280; margin-left: 8px;">${event.subject}</span>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <span style="font-weight: 600; color: #374151;">Data:</span>
+          <span style="color: #6B7280; margin-left: 8px;">${event.deadline_date}</span>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <span style="font-weight: 600; color: #374151;">Horário:</span>
+          <span style="color: #6B7280; margin-left: 8px;">${event.deadline_time}</span>
+        </div>
+
+        <div style="margin-bottom: 8px;">
+          <span style="font-weight: 600; color: #374151;">Status:</span>
+          <span style="color: ${getStatusColor(event.status)}; margin-left: 8px; font-weight: 600;">
+            ${event.status_label}
+          </span>
+        </div>
+
+        ${event.category ? `
+        <div style="margin-bottom: 8px;">
+          <span style="font-weight: 600; color: #374151;">Categoria:</span>
+          <span style="color: #6B7280; margin-left: 8px;">${event.category}</span>
+        </div>
+        ` : ''}
+
+        ${event.notes ? `
+        <div style="margin-bottom: 16px;">
+          <span style="font-weight: 600; color: #374151;">Observações:</span>
+          <div style="background: white; padding: 12px; margin-top: 8px; border-radius: 4px; color: #6B7280;">
+            ${event.notes}
+          </div>
+        </div>
+        ` : ''}
+
+        <a href="${event.view_event_url}"
+           style="display: inline-block; background: #111827; color: white; padding: 10px 20px;
+                  border-radius: 6px; text-decoration: none; font-weight: 600; margin-top: 8px;">
+          Ver Processo
+        </a>
+      </div>
+    `).join('');
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventos e Prazos do Dia - Wis Legal</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #F3F4F6;">
+  <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+
+    <div style="text-align: center; margin-bottom: 32px;">
+      <h1 style="font-size: 32px; font-weight: 700; color: #111827; margin: 0;">
+        Wís Legal
+      </h1>
+    </div>
+
+    <div style="background: white; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+
+      <h2 style="font-size: 24px; font-weight: 600; color: #111827; margin: 0 0 16px 0;">
+        Olá, ${firstName}!
+      </h2>
+
+      <p style="color: #6B7280; line-height: 1.6; margin: 0 0 24px 0;">
+        Estou passando aqui para lembrar você sobre sua agenda para o dia de hoje!
+      </p>
+
+      ${eventCardsHtml}
+
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid #E5E7EB;">
+        <a href="${viewFullScheduleUrl}"
+           style="display: inline-block; background: #2563EB; color: white; padding: 12px 24px;
+                  border-radius: 6px; text-decoration: none; font-weight: 600;">
+          Ver Agenda Completa
+        </a>
+      </div>
+
+    </div>
+
+    <div style="text-align: center; margin-top: 32px; color: #9CA3AF; font-size: 14px;">
+      <p style="margin: 0 0 8px 0;">© 2025 Wis Legal. Todos os direitos reservados.</p>
+      <p style="margin: 0;">
+        <a href="https://app.wislegal.io" style="color: #2563EB; text-decoration: none;">Acessar Plataforma</a>
+      </p>
+    </div>
+
+  </div>
+</body>
+</html>
+    `;
 
     const resendPayload = {
       from: "Wis Legal <no-reply@wislegal.io>",
       to: [userEmail],
       subject: "Eventos e Prazos do Dia - Wis Legal",
-      template: {
-        id: templateId,
-        variables: templateVariables
-      }
+      html: htmlContent
     };
 
-    console.log("Sending email with template ID:", templateId);
-    console.log("ALL TEMPLATE VARIABLES:", JSON.stringify(templateVariables, null, 2));
-    console.log("FULL PAYLOAD:", JSON.stringify(resendPayload, null, 2));
+    console.log("Sending email with dynamic HTML");
+    console.log("Events count:", events.length);
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
