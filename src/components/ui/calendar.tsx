@@ -53,6 +53,7 @@ export function Calendar({ selected, onSelect, className }: CalendarProps) {
           onClick={() => onSelect?.(cloneDay)}
           className={cn(
             "h-9 w-9 p-0 font-normal transition-colors rounded-md",
+            "border border-gray-200 dark:border-transparent",
             !isCurrentMonth && "text-muted-foreground opacity-50",
             isCurrentMonth && "hover:bg-accent hover:text-accent-foreground",
             isSelected && "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground",
