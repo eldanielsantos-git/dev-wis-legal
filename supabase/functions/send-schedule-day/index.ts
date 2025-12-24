@@ -195,25 +195,36 @@ Deno.serve(async (req: Request) => {
 
     const templateId = "b6e5fbda-ecbb-4b97-a932-f94b2d48d770";
 
+    const templateVariables: Record<string, string> = {
+      first_name: firstName,
+      view_full_schedule_url: viewFullScheduleUrl
+    };
+
+    events.slice(0, 5).forEach((event, index) => {
+      const eventNum = index + 1;
+      templateVariables[`event_${eventNum}_processo_name`] = event.processo_name;
+      templateVariables[`event_${eventNum}_subject`] = event.subject;
+      templateVariables[`event_${eventNum}_deadline_date`] = event.deadline_date;
+      templateVariables[`event_${eventNum}_deadline_time`] = event.deadline_time;
+      templateVariables[`event_${eventNum}_status_label`] = event.status_label;
+      templateVariables[`event_${eventNum}_category`] = event.category;
+      templateVariables[`event_${eventNum}_notes`] = event.notes;
+      templateVariables[`event_${eventNum}_view_event_url`] = event.view_event_url;
+    });
+
     const resendPayload = {
+      from: "Wis Legal <no-reply@wislegal.io>",
       to: [userEmail],
+      subject: "Eventos e Prazos do Dia - Wis Legal",
       template: {
         id: templateId,
-        variables: {
-          first_name: firstName,
-          events: events,
-          view_full_schedule_url: viewFullScheduleUrl,
-          total_events: events.length.toString()
-        }
+        variables: templateVariables
       }
     };
 
     console.log("Sending email with template ID:", templateId);
-    console.log("Template variables:", {
-      first_name: firstName,
-      events_count: events.length,
-      view_full_schedule_url: viewFullScheduleUrl
-    });
+    console.log("ALL TEMPLATE VARIABLES:", JSON.stringify(templateVariables, null, 2));
+    console.log("FULL PAYLOAD:", JSON.stringify(resendPayload, null, 2));
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
