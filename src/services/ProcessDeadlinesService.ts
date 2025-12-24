@@ -191,15 +191,19 @@ class ProcessDeadlinesService {
 
     const [allDeadlines, todayDeadlines, weekDeadlines] = await Promise.all([
       this.getDeadlines(),
-      this.getDeadlines({ startDate: today, endDate: today, status: 'pending' }),
+      this.getDeadlines({ startDate: today, endDate: today }),
       this.getDeadlines({ startDate: today, endDate: weekEnd, status: 'pending' })
     ]);
+
+    const todayPendingAndExpired = todayDeadlines.filter(
+      d => d.status === 'pending' || d.status === 'expired'
+    ).length;
 
     return {
       pending: allDeadlines.filter(d => d.status === 'pending').length,
       completed: allDeadlines.filter(d => d.status === 'completed').length,
       expired: allDeadlines.filter(d => d.status === 'expired').length,
-      today: todayDeadlines.length,
+      today: todayPendingAndExpired,
       thisWeek: weekDeadlines.length
     };
   }
