@@ -55,8 +55,8 @@
                                     </td>
                                 </tr>
 
-                                <!-- Dynamic Events Loop -->
-                                {{#each events}}
+                                <!-- Event 1 -->
+                                {{#if event_1_subject}}
                                 <tr>
                                     <td style="padding-bottom: 24px;">
                                         <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px;">
@@ -65,7 +65,7 @@
                                                     <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                                                         <tr>
                                                             <td style="color: #1D1C1B; font-family: 'Open Sans', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 26px; padding-bottom: 16px;">
-                                                                {{processo_name}}
+                                                                {{event_1_processo_name}}
                                                             </td>
                                                         </tr>
                                                         <tr>
@@ -73,7 +73,7 @@
                                                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                                                                     <tr>
                                                                         <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Assunto:</td>
-                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{subject}}</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_1_subject}}</td>
                                                                     </tr>
                                                                 </table>
                                                             </td>
@@ -83,18 +83,18 @@
                                                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                                                                     <tr>
                                                                         <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Data:</td>
-                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{deadline_date}}</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_1_deadline_date}}</td>
                                                                     </tr>
                                                                 </table>
                                                             </td>
                                                         </tr>
-                                                        {{#if deadline_time}}
+                                                        {{#if event_1_deadline_time}}
                                                         <tr>
                                                             <td style="padding-bottom: 12px;">
                                                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                                                                     <tr>
                                                                         <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Horário:</td>
-                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{deadline_time}}</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_1_deadline_time}}</td>
                                                                     </tr>
                                                                 </table>
                                                             </td>
@@ -105,24 +105,24 @@
                                                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                                                                     <tr>
                                                                         <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Status:</td>
-                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{status_label}}</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_1_status_label}}</td>
                                                                     </tr>
                                                                 </table>
                                                             </td>
                                                         </tr>
-                                                        {{#if category}}
+                                                        {{#if event_1_category}}
                                                         <tr>
                                                             <td style="padding-bottom: 12px;">
                                                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                                                                     <tr>
                                                                         <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Categoria:</td>
-                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{category}}</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_1_category}}</td>
                                                                     </tr>
                                                                 </table>
                                                             </td>
                                                         </tr>
                                                         {{/if}}
-                                                        {{#if notes}}
+                                                        {{#if event_1_notes}}
                                                         <tr>
                                                             <td style="padding-bottom: 16px;">
                                                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
@@ -130,7 +130,7 @@
                                                                         <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">Observações:</td>
                                                                     </tr>
                                                                     <tr>
-                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F9FAFB; border-radius: 12px;">{{notes}}</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F9FAFB; border-radius: 12px;">{{event_1_notes}}</td>
                                                                     </tr>
                                                                 </table>
                                                             </td>
@@ -141,7 +141,7 @@
                                                                 <table role="presentation" border="0" cellpadding="0" cellspacing="0">
                                                                     <tr>
                                                                         <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
-                                                                            <a href="{{view_event_url}}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 40px; text-align: center; text-decoration: none; padding: 0 24px; -webkit-text-size-adjust: none;">Ver Processo</a>
+                                                                            <a href="{{event_1_view_event_url}}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 40px; text-align: center; text-decoration: none; padding: 0 24px; -webkit-text-size-adjust: none;">Ver Processo</a>
                                                                         </td>
                                                                     </tr>
                                                                 </table>
@@ -153,7 +153,407 @@
                                         </table>
                                     </td>
                                 </tr>
-                                {{/each}}
+                                {{/if}}
+
+                                <!-- Event 2 -->
+                                {{#if event_2_subject}}
+                                <tr>
+                                    <td style="padding-bottom: 24px;">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                        <tr>
+                                                            <td style="color: #1D1C1B; font-family: 'Open Sans', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 26px; padding-bottom: 16px;">
+                                                                {{event_2_processo_name}}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Assunto:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_2_subject}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Data:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_2_deadline_date}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_2_deadline_time}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Horário:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_2_deadline_time}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Status:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_2_status_label}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_2_category}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Categoria:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_2_category}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        {{#if event_2_notes}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 16px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">Observações:</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F9FAFB; border-radius: 12px;">{{event_2_notes}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td align="center" style="padding-top: 8px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                                                    <tr>
+                                                                        <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
+                                                                            <a href="{{event_2_view_event_url}}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 40px; text-align: center; text-decoration: none; padding: 0 24px; -webkit-text-size-adjust: none;">Ver Processo</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                {{/if}}
+
+                                <!-- Event 3 -->
+                                {{#if event_3_subject}}
+                                <tr>
+                                    <td style="padding-bottom: 24px;">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                        <tr>
+                                                            <td style="color: #1D1C1B; font-family: 'Open Sans', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 26px; padding-bottom: 16px;">
+                                                                {{event_3_processo_name}}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Assunto:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_3_subject}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Data:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_3_deadline_date}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_3_deadline_time}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Horário:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_3_deadline_time}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Status:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_3_status_label}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_3_category}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Categoria:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_3_category}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        {{#if event_3_notes}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 16px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">Observações:</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F9FAFB; border-radius: 12px;">{{event_3_notes}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td align="center" style="padding-top: 8px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                                                    <tr>
+                                                                        <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
+                                                                            <a href="{{event_3_view_event_url}}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 40px; text-align: center; text-decoration: none; padding: 0 24px; -webkit-text-size-adjust: none;">Ver Processo</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                {{/if}}
+
+                                <!-- Event 4 -->
+                                {{#if event_4_subject}}
+                                <tr>
+                                    <td style="padding-bottom: 24px;">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                        <tr>
+                                                            <td style="color: #1D1C1B; font-family: 'Open Sans', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 26px; padding-bottom: 16px;">
+                                                                {{event_4_processo_name}}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Assunto:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_4_subject}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Data:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_4_deadline_date}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_4_deadline_time}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Horário:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_4_deadline_time}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Status:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_4_status_label}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_4_category}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Categoria:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_4_category}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        {{#if event_4_notes}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 16px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">Observações:</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F9FAFB; border-radius: 12px;">{{event_4_notes}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td align="center" style="padding-top: 8px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                                                    <tr>
+                                                                        <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
+                                                                            <a href="{{event_4_view_event_url}}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 40px; text-align: center; text-decoration: none; padding: 0 24px; -webkit-text-size-adjust: none;">Ver Processo</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                {{/if}}
+
+                                <!-- Event 5 -->
+                                {{#if event_5_subject}}
+                                <tr>
+                                    <td style="padding-bottom: 24px;">
+                                        <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px;">
+                                            <tr>
+                                                <td style="padding: 24px;">
+                                                    <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                        <tr>
+                                                            <td style="color: #1D1C1B; font-family: 'Open Sans', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 26px; padding-bottom: 16px;">
+                                                                {{event_5_processo_name}}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Assunto:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_5_subject}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Data:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_5_deadline_date}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_5_deadline_time}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Horário:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_5_deadline_time}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Status:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_5_status_label}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{#if event_5_category}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 12px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-right: 16px; width: 120px;">Categoria:</td>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px;">{{event_5_category}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        {{#if event_5_notes}}
+                                                        <tr>
+                                                            <td style="padding-bottom: 16px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                                                                    <tr>
+                                                                        <td style="color: #6B7280; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">Observações:</td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td style="color: #29323A; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F9FAFB; border-radius: 12px;">{{event_5_notes}}</td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                        {{/if}}
+                                                        <tr>
+                                                            <td align="center" style="padding-top: 8px;">
+                                                                <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                                                                    <tr>
+                                                                        <td align="center" style="border-radius: 6px; background-color: #1D1C1B;">
+                                                                            <a href="{{event_5_view_event_url}}" target="_blank" style="background-color: #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 40px; text-align: center; text-decoration: none; padding: 0 24px; -webkit-text-size-adjust: none;">Ver Processo</a>
+                                                                        </td>
+                                                                    </tr>
+                                                                </table>
+                                                            </td>
+                                                        </tr>
+                                                    </table>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                {{/if}}
 
                                 <!-- Footer Text -->
                                 <tr>
