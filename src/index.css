@@ -148,3 +148,16 @@ body {
     animation: shimmer 2s infinite;
   }
 }
+
+/* Force correct colors in dark mode for schedule page icons and text */
+:root[data-theme='dark'] .schedule-icon {
+  color: #3DD68C !important;
+}
+
+:root[data-theme='dark'] .schedule-text {
+  color: #C8C8C8 !important;
+}
+
+:root[data-theme='dark'] .calendar-today-btn {
+  color: #3DD68C !important;
+}

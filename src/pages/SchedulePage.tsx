@@ -229,16 +229,16 @@ export function SchedulePage({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="rounded-xl shadow-sm p-4 transition-all hover:opacity-80 cursor-pointer flex flex-col items-center justify-center"
+              className="rounded-xl shadow-sm p-4 transition-all hover:opacity-80 cursor-pointer flex flex-col items-center justify-center schedule-create-btn"
               style={{ backgroundColor: colors.bgSecondary }}
             >
-              <Plus className="w-8 h-8 mb-2" style={{ color: theme === 'dark' ? colors.accent : '#000000' }} />
-              <span className="text-sm font-medium text-center" style={{ color: theme === 'dark' ? colors.textPrimary : '#000000' }}>Criar Prazo</span>
+              <Plus className="w-8 h-8 mb-2 schedule-icon" style={{ color: theme === 'dark' ? colors.accent : '#000000' }} />
+              <span className="text-sm font-medium text-center schedule-text" style={{ color: theme === 'dark' ? colors.textPrimary : '#000000' }}>Criar Prazo</span>
             </button>
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <Filter className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.accent }} />
+                <Filter className="w-4 h-4 schedule-icon" strokeWidth={1.5} style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Filtro</span>
               </div>
               <CustomSelect
@@ -263,7 +263,7 @@ export function SchedulePage({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.accent }} />
+                <Clock className="w-4 h-4 schedule-icon" strokeWidth={1.5} style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Pendentes</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.pending}</p>
@@ -287,7 +287,7 @@ export function SchedulePage({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <CalendarIcon className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.accent }} />
+                <CalendarIcon className="w-4 h-4 schedule-icon" strokeWidth={1.5} style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Hoje</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.today}</p>

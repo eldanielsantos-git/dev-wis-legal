@@ -239,7 +239,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
         <div className="flex gap-2">
           <button
             onClick={handleToday}
-            className="px-3 py-1 text-sm font-medium rounded-lg transition-all"
+            className="px-3 py-1 text-sm font-medium rounded-lg transition-all calendar-today-btn"
             style={{
               color: theme === 'dark' ? colors.accent : colors.textPrimary,
               backgroundColor: `${colors.accent}15`
