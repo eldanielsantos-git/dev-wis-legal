@@ -446,6 +446,7 @@ Deno.serve(async (req: Request) => {
 </html>`;
 
     const resendPayload = {
+      from: "Wis Legal <no-reply@wislegal.io>",
       to: [userEmail],
       subject: "Eventos e Prazos do Dia - Wis Legal",
       html: fullHtmlEmail
