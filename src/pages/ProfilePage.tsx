@@ -589,14 +589,16 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         .from('avatars')
         .getPublicUrl(fileName);
 
+      const avatarUrlWithCacheBust = `${publicUrl}?t=${Date.now()}`;
+
       const { error: updateError } = await supabase
         .from('user_profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: avatarUrlWithCacheBust })
         .eq('id', user.id);
 
       if (updateError) throw updateError;
 
-      setFormData({ ...formData, avatar_url: publicUrl });
+      setFormData({ ...formData, avatar_url: avatarUrlWithCacheBust });
       await refreshProfile();
 
       try {

@@ -28,16 +28,23 @@ export function UserAvatar({ avatarUrl, firstName, lastName, size = 'md', classN
   const bgColor = theme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(41, 50, 58, 0.1)';
   const textColor = theme === 'dark' ? '#FFFFFF' : '#141312';
 
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [avatarUrl]);
+
   return (
     <div
       className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden ${className}`}
       style={{ backgroundColor: bgColor, color: textColor }}
     >
-      {avatarUrl ? (
+      {avatarUrl && !imageError ? (
         <img
           src={avatarUrl}
           alt="Avatar"
           className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
         />
       ) : (
         getInitials()
