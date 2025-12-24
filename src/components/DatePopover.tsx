@@ -139,7 +139,7 @@ export const DatePopover: React.FC<DatePopoverProps> = ({
           className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-all"
           style={{
             backgroundColor: colors.accent,
-            color: '#ffffff'
+            color: theme === 'dark' ? '#ffffff' : '#1f2937'
           }}
         >
           <Plus className="w-4 h-4" />
