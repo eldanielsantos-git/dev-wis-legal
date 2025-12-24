@@ -367,7 +367,7 @@ Deno.serve(async (req: Request) => {
     if (allCompleted && !hasRunning && !hasPending) {
       const { data: processoData } = await supabase
         .from('processos')
-        .select('user_id, file_name, created_at, is_complex')
+        .select('user_id, file_name, created_at, is_chunked')
         .eq('id', processo_id)
         .single();
 
@@ -439,7 +439,7 @@ Deno.serve(async (req: Request) => {
             duration: durationText,
             chunks_count: chunks.length,
             prompts_consolidated: analysisResults.length,
-            is_complex: processoData.is_complex,
+            is_complex: processoData.is_chunked,
           },
           userId: processoData.user_id,
           processoId: processo_id,
