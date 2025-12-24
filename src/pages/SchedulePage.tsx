@@ -15,6 +15,7 @@ import { useToast } from '../hooks/useToast';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
+import { getBrazilDate, formatDateBrazil } from '../utils/dateHelpers';
 
 let scheduleDataCache: {
   deadlines: ProcessDeadline[];
@@ -70,7 +71,7 @@ export function SchedulePage({
   const toast = useToast();
   const [deadlines, setDeadlines] = useState<ProcessDeadline[]>([]);
   const [processos, setProcessos] = useState<Processo[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(getBrazilDate());
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -176,13 +177,7 @@ export function SchedulePage({
   };
 
   const formatDate = (dateStr: string): string => {
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('pt-BR', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
+    return formatDateBrazil(dateStr);
   };
 
   const formatTime = (timeStr?: string): string => {

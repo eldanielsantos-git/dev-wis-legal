@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { getBrazilDate, getBrazilDateString } from '../utils/dateHelpers';
 
 export interface ProcessDeadline {
   id: string;
@@ -95,13 +96,18 @@ class ProcessDeadlinesService {
   }
 
   async getUpcomingDeadlines(days: number = 7): Promise<ProcessDeadline[]> {
-    const today = new Date();
-    const futureDate = new Date();
+    const today = getBrazilDate();
+    const futureDate = new Date(today);
     futureDate.setDate(today.getDate() + days);
 
+    const year = futureDate.getFullYear();
+    const month = String(futureDate.getMonth() + 1).padStart(2, '0');
+    const day = String(futureDate.getDate()).padStart(2, '0');
+    const futureDateStr = `${year}-${month}-${day}`;
+
     return this.getDeadlines({
-      startDate: today.toISOString().split('T')[0],
-      endDate: futureDate.toISOString().split('T')[0],
+      startDate: getBrazilDateString(),
+      endDate: futureDateStr,
       status: 'pending'
     });
   }
@@ -174,10 +180,14 @@ class ProcessDeadlinesService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Usuário não autenticado');
 
-    const today = new Date().toISOString().split('T')[0];
-    const weekFromNow = new Date();
+    const today = getBrazilDateString();
+    const weekFromNow = getBrazilDate();
     weekFromNow.setDate(weekFromNow.getDate() + 7);
-    const weekEnd = weekFromNow.toISOString().split('T')[0];
+
+    const year = weekFromNow.getFullYear();
+    const month = String(weekFromNow.getMonth() + 1).padStart(2, '0');
+    const day = String(weekFromNow.getDate()).padStart(2, '0');
+    const weekEnd = `${year}-${month}-${day}`;
 
     const [allDeadlines, todayDeadlines, weekDeadlines] = await Promise.all([
       this.getDeadlines(),

@@ -4,6 +4,7 @@ import { ProcessDeadline } from '../types/analysis';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { DatePopover } from './DatePopover';
+import { getBrazilDate, isTodayBrazil } from '../utils/dateHelpers';
 
 interface ProcessCalendarProps {
   deadlines: ProcessDeadline[];
@@ -66,16 +67,13 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
   };
 
   const handleToday = () => {
-    const today = new Date();
+    const today = getBrazilDate();
     setCurrentMonth(today);
     onDateSelect(today);
   };
 
   const isToday = (date: Date): boolean => {
-    const today = new Date();
-    return date.getDate() === today.getDate() &&
-           date.getMonth() === today.getMonth() &&
-           date.getFullYear() === today.getFullYear();
+    return isTodayBrazil(date);
   };
 
   const isSelected = (date: Date): boolean => {
