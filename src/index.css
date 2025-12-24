@@ -151,13 +151,13 @@ body {
 
 /* Force correct colors in dark mode for schedule page icons and text */
 :root[data-theme='dark'] .schedule-icon {
-  color: #3DD68C !important;
+  color: #FFFFFF !important;
 }
 
 :root[data-theme='dark'] .schedule-text {
-  color: #C8C8C8 !important;
+  color: #FFFFFF !important;
 }
 
 :root[data-theme='dark'] .calendar-today-btn {
-  color: #3DD68C !important;
+  color: #FFFFFF !important;
 }
