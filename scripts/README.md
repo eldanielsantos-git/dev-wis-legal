@@ -1,6 +1,6 @@
-# Tier System Deployment Scripts
+# Deployment & Testing Scripts
 
-This directory contains the deployment and rollout scripts for the tier-aware processing system.
+This directory contains deployment, rollout, and testing scripts for the system.
 
 ## 📋 Scripts Overview
 
@@ -9,6 +9,8 @@ This directory contains the deployment and rollout scripts for the tier-aware pr
 | `verify-tier-deployment.sh` | Pre-deployment verification | Before deploying to production |
 | `gradual-rollout.sh` | Progressive feature enablement | During rollout phases |
 | `emergency-rollback.sh` | Instant system disable | If critical issues occur |
+| `test-schedule-reminder.sh` | Test single user schedule email | Testing schedule reminders |
+| `test-all-schedule-reminders.sh` | Test all users schedule emails | Testing daily cron job |
 
 ---
 
@@ -434,6 +436,113 @@ brew install jq
 
 ---
 
-**Last Updated:** 2025-12-05
-**Version:** 1.0.0
+## 📅 test-schedule-reminder.sh
+
+### Purpose
+Tests schedule reminder email for a specific user (daniel@dmzdigital.com.br).
+
+### Usage
+
+```bash
+cd scripts
+./test-schedule-reminder.sh
+```
+
+### Prerequisites
+
+- `.env` file with Supabase credentials
+- User must have deadlines for today
+- `jq` command installed
+
+### What It Does
+
+1. Loads environment variables from `.env`
+2. Finds user ID for daniel@dmzdigital.com.br
+3. Checks for deadlines today
+4. Sends schedule reminder email
+5. Shows detailed result
+
+### Example Output
+
+```
+=== Teste de Envio de Lembrete de Schedule ===
+
+Buscando user_id de daniel@dmzdigital.com.br...
+User ID encontrado: abc-123-def
+
+Verificando deadlines para hoje...
+Encontrados 3 deadline(s) para hoje
+
+Enviando email de teste...
+
+Response code: 200
+Response body: {"success":true,"resend_id":"xxx","events_count":3}
+
+✓ Email enviado com sucesso!
+Resend ID: xxx
+Eventos: 3
+
+=== Teste concluído ===
+```
+
+---
+
+## 📧 test-all-schedule-reminders.sh
+
+### Purpose
+Tests schedule reminder emails for ALL users with deadlines today (simulates cron job).
+
+### Usage
+
+```bash
+cd scripts
+./test-all-schedule-reminders.sh
+```
+
+### Prerequisites
+
+- `.env` file with Supabase credentials
+- `jq` command installed
+
+### What It Does
+
+1. Loads environment variables
+2. Calls `send-daily-schedule-reminders` function
+3. Processes all users with deadlines today
+4. Shows detailed summary
+
+### Example Output
+
+```
+=== Teste de Envio de Lembretes de Schedule (Todos os Usuários) ===
+
+Data de processamento: 2025-12-24
+
+Enviando lembretes para todos os usuários com deadlines hoje...
+
+Response code: 200
+
+✓ Processamento concluído com sucesso!
+
+Resumo:
+  Total de usuários: 5
+  Sucesso: 4
+  Falhas: 0
+  Ignorados: 1
+
+=== Teste concluído ===
+```
+
+### GitHub Actions Alternative
+
+You can also test via GitHub Actions:
+
+1. Go to: `Actions` → `Daily Schedule Reminders`
+2. Click `Run workflow`
+3. Click `Run workflow` button
+
+---
+
+**Last Updated:** 2025-12-24
+**Version:** 1.1.0
 **Status:** Production Ready
