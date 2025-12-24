@@ -17,6 +17,7 @@ import { UserAchievementsService, type AchievementProgress } from '../services/U
 import { AchievementBadge } from '../components/AchievementBadge';
 import { PreferenceToggle } from '../components/PreferenceToggle';
 import { translateSupabaseAuthError, translateError } from '../utils/errorTranslator';
+import heic2any from 'heic2any';
 
 interface ProfilePageProps {
   onNavigateToApp: () => void;
@@ -555,12 +556,32 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       setIsUploadingAvatar(true);
       setMessage(null);
 
-      const fileExt = file.name.split('.').pop();
+      let fileToUpload: File | Blob = file;
+      let fileExt = file.name.split('.').pop()?.toLowerCase();
+
+      if (fileExt === 'heic' || fileExt === 'heif' || file.type === 'image/heic' || file.type === 'image/heif') {
+        try {
+          const convertedBlob = await heic2any({
+            blob: file,
+            toType: 'image/jpeg',
+            quality: 0.9
+          });
+
+          fileToUpload = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+          fileExt = 'jpg';
+        } catch (conversionError) {
+          console.error('Erro ao converter HEIC:', conversionError);
+          setMessage({ type: 'error', text: 'Erro ao processar imagem HEIC. Tente usar outro formato.' });
+          setIsUploadingAvatar(false);
+          return;
+        }
+      }
+
       const fileName = `${user.id}/avatar.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, fileToUpload, { upsert: true });
 
       if (uploadError) throw uploadError;
 
