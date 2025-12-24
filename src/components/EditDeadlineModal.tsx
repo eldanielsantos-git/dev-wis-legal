@@ -325,7 +325,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
               options={[
                 { value: 'pending', label: 'Pendente' },
                 { value: 'completed', label: 'Concluído' },
-                { value: 'expired', label: 'Vencido' }
+                { value: 'expired', label: 'Atrasado' }
               ]}
               className="w-full"
             />

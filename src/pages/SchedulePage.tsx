@@ -103,6 +103,8 @@ export function SchedulePage({
     setIsLoading(true);
 
     try {
+      await processDeadlinesService.updateExpiredDeadlines();
+
       const [deadlinesData, processosData, statsData] = await Promise.all([
         processDeadlinesService.getDeadlines(),
         ProcessosService.getAllProcessos(),
@@ -251,7 +253,7 @@ export function SchedulePage({
                   { value: 'all', label: 'Todos' },
                   { value: 'pending', label: 'Pendentes' },
                   { value: 'completed', label: 'Concluídos' },
-                  { value: 'expired', label: 'Vencidos' }
+                  { value: 'expired', label: 'Atrasados' }
                 ]}
                 placeholder="Selecione o status"
                 colors={{
@@ -283,7 +285,7 @@ export function SchedulePage({
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
                 <XCircle className="w-4 h-4 text-red-500" strokeWidth={1.5} />
-                <span className="text-sm" style={{ color: colors.textSecondary }}>Vencidos</span>
+                <span className="text-sm" style={{ color: colors.textSecondary }}>Atrasados</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.expired}</p>
             </div>

@@ -43,7 +43,7 @@ export const DeadlineBadge: React.FC<DeadlineBadgeProps> = ({
         };
       case 'expired':
         return {
-          label: 'Vencido',
+          label: 'Atrasado',
           bgColor: 'bg-red-100 dark:bg-red-900/30',
           textColor: 'text-red-700 dark:text-red-300',
           icon: XCircle
