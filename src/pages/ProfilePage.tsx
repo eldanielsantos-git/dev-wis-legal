@@ -532,6 +532,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
   };
 
   const handleAvatarClick = () => {
+    if (isUploadingAvatar) return;
     fileInputRef.current?.click();
   };
 
@@ -934,8 +935,11 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
             <div className="max-w-3xl mx-auto space-y-6 overflow-x-hidden">
             <form onSubmit={handleSubmit} className="rounded-lg p-4 sm:p-6 lg:p-8 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="mb-8 flex flex-col items-center">
-                <div className="relative group">
-                  <div className="cursor-pointer">
+                <div
+                  className={`relative group ${isUploadingAvatar ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                  onClick={handleAvatarClick}
+                >
+                  <div className={`transition-opacity ${!isUploadingAvatar && 'group-hover:opacity-80'}`}>
                     <UserAvatar
                       avatarUrl={formData.avatar_url}
                       firstName={formData.first_name}
@@ -944,11 +948,8 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                       className="text-3xl"
                     />
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAvatarClick}
-                    disabled={isUploadingAvatar}
-                    className="absolute bottom-0 right-[-4px] rounded-full p-2 shadow-lg transition-colors disabled:opacity-50 hover:opacity-80"
+                  <div
+                    className="absolute bottom-0 right-[-4px] rounded-full p-2 shadow-lg transition-colors pointer-events-none"
                     style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
                   >
                     {isUploadingAvatar ? (
@@ -956,7 +957,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                     ) : (
                       <Camera className="w-4 h-4" />
                     )}
-                  </button>
+                  </div>
                 </div>
                 <input
                   ref={fileInputRef}
@@ -966,7 +967,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                   className="hidden"
                 />
                 <p className="text-sm mt-3" style={{ color: colors.textSecondary }}>
-                  {formData.type === 'PJ' ? 'Clique no ícone para alterar o logo da empresa' : 'Clique no ícone para alterar a foto'}
+                  {formData.type === 'PJ' ? 'Clique na imagem para alterar o logo da empresa' : 'Clique na imagem para alterar a foto'}
                 </p>
               </div>
 
