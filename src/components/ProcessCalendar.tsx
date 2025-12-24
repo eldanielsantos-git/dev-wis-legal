@@ -185,7 +185,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
                 ? `${colors.accent}30`
                 : 'transparent',
             color: isToday(date)
-              ? theme === 'dark' ? '#ffffff' : '#000000'
+              ? theme === 'dark' ? '#ffffff' : colors.textPrimary
               : isSelected(date)
                 ? colors.accent
                 : colors.textPrimary,
