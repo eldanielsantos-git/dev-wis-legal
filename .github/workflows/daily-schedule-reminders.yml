@@ -1,0 +1,43 @@
+name: Daily Schedule Reminders
+
+on:
+  schedule:
+    # Executa às 5:00 AM horário de Brasília (08:00 UTC)
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+    inputs:
+      test_mode:
+        description: 'Test mode (run immediately)'
+        required: false
+        default: 'true'
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send Daily Schedule Reminders
+        run: |
+          echo "🔔 Sending daily schedule reminders..."
+          echo "Execution time: $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
+          echo "Brasília time: $(TZ='America/Sao_Paulo' date +"%Y-%m-%d %H:%M:%S BRT")"
+
+          RESPONSE=$(curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -w "\n%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/send-daily-schedule-reminders" \
+            -d '{}')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | sed '$d')
+
+          echo "Response code: $HTTP_CODE"
+          echo "Response body: $BODY"
+
+          if [ "$HTTP_CODE" -eq 200 ]; then
+            echo "✅ Daily schedule reminders sent successfully"
+          else
+            echo "❌ Failed to send daily schedule reminders"
+            exit 1
+          fi
