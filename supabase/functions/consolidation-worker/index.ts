@@ -367,7 +367,7 @@ Deno.serve(async (req: Request) => {
     if (allCompleted && !hasRunning && !hasPending) {
       const { data: processoData } = await supabase
         .from('processos')
-        .select('user_id, file_name, created_at, is_chunked')
+        .select('user_id, file_name, created_at, is_chunked, status')
         .eq('id', processo_id)
         .single();
 
@@ -405,7 +405,7 @@ Deno.serve(async (req: Request) => {
           console.error(`[${workerId}] ❌ Erro ao chamar edge function de email:`, emailError);
         }
 
-        console.log(`[${workerId}] 🔔 Enviando notificação administrativa...`);
+        console.log(`[${workerId}] 🔔 Processo completo! Enviando notificação administrativa...`);
 
         const { data: userData } = await supabase
           .from('user_profiles')
