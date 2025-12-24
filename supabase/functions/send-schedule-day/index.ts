@@ -196,37 +196,121 @@ Deno.serve(async (req: Request) => {
     const templateId = "b6e5fbda-ecbb-4b97-a932-f94b2d48d770";
     const maxEventsInEmail = 10;
 
+    const generateEventCardHtml = (event: DeadlineEvent): string => {
+      const timeHtml = event.deadline_time
+        ? `<tr>
+            <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
+              <strong>Horário:</strong> ${event.deadline_time}
+            </td>
+          </tr>`
+        : '';
+
+      const categoryHtml = event.category
+        ? `<tr>
+            <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
+              <strong>Categoria:</strong> ${event.category}
+            </td>
+          </tr>`
+        : '';
+
+      const notesHtml = event.notes
+        ? `<tr>
+            <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
+              <strong>Observações:</strong>
+            </td>
+          </tr>
+          <tr>
+            <td style="color: #475569; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F8FAFC; border-radius: 4px; margin-bottom: 16px;">
+              ${event.notes}
+            </td>
+          </tr>`
+        : '';
+
+      return `
+        <tr>
+          <td style="padding-bottom: 24px;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #ffffff; border-radius: 8px;">
+              <tr>
+                <td style="padding: 24px;">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td style="color: #1D1C1B; font-family: 'Open Sans', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 26px; padding-bottom: 16px;">
+                        ${event.processo_name}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
+                        <strong>Assunto:</strong> ${event.subject}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
+                        <strong>Data:</strong> ${event.deadline_date}
+                      </td>
+                    </tr>
+                    ${timeHtml}
+                    <tr>
+                      <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
+                        <strong>Status:</strong> ${event.status_label}
+                      </td>
+                    </tr>
+                    ${categoryHtml}
+                    ${notesHtml}
+                    <tr>
+                      <td style="padding-top: 16px;">
+                        <table role="presentation" border="0" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td style="border-radius: 6px; background-color: #1D1C1B;">
+                              <a href="${event.view_event_url}" target="_blank" style="border: 1px solid #1D1C1B; border-radius: 6px; color: #ffffff; display: inline-block; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px; padding: 12px 24px; text-decoration: none;">
+                                Ver Processo
+                              </a>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      `;
+    };
+
+    const eventsToShow = events.slice(0, maxEventsInEmail);
+    const eventsHtml = eventsToShow.map(event => generateEventCardHtml(event)).join('');
+
+    const moreEventsHtml = events.length > maxEventsInEmail
+      ? `<tr>
+          <td style="padding-bottom: 24px;">
+            <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #FEF3C7; border-radius: 8px; border-left: 4px solid #F59E0B;">
+              <tr>
+                <td style="padding: 16px 20px;">
+                  <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                      <td style="color: #92400E; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; font-weight: 600; line-height: 21px; padding-bottom: 4px;">
+                        Você tem mais eventos hoje!
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="color: #92400E; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px;">
+                        Total de ${events.length} eventos agendados. Acesse o calendário para ver todos.
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`
+      : '';
+
     const templateVariables: Record<string, string> = {
       first_name: firstName,
       view_full_schedule_url: viewFullScheduleUrl,
-      total_events: events.length.toString(),
-      has_more_events: events.length > maxEventsInEmail ? 'true' : 'false'
+      events_html: eventsHtml + moreEventsHtml
     };
-
-    for (let i = 0; i < maxEventsInEmail; i++) {
-      const eventNum = i + 1;
-      const event = events[i];
-
-      if (event) {
-        templateVariables[`event_${eventNum}_processo_name`] = event.processo_name;
-        templateVariables[`event_${eventNum}_subject`] = event.subject;
-        templateVariables[`event_${eventNum}_deadline_date`] = event.deadline_date;
-        templateVariables[`event_${eventNum}_deadline_time`] = event.deadline_time || '';
-        templateVariables[`event_${eventNum}_status_label`] = event.status_label;
-        templateVariables[`event_${eventNum}_category`] = event.category || '';
-        templateVariables[`event_${eventNum}_notes`] = event.notes || '';
-        templateVariables[`event_${eventNum}_view_event_url`] = event.view_event_url;
-      } else {
-        templateVariables[`event_${eventNum}_processo_name`] = '';
-        templateVariables[`event_${eventNum}_subject`] = '';
-        templateVariables[`event_${eventNum}_deadline_date`] = '';
-        templateVariables[`event_${eventNum}_deadline_time`] = '';
-        templateVariables[`event_${eventNum}_status_label`] = '';
-        templateVariables[`event_${eventNum}_category`] = '';
-        templateVariables[`event_${eventNum}_notes`] = '';
-        templateVariables[`event_${eventNum}_view_event_url`] = '';
-      }
-    }
 
     const resendPayload = {
       from: "Wis Legal <no-reply@wislegal.io>",
