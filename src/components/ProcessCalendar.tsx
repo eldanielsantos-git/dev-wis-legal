@@ -190,10 +190,10 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
                 ? colors.accent
                 : colors.textPrimary,
             opacity: isCurrentMonth ? 1 : 0.4,
-            borderTop: '1px solid rgba(255, 255, 255, 0.05)',
-            borderLeft: '1px solid rgba(255, 255, 255, 0.05)',
-            borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+            borderTop: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FFFFFF',
+            borderLeft: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FFFFFF',
+            borderRight: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FFFFFF',
+            borderBottom: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FFFFFF',
             borderRadius: isToday(date) ? '8px' : '0',
             margin: isToday(date) ? '2px' : '0'
           }}
