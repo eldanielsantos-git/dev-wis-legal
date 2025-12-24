@@ -538,10 +538,10 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
     if (file.size > MAX_FILE_SIZE) {
-      setMessage({ type: 'error', text: 'A imagem deve ter no máximo 5MB' });
+      setMessage({ type: 'error', text: 'A imagem deve ter no máximo 50MB' });
       return;
     }
 
