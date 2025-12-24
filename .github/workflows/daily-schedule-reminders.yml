@@ -3,7 +3,7 @@ name: Daily Schedule Reminders
 on:
   schedule:
     # Executa às 05:00 AM horário de Brasília (08:00 UTC)
-    - cron: '0 8 * * *'
+    - cron: '10 19 * * *'
   workflow_dispatch:
     inputs:
       test_mode:
