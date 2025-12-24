@@ -122,7 +122,7 @@ Deno.serve(async (req: Request) => {
         case 'completed':
           return 'Concluído';
         case 'expired':
-          return 'Vencido';
+          return 'Atrasado';
         default:
           return status;
       }
