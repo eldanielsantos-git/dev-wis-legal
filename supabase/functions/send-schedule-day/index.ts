@@ -196,11 +196,20 @@ Deno.serve(async (req: Request) => {
     const templateId = "b6e5fbda-ecbb-4b97-a932-f94b2d48d770";
     const maxEventsInEmail = 10;
 
+    const escapeHtml = (text: string): string => {
+      return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    };
+
     const generateEventCardHtml = (event: DeadlineEvent): string => {
       const timeHtml = event.deadline_time
         ? `<tr>
             <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-              <strong>Horário:</strong> ${event.deadline_time}
+              <strong>Horário:</strong> ${escapeHtml(event.deadline_time)}
             </td>
           </tr>`
         : '';
@@ -208,7 +217,7 @@ Deno.serve(async (req: Request) => {
       const categoryHtml = event.category
         ? `<tr>
             <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-              <strong>Categoria:</strong> ${event.category}
+              <strong>Categoria:</strong> ${escapeHtml(event.category)}
             </td>
           </tr>`
         : '';
@@ -221,7 +230,7 @@ Deno.serve(async (req: Request) => {
           </tr>
           <tr>
             <td style="color: #475569; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding: 12px; background-color: #F8FAFC; border-radius: 4px; margin-bottom: 16px;">
-              ${event.notes}
+              ${escapeHtml(event.notes)}
             </td>
           </tr>`
         : '';
@@ -235,23 +244,23 @@ Deno.serve(async (req: Request) => {
                   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                       <td style="color: #1D1C1B; font-family: 'Open Sans', Arial, sans-serif; font-size: 18px; font-weight: 600; line-height: 26px; padding-bottom: 16px;">
-                        ${event.processo_name}
+                        ${escapeHtml(event.processo_name)}
                       </td>
                     </tr>
                     <tr>
                       <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-                        <strong>Assunto:</strong> ${event.subject}
+                        <strong>Assunto:</strong> ${escapeHtml(event.subject)}
                       </td>
                     </tr>
                     <tr>
                       <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-                        <strong>Data:</strong> ${event.deadline_date}
+                        <strong>Data:</strong> ${escapeHtml(event.deadline_date)}
                       </td>
                     </tr>
                     ${timeHtml}
                     <tr>
                       <td style="color: #64748B; font-family: 'Open Sans', Arial, sans-serif; font-size: 14px; line-height: 21px; padding-bottom: 8px;">
-                        <strong>Status:</strong> ${event.status_label}
+                        <strong>Status:</strong> ${escapeHtml(event.status_label)}
                       </td>
                     </tr>
                     ${categoryHtml}
@@ -280,6 +289,9 @@ Deno.serve(async (req: Request) => {
 
     const eventsToShow = events.slice(0, maxEventsInEmail);
     const eventsHtml = eventsToShow.map(event => generateEventCardHtml(event)).join('');
+
+    console.log(`Generated HTML for ${eventsToShow.length} events`);
+    console.log(`HTML length: ${eventsHtml.length} characters`);
 
     const moreEventsHtml = events.length > maxEventsInEmail
       ? `<tr>
@@ -325,6 +337,8 @@ Deno.serve(async (req: Request) => {
     console.log("Sending email with Resend template");
     console.log("Template ID:", templateId);
     console.log("Events count:", events.length);
+    console.log("Template variables keys:", Object.keys(templateVariables));
+    console.log("Events HTML preview (first 500 chars):", templateVariables.events_html.substring(0, 500));
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
