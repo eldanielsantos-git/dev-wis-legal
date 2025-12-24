@@ -263,7 +263,7 @@ export function SchedulePage({
 
             <div className="rounded-xl shadow-sm p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="w-4 h-4 schedule-icon" strokeWidth={1.5} style={{ color: colors.accent }} />
+                <Clock className="w-4 h-4 schedule-icon-pending" strokeWidth={1.5} style={{ color: colors.accent }} />
                 <span className="text-sm" style={{ color: colors.textSecondary }}>Pendentes</span>
               </div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.pending}</p>

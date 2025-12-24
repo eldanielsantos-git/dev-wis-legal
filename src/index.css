@@ -154,6 +154,10 @@ body {
   color: #FFFFFF !important;
 }
 
+:root[data-theme='dark'] .schedule-icon-pending {
+  color: #F97316 !important;
+}
+
 :root[data-theme='dark'] .schedule-text {
   color: #FFFFFF !important;
 }
