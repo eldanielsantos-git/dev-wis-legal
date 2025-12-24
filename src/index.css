@@ -165,3 +165,16 @@ body {
 :root[data-theme='dark'] .calendar-today-btn {
   color: #FFFFFF !important;
 }
+
+/* Force correct colors in light mode for schedule page icons */
+:root[data-theme='light'] .schedule-icon {
+  color: #374151 !important;
+}
+
+:root[data-theme='light'] .schedule-icon-pending {
+  color: #F97316 !important;
+}
+
+:root[data-theme='light'] .calendar-today-btn {
+  color: #374151 !important;
+}
