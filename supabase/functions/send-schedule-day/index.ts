@@ -203,24 +203,30 @@ Deno.serve(async (req: Request) => {
       has_more_events: events.length > maxEventsInEmail ? 'true' : 'false'
     };
 
-    events.slice(0, maxEventsInEmail).forEach((event, index) => {
-      const eventNum = index + 1;
-      templateVariables[`event_${eventNum}_processo_name`] = event.processo_name;
-      templateVariables[`event_${eventNum}_subject`] = event.subject;
-      templateVariables[`event_${eventNum}_deadline_date`] = event.deadline_date;
-      templateVariables[`event_${eventNum}_status_label`] = event.status_label;
-      templateVariables[`event_${eventNum}_view_event_url`] = event.view_event_url;
+    for (let i = 0; i < maxEventsInEmail; i++) {
+      const eventNum = i + 1;
+      const event = events[i];
 
-      if (event.deadline_time && event.deadline_time.trim()) {
-        templateVariables[`event_${eventNum}_deadline_time`] = event.deadline_time;
+      if (event) {
+        templateVariables[`event_${eventNum}_processo_name`] = event.processo_name;
+        templateVariables[`event_${eventNum}_subject`] = event.subject;
+        templateVariables[`event_${eventNum}_deadline_date`] = event.deadline_date;
+        templateVariables[`event_${eventNum}_deadline_time`] = event.deadline_time || '';
+        templateVariables[`event_${eventNum}_status_label`] = event.status_label;
+        templateVariables[`event_${eventNum}_category`] = event.category || '';
+        templateVariables[`event_${eventNum}_notes`] = event.notes || '';
+        templateVariables[`event_${eventNum}_view_event_url`] = event.view_event_url;
+      } else {
+        templateVariables[`event_${eventNum}_processo_name`] = '';
+        templateVariables[`event_${eventNum}_subject`] = '';
+        templateVariables[`event_${eventNum}_deadline_date`] = '';
+        templateVariables[`event_${eventNum}_deadline_time`] = '';
+        templateVariables[`event_${eventNum}_status_label`] = '';
+        templateVariables[`event_${eventNum}_category`] = '';
+        templateVariables[`event_${eventNum}_notes`] = '';
+        templateVariables[`event_${eventNum}_view_event_url`] = '';
       }
-      if (event.category && event.category.trim()) {
-        templateVariables[`event_${eventNum}_category`] = event.category;
-      }
-      if (event.notes && event.notes.trim()) {
-        templateVariables[`event_${eventNum}_notes`] = event.notes;
-      }
-    });
+    }
 
     const resendPayload = {
       from: "Wis Legal <no-reply@wislegal.io>",
