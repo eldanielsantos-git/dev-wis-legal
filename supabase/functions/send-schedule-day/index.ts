@@ -194,22 +194,32 @@ Deno.serve(async (req: Request) => {
     console.log("Step 6: Preparing Resend template variables...");
 
     const templateId = "b6e5fbda-ecbb-4b97-a932-f94b2d48d770";
+    const maxEventsInEmail = 10;
 
     const templateVariables: Record<string, string> = {
       first_name: firstName,
-      view_full_schedule_url: viewFullScheduleUrl
+      view_full_schedule_url: viewFullScheduleUrl,
+      total_events: events.length.toString(),
+      has_more_events: events.length > maxEventsInEmail ? 'true' : 'false'
     };
 
-    events.slice(0, 5).forEach((event, index) => {
+    events.slice(0, maxEventsInEmail).forEach((event, index) => {
       const eventNum = index + 1;
       templateVariables[`event_${eventNum}_processo_name`] = event.processo_name;
       templateVariables[`event_${eventNum}_subject`] = event.subject;
       templateVariables[`event_${eventNum}_deadline_date`] = event.deadline_date;
-      templateVariables[`event_${eventNum}_deadline_time`] = event.deadline_time;
       templateVariables[`event_${eventNum}_status_label`] = event.status_label;
-      templateVariables[`event_${eventNum}_category`] = event.category;
-      templateVariables[`event_${eventNum}_notes`] = event.notes;
       templateVariables[`event_${eventNum}_view_event_url`] = event.view_event_url;
+
+      if (event.deadline_time && event.deadline_time.trim()) {
+        templateVariables[`event_${eventNum}_deadline_time`] = event.deadline_time;
+      }
+      if (event.category && event.category.trim()) {
+        templateVariables[`event_${eventNum}_category`] = event.category;
+      }
+      if (event.notes && event.notes.trim()) {
+        templateVariables[`event_${eventNum}_notes`] = event.notes;
+      }
     });
 
     const resendPayload = {
