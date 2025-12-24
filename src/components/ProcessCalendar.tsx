@@ -243,7 +243,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
             onClick={handleToday}
             className="px-3 py-1 text-sm font-medium rounded-lg transition-all"
             style={{
-              color: colors.accent,
+              color: theme === 'dark' ? colors.accent : colors.textPrimary,
               backgroundColor: `${colors.accent}15`
             }}
             onMouseEnter={(e) => {
