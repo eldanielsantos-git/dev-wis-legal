@@ -282,7 +282,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
       </aside>
 
       <aside className={`hidden lg:flex ${isCollapsed ? 'w-20' : 'w-64'} h-screen fixed left-0 top-0 flex-col font-body transition-[width] duration-300 ease-in-out`} style={{ backgroundColor: colors.bgPrimary, borderRight: `1px solid ${colors.border}` }}>
-        <div className="p-6 lg:max-h-[768px]:p-1 flex flex-col items-center justify-center">
+        <div className="p-6 lg:max-h-[768px]:p-1 flex flex-col items-center justify-center flex-shrink-0">
           <button
             onClick={onNavigateToApp}
             className="hover:opacity-80 transition-opacity w-10 h-10 lg:max-h-[768px]:w-5 lg:max-h-[768px]:h-5 flex items-center justify-center"
@@ -296,7 +296,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
           </button>
         </div>
 
-        <nav className="flex-1 px-3 lg:max-h-[768px]:px-1 flex flex-col">
+        <nav className="flex-1 px-3 lg:max-h-[768px]:px-1 flex flex-col overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent">
           <div>
             <button
               onClick={handleToggleCollapse}
@@ -440,7 +440,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
           </div>
         </nav>
 
-        <div className="p-3 lg:max-h-[768px]:p-0.5" style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
+        <div className="p-3 lg:max-h-[768px]:p-0.5 flex-shrink-0" style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
           {isCollapsed ? (
             <div className="flex items-center py-3 lg:max-h-[768px]:py-0 justify-center">
               <UserAvatarMenu

@@ -115,11 +115,12 @@ body {
 
 @layer utilities {
   .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
     height: 6px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
-    @apply bg-gray-100 rounded-full;
+    background: transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
@@ -132,7 +133,20 @@ body {
 
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgb(209 213 219) rgb(243 244 246);
+    scrollbar-color: rgb(209 213 219) transparent;
+  }
+
+  /* Scrollbar para tema escuro */
+  :root[data-theme='dark'] .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded-full;
+  }
+
+  :root[data-theme='dark'] .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+
+  :root[data-theme='dark'] .scrollbar-thin {
+    scrollbar-color: rgb(75 85 99) transparent;
   }
 
   @keyframes shimmer {
