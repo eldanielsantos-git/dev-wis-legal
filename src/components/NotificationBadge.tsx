@@ -119,24 +119,24 @@ export function NotificationBadge({ onClick, isCollapsed, isActive }: Notificati
         onClick={onClick}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className={`w-full flex items-center py-[18px] lg:max-h-[900px]:py-0.5 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4 lg:max-h-[900px]:px-0.5'}`}
+        className={`w-full flex items-center py-[18px] lg:max-h-[900px]:py-0.5 lg:max-h-[700px]:py-0 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4 lg:max-h-[900px]:px-0.5 lg:max-h-[700px]:px-0'}`}
         style={{ color: colors.textPrimary, backgroundColor: isActive ? activeBg : 'transparent' }}
         onMouseEnterCapture={(e: any) => e.currentTarget.style.backgroundColor = hoverBg}
         onMouseLeaveCapture={(e: any) => e.currentTarget.style.backgroundColor = isActive ? activeBg : 'transparent'}
         title={isCollapsed ? "Notificações" : undefined}
       >
         <div className="relative">
-          <Bell className={`w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
+          <Bell className={`w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[700px]:w-2.5 lg:max-h-[700px]:h-2.5 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
           {hasUnread && (
             <span
-              className="absolute -top-1 -right-1 w-4 h-4 lg:max-h-[900px]:w-2 lg:max-h-[900px]:h-2 rounded-full text-white text-xs lg:max-h-[900px]:text-[7px] flex items-center justify-center font-bold"
+              className="absolute -top-1 -right-1 w-4 h-4 lg:max-h-[900px]:w-2 lg:max-h-[900px]:h-2 lg:max-h-[700px]:w-1.5 lg:max-h-[700px]:h-1.5 rounded-full text-white text-xs lg:max-h-[900px]:text-[7px] lg:max-h-[700px]:text-[6px] flex items-center justify-center font-bold"
               style={{ backgroundColor: getBadgeColor(), fontSize: '10px' }}
             >
               {unreadCounts.total > 9 ? '9+' : unreadCounts.total}
             </span>
           )}
         </div>
-        {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 text-sm lg:max-h-[900px]:text-[9px] font-medium">Notificações</span>}
+        {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 lg:max-h-[700px]:ml-0 text-sm lg:max-h-[900px]:text-[9px] lg:max-h-[700px]:text-[7px] font-medium">Notificações</span>}
       </button>
 
       {tooltipContent && createPortal(tooltipContent, document.body)}
