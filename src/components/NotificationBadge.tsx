@@ -119,24 +119,24 @@ export function NotificationBadge({ onClick, isCollapsed, isActive }: Notificati
         onClick={onClick}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className={`w-full flex items-center py-[18px] max-h-[790px]:py-0.5 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4 max-h-[790px]:px-2'}`}
+        className={`w-full flex items-center py-[18px] max-h-[768px]:py-1 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4 max-h-[768px]:px-2'}`}
         style={{ color: colors.textPrimary, backgroundColor: isActive ? activeBg : 'transparent' }}
         onMouseEnterCapture={(e: any) => e.currentTarget.style.backgroundColor = hoverBg}
         onMouseLeaveCapture={(e: any) => e.currentTarget.style.backgroundColor = isActive ? activeBg : 'transparent'}
         title={isCollapsed ? "Notificações" : undefined}
       >
         <div className="relative">
-          <Bell className={`w-5 h-5 max-h-[790px]:w-3 max-h-[790px]:h-3 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
+          <Bell className={`w-5 h-5 max-h-[768px]:w-4 max-h-[768px]:h-4 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
           {hasUnread && (
             <span
-              className="absolute -top-1 -right-1 w-4 h-4 max-h-[790px]:w-2.5 max-h-[790px]:h-2.5 rounded-full text-white text-xs max-h-[790px]:text-[8px] flex items-center justify-center font-bold"
+              className="absolute -top-1 -right-1 w-4 h-4 max-h-[768px]:w-3 max-h-[768px]:h-3 rounded-full text-white text-xs max-h-[768px]:text-[9px] flex items-center justify-center font-bold"
               style={{ backgroundColor: getBadgeColor(), fontSize: '10px' }}
             >
               {unreadCounts.total > 9 ? '9+' : unreadCounts.total}
             </span>
           )}
         </div>
-        {!isCollapsed && <span className="ml-3 max-h-[790px]:ml-1 text-sm max-h-[790px]:text-[10px] font-medium">Notificações</span>}
+        {!isCollapsed && <span className="ml-3 max-h-[768px]:ml-2 text-sm max-h-[768px]:text-xs font-medium">Notificações</span>}
       </button>
 
       {tooltipContent && createPortal(tooltipContent, document.body)}
