@@ -51,6 +51,85 @@ async function logTokenCreditAudit(params: any) {
   }
 }
 
+async function findUserIdForTokenPurchase(
+  eventId: string,
+  customerId: string | null,
+  subscriptionId: string | null,
+  customerEmail: string | null
+): Promise<string | null> {
+  console.info(`[${eventId}] Finding user with multiple strategies - customer_id: ${customerId}, subscription_id: ${subscriptionId}, email: ${customerEmail}`);
+
+  if (customerId) {
+    const { data: customerData } = await supabase
+      .from('stripe_customers')
+      .select('user_id')
+      .eq('customer_id', customerId)
+      .maybeSingle();
+
+    if (customerData?.user_id) {
+      console.info(`[${eventId}] Found user via customer_id: ${customerData.user_id}`);
+      return customerData.user_id;
+    }
+  }
+
+  if (subscriptionId) {
+    const { data: subscriptionData } = await supabase
+      .from('stripe_subscriptions')
+      .select('customer_id')
+      .eq('subscription_id', subscriptionId)
+      .is('deleted_at', null)
+      .maybeSingle();
+
+    if (subscriptionData?.customer_id) {
+      const { data: customerData } = await supabase
+        .from('stripe_customers')
+        .select('user_id')
+        .eq('customer_id', subscriptionData.customer_id)
+        .maybeSingle();
+
+      if (customerData?.user_id) {
+        console.info(`[${eventId}] Found user via subscription_id -> customer_id: ${customerData.user_id}`);
+        return customerData.user_id;
+      }
+    }
+  }
+
+  if (customerEmail) {
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('id')
+      .eq('email', customerEmail)
+      .maybeSingle();
+
+    if (userProfile?.id) {
+      console.info(`[${eventId}] Found user via email: ${userProfile.id}`);
+
+      if (customerId) {
+        console.info(`[${eventId}] Creating customer mapping for ${customerEmail}`);
+        const { error: insertError } = await supabase
+          .from('stripe_customers')
+          .insert({
+            customer_id: customerId,
+            user_id: userProfile.id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          });
+
+        if (insertError) {
+          console.error(`[${eventId}] Failed to create customer mapping:`, insertError);
+        } else {
+          console.info(`[${eventId}] Successfully created customer mapping`);
+        }
+      }
+
+      return userProfile.id;
+    }
+  }
+
+  console.error(`[${eventId}] Could not find user with any strategy`);
+  return null;
+}
+
 async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId: string) {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -821,173 +900,157 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        let { data: customerData } = await supabase
-          .from('stripe_customers')
-          .select('user_id')
-          .eq('customer_id', customerId)
-          .maybeSingle();
+        const customerEmail = session.customer_details?.email || session.customer_email || null;
+        const subscriptionId = typeof session.subscription === 'string'
+          ? session.subscription
+          : session.subscription?.id || null;
 
-        if (!customerData?.user_id) {
-          console.info(`[${event.id}] Customer ${customerId} not found in database, attempting to create mapping...`);
+        const userId = await findUserIdForTokenPurchase(
+          event.id,
+          customerId,
+          subscriptionId,
+          customerEmail
+        );
 
-          try {
-            const stripeCustomer = await stripe.customers.retrieve(customerId);
+        if (!userId) {
+          console.error(`[${event.id}] Could not identify user for token purchase`);
+          await notifyAdminSafe({
+            type: 'token_purchase_error',
+            title: 'Falha ao Identificar Usuário',
+            message: `Compra de tokens não processada | Customer: ${customerId} | Email: ${customerEmail}`,
+            severity: 'error',
+            metadata: {
+              customer_id: customerId,
+              subscription_id: subscriptionId,
+              customer_email: customerEmail,
+              event_id: event.id,
+            },
+          });
 
-            if (stripeCustomer && !stripeCustomer.deleted && stripeCustomer.email) {
-              const { data: userProfile } = await supabase
-                .from('user_profiles')
-                .select('id')
-                .eq('email', stripeCustomer.email)
-                .maybeSingle();
+          return new Response(JSON.stringify({ received: true, error: 'User not found' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
 
-              if (userProfile) {
-                const { error: insertError } = await supabase
-                  .from('stripe_customers')
-                  .insert({
-                    customer_id: customerId,
-                    user_id: userProfile.id,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                  });
+        if (!tokensAdded) {
+          console.info(`[${event.id}] Re-checking for subscription after user identification...`);
+          const { data: retrySubscription } = await supabase
+            .from('stripe_subscriptions')
+            .select('*')
+            .eq('customer_id', customerId)
+            .is('deleted_at', null)
+            .maybeSingle();
 
-                if (!insertError) {
-                  console.info(`[${event.id}] Successfully created customer mapping for ${stripeCustomer.email}`);
-                  customerData = { user_id: userProfile.id };
+          if (retrySubscription) {
+            const newExtraTokens = (retrySubscription.extra_tokens || 0) + tokenPackage.tokens_amount;
+            const newTotalTokens = retrySubscription.plan_tokens + newExtraTokens;
 
-                  if (!tokensAdded) {
-                    console.info(`[${event.id}] Re-checking for subscription after customer mapping creation...`);
-                    const { data: retrySubscription } = await supabase
-                      .from('stripe_subscriptions')
-                      .select('*')
-                      .eq('customer_id', customerId)
-                      .is('deleted_at', null)
-                      .maybeSingle();
+            const { error: updateError } = await supabase
+              .from('stripe_subscriptions')
+              .update({
+                extra_tokens: newExtraTokens,
+                tokens_total: newTotalTokens,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('customer_id', customerId);
 
-                    if (retrySubscription) {
-                      const newExtraTokens = (retrySubscription.extra_tokens || 0) + tokenPackage.tokens_amount;
-                      const newTotalTokens = retrySubscription.plan_tokens + newExtraTokens;
+            if (!updateError) {
+              tokensAdded = true;
+              console.info(`[${event.id}] Successfully added ${tokenPackage.tokens_amount} tokens to subscription`);
 
-                      const { error: updateError } = await supabase
-                        .from('stripe_subscriptions')
-                        .update({
-                          extra_tokens: newExtraTokens,
-                          tokens_total: newTotalTokens,
-                          updated_at: new Date().toISOString(),
-                        })
-                        .eq('customer_id', customerId);
-
-                      if (!updateError) {
-                        tokensAdded = true;
-                        console.info(`[${event.id}] Successfully added ${tokenPackage.tokens_amount} tokens after customer mapping`);
-
-                        await logTokenCreditAudit({
-                          event_id: event.id,
-                          event_type: 'token_purchase',
-                          customer_id: customerId,
-                          price_id: priceId,
-                          operation: 'token_purchase_after_mapping',
-                          status: 'success',
-                          subscription_found: true,
-                          before_extra_tokens: retrySubscription.extra_tokens || 0,
-                          before_tokens_total: retrySubscription.tokens_total,
-                          after_extra_tokens: newExtraTokens,
-                          after_tokens_total: newTotalTokens,
-                          tokens_amount: tokenPackage.tokens_amount,
-                          processing_time_ms: 0,
-                          metadata: {
-                            package_name: tokenPackage.name,
-                            tokens_added: tokenPackage.tokens_amount,
-                            note: 'Tokens added after creating customer mapping',
-                          },
-                        });
-                      }
-                    }
-                  }
-                } else {
-                  console.error(`[${event.id}] Failed to create customer mapping:`, insertError);
-                }
-              } else {
-                console.error(`[${event.id}] User profile not found for email ${stripeCustomer.email}`);
-              }
+              await logTokenCreditAudit({
+                event_id: event.id,
+                event_type: 'token_purchase',
+                customer_id: customerId,
+                price_id: priceId,
+                operation: 'token_purchase_with_subscription',
+                status: 'success',
+                subscription_found: true,
+                before_extra_tokens: retrySubscription.extra_tokens || 0,
+                before_tokens_total: retrySubscription.tokens_total,
+                after_extra_tokens: newExtraTokens,
+                after_tokens_total: newTotalTokens,
+                tokens_amount: tokenPackage.tokens_amount,
+                processing_time_ms: 0,
+                metadata: {
+                  package_name: tokenPackage.name,
+                  tokens_added: tokenPackage.tokens_amount,
+                },
+              });
             }
-          } catch (customerError) {
-            console.error(`[${event.id}] Error retrieving customer from Stripe:`, customerError);
           }
         }
 
-        if (customerData?.user_id) {
-          const amountPaid = (session.amount_total || 0) / 100;
-          const amountFormatted = `R$ ${amountPaid.toFixed(2).replace('.', ',')}`;
+        const amountPaid = (session.amount_total || 0) / 100;
+        const amountFormatted = `R$ ${amountPaid.toFixed(2).replace('.', ',')}`;
 
-          console.info(`[${event.id}] Sending token purchase email for user ${customerData.user_id}`);
+        console.info(`[${event.id}] Sending token purchase email for user ${userId}`);
+
+        try {
+          const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-token-purchase-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+            },
+            body: JSON.stringify({
+              user_id: userId,
+              package_name: tokenPackage.name,
+              tokens_purchased: tokenPackage.tokens_amount,
+              amount_paid: amountFormatted,
+            }),
+          });
+
+          if (!emailResponse.ok) {
+            const errorText = await emailResponse.text();
+            console.error(`[${event.id}] Token purchase email failed: ${emailResponse.status} - ${errorText}`);
+          } else {
+            const result = await emailResponse.json();
+            console.info(`[${event.id}] Token purchase email sent successfully:`, result);
+          }
+        } catch (emailError) {
+          console.error(`[${event.id}] Error sending token purchase email:`, emailError);
+        }
+
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('email, first_name, last_name')
+          .eq('id', userId)
+          .maybeSingle();
+
+        if (profile) {
+          const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+
+          console.info(`[${event.id}] Sending token purchase Slack notification for ${profile.email}`);
 
           try {
-            const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-token-purchase-email`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
-              },
-              body: JSON.stringify({
-                user_id: customerData.user_id,
+            const notifyResult = await notifyAdminSafe({
+              type: 'token_purchase',
+              title: 'Compra de Tokens',
+              message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
+              severity: 'success',
+              metadata: {
+                customer_id: customerId,
+                user_name: userName,
+                user_email: profile.email,
                 package_name: tokenPackage.name,
                 tokens_purchased: tokenPackage.tokens_amount,
                 amount_paid: amountFormatted,
-              }),
+              },
+              userId: userId,
             });
 
-            if (!emailResponse.ok) {
-              const errorText = await emailResponse.text();
-              console.error(`[${event.id}] Token purchase email failed: ${emailResponse.status} - ${errorText}`);
+            if (notifyResult.success) {
+              console.info(`[${event.id}] Token purchase Slack notification sent successfully`);
             } else {
-              const result = await emailResponse.json();
-              console.info(`[${event.id}] Token purchase email sent successfully:`, result);
+              console.error(`[${event.id}] Token purchase Slack notification failed:`, notifyResult.error);
             }
-          } catch (emailError) {
-            console.error(`[${event.id}] Error sending token purchase email:`, emailError);
-          }
-
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('email, first_name, last_name')
-            .eq('id', customerData.user_id)
-            .maybeSingle();
-
-          if (profile) {
-            const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
-
-            console.info(`[${event.id}] Sending token purchase Slack notification for ${profile.email}`);
-
-            try {
-              const notifyResult = await notifyAdminSafe({
-                type: 'token_purchase',
-                title: 'Compra de Tokens',
-                message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
-                severity: 'success',
-                metadata: {
-                  customer_id: customerId,
-                  user_name: userName,
-                  user_email: profile.email,
-                  package_name: tokenPackage.name,
-                  tokens_purchased: tokenPackage.tokens_amount,
-                  amount_paid: amountFormatted,
-                },
-                userId: customerData.user_id,
-              });
-
-              if (notifyResult.success) {
-                console.info(`[${event.id}] Token purchase Slack notification sent successfully`);
-              } else {
-                console.error(`[${event.id}] Token purchase Slack notification failed:`, notifyResult.error);
-              }
-            } catch (notifyError) {
-              console.error(`[${event.id}] Error sending token purchase Slack notification:`, notifyError);
-            }
-          } else {
-            console.error(`[${event.id}] Profile not found for user ${customerData.user_id}`);
+          } catch (notifyError) {
+            console.error(`[${event.id}] Error sending token purchase Slack notification:`, notifyError);
           }
         } else {
-          console.error(`[${event.id}] Customer data not found for customer ${customerId}`);
+          console.error(`[${event.id}] Profile not found for user ${userId}`);
         }
       }
 
