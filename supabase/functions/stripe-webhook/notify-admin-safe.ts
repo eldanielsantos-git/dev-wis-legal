@@ -8,7 +8,7 @@ export interface NotifyAdminParams {
   processoId?: string;
 }
 
-export function notifyAdminSafe(params: NotifyAdminParams): void {
+export async function notifyAdminSafe(params: NotifyAdminParams): Promise<{ success: boolean; error?: string }> {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -16,12 +16,12 @@ export function notifyAdminSafe(params: NotifyAdminParams): void {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.warn('[notify-admin-safe] Missing Supabase credentials, skipping notification');
-      return;
+      return { success: false, error: 'Missing credentials' };
     }
 
     if (notificationsEnabled === 'false') {
       console.log('[notify-admin-safe] Notifications disabled by flag, skipping');
-      return;
+      return { success: true };
     }
 
     const payload = {
@@ -36,27 +36,30 @@ export function notifyAdminSafe(params: NotifyAdminParams): void {
 
     const url = `${supabaseUrl}/functions/v1/send-admin-notification`;
 
-    fetch(url, {
+    console.log('[notify-admin-safe] Sending notification to:', url);
+    console.log('[notify-admin-safe] Payload:', JSON.stringify(payload, null, 2));
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseServiceKey}`,
       },
       body: JSON.stringify(payload),
-    })
-      .then(response => {
-        if (!response.ok) {
-          console.warn('[notify-admin-safe] Notification request failed:', response.status);
-        }
-      })
-      .catch(error => {
-        console.warn('[notify-admin-safe] Notification error (ignored):', error.message);
-      });
-  } catch (error) {
-    try {
-      console.warn('[notify-admin-safe] Critical error (ignored):', error instanceof Error ? error.message : 'Unknown');
-    } catch {
-      // Ignore even logging errors
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[notify-admin-safe] Notification request failed:', response.status, errorText);
+      return { success: false, error: `HTTP ${response.status}: ${errorText}` };
     }
+
+    const result = await response.json();
+    console.log('[notify-admin-safe] Notification sent successfully:', result);
+    return { success: true };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('[notify-admin-safe] Critical error:', errorMessage);
+    return { success: false, error: errorMessage };
   }
 }

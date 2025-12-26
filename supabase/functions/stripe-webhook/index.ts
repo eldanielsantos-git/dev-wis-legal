@@ -66,7 +66,8 @@ async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId
     });
 
     if (!response.ok) {
-      console.error(`[${eventId}] Failed to send subscription confirmation email: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`[${eventId}] Failed to send subscription confirmation email: ${response.status} - ${errorText}`);
     } else {
       console.info(`[${eventId}] Subscription confirmation email sent successfully`);
     }
@@ -438,7 +439,7 @@ Deno.serve(async (req: Request) => {
               const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
 
               try {
-                await notifyAdminSafe({
+                const notifyResult = await notifyAdminSafe({
                   type: 'subscription_created',
                   title: 'Compra de Assinatura',
                   message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
@@ -454,7 +455,11 @@ Deno.serve(async (req: Request) => {
                   },
                   userId: userData.user_id,
                 });
-                console.info(`[${event.id}] Admin notification sent successfully`);
+                if (notifyResult.success) {
+                  console.info(`[${event.id}] Admin notification sent successfully`);
+                } else {
+                  console.error(`[${event.id}] Admin notification failed:`, notifyResult.error);
+                }
               } catch (notifyError) {
                 console.error(`[${event.id}] Failed to send admin notification:`, notifyError);
               }
