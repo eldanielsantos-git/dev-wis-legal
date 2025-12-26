@@ -440,9 +440,9 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
           </div>
         </nav>
 
-        <div className="p-3 max-h-900:p-0.5 max-h-720:p-0 flex-shrink-0" style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
+        <div className="p-2 max-h-900:p-0.5 max-h-720:p-0 flex-shrink-0" style={!isCollapsed ? { borderTop: `1px solid ${colors.border}` } : {}}>
           {isCollapsed ? (
-            <div className="flex items-center py-3 max-h-900:py-0.5 max-h-720:py-0 justify-center">
+            <div className="flex items-center py-2 max-h-900:py-0.5 max-h-720:py-0 justify-center">
               <UserAvatarMenu
                 avatarUrl={profile?.avatar_url}
                 firstName={profile?.first_name}
@@ -460,7 +460,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
               />
             </div>
           ) : (
-            <div className="flex items-center py-3 max-h-720:py-0 px-4 max-h-720:px-1">
+            <div className="flex items-center py-2 max-h-900:py-0.5 max-h-720:py-0 px-3 max-h-900:px-1 max-h-720:px-1">
               <UserAvatarMenu
                 avatarUrl={profile?.avatar_url}
                 firstName={profile?.first_name}
