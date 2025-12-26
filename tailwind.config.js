@@ -72,6 +72,10 @@ export default {
       fontWeight: {
         'title': '600',
       },
+      screens: {
+        'max-h-720': { 'raw': '(max-height: 720px) and (min-width: 1024px)' },
+        'max-h-900': { 'raw': '(max-height: 900px) and (min-width: 1024px)' },
+      },
     },
   },
   plugins: [],
