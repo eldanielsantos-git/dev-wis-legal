@@ -10,7 +10,7 @@ interface DatePopoverProps {
   position: { x: number; y: number };
   onClose: () => void;
   onViewDeadline: (deadline: ProcessDeadline) => void;
-  onCreateDeadline: () => void;
+  onCreateDeadline: (date: Date) => void;
 }
 
 export const DatePopover: React.FC<DatePopoverProps> = ({
@@ -133,7 +133,7 @@ export const DatePopover: React.FC<DatePopoverProps> = ({
 
         <button
           onClick={() => {
-            onCreateDeadline();
+            onCreateDeadline(date);
             onClose();
           }}
           className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg hover:opacity-90 transition-all"
