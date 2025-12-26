@@ -229,17 +229,16 @@ export function SchedulePage({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mb-4 lg:mb-4">
             <button
               onClick={() => setIsCreateModalOpen(true)}
-              className="rounded-xl shadow-sm p-2 sm:p-4 transition-all hover:opacity-80 cursor-pointer flex flex-col items-center justify-center schedule-create-btn"
+              className="rounded-xl shadow-sm p-2 sm:p-3 transition-all hover:opacity-80 cursor-pointer flex flex-col items-center justify-center schedule-create-btn"
               style={{ backgroundColor: colors.bgSecondary }}
             >
-              <Plus className="w-6 h-6 sm:w-8 sm:h-8 mb-1 sm:mb-2 schedule-icon" strokeWidth={1.5} />
-              <span className="text-xs sm:text-sm font-medium text-center schedule-text" style={{ color: colors.textPrimary }}>Criar Prazo</span>
+              <Plus className="w-5 h-5 sm:w-6 sm:h-6 mb-1 schedule-icon" strokeWidth={1.5} />
+              <span className="text-xs font-medium text-center schedule-text" style={{ color: colors.textPrimary }}>Criar Prazo</span>
             </button>
 
-            <div className="rounded-xl shadow-sm p-2 sm:p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
-                <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 schedule-icon" strokeWidth={1.5} />
-                <span className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Filtro</span>
+            <div className="rounded-xl shadow-sm p-2 sm:p-3 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center justify-center mb-1">
+                <Filter className="w-4 h-4 schedule-icon" strokeWidth={1.5} style={{ color: colors.textSecondary }} />
               </div>
               <CustomSelect
                 value={filterStatus}
@@ -261,36 +260,36 @@ export function SchedulePage({
               />
             </div>
 
-            <div className="rounded-xl shadow-sm p-2 sm:p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+            <div className="rounded-xl shadow-sm p-2 sm:p-3 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
                 <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 schedule-icon-pending" strokeWidth={1.5} />
-                <span className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Pendentes</span>
+                <span className="text-xs" style={{ color: colors.textSecondary }}>Pendentes</span>
               </div>
-              <p className="text-xl sm:text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.pending}</p>
+              <p className="text-lg sm:text-xl font-bold" style={{ color: colors.textPrimary }}>{stats.pending}</p>
             </div>
 
-            <div className="rounded-xl shadow-sm p-2 sm:p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+            <div className="rounded-xl shadow-sm p-2 sm:p-3 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
                 <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" strokeWidth={1.5} />
-                <span className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Concluídos</span>
+                <span className="text-xs" style={{ color: colors.textSecondary }}>Concluídos</span>
               </div>
-              <p className="text-xl sm:text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.completed}</p>
+              <p className="text-lg sm:text-xl font-bold" style={{ color: colors.textPrimary }}>{stats.completed}</p>
             </div>
 
-            <div className="rounded-xl shadow-sm p-2 sm:p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+            <div className="rounded-xl shadow-sm p-2 sm:p-3 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
                 <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" strokeWidth={1.5} />
-                <span className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Atrasados</span>
+                <span className="text-xs" style={{ color: colors.textSecondary }}>Atrasados</span>
               </div>
-              <p className="text-xl sm:text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.expired}</p>
+              <p className="text-lg sm:text-xl font-bold" style={{ color: colors.textPrimary }}>{stats.expired}</p>
             </div>
 
-            <div className="rounded-xl shadow-sm p-2 sm:p-4 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
+            <div className="rounded-xl shadow-sm p-2 sm:p-3 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
                 <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 schedule-icon" strokeWidth={1.5} />
-                <span className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>Hoje</span>
+                <span className="text-xs" style={{ color: colors.textSecondary }}>Hoje</span>
               </div>
-              <p className="text-xl sm:text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.today}</p>
+              <p className="text-lg sm:text-xl font-bold" style={{ color: colors.textPrimary }}>{stats.today}</p>
             </div>
           </div>
 
