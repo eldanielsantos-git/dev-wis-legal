@@ -173,7 +173,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           key={i}
           onClick={(e) => handleDateClick(date, e)}
           className={`
-            aspect-square p-0.5 text-xs font-medium transition-all
+            aspect-square text-xs font-medium transition-all
             ${dayDeadlines.length > 0 ? 'font-bold' : ''}
           `}
           style={{
