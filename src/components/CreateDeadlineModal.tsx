@@ -74,6 +74,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   }, [processoId, isOpen]);
 
   useEffect(() => {
+    if (isOpen && prefilledDate) {
+      setFormData(prev => ({ ...prev, deadline_date: prefilledDate }));
+    }
+  }, [isOpen, prefilledDate]);
+
+  useEffect(() => {
     const searchProcessos = async () => {
       if (!searchQuery.trim() || searchQuery.length < 2) {
         setSearchResults([]);
