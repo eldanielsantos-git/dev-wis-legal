@@ -61,14 +61,14 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full border rounded-lg px-4 py-3 pr-10 text-left cursor-pointer focus:outline-none transition-all"
+        className="w-full border rounded-lg px-3 py-2 pr-8 text-xs text-left cursor-pointer focus:outline-none transition-all"
         style={{ backgroundColor: colors.card, color: value ? colors.text : colors.textSecondary, borderColor: colors.border }}
       >
         {displayText}
       </button>
-      <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
         <ChevronDown
-          className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+          className={`w-3.5 h-3.5 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           strokeWidth={1.5}
           style={{ color: colors.textSecondary }}
         />
@@ -82,11 +82,11 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           {/* Empty option */}
           <div
             onClick={() => handleSelect('')}
-            className="px-4 py-2.5 cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
+            className="px-3 py-2 text-xs cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
             style={{ color: colors.textSecondary }}
           >
             <span>{placeholder}</span>
-            {!value && <Check className="w-4 h-4" style={{ color: colors.primary }} />}
+            {!value && <Check className="w-3.5 h-3.5" style={{ color: colors.primary }} />}
           </div>
 
           {/* Option groups */}
@@ -106,12 +106,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
                 <div
                   key={option.value}
                   onClick={() => handleSelect(option.value)}
-                  className="px-4 py-2.5 cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
+                  className="px-3 py-2 text-xs cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
                   style={{ color: colors.text }}
                 >
                   <span>{option.label}</span>
                   {value === option.value && (
-                    <Check className="w-4 h-4" style={{ color: colors.primary }} />
+                    <Check className="w-3.5 h-3.5" style={{ color: colors.primary }} />
                   )}
                 </div>
               ))}
@@ -123,12 +123,12 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
             <div
               key={option.value}
               onClick={() => handleSelect(option.value)}
-              className="px-4 py-2.5 cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
+              className="px-3 py-2 text-xs cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
               style={{ color: colors.text }}
             >
               <span>{option.label}</span>
               {value === option.value && (
-                <Check className="w-4 h-4" style={{ color: colors.primary }} />
+                <Check className="w-3.5 h-3.5" style={{ color: colors.primary }} />
               )}
             </div>
           ))}
