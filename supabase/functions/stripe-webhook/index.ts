@@ -215,51 +215,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       if (userData) {
         const isFirstSubscription = existingSub.plan_tokens === 0;
 
-        if (isFirstSubscription) {
-          console.info(`${logPrefix} First subscription detected (before_plan_tokens = 0), treating as new subscription`);
-
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('email, first_name, last_name')
-            .eq('id', userData.user_id)
-            .maybeSingle();
-
-          const { data: planData } = await supabase
-            .from('subscription_plans')
-            .select('name, tokens_included, price_brl')
-            .eq('stripe_price_id', priceId)
-            .maybeSingle();
-
-          if (profile && planData) {
-            const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
-            const amountFormatted = ((planData.price_brl || 0)).toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            });
-            const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
-
-            console.info(`${logPrefix} Sending confirmation email for first subscription`);
-            await sendSubscriptionConfirmationEmail(eventId, subscription.id);
-
-            console.info(`${logPrefix} Sending admin notification for first subscription`);
-            await notifyAdminSafe({
-              type: 'subscription_created',
-              title: 'Compra de Assinatura',
-              message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
-              severity: 'success',
-              metadata: {
-                customer_id: customerId,
-                user_name: userName,
-                user_email: profile.email,
-                plan_name: planData.name,
-                plan_tokens: tokensFormatted,
-                amount: amountFormatted,
-                status: 'active',
-              },
-              userId: userData.user_id,
-            });
-          }
-        } else {
+        if (!isFirstSubscription) {
           const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
 
           const { data: recentNotifications } = await supabase
@@ -440,9 +396,14 @@ Deno.serve(async (req: Request) => {
           const subscriptionId = subscription.id;
           const priceId = subscription.items?.data[0]?.price?.id;
 
-          console.info(`[${event.id}] New subscription created, sending email and notification immediately`);
+          console.info(`[${event.id}] New subscription created, sending email and notification`);
 
-          await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
+          try {
+            await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
+            console.info(`[${event.id}] Email sent successfully`);
+          } catch (emailError) {
+            console.error(`[${event.id}] Failed to send email:`, emailError);
+          }
 
           const { data: planData } = await supabase
             .from('subscription_plans')
@@ -456,12 +417,17 @@ Deno.serve(async (req: Request) => {
             .eq('customer_id', customerId)
             .maybeSingle();
 
+          console.info(`[${event.id}] Plan data:`, planData ? 'found' : 'not found');
+          console.info(`[${event.id}] User data:`, userData ? 'found' : 'not found');
+
           if (userData && planData) {
             const { data: profile } = await supabase
               .from('user_profiles')
               .select('email, first_name, last_name')
               .eq('id', userData.user_id)
               .maybeSingle();
+
+            console.info(`[${event.id}] Profile data:`, profile ? 'found' : 'not found');
 
             if (profile) {
               const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
@@ -471,23 +437,32 @@ Deno.serve(async (req: Request) => {
               });
               const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
 
-              await notifyAdminSafe({
-                type: 'subscription_created',
-                title: 'Compra de Assinatura',
-                message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
-                severity: 'success',
-                metadata: {
-                  customer_id: customerId,
-                  user_name: userName,
-                  user_email: profile.email,
-                  plan_name: planData.name,
-                  plan_tokens: tokensFormatted,
-                  amount: amountFormatted,
-                  status: 'active',
-                },
-                userId: userData.user_id,
-              });
+              try {
+                await notifyAdminSafe({
+                  type: 'subscription_created',
+                  title: 'Compra de Assinatura',
+                  message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
+                  severity: 'success',
+                  metadata: {
+                    customer_id: customerId,
+                    user_name: userName,
+                    user_email: profile.email,
+                    plan_name: planData.name,
+                    plan_tokens: tokensFormatted,
+                    amount: amountFormatted,
+                    status: 'active',
+                  },
+                  userId: userData.user_id,
+                });
+                console.info(`[${event.id}] Admin notification sent successfully`);
+              } catch (notifyError) {
+                console.error(`[${event.id}] Failed to send admin notification:`, notifyError);
+              }
+            } else {
+              console.error(`[${event.id}] Profile not found for user ${userData.user_id}`);
             }
+          } else {
+            console.error(`[${event.id}] Missing data - userData: ${!!userData}, planData: ${!!planData}`);
           }
         }
       }
