@@ -19,6 +19,7 @@ import { TokenValidationService } from '../services/TokenValidationService';
 import { WorkspaceService } from '../services/WorkspaceService';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { useTokenBalance } from '../contexts/TokenBalanceContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { logger } from '../utils/logger';
 import { useEffectOnce } from '../hooks/useEffectOnce';
@@ -45,6 +46,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
   logger.log('AppHomePage', 'Renderizando componente');
   const { user, isAdmin } = useAuth();
   const { theme } = useTheme();
+  const { refreshBalance } = useTokenBalance();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
   logger.log('AppHomePage', 'User:', user?.id);
   const [processos, setProcessos] = useState<Processo[]>([]);
@@ -112,6 +114,8 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
           await new Promise(resolve => setTimeout(resolve, 500));
           hasSyncedSubscription.current = true;
+
+          await refreshBalance();
         }
       } catch (err) {
         // Silently handle sync errors
