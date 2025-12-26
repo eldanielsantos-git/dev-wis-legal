@@ -821,11 +821,99 @@ Deno.serve(async (req: Request) => {
           });
         }
 
-        const { data: customerData } = await supabase
+        let { data: customerData } = await supabase
           .from('stripe_customers')
           .select('user_id')
           .eq('customer_id', customerId)
           .maybeSingle();
+
+        if (!customerData?.user_id) {
+          console.info(`[${event.id}] Customer ${customerId} not found in database, attempting to create mapping...`);
+
+          try {
+            const stripeCustomer = await stripe.customers.retrieve(customerId);
+
+            if (stripeCustomer && !stripeCustomer.deleted && stripeCustomer.email) {
+              const { data: userProfile } = await supabase
+                .from('user_profiles')
+                .select('id')
+                .eq('email', stripeCustomer.email)
+                .maybeSingle();
+
+              if (userProfile) {
+                const { error: insertError } = await supabase
+                  .from('stripe_customers')
+                  .insert({
+                    customer_id: customerId,
+                    user_id: userProfile.id,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  });
+
+                if (!insertError) {
+                  console.info(`[${event.id}] Successfully created customer mapping for ${stripeCustomer.email}`);
+                  customerData = { user_id: userProfile.id };
+
+                  if (!tokensAdded) {
+                    console.info(`[${event.id}] Re-checking for subscription after customer mapping creation...`);
+                    const { data: retrySubscription } = await supabase
+                      .from('stripe_subscriptions')
+                      .select('*')
+                      .eq('customer_id', customerId)
+                      .is('deleted_at', null)
+                      .maybeSingle();
+
+                    if (retrySubscription) {
+                      const newExtraTokens = (retrySubscription.extra_tokens || 0) + tokenPackage.tokens_amount;
+                      const newTotalTokens = retrySubscription.plan_tokens + newExtraTokens;
+
+                      const { error: updateError } = await supabase
+                        .from('stripe_subscriptions')
+                        .update({
+                          extra_tokens: newExtraTokens,
+                          tokens_total: newTotalTokens,
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('customer_id', customerId);
+
+                      if (!updateError) {
+                        tokensAdded = true;
+                        console.info(`[${event.id}] Successfully added ${tokenPackage.tokens_amount} tokens after customer mapping`);
+
+                        await logTokenCreditAudit({
+                          event_id: event.id,
+                          event_type: 'token_purchase',
+                          customer_id: customerId,
+                          price_id: priceId,
+                          operation: 'token_purchase_after_mapping',
+                          status: 'success',
+                          subscription_found: true,
+                          before_extra_tokens: retrySubscription.extra_tokens || 0,
+                          before_tokens_total: retrySubscription.tokens_total,
+                          after_extra_tokens: newExtraTokens,
+                          after_tokens_total: newTotalTokens,
+                          tokens_amount: tokenPackage.tokens_amount,
+                          processing_time_ms: 0,
+                          metadata: {
+                            package_name: tokenPackage.name,
+                            tokens_added: tokenPackage.tokens_amount,
+                            note: 'Tokens added after creating customer mapping',
+                          },
+                        });
+                      }
+                    }
+                  }
+                } else {
+                  console.error(`[${event.id}] Failed to create customer mapping:`, insertError);
+                }
+              } else {
+                console.error(`[${event.id}] User profile not found for email ${stripeCustomer.email}`);
+              }
+            }
+          } catch (customerError) {
+            console.error(`[${event.id}] Error retrieving customer from Stripe:`, customerError);
+          }
+        }
 
         if (customerData?.user_id) {
           const amountPaid = (session.amount_total || 0) / 100;
