@@ -419,22 +419,34 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
               const userName = fullProfile ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() || profile.email : profile.email;
 
-              await notifyAdminSafe({
-                type: notificationType,
-                title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
-                message: `${userName} | ${profile.email} | ${oldPlan.name} → ${newPlan.name}`,
-                severity: isUpgrade ? 'success' : 'low',
-                metadata: {
-                  customer_id: customerId,
-                  user_name: userName,
-                  user_email: profile.email,
-                  old_plan: oldPlan.name,
-                  new_plan: newPlan.name,
-                  old_tokens: existingSub.plan_tokens.toLocaleString('pt-BR'),
-                  new_tokens: finalPlanTokens.toLocaleString('pt-BR'),
-                },
-                userId: userData.user_id,
-              });
+              console.info(`${logPrefix} Sending ${isUpgrade ? 'upgrade' : 'downgrade'} Slack notification for ${profile.email}`);
+
+              try {
+                const notifyResult = await notifyAdminSafe({
+                  type: notificationType,
+                  title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
+                  message: `${userName} | ${profile.email} | ${oldPlan.name} → ${newPlan.name}`,
+                  severity: isUpgrade ? 'success' : 'low',
+                  metadata: {
+                    customer_id: customerId,
+                    user_name: userName,
+                    user_email: profile.email,
+                    old_plan: oldPlan.name,
+                    new_plan: newPlan.name,
+                    old_tokens: existingSub.plan_tokens.toLocaleString('pt-BR'),
+                    new_tokens: finalPlanTokens.toLocaleString('pt-BR'),
+                  },
+                  userId: userData.user_id,
+                });
+
+                if (notifyResult.success) {
+                  console.info(`${logPrefix} ${isUpgrade ? 'Upgrade' : 'Downgrade'} Slack notification sent successfully`);
+                } else {
+                  console.error(`${logPrefix} ${isUpgrade ? 'Upgrade' : 'Downgrade'} Slack notification failed:`, notifyResult.error);
+                }
+              } catch (notifyError) {
+                console.error(`${logPrefix} Error sending ${isUpgrade ? 'upgrade' : 'downgrade'} Slack notification:`, notifyError);
+              }
             } else {
               console.warn(`${logPrefix} Não foi possível enviar notificação: profile=${!!profile}, oldPlan=${!!oldPlan}, newPlan=${!!newPlan}`);
             }
