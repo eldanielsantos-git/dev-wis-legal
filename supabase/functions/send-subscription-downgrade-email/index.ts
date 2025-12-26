@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 interface SubscriptionDowngradeRequest {
-  subscription_id: string;
+  customer_id: string;
   old_price_id: string;
   new_price_id: string;
   tokens_preserved: number;
@@ -41,24 +41,24 @@ Deno.serve(async (req: Request) => {
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
     const {
-      subscription_id,
+      customer_id,
       old_price_id,
       new_price_id,
       tokens_preserved
     }: SubscriptionDowngradeRequest = await req.json();
 
     console.log("Request data:", {
-      subscription_id,
+      customer_id,
       old_price_id,
       new_price_id,
       tokens_preserved
     });
 
-    if (!subscription_id || !old_price_id || !new_price_id) {
-      throw new Error("Missing required fields: subscription_id, old_price_id, or new_price_id");
+    if (!customer_id || !old_price_id || !new_price_id) {
+      throw new Error("Missing required fields: customer_id, old_price_id, or new_price_id");
     }
 
-    console.log("Step 1: Fetching subscription data from database...");
+    console.log("Step 1: Fetching subscription data from database by customer_id...");
 
     const { data: subscriptionData, error: subscriptionError } = await supabaseClient
       .from("stripe_subscriptions")
@@ -71,13 +71,13 @@ Deno.serve(async (req: Request) => {
         current_period_end,
         created_at
       `)
-      .eq("subscription_id", subscription_id)
+      .eq("customer_id", customer_id)
       .is("deleted_at", null)
       .maybeSingle();
 
     if (subscriptionError || !subscriptionData) {
       console.error("Error fetching subscription:", subscriptionError);
-      throw new Error(`Subscription not found: ${subscription_id}`);
+      throw new Error(`Subscription not found for customer: ${customer_id}`);
     }
 
     console.log("Subscription found:", subscriptionData);
@@ -172,7 +172,7 @@ Deno.serve(async (req: Request) => {
     const { data: updatedSub, error: updatedSubError } = await supabaseClient
       .from('stripe_subscriptions')
       .select('plan_tokens, extra_tokens, tokens_total')
-      .eq('subscription_id', subscription_id)
+      .eq('customer_id', customer_id)
       .is('deleted_at', null)
       .maybeSingle();
 
@@ -248,7 +248,8 @@ Deno.serve(async (req: Request) => {
         status: "success",
         email_provider_response: {
           resend_id: resendResult.id,
-          subscription_id: subscription_id,
+          customer_id: customer_id,
+          subscription_id: subscriptionData.subscription_id,
           old_plan_name: oldPlanData.name,
           new_plan_name: newPlanData.name,
           tokens_preserved: tokens_preserved

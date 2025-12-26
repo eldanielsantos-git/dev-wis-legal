@@ -76,7 +76,7 @@ async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId
   }
 }
 
-async function sendSubscriptionUpgradeEmail(eventId: string, subscriptionId: string, oldPriceId: string, newPriceId: string, tokensPreserved: number) {
+async function sendSubscriptionUpgradeEmail(eventId: string, customerId: string, oldPriceId: string, newPriceId: string, tokensPreserved: number) {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const url = `${supabaseUrl}/functions/v1/send-subscription-upgrade-email`;
@@ -88,7 +88,7 @@ async function sendSubscriptionUpgradeEmail(eventId: string, subscriptionId: str
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
       },
       body: JSON.stringify({
-        subscription_id: subscriptionId,
+        customer_id: customerId,
         old_price_id: oldPriceId,
         new_price_id: newPriceId,
         tokens_preserved: tokensPreserved
@@ -106,7 +106,7 @@ async function sendSubscriptionUpgradeEmail(eventId: string, subscriptionId: str
   }
 }
 
-async function sendSubscriptionDowngradeEmail(eventId: string, subscriptionId: string, oldPriceId: string, newPriceId: string, tokensPreserved: number) {
+async function sendSubscriptionDowngradeEmail(eventId: string, customerId: string, oldPriceId: string, newPriceId: string, tokensPreserved: number) {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const url = `${supabaseUrl}/functions/v1/send-subscription-downgrade-email`;
@@ -118,7 +118,7 @@ async function sendSubscriptionDowngradeEmail(eventId: string, subscriptionId: s
         'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
       },
       body: JSON.stringify({
-        subscription_id: subscriptionId,
+        customer_id: customerId,
         old_price_id: oldPriceId,
         new_price_id: newPriceId,
         tokens_preserved: tokensPreserved
@@ -334,7 +334,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         console.info(`${logPrefix} Detected UPGRADE - sending upgrade email`);
         await sendSubscriptionUpgradeEmail(
           eventId,
-          subscription.id,
+          customerId,
           oldPriceId,
           priceId,
           remainingTokens
@@ -343,7 +343,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         console.info(`${logPrefix} Detected DOWNGRADE - sending downgrade email`);
         await sendSubscriptionDowngradeEmail(
           eventId,
-          subscription.id,
+          customerId,
           oldPriceId,
           priceId,
           remainingTokens
@@ -759,52 +759,67 @@ Deno.serve(async (req: Request) => {
           .is('deleted_at', null)
           .maybeSingle();
 
-        if (subError || !subscription) {
-          console.error(`[${event.id}] Subscription not found for customer ${customerId}:`, subError);
-          return new Response(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
+        let tokensAdded = false;
+
+        if (subscription) {
+          const newExtraTokens = (subscription.extra_tokens || 0) + tokenPackage.tokens_amount;
+          const newTotalTokens = subscription.plan_tokens + newExtraTokens;
+
+          const { error: updateError } = await supabase
+            .from('stripe_subscriptions')
+            .update({
+              extra_tokens: newExtraTokens,
+              tokens_total: newTotalTokens,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('customer_id', customerId);
+
+          if (updateError) {
+            console.error(`[${event.id}] Error updating extra tokens:`, updateError);
+          } else {
+            tokensAdded = true;
+            console.info(`[${event.id}] Successfully added ${tokenPackage.tokens_amount} tokens to subscription`);
+
+            await logTokenCreditAudit({
+              event_id: event.id,
+              event_type: 'token_purchase',
+              customer_id: customerId,
+              price_id: priceId,
+              operation: 'token_purchase',
+              status: 'success',
+              subscription_found: true,
+              before_extra_tokens: subscription.extra_tokens || 0,
+              before_tokens_total: subscription.tokens_total,
+              after_extra_tokens: newExtraTokens,
+              after_tokens_total: newTotalTokens,
+              tokens_amount: tokenPackage.tokens_amount,
+              processing_time_ms: 0,
+              metadata: {
+                package_name: tokenPackage.name,
+                tokens_added: tokenPackage.tokens_amount,
+              },
+            });
+          }
+        } else {
+          console.warn(`[${event.id}] No active subscription found for customer ${customerId}, tokens will be added when subscription is created`);
+
+          await logTokenCreditAudit({
+            event_id: event.id,
+            event_type: 'token_purchase',
+            customer_id: customerId,
+            price_id: priceId,
+            operation: 'token_purchase_no_subscription',
+            status: 'pending',
+            subscription_found: false,
+            tokens_amount: tokenPackage.tokens_amount,
+            processing_time_ms: 0,
+            metadata: {
+              package_name: tokenPackage.name,
+              tokens_added: tokenPackage.tokens_amount,
+              note: 'Tokens purchased without active subscription, will be added on next subscription creation',
+            },
           });
         }
-
-        const newExtraTokens = (subscription.extra_tokens || 0) + tokenPackage.tokens_amount;
-        const newTotalTokens = subscription.plan_tokens + newExtraTokens;
-
-        const { error: updateError } = await supabase
-          .from('stripe_subscriptions')
-          .update({
-            extra_tokens: newExtraTokens,
-            tokens_total: newTotalTokens,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('customer_id', customerId);
-
-        if (updateError) {
-          console.error(`[${event.id}] Error updating extra tokens:`, updateError);
-          throw updateError;
-        }
-
-        await logTokenCreditAudit({
-          event_id: event.id,
-          event_type: 'token_purchase',
-          customer_id: customerId,
-          price_id: priceId,
-          operation: 'token_purchase',
-          status: 'success',
-          subscription_found: true,
-          before_extra_tokens: subscription.extra_tokens || 0,
-          before_tokens_total: subscription.tokens_total,
-          after_extra_tokens: newExtraTokens,
-          after_tokens_total: newTotalTokens,
-          tokens_amount: tokenPackage.tokens_amount,
-          processing_time_ms: 0,
-          metadata: {
-            package_name: tokenPackage.name,
-            tokens_added: tokenPackage.tokens_amount,
-          },
-        });
-
-        console.info(`[${event.id}] Successfully added ${tokenPackage.tokens_amount} tokens`);
 
         const { data: customerData } = await supabase
           .from('stripe_customers')
