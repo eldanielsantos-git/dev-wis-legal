@@ -8,13 +8,11 @@ export interface NotifyAdminParams {
   processoId?: string;
 }
 
-export async function notifyAdminSafe(params: NotifyAdminParams): Promise<void> {
+export function notifyAdminSafe(params: NotifyAdminParams): void {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const notificationsEnabled = Deno.env.get('ADMIN_NOTIFICATIONS_ENABLED');
-
-    console.log(`[notify-admin-safe] Attempting to send notification: ${params.type}`);
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.warn('[notify-admin-safe] Missing Supabase credentials, skipping notification');
@@ -38,25 +36,27 @@ export async function notifyAdminSafe(params: NotifyAdminParams): Promise<void> 
 
     const url = `${supabaseUrl}/functions/v1/send-admin-notification`;
 
-    console.log(`[notify-admin-safe] Sending notification to: ${url}`);
-
-    const response = await fetch(url, {
+    fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${supabaseServiceKey}`,
       },
       body: JSON.stringify(payload),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('[notify-admin-safe] Notification request failed:', response.status, errorText);
-    } else {
-      const result = await response.json();
-      console.log('[notify-admin-safe] Notification sent successfully:', result);
-    }
+    })
+      .then(response => {
+        if (!response.ok) {
+          console.warn('[notify-admin-safe] Notification request failed:', response.status);
+        }
+      })
+      .catch(error => {
+        console.warn('[notify-admin-safe] Notification error (ignored):', error.message);
+      });
   } catch (error) {
-    console.error('[notify-admin-safe] Critical error:', error instanceof Error ? error.message : 'Unknown', error);
+    try {
+      console.warn('[notify-admin-safe] Critical error (ignored):', error instanceof Error ? error.message : 'Unknown');
+    } catch {
+      // Ignore even logging errors
+    }
   }
 }
