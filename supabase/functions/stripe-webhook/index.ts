@@ -25,18 +25,18 @@ async function getPlanTokensFromPriceId(priceId: string): Promise<number> {
       .maybeSingle();
 
     if (error) {
-      console.error(\`Error fetching plan tokens for price_id \${priceId}:\`, error);
+      console.error(`Error fetching plan tokens for price_id ${priceId}:`, error);
       return 0;
     }
 
     if (!plan) {
-      console.warn(\`No active plan found for price_id \${priceId}, returning 0 tokens\`);
+      console.warn(`No active plan found for price_id ${priceId}, returning 0 tokens`);
       return 0;
     }
 
     return Number(plan.tokens_included) || 0;
   } catch (err) {
-    console.error(\`Exception fetching plan tokens for price_id \${priceId}:\`, err);
+    console.error(`Exception fetching plan tokens for price_id ${priceId}:`, err);
     return 0;
   }
 }
@@ -54,37 +54,37 @@ async function logTokenCreditAudit(params: any) {
 async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId: string) {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const url = \`\${supabaseUrl}/functions/v1/send-subscription-confirmation-email\`;
+    const url = `${supabaseUrl}/functions/v1/send-subscription-confirmation-email`;
 
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': \`Bearer \${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}\`,
+        'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
       },
       body: JSON.stringify({ subscription_id: subscriptionId }),
     });
 
     if (!response.ok) {
-      console.error(\`[\${eventId}] Failed to send subscription confirmation email: \${response.status}\`);
+      console.error(`[${eventId}] Failed to send subscription confirmation email: ${response.status}`);
     } else {
-      console.info(\`[\${eventId}] Subscription confirmation email sent successfully\`);
+      console.info(`[${eventId}] Subscription confirmation email sent successfully`);
     }
   } catch (error) {
-    console.error(\`[\${eventId}] Error sending subscription confirmation email:\`, error);
+    console.error(`[${eventId}] Error sending subscription confirmation email:`, error);
   }
 }
 
 async function syncCustomerFromStripe(customerId: string, eventId: string) {
-  const logPrefix = \`[\${eventId}]\`;
-  console.info(\`\${logPrefix} Syncing customer \${customerId}\`);
+  const logPrefix = `[${eventId}]`;
+  console.info(`${logPrefix} Syncing customer ${customerId}`);
 
   const customer = await stripe.customers.retrieve(customerId, {
     expand: ['subscriptions'],
   });
 
   if (customer.deleted) {
-    console.warn(\`\${logPrefix} Customer deleted, skipping sync\`);
+    console.warn(`${logPrefix} Customer deleted, skipping sync`);
     return;
   }
 
@@ -98,14 +98,14 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     .maybeSingle();
 
   if (existingSubError && existingSubError.code !== 'PGRST116') {
-    console.error(\`\${logPrefix} Error fetching existing subscription:\`, existingSubError);
+    console.error(`${logPrefix} Error fetching existing subscription:`, existingSubError);
     throw existingSubError;
   }
 
   const subscriptions = customer.subscriptions!;
 
   if (subscriptions.data.length === 0) {
-    console.info(\`\${logPrefix} Customer has no active subscriptions\`);
+    console.info(`${logPrefix} Customer has no active subscriptions`);
 
     if (existingSub) {
       const { error: deleteError } = await supabase
@@ -114,7 +114,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         .eq('customer_id', customerId);
 
       if (deleteError) {
-        console.error(\`\${logPrefix} Error marking subscription as deleted:\`, deleteError);
+        console.error(`${logPrefix} Error marking subscription as deleted:`, deleteError);
         throw deleteError;
       }
     }
@@ -144,7 +144,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       );
 
     if (noSubError) {
-      console.error(\`\${logPrefix} Error upserting no subscription record:\`, noSubError);
+      console.error(`${logPrefix} Error upserting no subscription record:`, noSubError);
       throw noSubError;
     }
 
@@ -152,12 +152,12 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
   }
 
   const subscription = subscriptions.data[0];
-  console.info(\`\${logPrefix} Found subscription: \${subscription.id} with status: \${subscription.status}\`);
+  console.info(`${logPrefix} Found subscription: ${subscription.id} with status: ${subscription.status}`);
 
   const priceId = subscription.items?.data[0]?.price?.id;
   const planTokens = await getPlanTokensFromPriceId(priceId || '');
 
-  console.info(\`\${logPrefix} Plan tokens for price \${priceId}: \${planTokens}\`);
+  console.info(`${logPrefix} Plan tokens for price ${priceId}: ${planTokens}`);
 
   let finalPlanTokens = planTokens;
   let finalExtraTokens = existingSub?.extra_tokens || 0;
@@ -169,7 +169,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     const oldPriceId = existingSub.price_id;
 
     if (priceId !== oldPriceId) {
-      console.info(\`\${logPrefix} Plan change detected: \${oldPriceId} -> \${priceId}\`);
+      console.info(`${logPrefix} Plan change detected: ${oldPriceId} -> ${priceId}`);
       lastPlanChangeAt = new Date().toISOString();
       shouldResetTokens = true;
 
@@ -178,7 +178,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       if (remainingTokens > 0) {
         tokensCarriedForward = (existingSub.tokens_carried_forward || 0) + remainingTokens;
         finalExtraTokens = (existingSub.extra_tokens || 0) + remainingTokens;
-        console.info(\`\${logPrefix} Carrying forward \${remainingTokens} unused tokens as extra_tokens\`);
+        console.info(`${logPrefix} Carrying forward ${remainingTokens} unused tokens as extra_tokens`);
       }
 
       finalTokensUsed = 0;
@@ -216,7 +216,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         const isFirstSubscription = existingSub.plan_tokens === 0;
 
         if (isFirstSubscription) {
-          console.info(\`\${logPrefix} First subscription detected (before_plan_tokens = 0), treating as new subscription\`);
+          console.info(`${logPrefix} First subscription detected (before_plan_tokens = 0), treating as new subscription`);
 
           const { data: profile } = await supabase
             .from('user_profiles')
@@ -231,21 +231,21 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
             .maybeSingle();
 
           if (profile && planData) {
-            const userName = \`\${profile.first_name || ''} \${profile.last_name || ''}\`.trim() || profile.email;
+            const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
             const amountFormatted = ((planData.price_brl || 0)).toLocaleString('pt-BR', {
               style: 'currency',
               currency: 'BRL',
             });
             const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
 
-            console.info(\`\${logPrefix} Sending confirmation email for first subscription\`);
+            console.info(`${logPrefix} Sending confirmation email for first subscription`);
             await sendSubscriptionConfirmationEmail(eventId, subscription.id);
 
-            console.info(\`\${logPrefix} Sending admin notification for first subscription\`);
+            console.info(`${logPrefix} Sending admin notification for first subscription`);
             await notifyAdminSafe({
               type: 'subscription_created',
               title: 'Compra de Assinatura',
-              message: \`\${amountFormatted} | \${userName} | \${profile.email} | \${planData.name}\`,
+              message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
               severity: 'success',
               metadata: {
                 customer_id: customerId,
@@ -264,12 +264,12 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
 
           const { data: recentNotifications } = await supabase
             .from('admin_notifications')
-            .select(\`
+            .select(`
               id,
               metadata,
               notification_type_id,
               admin_notification_types!inner(slug)
-            \`)
+            `)
             .eq('user_id', userData.user_id)
             .gte('created_at', tenSecondsAgo);
 
@@ -285,7 +285,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
           });
 
           if (isDuplicate) {
-            console.info(\`\${logPrefix} Notificação de upgrade/downgrade já enviada recentemente, pulando duplicata\`);
+            console.info(`${logPrefix} Notificação de upgrade/downgrade já enviada recentemente, pulando duplicata`);
           } else {
             const { data: profile } = await supabase
               .from('user_profiles')
@@ -305,7 +305,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
               .eq('stripe_price_id', priceId)
               .maybeSingle();
 
-            console.info(\`\${logPrefix} Old plan:\`, oldPlan, 'New plan:', newPlan);
+            console.info(`${logPrefix} Old plan:`, oldPlan, 'New plan:', newPlan);
 
             if (profile && oldPlan && newPlan) {
               const isUpgrade = finalPlanTokens > existingSub.plan_tokens;
@@ -317,12 +317,12 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
                 .eq('id', userData.user_id)
                 .maybeSingle();
 
-              const userName = fullProfile ? \`\${fullProfile.first_name || ''} \${fullProfile.last_name || ''}\`.trim() || profile.email : profile.email;
+              const userName = fullProfile ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() || profile.email : profile.email;
 
               await notifyAdminSafe({
                 type: notificationType,
                 title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
-                message: \`\${userName} | \${profile.email} | \${oldPlan.name} → \${newPlan.name}\`,
+                message: `${userName} | ${profile.email} | ${oldPlan.name} → ${newPlan.name}`,
                 severity: isUpgrade ? 'success' : 'low',
                 metadata: {
                   customer_id: customerId,
@@ -336,7 +336,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
                 userId: userData.user_id,
               });
             } else {
-              console.warn(\`\${logPrefix} Não foi possível enviar notificação: profile=\${!!profile}, oldPlan=\${!!oldPlan}, newPlan=\${!!newPlan}\`);
+              console.warn(`${logPrefix} Não foi possível enviar notificação: profile=${!!profile}, oldPlan=${!!oldPlan}, newPlan=${!!newPlan}`);
             }
           }
         }
@@ -376,11 +376,11 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     });
 
   if (upsertError) {
-    console.error(\`\${logPrefix} Error upserting subscription:\`, upsertError);
+    console.error(`${logPrefix} Error upserting subscription:`, upsertError);
     throw upsertError;
   }
 
-  console.info(\`\${logPrefix} Successfully synced subscription for customer \${customerId}\`);
+  console.info(`${logPrefix} Successfully synced subscription for customer ${customerId}`);
 }
 
 Deno.serve(async (req: Request) => {
@@ -403,17 +403,17 @@ Deno.serve(async (req: Request) => {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
-    console.error(\`Webhook signature verification failed: \${err instanceof Error ? err.message : 'Unknown error'}\`);
+    console.error(`Webhook signature verification failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     return new Response('Invalid signature', { status: 400 });
   }
 
-  console.info(\`[\${event.id}] Processing webhook event: \${event.type}\`);
+  console.info(`[${event.id}] Processing webhook event: ${event.type}`);
 
   try {
     const stripeData = event.data.object;
 
     if (event.type === 'customer.created') {
-      console.info(\`[\${event.id}] Customer created event received, no action needed\`);
+      console.info(`[${event.id}] Customer created event received, no action needed`);
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -432,7 +432,7 @@ Deno.serve(async (req: Request) => {
         : stripeData.customer?.id;
 
       if (customerId) {
-        console.info(\`[\${event.id}] Syncing subscription for \${customerId}\`);
+        console.info(`[${event.id}] Syncing subscription for ${customerId}`);
         await syncCustomerFromStripe(customerId, event.id);
 
         if (event.type === 'customer.subscription.created') {
@@ -440,7 +440,7 @@ Deno.serve(async (req: Request) => {
           const subscriptionId = subscription.id;
           const priceId = subscription.items?.data[0]?.price?.id;
 
-          console.info(\`[\${event.id}] New subscription created, sending email and notification immediately\`);
+          console.info(`[${event.id}] New subscription created, sending email and notification immediately`);
 
           await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
 
@@ -464,7 +464,7 @@ Deno.serve(async (req: Request) => {
               .maybeSingle();
 
             if (profile) {
-              const userName = \`\${profile.first_name || ''} \${profile.last_name || ''}\`.trim() || profile.email;
+              const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
               const amountFormatted = ((planData.price_brl || 0)).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
@@ -474,7 +474,7 @@ Deno.serve(async (req: Request) => {
               await notifyAdminSafe({
                 type: 'subscription_created',
                 title: 'Compra de Assinatura',
-                message: \`\${amountFormatted} | \${userName} | \${profile.email} | \${planData.name}\`,
+                message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
                 severity: 'success',
                 metadata: {
                   customer_id: customerId,
@@ -505,7 +505,7 @@ Deno.serve(async (req: Request) => {
         : session.customer?.id;
 
       if (!customerId) {
-        console.warn(\`[\${event.id}] No customer in checkout session\`);
+        console.warn(`[${event.id}] No customer in checkout session`);
         return new Response(JSON.stringify({ received: true }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -513,21 +513,21 @@ Deno.serve(async (req: Request) => {
       }
 
       if (session.mode === 'payment') {
-        console.info(\`[\${event.id}] Expanding line_items for payment session\`);
+        console.info(`[${event.id}] Expanding line_items for payment session`);
         session = await stripe.checkout.sessions.retrieve(session.id, {
           expand: ['line_items', 'line_items.data.price'],
         });
       }
 
       if (session.mode === 'subscription') {
-        console.info(\`[\${event.id}] Subscription checkout completed - already processed by customer.subscription.created event\`);
+        console.info(`[${event.id}] Subscription checkout completed - already processed by customer.subscription.created event`);
       } else if (session.mode === 'payment' && session.payment_status === 'paid') {
-        console.info(\`[\${event.id}] Processing token payment\`);
+        console.info(`[${event.id}] Processing token payment`);
 
         const priceId = session.line_items?.data[0]?.price?.id;
 
         if (!priceId) {
-          console.error(\`[\${event.id}] No price ID in session\`);
+          console.error(`[${event.id}] No price ID in session`);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -541,14 +541,14 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (!tokenPackage) {
-          console.error(\`[\${event.id}] Token package not found\`);
+          console.error(`[${event.id}] Token package not found`);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
           });
         }
 
-        console.info(\`[\${event.id}] Adding \${tokenPackage.tokens_amount} extra tokens for customer \${customerId}\`);
+        console.info(`[${event.id}] Adding ${tokenPackage.tokens_amount} extra tokens for customer ${customerId}`);
 
         const { data: subscription, error: subError } = await supabase
           .from('stripe_subscriptions')
@@ -558,7 +558,7 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (subError || !subscription) {
-          console.error(\`[\${event.id}] Subscription not found for customer \${customerId}:\`, subError);
+          console.error(`[${event.id}] Subscription not found for customer ${customerId}:`, subError);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -578,7 +578,7 @@ Deno.serve(async (req: Request) => {
           .eq('customer_id', customerId);
 
         if (updateError) {
-          console.error(\`[\${event.id}] Error updating extra tokens:\`, updateError);
+          console.error(`[${event.id}] Error updating extra tokens:`, updateError);
           throw updateError;
         }
 
@@ -602,7 +602,7 @@ Deno.serve(async (req: Request) => {
           },
         });
 
-        console.info(\`[\${event.id}] Successfully added \${tokenPackage.tokens_amount} tokens\`);
+        console.info(`[${event.id}] Successfully added ${tokenPackage.tokens_amount} tokens`);
       }
 
       return new Response(JSON.stringify({ received: true }), {
@@ -611,14 +611,14 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    console.info(\`[\${event.id}] Unhandled event type: \${event.type}\`);
+    console.info(`[${event.id}] Unhandled event type: ${event.type}`);
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error(\`[\${event.id}] Error processing webhook:\`, error);
+    console.error(`[${event.id}] Error processing webhook:`, error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       {
