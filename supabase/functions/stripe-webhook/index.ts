@@ -804,8 +804,10 @@ Deno.serve(async (req: Request) => {
           const amountPaid = (session.amount_total || 0) / 100;
           const amountFormatted = `R$ ${amountPaid.toFixed(2).replace('.', ',')}`;
 
+          console.info(`[${event.id}] Sending token purchase email for user ${customerData.user_id}`);
+
           try {
-            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-token-purchase-email`, {
+            const emailResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-token-purchase-email`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -818,7 +820,14 @@ Deno.serve(async (req: Request) => {
                 amount_paid: amountFormatted,
               }),
             });
-            console.info(`[${event.id}] Token purchase email sent`);
+
+            if (!emailResponse.ok) {
+              const errorText = await emailResponse.text();
+              console.error(`[${event.id}] Token purchase email failed: ${emailResponse.status} - ${errorText}`);
+            } else {
+              const result = await emailResponse.json();
+              console.info(`[${event.id}] Token purchase email sent successfully:`, result);
+            }
           } catch (emailError) {
             console.error(`[${event.id}] Error sending token purchase email:`, emailError);
           }
@@ -832,23 +841,38 @@ Deno.serve(async (req: Request) => {
           if (profile) {
             const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
 
-            await notifyAdminSafe({
-              type: 'token_purchase',
-              title: 'Compra de Tokens',
-              message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
-              severity: 'success',
-              metadata: {
-                customer_id: customerId,
-                user_name: userName,
-                user_email: profile.email,
-                package_name: tokenPackage.name,
-                tokens_purchased: tokenPackage.tokens_amount,
-                amount_paid: amountFormatted,
-              },
-              userId: customerData.user_id,
-            });
-            console.info(`[${event.id}] Token purchase Slack notification sent`);
+            console.info(`[${event.id}] Sending token purchase Slack notification for ${profile.email}`);
+
+            try {
+              const notifyResult = await notifyAdminSafe({
+                type: 'token_purchase',
+                title: 'Compra de Tokens',
+                message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
+                severity: 'success',
+                metadata: {
+                  customer_id: customerId,
+                  user_name: userName,
+                  user_email: profile.email,
+                  package_name: tokenPackage.name,
+                  tokens_purchased: tokenPackage.tokens_amount,
+                  amount_paid: amountFormatted,
+                },
+                userId: customerData.user_id,
+              });
+
+              if (notifyResult.success) {
+                console.info(`[${event.id}] Token purchase Slack notification sent successfully`);
+              } else {
+                console.error(`[${event.id}] Token purchase Slack notification failed:`, notifyResult.error);
+              }
+            } catch (notifyError) {
+              console.error(`[${event.id}] Error sending token purchase Slack notification:`, notifyError);
+            }
+          } else {
+            console.error(`[${event.id}] Profile not found for user ${customerData.user_id}`);
           }
+        } else {
+          console.error(`[${event.id}] Customer data not found for customer ${customerId}`);
         }
       }
 
