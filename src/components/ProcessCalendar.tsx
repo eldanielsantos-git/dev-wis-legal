@@ -237,14 +237,14 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
   return (
     <div className="rounded-xl shadow-lg p-2 sm:p-2 md:p-2 lg:p-1.5" style={{ backgroundColor: colors.bgSecondary }}>
       <div className="flex items-center justify-between mb-1.5 sm:mb-1.5 md:mb-1.5 lg:mb-1">
-        <h2 className="text-sm sm:text-sm md:text-sm lg:text-sm font-bold flex items-center gap-1 sm:gap-1 md:gap-1 lg:gap-1" style={{ color: colors.textPrimary }}>
-          <CalendarIcon className="w-3.5 h-3.5 sm:w-3.5 sm:h-3.5 md:w-3 md:h-3 lg:w-3 lg:h-3" style={{ color: colors.accent }} />
+        <h2 className="text-base sm:text-base md:text-base lg:text-base font-bold flex items-center gap-1.5 sm:gap-1.5 md:gap-1.5 lg:gap-1.5" style={{ color: colors.textPrimary }}>
+          <CalendarIcon className="w-4 h-4 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-4 lg:h-4" style={{ color: colors.accent }} />
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h2>
         <div className="flex gap-1 sm:gap-1 md:gap-0.5 lg:gap-0.5">
           <button
             onClick={handleToday}
-            className="px-1.5 sm:px-1.5 md:px-1.5 lg:px-1.5 py-0.5 sm:py-0.5 md:py-0.5 lg:py-0.5 text-xs sm:text-xs md:text-xs lg:text-xs font-medium rounded-md transition-all calendar-today-btn"
+            className="px-2 sm:px-2 md:px-2 lg:px-2 py-1 sm:py-1 md:py-1 lg:py-1 text-sm sm:text-sm md:text-sm lg:text-sm font-medium rounded-md transition-all calendar-today-btn"
             style={{
               color: theme === 'dark' ? colors.accent : colors.textPrimary,
               backgroundColor: `${colors.accent}15`
@@ -260,7 +260,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           </button>
           <button
             onClick={handlePreviousMonth}
-            className="p-0.5 sm:p-0.5 md:p-0.5 lg:p-0.5 rounded-md transition-all"
+            className="p-1 sm:p-1 md:p-1 lg:p-1 rounded-md transition-all"
             aria-label="Mês anterior"
             style={{ color: colors.textPrimary }}
             onMouseEnter={(e) => {
@@ -270,11 +270,11 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <ChevronLeft className="w-3.5 h-3.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-3 lg:h-3" />
+            <ChevronLeft className="w-4 h-4 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-4 lg:h-4" />
           </button>
           <button
             onClick={handleNextMonth}
-            className="p-0.5 sm:p-0.5 md:p-0.5 lg:p-0.5 rounded-md transition-all"
+            className="p-1 sm:p-1 md:p-1 lg:p-1 rounded-md transition-all"
             aria-label="Próximo mês"
             style={{ color: colors.textPrimary }}
             onMouseEnter={(e) => {
@@ -284,7 +284,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <ChevronRight className="w-3.5 h-3.5 sm:w-3 sm:h-3 md:w-3 md:h-3 lg:w-3 lg:h-3" />
+            <ChevronRight className="w-4 h-4 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-4 lg:h-4" />
           </button>
         </div>
       </div>
