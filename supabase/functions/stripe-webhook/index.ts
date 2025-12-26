@@ -587,6 +587,15 @@ Deno.serve(async (req: Request) => {
           }
         }
 
+        const { data: existingSubBefore } = await supabase
+          .from('stripe_subscriptions')
+          .select('plan_tokens')
+          .eq('customer_id', customerId)
+          .is('deleted_at', null)
+          .maybeSingle();
+
+        const wasFirstSubscription = !existingSubBefore || existingSubBefore.plan_tokens === 0;
+
         await syncCustomerFromStripe(customerId, event.id);
 
         if (event.type === 'customer.subscription.created') {
@@ -594,77 +603,81 @@ Deno.serve(async (req: Request) => {
           const subscriptionId = subscription.id;
           const priceId = subscription.items?.data[0]?.price?.id;
 
-          console.info(`[${event.id}] New subscription created, sending email and notification`);
+          if (wasFirstSubscription) {
+            console.info(`[${event.id}] First subscription for customer, sending confirmation email and notification`);
 
-          try {
-            await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
-            console.info(`[${event.id}] Email sent successfully`);
-          } catch (emailError) {
-            console.error(`[${event.id}] Failed to send email:`, emailError);
-          }
+            try {
+              await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
+              console.info(`[${event.id}] Confirmation email sent successfully`);
+            } catch (emailError) {
+              console.error(`[${event.id}] Failed to send confirmation email:`, emailError);
+            }
 
-          const { data: planData } = await supabase
-            .from('subscription_plans')
-            .select('name, tokens_included, price_brl')
-            .eq('stripe_price_id', priceId)
-            .maybeSingle();
-
-          const { data: userData } = await supabase
-            .from('stripe_customers')
-            .select('user_id')
-            .eq('customer_id', customerId)
-            .maybeSingle();
-
-          console.info(`[${event.id}] Plan data:`, planData ? 'found' : 'not found');
-          console.info(`[${event.id}] User data:`, userData ? 'found' : 'not found');
-
-          if (userData && planData) {
-            const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('email, first_name, last_name')
-              .eq('id', userData.user_id)
+            const { data: planData } = await supabase
+              .from('subscription_plans')
+              .select('name, tokens_included, price_brl')
+              .eq('stripe_price_id', priceId)
               .maybeSingle();
 
-            console.info(`[${event.id}] Profile data:`, profile ? 'found' : 'not found');
+            const { data: userData } = await supabase
+              .from('stripe_customers')
+              .select('user_id')
+              .eq('customer_id', customerId)
+              .maybeSingle();
 
-            if (profile) {
-              const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
-              const amountFormatted = ((planData.price_brl || 0)).toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              });
-              const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
+            console.info(`[${event.id}] Plan data:`, planData ? 'found' : 'not found');
+            console.info(`[${event.id}] User data:`, userData ? 'found' : 'not found');
 
-              try {
-                const notifyResult = await notifyAdminSafe({
-                  type: 'subscription_created',
-                  title: 'Compra de Assinatura',
-                  message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
-                  severity: 'success',
-                  metadata: {
-                    customer_id: customerId,
-                    user_name: userName,
-                    user_email: profile.email,
-                    plan_name: planData.name,
-                    plan_tokens: tokensFormatted,
-                    amount: amountFormatted,
-                    status: 'active',
-                  },
-                  userId: userData.user_id,
+            if (userData && planData) {
+              const { data: profile } = await supabase
+                .from('user_profiles')
+                .select('email, first_name, last_name')
+                .eq('id', userData.user_id)
+                .maybeSingle();
+
+              console.info(`[${event.id}] Profile data:`, profile ? 'found' : 'not found');
+
+              if (profile) {
+                const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+                const amountFormatted = ((planData.price_brl || 0)).toLocaleString('pt-BR', {
+                  style: 'currency',
+                  currency: 'BRL',
                 });
-                if (notifyResult.success) {
-                  console.info(`[${event.id}] Admin notification sent successfully`);
-                } else {
-                  console.error(`[${event.id}] Admin notification failed:`, notifyResult.error);
+                const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
+
+                try {
+                  const notifyResult = await notifyAdminSafe({
+                    type: 'subscription_created',
+                    title: 'Compra de Assinatura',
+                    message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
+                    severity: 'success',
+                    metadata: {
+                      customer_id: customerId,
+                      user_name: userName,
+                      user_email: profile.email,
+                      plan_name: planData.name,
+                      plan_tokens: tokensFormatted,
+                      amount: amountFormatted,
+                      status: 'active',
+                    },
+                    userId: userData.user_id,
+                  });
+                  if (notifyResult.success) {
+                    console.info(`[${event.id}] Admin notification sent successfully`);
+                  } else {
+                    console.error(`[${event.id}] Admin notification failed:`, notifyResult.error);
+                  }
+                } catch (notifyError) {
+                  console.error(`[${event.id}] Failed to send admin notification:`, notifyError);
                 }
-              } catch (notifyError) {
-                console.error(`[${event.id}] Failed to send admin notification:`, notifyError);
+              } else {
+                console.error(`[${event.id}] Profile not found for user ${userData.user_id}`);
               }
             } else {
-              console.error(`[${event.id}] Profile not found for user ${userData.user_id}`);
+              console.error(`[${event.id}] Missing data - userData: ${!!userData}, planData: ${!!planData}`);
             }
           } else {
-            console.error(`[${event.id}] Missing data - userData: ${!!userData}, planData: ${!!planData}`);
+            console.info(`[${event.id}] Not first subscription (upgrade/downgrade), skipping confirmation email - upgrade/downgrade emails handled by syncCustomerFromStripe`);
           }
         }
       }
@@ -780,6 +793,63 @@ Deno.serve(async (req: Request) => {
         });
 
         console.info(`[${event.id}] Successfully added ${tokenPackage.tokens_amount} tokens`);
+
+        const { data: customerData } = await supabase
+          .from('stripe_customers')
+          .select('user_id')
+          .eq('customer_id', customerId)
+          .maybeSingle();
+
+        if (customerData?.user_id) {
+          const amountPaid = (session.amount_total || 0) / 100;
+          const amountFormatted = `R$ ${amountPaid.toFixed(2).replace('.', ',')}`;
+
+          try {
+            await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/send-token-purchase-email`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`,
+              },
+              body: JSON.stringify({
+                user_id: customerData.user_id,
+                package_name: tokenPackage.name,
+                tokens_purchased: tokenPackage.tokens_amount,
+                amount_paid: amountFormatted,
+              }),
+            });
+            console.info(`[${event.id}] Token purchase email sent`);
+          } catch (emailError) {
+            console.error(`[${event.id}] Error sending token purchase email:`, emailError);
+          }
+
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('email, first_name, last_name')
+            .eq('id', customerData.user_id)
+            .maybeSingle();
+
+          if (profile) {
+            const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+
+            await notifyAdminSafe({
+              type: 'token_purchase',
+              title: 'Compra de Tokens',
+              message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
+              severity: 'success',
+              metadata: {
+                customer_id: customerId,
+                user_name: userName,
+                user_email: profile.email,
+                package_name: tokenPackage.name,
+                tokens_purchased: tokenPackage.tokens_amount,
+                amount_paid: amountFormatted,
+              },
+              userId: customerData.user_id,
+            });
+            console.info(`[${event.id}] Token purchase Slack notification sent`);
+          }
+        }
       }
 
       return new Response(JSON.stringify({ received: true }), {
