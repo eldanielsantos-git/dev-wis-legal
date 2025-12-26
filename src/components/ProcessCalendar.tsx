@@ -174,11 +174,11 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           onClick={(e) => handleDateClick(date, e)}
           className={`
             aspect-square lg:aspect-auto
-            p-0.5 sm:p-0.5 md:p-0.5 lg:p-0.5
-            text-sm sm:text-sm md:text-xs lg:text-xs
+            p-0.5 sm:p-0.5 md:p-1 lg:p-1.5
+            text-sm sm:text-sm md:text-xs lg:text-sm
             font-medium transition-all
-            min-h-[1.6rem] sm:min-h-[1.4rem] md:min-h-[1.2rem] lg:h-10
-            max-h-[3rem] sm:max-h-[2.5rem] md:max-h-[2rem] lg:max-h-10
+            min-h-[1.6rem] sm:min-h-[1.4rem] md:min-h-[1.2rem] lg:h-16
+            max-h-[3rem] sm:max-h-[2.5rem] md:max-h-[2rem] lg:max-h-16
             ${dayDeadlines.length > 0 ? 'font-bold' : ''}
           `}
           style={{
