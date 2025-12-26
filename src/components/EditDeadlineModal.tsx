@@ -12,6 +12,7 @@ import { Input } from './ui/input';
 import { DatePickerField } from './ui/date-picker-field';
 import { DropdownField } from './ui/dropdown-field';
 import { TimePicker } from './ui/time-picker';
+import { ErrorModal } from './ErrorModal';
 
 interface EditDeadlineModalProps {
   isOpen: boolean;
@@ -48,6 +49,10 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [processo, setProcesso] = useState<Processo | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string }>({
+    isOpen: false,
+    message: ''
+  });
 
   const [formData, setFormData] = useState<UpdateDeadlineInput>({
     deadline_date: '',
@@ -126,7 +131,46 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
     try {
       if (!formData.subject || formData.subject.trim().length < 3) {
-        toast.error('Por favor, informe um assunto válido');
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, informe um assunto válido para o prazo (mínimo 3 caracteres).'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.deadline_date) {
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, informe a data do prazo.'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.deadline_time) {
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, informe o horário do prazo.'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.category) {
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, selecione uma categoria para o prazo.'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.party_type) {
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, selecione a parte relacionada ao prazo.'
+        });
         setIsSubmitting(false);
         return;
       }
@@ -275,11 +319,12 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
                 <Clock className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
-                Hora (Opcional)
+                Hora *
               </label>
               <TimePicker
                 value={formData.deadline_time}
                 onChange={(time) => handleChange('deadline_time', time)}
+                required
               />
             </div>
           </div>
@@ -287,7 +332,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
               <Tag className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
-              Categoria (Opcional)
+              Categoria *
             </label>
             <DropdownField
               value={formData.category || ''}
@@ -295,13 +340,14 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
               options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
               placeholder="Selecione uma categoria"
               className="w-full"
+              required
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
               <Users className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
-              Parte Relacionada
+              Parte Relacionada *
             </label>
             <DropdownField
               value={formData.party_type}
@@ -312,6 +358,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
                 { value: 'defendant', label: 'Defesa' }
               ]}
               className="w-full"
+              required
             />
           </div>
 
@@ -429,6 +476,13 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
         </div>
       )}
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title="Campos Obrigatórios"
+        message={errorModal.message}
+        onClose={() => setErrorModal({ isOpen: false, message: '' })}
+      />
     </div>
   );
 };

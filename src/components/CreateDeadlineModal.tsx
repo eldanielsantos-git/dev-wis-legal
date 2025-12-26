@@ -11,6 +11,7 @@ import { Input } from './ui/input';
 import { DatePickerField } from './ui/date-picker-field';
 import { DropdownField } from './ui/dropdown-field';
 import { TimePicker } from './ui/time-picker';
+import { ErrorModal } from './ErrorModal';
 
 interface CreateDeadlineModalProps {
   isOpen: boolean;
@@ -50,6 +51,10 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const [showResults, setShowResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
+  const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string }>({
+    isOpen: false,
+    message: ''
+  });
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
     processo_id: processoId || '',
@@ -57,7 +62,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     deadline_time: '',
     subject: '',
     category: undefined,
-    party_type: 'both',
+    party_type: undefined as DeadlinePartyType | undefined,
     notes: ''
   });
 
@@ -191,29 +196,60 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
       if (!selectedProcesso) {
         console.error('Validation failed: No processo selected');
-        alert('Por favor, selecione um processo');
-        toast.error('Por favor, selecione um processo');
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!formData.deadline_date) {
-        console.error('Validation failed: No deadline_date');
-        toast.error('Por favor, informe a data do prazo');
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!formData.deadline_time) {
-        console.error('Validation failed: No deadline_time');
-        toast.error('Por favor, informe o horário do prazo');
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, selecione um processo antes de continuar.'
+        });
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.subject || formData.subject.trim().length < 3) {
         console.error('Validation failed: Invalid subject');
-        toast.error('Por favor, informe um assunto válido');
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, informe um assunto válido para o prazo (mínimo 3 caracteres).'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.deadline_date) {
+        console.error('Validation failed: No deadline_date');
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, informe a data do prazo.'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.deadline_time) {
+        console.error('Validation failed: No deadline_time');
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, informe o horário do prazo.'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.category) {
+        console.error('Validation failed: No category');
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, selecione uma categoria para o prazo.'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.party_type) {
+        console.error('Validation failed: No party_type');
+        setErrorModal({
+          isOpen: true,
+          message: 'Por favor, selecione a parte relacionada ao prazo.'
+        });
         setIsSubmitting(false);
         return;
       }
@@ -242,7 +278,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         deadline_time: '',
         subject: '',
         category: undefined,
-        party_type: 'both',
+        party_type: undefined as DeadlinePartyType | undefined,
         notes: ''
       });
       setSearchQuery('');
@@ -526,7 +562,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
               <Tag className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
-              Categoria (Opcional)
+              Categoria *
             </label>
             <DropdownField
               value={formData.category || ''}
@@ -534,23 +570,26 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
               placeholder="Selecione uma categoria"
               className="w-full"
+              required
             />
           </div>
 
           <div>
             <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
               <Users className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
-              Parte Relacionada
+              Parte Relacionada *
             </label>
             <DropdownField
-              value={formData.party_type}
+              value={formData.party_type || ''}
               onChange={(value) => handleChange('party_type', value as DeadlinePartyType)}
               options={[
                 { value: 'both', label: 'Ambas as Partes' },
                 { value: 'accusation', label: 'Acusação' },
                 { value: 'defendant', label: 'Defesa' }
               ]}
+              placeholder="Selecione a parte relacionada"
               className="w-full"
+              required
             />
           </div>
 
@@ -609,6 +648,13 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           </div>
         </form>
       </div>
+
+      <ErrorModal
+        isOpen={errorModal.isOpen}
+        title="Campos Obrigatórios"
+        message={errorModal.message}
+        onClose={() => setErrorModal({ isOpen: false, message: '' })}
+      />
     </div>
   );
 };
