@@ -13,9 +13,9 @@ export function UserAvatar({ avatarUrl, firstName, lastName, size = 'md', classN
   const { theme } = useTheme();
 
   const sizeClasses = {
-    sm: 'w-9 h-9 lg:max-h-[900px]:w-5 lg:max-h-[900px]:h-5 lg:max-h-[700px]:w-3 lg:max-h-[700px]:h-3 text-xs lg:max-h-[900px]:text-[7px] lg:max-h-[700px]:text-[5px]',
-    md: 'w-10 h-10 lg:max-h-[900px]:w-6 lg:max-h-[900px]:h-6 lg:max-h-[700px]:w-4 lg:max-h-[700px]:h-4 text-sm lg:max-h-[900px]:text-[8px] lg:max-h-[700px]:text-[6px]',
-    lg: 'w-16 h-16 lg:max-h-[900px]:w-10 lg:max-h-[900px]:h-10 lg:max-h-[700px]:w-6 lg:max-h-[700px]:h-6 text-xl lg:max-h-[900px]:text-xs lg:max-h-[700px]:text-[8px]'
+    sm: 'w-9 h-9 lg:max-h-[900px]:w-5 lg:max-h-[900px]:h-5 lg:max-h-[700px]:w-2 lg:max-h-[700px]:h-2 text-xs lg:max-h-[900px]:text-[7px] lg:max-h-[700px]:text-[3px]',
+    md: 'w-10 h-10 lg:max-h-[900px]:w-6 lg:max-h-[900px]:h-6 lg:max-h-[700px]:w-2.5 lg:max-h-[700px]:h-2.5 text-sm lg:max-h-[900px]:text-[8px] lg:max-h-[700px]:text-[4px]',
+    lg: 'w-16 h-16 lg:max-h-[900px]:w-10 lg:max-h-[900px]:h-10 lg:max-h-[700px]:w-4 lg:max-h-[700px]:h-4 text-xl lg:max-h-[900px]:text-xs lg:max-h-[700px]:text-[6px]'
   };
 
   const getInitials = () => {
