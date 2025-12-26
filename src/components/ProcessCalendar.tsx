@@ -177,8 +177,8 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
             p-0.5 sm:p-0.5 md:p-1 lg:p-1.5
             text-sm sm:text-sm md:text-xs lg:text-sm
             font-medium transition-all
-            min-h-[1.6rem] sm:min-h-[1.4rem] md:min-h-[1.2rem] lg:h-20 xlg:h-20 2xl:h-[140px]
-            max-h-[3rem] sm:max-h-[2.5rem] md:max-h-[2rem] lg:max-h-20 xlg:max-h-20 2xl:max-h-[140px]
+            min-h-[1.6rem] sm:min-h-[1.4rem] md:min-h-[1.2rem] lg:h-20 xlg:h-20 2xl:h-[148px]
+            max-h-[3rem] sm:max-h-[2.5rem] md:max-h-[2rem] lg:max-h-20 xlg:max-h-20 2xl:max-h-[148px]
             ${dayDeadlines.length > 0 ? 'font-bold' : ''}
           `}
           style={{
