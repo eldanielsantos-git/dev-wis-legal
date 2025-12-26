@@ -126,7 +126,7 @@ export function NotificationBadge({ onClick, isCollapsed, isActive }: Notificati
         title={isCollapsed ? "Notificações" : undefined}
       >
         <div className="relative">
-          <Bell className={`w-5 h-5 max-h-900:w-3 max-h-900:h-3 max-h-720:w-1 max-h-720:h-1 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
+          <Bell className={`w-5 h-5 max-h-900:w-3 max-h-900:h-3 max-h-720:w-2.5 max-h-720:h-2.5 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
           {hasUnread && (
             <span
               className="absolute -top-1 -right-1 w-4 h-4 max-h-900:w-2 max-h-900:h-2 max-h-720:w-0.5 max-h-720:h-0.5 rounded-full text-white text-xs max-h-900:text-[7px] max-h-720:text-[2px] flex items-center justify-center font-bold"
@@ -136,7 +136,7 @@ export function NotificationBadge({ onClick, isCollapsed, isActive }: Notificati
             </span>
           )}
         </div>
-        {!isCollapsed && <span className="ml-3 max-h-900:ml-0.5 max-h-720:ml-0 text-sm max-h-900:text-[9px] max-h-720:text-[3px] font-medium">Notificações</span>}
+        {!isCollapsed && <span className="ml-3 max-h-900:ml-0.5 max-h-720:ml-0 text-sm max-h-900:text-[9px] max-h-720:text-[7px] font-medium">Notificações</span>}
       </button>
 
       {tooltipContent && createPortal(tooltipContent, document.body)}

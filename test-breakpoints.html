@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Teste de Breakpoints - Altura 720px</title>
+  <link rel="stylesheet" href="/dist/assets/index-CZRU4gfR.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #0F0E0D;
+      color: white;
+    }
+    .info {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(255,255,255,0.9);
+      color: black;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 9999;
+    }
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="info">
+    <strong>Resolução Atual:</strong><br>
+    Largura: <span id="width"></span>px<br>
+    Altura: <span id="height"></span>px<br>
+    <br>
+    <strong>Breakpoint ativo:</strong><br>
+    <span id="breakpoint"></span>
+  </div>
+
+  <h1>Teste de Breakpoints de Altura</h1>
+
+  <div class="test-section">
+    <h2>Teste 1: Ícones</h2>
+    <p>Padrão (>900px altura):</p>
+    <svg class="w-5 h-5" style="border: 1px solid white;" viewBox="0 0 24 24" fill="white">
+      <rect width="24" height="24"/>
+    </svg>
+    <span>20px (w-5 h-5)</span>
+
+    <p style="margin-top: 10px;">Compacto (≤900px altura):</p>
+    <svg class="w-5 h-5 max-h-900:w-3 max-h-900:h-3" style="border: 1px solid white;" viewBox="0 0 24 24" fill="white">
+      <rect width="24" height="24"/>
+    </svg>
+    <span>12px em ≤900px (max-h-900:w-3)</span>
+
+    <p style="margin-top: 10px;">Super compacto (≤720px altura):</p>
+    <svg class="w-5 h-5 max-h-900:w-3 max-h-900:h-3 max-h-720:w-1 max-h-720:h-1" style="border: 1px solid yellow;" viewBox="0 0 24 24" fill="yellow">
+      <rect width="24" height="24"/>
+    </svg>
+    <span>4px em ≤720px (max-h-720:w-1)</span>
+  </div>
+
+  <div class="test-section">
+    <h2>Teste 2: Fontes</h2>
+    <p>Padrão (>900px altura):</p>
+    <span class="text-sm">Texto 14px (text-sm)</span>
+
+    <p style="margin-top: 10px;">Compacto (≤900px altura):</p>
+    <span class="text-sm max-h-900:text-[9px]">Texto 9px em ≤900px (max-h-900:text-[9px])</span>
+
+    <p style="margin-top: 10px;">Super compacto (≤720px altura):</p>
+    <span class="text-sm max-h-900:text-[9px] max-h-720:text-[3px]" style="background: yellow; color: black;">Texto 3px em ≤720px (max-h-720:text-[3px])</span>
+  </div>
+
+  <div class="test-section">
+    <h2>Instruções:</h2>
+    <ol>
+      <li>Abra esta página em uma janela com <strong>largura ≥ 1024px</strong></li>
+      <li>Reduza a <strong>altura</strong> da janela do navegador</li>
+      <li>Quando a altura for <strong>≤ 720px</strong>, os ícones amarelos devem ficar MUITO pequenos (4px)</li>
+      <li>O texto amarelo deve ficar minúsculo (3px)</li>
+    </ol>
+    <p><strong>Importante:</strong> Certifique-se de que a largura da janela está maior que 1024px!</p>
+  </div>
+
+  <script>
+    function updateInfo() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+
+      document.getElementById('width').textContent = width;
+      document.getElementById('height').textContent = height;
+
+      let breakpoint = 'Nenhum';
+      if (width >= 1024) {
+        if (height <= 720) {
+          breakpoint = '✅ max-h-720 ATIVO (altura ≤ 720px, largura ≥ 1024px)';
+        } else if (height <= 900) {
+          breakpoint = '✅ max-h-900 ATIVO (altura ≤ 900px, largura ≥ 1024px)';
+        } else {
+          breakpoint = 'Padrão (altura > 900px, largura ≥ 1024px)';
+        }
+      } else {
+        breakpoint = '❌ Largura < 1024px - breakpoints NÃO ativos!';
+      }
+
+      document.getElementById('breakpoint').textContent = breakpoint;
+    }
+
+    updateInfo();
+    window.addEventListener('resize', updateInfo);
+  </script>
+</body>
+</html>

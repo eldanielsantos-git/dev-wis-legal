@@ -188,10 +188,10 @@ export function UserAvatarMenu({
         />
         {showLabel && (
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm max-h-900:text-[8px] max-h-720:text-[3px] font-medium truncate" style={{ color: colors.textPrimary }}>
+            <p className="text-sm max-h-900:text-[8px] max-h-720:text-[7px] font-medium truncate" style={{ color: colors.textPrimary }}>
               {firstName} {lastName}
             </p>
-            <p className="text-xs max-h-900:text-[7px] max-h-720:text-[3px] truncate" style={{ color: colors.textSecondary }}>
+            <p className="text-xs max-h-900:text-[7px] max-h-720:text-[7px] truncate" style={{ color: colors.textSecondary }}>
               Meu perfil
             </p>
           </div>
