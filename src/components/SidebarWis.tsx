@@ -403,8 +403,8 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
             >
-              {theme === 'dark' ? <Sun className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1.5 lg:max-h-[720px]:h-1.5 flex-shrink-0" /> : <Moon className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1.5 lg:max-h-[720px]:h-1.5 flex-shrink-0" />}
-              {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 lg:max-h-[720px]:ml-0 text-sm lg:max-h-[900px]:text-[9px] lg:max-h-[720px]:text-[5px] font-medium">{theme === 'dark' ? 'Modo claro' : 'Modo escuro'}</span>}
+              {theme === 'dark' ? <Sun className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1 lg:max-h-[720px]:h-1 flex-shrink-0" /> : <Moon className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1 lg:max-h-[720px]:h-1 flex-shrink-0" />}
+              {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 lg:max-h-[720px]:ml-0 text-sm lg:max-h-[900px]:text-[9px] lg:max-h-[720px]:text-[3px] font-medium">{theme === 'dark' ? 'Modo claro' : 'Modo escuro'}</span>}
             </button>
 
             <NotificationBadge
@@ -421,8 +421,8 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = activePage === 'tokens' ? activeBg : 'transparent'}
               title="Tokens"
             >
-              <Coins className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1.5 lg:max-h-[720px]:h-1.5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 lg:max-h-[720px]:ml-0 text-sm lg:max-h-[900px]:text-[9px] lg:max-h-[720px]:text-[5px] font-medium">Tokens</span>}
+              <Coins className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1 lg:max-h-[720px]:h-1 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 lg:max-h-[720px]:ml-0 text-sm lg:max-h-[900px]:text-[9px] lg:max-h-[720px]:text-[3px] font-medium">Tokens</span>}
             </button>
 
             <button
@@ -433,8 +433,8 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
               title="Enviar convite"
             >
-              <UserPlus className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1.5 lg:max-h-[720px]:h-1.5 flex-shrink-0" />
-              {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 lg:max-h-[720px]:ml-0 text-sm lg:max-h-[900px]:text-[9px] lg:max-h-[720px]:text-[5px] font-medium">Enviar convite</span>}
+              <UserPlus className="w-5 h-5 lg:max-h-[900px]:w-3 lg:max-h-[900px]:h-3 lg:max-h-[720px]:w-1 lg:max-h-[720px]:h-1 flex-shrink-0" />
+              {!isCollapsed && <span className="ml-3 lg:max-h-[900px]:ml-0.5 lg:max-h-[720px]:ml-0 text-sm lg:max-h-[900px]:text-[9px] lg:max-h-[720px]:text-[3px] font-medium">Enviar convite</span>}
             </button>
 
           </div>
