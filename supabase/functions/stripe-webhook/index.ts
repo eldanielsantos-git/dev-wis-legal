@@ -25,127 +25,126 @@ async function getPlanTokensFromPriceId(priceId: string): Promise<number> {
       .maybeSingle();
 
     if (error) {
-      console.error(`Error fetching plan tokens for price_id ${priceId}:`, error);
+      console.error(\`Error fetching plan tokens for price_id \${priceId}:\`, error);
       return 0;
     }
 
     if (!plan) {
-      console.warn(`No active plan found for price_id ${priceId}, returning 0 tokens`);
+      console.warn(\`No active plan found for price_id \${priceId}, returning 0 tokens\`);
       return 0;
     }
 
     return Number(plan.tokens_included) || 0;
   } catch (err) {
-    console.error(`Exception fetching plan tokens for price_id ${priceId}:`, err);
+    console.error(\`Exception fetching plan tokens for price_id \${priceId}:\`, err);
     return 0;
   }
 }
 
 async function logTokenCreditAudit(params: any) {
-  const { error } = await supabase.from('token_credits_audit').insert(params);
+  const { error } = await supabase
+    .from('token_credits_audit')
+    .insert(params);
+
   if (error) {
     console.error('Error logging token credit audit:', error);
   }
 }
 
-async function syncCustomerFromStripe(customerId: string, eventId: string) {
-  const logPrefix = `[${eventId}][syncCustomer ${customerId}]`;
-  console.info(`${logPrefix} Starting sync`);
+async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId: string) {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const url = \`\${supabaseUrl}/functions/v1/send-subscription-confirmation-email\`;
 
-  const subscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-    limit: 1,
-    status: 'all',
-    expand: ['data.default_payment_method'],
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': \`Bearer \${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}\`,
+      },
+      body: JSON.stringify({ subscription_id: subscriptionId }),
+    });
+
+    if (!response.ok) {
+      console.error(\`[\${eventId}] Failed to send subscription confirmation email: \${response.status}\`);
+    } else {
+      console.info(\`[\${eventId}] Subscription confirmation email sent successfully\`);
+    }
+  } catch (error) {
+    console.error(\`[\${eventId}] Error sending subscription confirmation email:\`, error);
+  }
+}
+
+async function syncCustomerFromStripe(customerId: string, eventId: string) {
+  const logPrefix = \`[\${eventId}]\`;
+  console.info(\`\${logPrefix} Syncing customer \${customerId}\`);
+
+  const customer = await stripe.customers.retrieve(customerId, {
+    expand: ['subscriptions'],
   });
 
-  const { data: existingSub } = await supabase
+  if (customer.deleted) {
+    console.warn(\`\${logPrefix} Customer deleted, skipping sync\`);
+    return;
+  }
+
+  let lastPlanChangeAt: string | null = null;
+
+  const { data: existingSub, error: existingSubError } = await supabase
     .from('stripe_subscriptions')
     .select('*')
     .eq('customer_id', customerId)
     .is('deleted_at', null)
     .maybeSingle();
 
-  let lastPlanChangeAt: string | null = null;
+  if (existingSubError && existingSubError.code !== 'PGRST116') {
+    console.error(\`\${logPrefix} Error fetching existing subscription:\`, existingSubError);
+    throw existingSubError;
+  }
+
+  const subscriptions = customer.subscriptions!;
 
   if (subscriptions.data.length === 0) {
-    console.info(`${logPrefix} No subscription found in Stripe`);
+    console.info(\`\${logPrefix} Customer has no active subscriptions\`);
 
     if (existingSub) {
-      console.info(`${logPrefix} Marking existing subscription as deleted`);
       const { error: deleteError } = await supabase
         .from('stripe_subscriptions')
-        .update({
-          deleted_at: new Date().toISOString(),
-          status: 'canceled',
-          updated_at: new Date().toISOString(),
-        })
+        .update({ deleted_at: new Date().toISOString() })
         .eq('customer_id', customerId);
 
       if (deleteError) {
-        console.error(`${logPrefix} Error marking subscription as deleted:`, deleteError);
+        console.error(\`\${logPrefix} Error marking subscription as deleted:\`, deleteError);
         throw deleteError;
-      }
-
-      const { data: userData } = await supabase
-        .from('stripe_customers')
-        .select('user_id')
-        .eq('customer_id', customerId)
-        .maybeSingle();
-
-      if (userData) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('email, first_name, last_name')
-          .eq('id', userData.user_id)
-          .maybeSingle();
-
-        if (profile) {
-          const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
-
-          const { data: planData } = await supabase
-            .from('subscription_plans')
-            .select('name')
-            .eq('stripe_price_id', existingSub.price_id)
-            .maybeSingle();
-
-          const planName = planData?.name || 'unknown';
-
-          await notifyAdminSafe({
-            type: 'subscription_cancelled',
-            title: 'Assinatura Cancelada',
-            message: `${userName} | ${profile.email} | ${planName}`,
-            severity: 'medium',
-            metadata: {
-              customer_id: customerId,
-              user_name: userName,
-              user_email: profile.email,
-              plan_name: planName,
-              cancellation_reason: 'Cancelled in Stripe',
-            },
-            userId: userData.user_id,
-          });
-        }
       }
     }
 
-    const { error: noSubError } = await supabase.from('stripe_subscriptions').upsert(
-      {
-        customer_id: customerId,
-        status: 'not_started',
-        plan_tokens: 0,
-        extra_tokens: 0,
-        tokens_used: 0,
-        tokens_total: 0,
-        updated_at: new Date().toISOString(),
-      },
-      {
-        onConflict: 'customer_id',
-      },
-    );
+    const { error: noSubError } = await supabase
+      .from('stripe_subscriptions')
+      .upsert(
+        {
+          customer_id: customerId,
+          subscription_id: null,
+          status: 'none',
+          price_id: null,
+          current_period_start: null,
+          current_period_end: null,
+          plan_tokens: 0,
+          extra_tokens: 0,
+          tokens_carried_forward: 0,
+          tokens_total: 0,
+          tokens_used: 0,
+          last_plan_change_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'customer_id',
+        },
+      );
 
     if (noSubError) {
-      console.error(`${logPrefix} Error upserting no subscription record:`, noSubError);
+      console.error(\`\${logPrefix} Error upserting no subscription record:\`, noSubError);
       throw noSubError;
     }
 
@@ -153,12 +152,12 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
   }
 
   const subscription = subscriptions.data[0];
-  console.info(`${logPrefix} Found subscription: ${subscription.id} with status: ${subscription.status}`);
+  console.info(\`\${logPrefix} Found subscription: \${subscription.id} with status: \${subscription.status}\`);
 
   const priceId = subscription.items?.data[0]?.price?.id;
   const planTokens = await getPlanTokensFromPriceId(priceId || '');
 
-  console.info(`${logPrefix} Plan tokens for price ${priceId}: ${planTokens}`);
+  console.info(\`\${logPrefix} Plan tokens for price \${priceId}: \${planTokens}\`);
 
   let finalPlanTokens = planTokens;
   let finalExtraTokens = existingSub?.extra_tokens || 0;
@@ -170,7 +169,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     const oldPriceId = existingSub.price_id;
 
     if (priceId !== oldPriceId) {
-      console.info(`${logPrefix} Plan change detected: ${oldPriceId} -> ${priceId}`);
+      console.info(\`\${logPrefix} Plan change detected: \${oldPriceId} -> \${priceId}\`);
       lastPlanChangeAt = new Date().toISOString();
       shouldResetTokens = true;
 
@@ -179,7 +178,7 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
       if (remainingTokens > 0) {
         tokensCarriedForward = (existingSub.tokens_carried_forward || 0) + remainingTokens;
         finalExtraTokens = (existingSub.extra_tokens || 0) + remainingTokens;
-        console.info(`${logPrefix} Carrying forward ${remainingTokens} unused tokens as extra_tokens`);
+        console.info(\`\${logPrefix} Carrying forward \${remainingTokens} unused tokens as extra_tokens\`);
       }
 
       finalTokensUsed = 0;
@@ -214,83 +213,131 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
         .maybeSingle();
 
       if (userData) {
-        const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+        const isFirstSubscription = existingSub.plan_tokens === 0;
 
-        const { data: recentNotifications } = await supabase
-          .from('admin_notifications')
-          .select(`
-            id,
-            metadata,
-            notification_type_id,
-            admin_notification_types!inner(slug)
-          `)
-          .eq('user_id', userData.user_id)
-          .gte('created_at', tenSecondsAgo);
+        if (isFirstSubscription) {
+          console.info(\`\${logPrefix} First subscription detected (before_plan_tokens = 0), treating as new subscription\`);
 
-        const isDuplicate = recentNotifications?.some((notif: any) => {
-          const typeSlug = notif.admin_notification_types?.slug;
-          if (typeSlug !== 'subscription_upgraded' && typeSlug !== 'subscription_downgraded') {
-            return false;
-          }
-          const meta = notif.metadata as any;
-          return meta?.customer_id === customerId &&
-                 meta?.old_tokens === existingSub.plan_tokens.toLocaleString('pt-BR') &&
-                 meta?.new_tokens === finalPlanTokens.toLocaleString('pt-BR');
-        });
-
-        if (isDuplicate) {
-          console.info(`${logPrefix} Notificação de upgrade/downgrade já enviada recentemente, pulando duplicata`);
-        } else {
           const { data: profile } = await supabase
             .from('user_profiles')
-            .select('email')
+            .select('email, first_name, last_name')
             .eq('id', userData.user_id)
             .maybeSingle();
 
-          const { data: oldPlan } = await supabase
+          const { data: planData } = await supabase
             .from('subscription_plans')
-            .select('name')
-            .eq('stripe_price_id', oldPriceId)
-            .maybeSingle();
-
-          const { data: newPlan } = await supabase
-            .from('subscription_plans')
-            .select('name')
+            .select('name, tokens_included, price_brl')
             .eq('stripe_price_id', priceId)
             .maybeSingle();
 
-          console.info(`${logPrefix} Old plan:`, oldPlan, 'New plan:', newPlan);
+          if (profile && planData) {
+            const userName = \`\${profile.first_name || ''} \${profile.last_name || ''}\`.trim() || profile.email;
+            const amountFormatted = ((planData.price_brl || 0)).toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            });
+            const tokensFormatted = Number(planData.tokens_included).toLocaleString('pt-BR');
 
-          if (profile && oldPlan && newPlan) {
-            const isUpgrade = finalPlanTokens > existingSub.plan_tokens;
-            const notificationType = isUpgrade ? 'subscription_upgraded' : 'subscription_downgraded';
+            console.info(\`\${logPrefix} Sending confirmation email for first subscription\`);
+            await sendSubscriptionConfirmationEmail(eventId, subscription.id);
 
-            const { data: fullProfile } = await supabase
-              .from('user_profiles')
-              .select('first_name, last_name')
-              .eq('id', userData.user_id)
-              .maybeSingle();
-
-            const userName = fullProfile ? `${fullProfile.first_name || ''} ${fullProfile.last_name || ''}`.trim() || profile.email : profile.email;
-
+            console.info(\`\${logPrefix} Sending admin notification for first subscription\`);
             await notifyAdminSafe({
-              type: notificationType,
-              title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
-              message: `${userName} | ${profile.email} | ${oldPlan.name} → ${newPlan.name}`,
-              severity: isUpgrade ? 'success' : 'low',
+              type: 'subscription_created',
+              title: 'Compra de Assinatura',
+              message: \`\${amountFormatted} | \${userName} | \${profile.email} | \${planData.name}\`,
+              severity: 'success',
               metadata: {
                 customer_id: customerId,
                 user_name: userName,
                 user_email: profile.email,
-                old_plan: oldPlan.name,
-                new_plan: newPlan.name,
-                old_tokens: existingSub.plan_tokens.toLocaleString('pt-BR'),
-                new_tokens: finalPlanTokens.toLocaleString('pt-BR'),
+                plan_name: planData.name,
+                plan_tokens: tokensFormatted,
+                amount: amountFormatted,
+                status: 'active',
               },
               userId: userData.user_id,
             });
+          }
+        } else {
+          const tenSecondsAgo = new Date(Date.now() - 10000).toISOString();
+
+          const { data: recentNotifications } = await supabase
+            .from('admin_notifications')
+            .select(\`
+              id,
+              metadata,
+              notification_type_id,
+              admin_notification_types!inner(slug)
+            \`)
+            .eq('user_id', userData.user_id)
+            .gte('created_at', tenSecondsAgo);
+
+          const isDuplicate = recentNotifications?.some((notif: any) => {
+            const typeSlug = notif.admin_notification_types?.slug;
+            if (typeSlug !== 'subscription_upgraded' && typeSlug !== 'subscription_downgraded') {
+              return false;
+            }
+            const meta = notif.metadata as any;
+            return meta?.customer_id === customerId &&
+                   meta?.old_tokens === existingSub.plan_tokens.toLocaleString('pt-BR') &&
+                   meta?.new_tokens === finalPlanTokens.toLocaleString('pt-BR');
+          });
+
+          if (isDuplicate) {
+            console.info(\`\${logPrefix} Notificação de upgrade/downgrade já enviada recentemente, pulando duplicata\`);
           } else {
-            console.warn(`${logPrefix} Não foi possível enviar notificação: profile=${!!profile}, oldPlan=${!!oldPlan}, newPlan=${!!newPlan}`);
+            const { data: profile } = await supabase
+              .from('user_profiles')
+              .select('email')
+              .eq('id', userData.user_id)
+              .maybeSingle();
+
+            const { data: oldPlan } = await supabase
+              .from('subscription_plans')
+              .select('name')
+              .eq('stripe_price_id', oldPriceId)
+              .maybeSingle();
+
+            const { data: newPlan } = await supabase
+              .from('subscription_plans')
+              .select('name')
+              .eq('stripe_price_id', priceId)
+              .maybeSingle();
+
+            console.info(\`\${logPrefix} Old plan:\`, oldPlan, 'New plan:', newPlan);
+
+            if (profile && oldPlan && newPlan) {
+              const isUpgrade = finalPlanTokens > existingSub.plan_tokens;
+              const notificationType = isUpgrade ? 'subscription_upgraded' : 'subscription_downgraded';
+
+              const { data: fullProfile } = await supabase
+                .from('user_profiles')
+                .select('first_name, last_name')
+                .eq('id', userData.user_id)
+                .maybeSingle();
+
+              const userName = fullProfile ? \`\${fullProfile.first_name || ''} \${fullProfile.last_name || ''}\`.trim() || profile.email : profile.email;
+
+              await notifyAdminSafe({
+                type: notificationType,
+                title: isUpgrade ? 'Upgrade de Assinatura' : 'Downgrade de Assinatura',
+                message: \`\${userName} | \${profile.email} | \${oldPlan.name} → \${newPlan.name}\`,
+                severity: isUpgrade ? 'success' : 'low',
+                metadata: {
+                  customer_id: customerId,
+                  user_name: userName,
+                  user_email: profile.email,
+                  old_plan: oldPlan.name,
+                  new_plan: newPlan.name,
+                  old_tokens: existingSub.plan_tokens.toLocaleString('pt-BR'),
+                  new_tokens: finalPlanTokens.toLocaleString('pt-BR'),
+                },
+                userId: userData.user_id,
+              });
+            } else {
+              console.warn(\`\${logPrefix} Não foi possível enviar notificação: profile=\${!!profile}, oldPlan=\${!!oldPlan}, newPlan=\${!!newPlan}\`);
+            }
           }
         }
       }
@@ -302,34 +349,25 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
   const subscriptionData: any = {
     customer_id: customerId,
     subscription_id: subscription.id,
-    price_id: priceId,
     status: subscription.status,
+    price_id: priceId,
     current_period_start: subscription.current_period_start,
     current_period_end: subscription.current_period_end,
-    cancel_at_period_end: subscription.cancel_at_period_end || false,
-    payment_method_brand: subscription.default_payment_method
-      ? ((await stripe.paymentMethods.retrieve(subscription.default_payment_method as string)).card?.brand || null)
-      : null,
-    payment_method_last4: subscription.default_payment_method
-      ? ((await stripe.paymentMethods.retrieve(subscription.default_payment_method as string)).card?.last4 || null)
-      : null,
     plan_tokens: finalPlanTokens,
     extra_tokens: finalExtraTokens,
-    tokens_used: finalTokensUsed,
     tokens_carried_forward: tokensCarriedForward,
+    tokens_total: finalPlanTokens + finalExtraTokens,
+    tokens_used: finalTokensUsed,
     updated_at: new Date().toISOString(),
   };
+
+  if (!existingSub || shouldResetTokens) {
+    subscriptionData.created_at = new Date().toISOString();
+  }
 
   if (lastPlanChangeAt) {
     subscriptionData.last_plan_change_at = lastPlanChangeAt;
   }
-
-  if (shouldResetTokens) {
-    subscriptionData.last_token_reset_at = new Date().toISOString();
-    console.info(`${logPrefix} Setting last_token_reset_at due to plan change`);
-  }
-
-  console.info(`${logPrefix} Upserting subscription with data:`, subscriptionData);
 
   const { error: upsertError } = await supabase
     .from('stripe_subscriptions')
@@ -338,376 +376,44 @@ async function syncCustomerFromStripe(customerId: string, eventId: string) {
     });
 
   if (upsertError) {
-    console.error(`${logPrefix} Error upserting subscription:`, upsertError);
+    console.error(\`\${logPrefix} Error upserting subscription:\`, upsertError);
     throw upsertError;
   }
 
-  console.info(`${logPrefix} Subscription synced successfully`);
-}
-
-async function sendSubscriptionConfirmationEmail(eventId: string, subscriptionId: string) {
-  const logPrefix = `[${eventId}][confirmEmail]`;
-
-  try {
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    const priceId = subscription.items.data[0]?.price?.id;
-
-    if (!priceId) {
-      console.warn(`${logPrefix} No price ID found in subscription`);
-      return;
-    }
-
-    const { data: plan } = await supabase
-      .from('subscription_plans')
-      .select('name')
-      .eq('stripe_price_id', priceId)
-      .maybeSingle();
-
-    const planName = plan?.name || 'Plano';
-
-    const customerId = typeof subscription.customer === 'string'
-      ? subscription.customer
-      : subscription.customer?.id;
-
-    if (!customerId) {
-      console.warn(`${logPrefix} No customer ID found`);
-      return;
-    }
-
-    const { data: customerData } = await supabase
-      .from('stripe_customers')
-      .select('user_id')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (!customerData?.user_id) {
-      console.warn(`${logPrefix} No user found for customer ${customerId}`);
-      return;
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-    await fetch(`${supabaseUrl}/functions/v1/send-subscription-confirmation-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify({
-        user_id: customerData.user_id,
-        subscription_id: subscriptionId,
-        plan_name: planName,
-      }),
-    });
-
-    console.info(`${logPrefix} Confirmation email triggered`);
-  } catch (error) {
-    console.error(`${logPrefix} Error sending confirmation email:`, error);
-  }
-}
-
-async function handlePaymentFailure(event: Stripe.Event) {
-  const logPrefix = `[${event.id}][paymentFailure]`;
-  console.info(`${logPrefix} Processing payment failure event: ${event.type}`);
-
-  try {
-    let paymentIntent: Stripe.PaymentIntent | null = null;
-    let invoice: Stripe.Invoice | null = null;
-    let charge: Stripe.Charge | null = null;
-
-    if (event.type === 'payment_intent.payment_failed') {
-      paymentIntent = event.data.object as Stripe.PaymentIntent;
-      console.info(`${logPrefix} Payment intent direct:`, paymentIntent.id);
-    } else if (event.type === 'invoice.payment_failed' || event.type === 'invoice.payment_action_required') {
-      invoice = event.data.object as Stripe.Invoice;
-      console.info(`${logPrefix} Invoice:`, invoice.id, 'Payment intent:', invoice.payment_intent);
-      if (invoice.payment_intent && typeof invoice.payment_intent === 'string') {
-        paymentIntent = await stripe.paymentIntents.retrieve(invoice.payment_intent);
-      }
-    } else if (event.type === 'charge.failed') {
-      charge = event.data.object as Stripe.Charge;
-      if (charge.payment_intent && typeof charge.payment_intent === 'string') {
-        paymentIntent = await stripe.paymentIntents.retrieve(charge.payment_intent);
-      }
-    }
-
-    if (!paymentIntent) {
-      console.warn(`${logPrefix} Could not retrieve payment intent for failed payment`);
-      return;
-    }
-
-    console.info(`${logPrefix} Processing payment intent:`, paymentIntent.id);
-
-    const customerId = typeof paymentIntent.customer === 'string'
-      ? paymentIntent.customer
-      : paymentIntent.customer?.id;
-
-    if (!customerId) {
-      console.warn(`${logPrefix} No customer ID found in payment intent`);
-      return;
-    }
-
-    const { data: customer } = await supabase
-      .from('stripe_customers')
-      .select('user_id')
-      .eq('customer_id', customerId)
-      .maybeSingle();
-
-    if (!customer?.user_id) {
-      console.warn(`${logPrefix} No user found for customer ${customerId}`);
-      return;
-    }
-
-    let paymentType: 'assinatura_nova' | 'renovacao_assinatura' | 'compra_tokens' = 'compra_tokens';
-    let productName = 'Produto';
-    let priceId: string | null = null;
-
-    console.info(`${logPrefix} Has invoice: ${!!invoice}`);
-
-    if (invoice) {
-      console.info(`${logPrefix} Processing invoice-based failure`);
-
-      const subscriptionId = typeof invoice.subscription === 'string'
-        ? invoice.subscription
-        : invoice.subscription?.id;
-
-      console.info(`${logPrefix} Subscription ID:`, subscriptionId);
-
-      if (subscriptionId) {
-        const { data: existingSub } = await supabase
-          .from('stripe_subscriptions')
-          .select('subscription_id, created_at')
-          .eq('subscription_id', subscriptionId)
-          .maybeSingle();
-
-        console.info(`${logPrefix} Found existing sub:`, !!existingSub);
-
-        if (existingSub) {
-          const subscriptionAge = new Date().getTime() - new Date(existingSub.created_at).getTime();
-          const isNewSubscription = subscriptionAge < 3600000;
-          paymentType = isNewSubscription ? 'assinatura_nova' : 'renovacao_assinatura';
-          console.info(`${logPrefix} Sub type:`, paymentType);
-        } else {
-          paymentType = 'assinatura_nova';
-        }
-
-        if (invoice.lines?.data?.[0]?.price?.id) {
-          priceId = invoice.lines.data[0].price.id;
-          console.info(`${logPrefix} Price ID from invoice:`, priceId);
-
-          const { data: plan } = await supabase
-            .from('subscription_plans')
-            .select('name')
-            .eq('stripe_price_id', priceId)
-            .maybeSingle();
-
-          if (plan) {
-            productName = plan.name;
-            console.info(`${logPrefix} Plan name:`, productName);
-          }
-        }
-      } else {
-        if (invoice.lines?.data?.[0]?.price?.id) {
-          priceId = invoice.lines.data[0].price.id;
-
-          const { data: tokenPackage } = await supabase
-            .from('token_packages')
-            .select('name')
-            .eq('stripe_price_id', priceId)
-            .maybeSingle();
-
-          if (tokenPackage) {
-            productName = tokenPackage.name;
-            paymentType = 'compra_tokens';
-            console.info(`${logPrefix} Token package:`, productName);
-          }
-        }
-      }
-    } else {
-      console.info(`${logPrefix} Processing non-invoice failure`);
-
-      const metadata = paymentIntent.metadata || {};
-      priceId = metadata.price_id || null;
-
-      const { data: allPlans } = await supabase
-        .from('subscription_plans')
-        .select('name, stripe_price_id')
-        .eq('is_active', true);
-
-      let matchedPlan = null;
-      if (priceId && allPlans) {
-        matchedPlan = allPlans.find(p => p.stripe_price_id === priceId);
-      }
-
-      if (matchedPlan) {
-        productName = matchedPlan.name;
-        paymentType = 'assinatura_nova';
-      } else {
-        const { data: tokenPackage } = await supabase
-          .from('token_packages')
-          .select('name')
-          .eq('stripe_price_id', priceId || '')
-          .maybeSingle();
-
-        if (tokenPackage) {
-          productName = tokenPackage.name;
-          paymentType = 'compra_tokens';
-        }
-      }
-    }
-
-    console.info(`${logPrefix} Final - Type:`, paymentType, 'Product:', productName);
-
-    const lastPaymentError = paymentIntent.last_payment_error;
-    const errorCode = lastPaymentError?.code;
-    const errorMessage = lastPaymentError?.message;
-
-    const latestCharge = paymentIntent.latest_charge;
-    let cardBrand: string | undefined;
-    let cardLast4: string | undefined;
-
-    if (latestCharge && typeof latestCharge === 'string') {
-      const chargeDetails = await stripe.charges.retrieve(latestCharge);
-      cardBrand = chargeDetails.payment_method_details?.card?.brand;
-      cardLast4 = chargeDetails.payment_method_details?.card?.last4;
-    } else if (paymentIntent.payment_method && typeof paymentIntent.payment_method === 'string') {
-      const paymentMethod = await stripe.paymentMethods.retrieve(paymentIntent.payment_method);
-      cardBrand = paymentMethod.card?.brand;
-      cardLast4 = paymentMethod.card?.last4;
-    }
-
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error(`${logPrefix} Missing Supabase env vars`);
-      return;
-    }
-
-    const emailPayload = {
-      user_id: customer.user_id,
-      payment_intent_id: paymentIntent.id,
-      amount: paymentIntent.amount,
-      currency: paymentIntent.currency,
-      error_code: errorCode,
-      error_message: errorMessage,
-      card_brand: cardBrand,
-      card_last4: cardLast4,
-      payment_type: paymentType,
-      product_name: productName,
-      price_id: priceId,
-    };
-
-    console.info(`${logPrefix} Sending email with payload:`, JSON.stringify(emailPayload));
-
-    const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-payment-failure-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseAnonKey}`,
-      },
-      body: JSON.stringify(emailPayload),
-    });
-
-    if (!emailResponse.ok) {
-      const errorText = await emailResponse.text();
-      console.error(`${logPrefix} Failed to send email:`, emailResponse.status, errorText);
-    } else {
-      console.info(`${logPrefix} Email sent successfully`);
-    }
-
-    const { data: profile } = await supabase
-      .from('user_profiles')
-      .select('email, first_name, last_name')
-      .eq('id', customer.user_id)
-      .maybeSingle();
-
-    if (profile) {
-      const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
-      const amountFormatted = (paymentIntent.amount / 100).toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: paymentIntent.currency.toUpperCase(),
-      });
-
-      const notificationType = paymentType === 'compra_tokens' ? 'stripe_token_payment_failed' : 'stripe_payment_failed';
-      const titleText = paymentType === 'compra_tokens' ? 'Pagamento de Tokens Falhou' : 'Pagamento de Assinatura Falhou';
-
-      await notifyAdminSafe({
-        type: notificationType,
-        title: titleText,
-        message: `${amountFormatted} | ${userName} | ${profile.email} | ${productName}`,
-        severity: 'high',
-        metadata: {
-          payment_intent_id: paymentIntent.id,
-          user_name: userName,
-          user_email: profile.email,
-          amount: amountFormatted,
-          product_name: productName,
-          payment_type: paymentType,
-          error_code: errorCode || 'N/A',
-          error_message: errorMessage || 'N/A',
-          card_brand: cardBrand || 'N/A',
-          card_last4: cardLast4 || 'N/A',
-        },
-        userId: customer.user_id,
-      });
-    }
-
-  } catch (error: any) {
-    console.error(`${logPrefix} Error:`, error);
-  }
+  console.info(\`\${logPrefix} Successfully synced subscription for customer \${customerId}\`);
 }
 
 Deno.serve(async (req: Request) => {
-  const startTime = Date.now();
   const signature = req.headers.get('stripe-signature');
 
   if (!signature) {
-    console.error('[webhook] No stripe signature');
-    return new Response(JSON.stringify({ error: 'No stripe signature' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response('No signature', { status: 400 });
   }
 
   const body = await req.text();
-  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!;
+  const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+  if (!webhookSecret) {
+    console.error('STRIPE_WEBHOOK_SECRET not configured');
+    return new Response('Webhook secret not configured', { status: 500 });
+  }
 
   let event: Stripe.Event;
 
   try {
-    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-    console.info(`[${event.id}] Webhook received: ${event.type}`);
-  } catch (err: any) {
-    console.error('[webhook] Signature verification failed:', err.message);
-    return new Response(JSON.stringify({ error: 'Webhook signature verification failed' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+  } catch (err) {
+    console.error(\`Webhook signature verification failed: \${err instanceof Error ? err.message : 'Unknown error'}\`);
+    return new Response('Invalid signature', { status: 400 });
   }
 
+  console.info(\`[\${event.id}] Processing webhook event: \${event.type}\`);
+
   try {
-    const stripeData: any = event.data.object;
+    const stripeData = event.data.object;
 
-    if (!stripeData) {
-      console.error(`[${event.id}] No data in event`);
-      return new Response(JSON.stringify({ received: true }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const paymentFailureEvents = [
-      'payment_intent.payment_failed',
-      'invoice.payment_failed',
-      'invoice.payment_action_required',
-      'charge.failed',
-    ];
-
-    if (paymentFailureEvents.includes(event.type)) {
-      console.info(`[${event.id}] Payment failure event`);
-      await handlePaymentFailure(event);
+    if (event.type === 'customer.created') {
+      console.info(\`[\${event.id}] Customer created event received, no action needed\`);
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -726,7 +432,7 @@ Deno.serve(async (req: Request) => {
         : stripeData.customer?.id;
 
       if (customerId) {
-        console.info(`[${event.id}] Syncing subscription for ${customerId}`);
+        console.info(\`[\${event.id}] Syncing subscription for \${customerId}\`);
         await syncCustomerFromStripe(customerId, event.id);
 
         if (event.type === 'customer.subscription.created') {
@@ -734,7 +440,7 @@ Deno.serve(async (req: Request) => {
           const subscriptionId = subscription.id;
           const priceId = subscription.items?.data[0]?.price?.id;
 
-          console.info(`[${event.id}] New subscription created, sending email and notification immediately`);
+          console.info(\`[\${event.id}] New subscription created, sending email and notification immediately\`);
 
           await sendSubscriptionConfirmationEmail(event.id, subscriptionId);
 
@@ -758,7 +464,7 @@ Deno.serve(async (req: Request) => {
               .maybeSingle();
 
             if (profile) {
-              const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
+              const userName = \`\${profile.first_name || ''} \${profile.last_name || ''}\`.trim() || profile.email;
               const amountFormatted = ((planData.price_brl || 0)).toLocaleString('pt-BR', {
                 style: 'currency',
                 currency: 'BRL',
@@ -768,7 +474,7 @@ Deno.serve(async (req: Request) => {
               await notifyAdminSafe({
                 type: 'subscription_created',
                 title: 'Compra de Assinatura',
-                message: `${amountFormatted} | ${userName} | ${profile.email} | ${planData.name}`,
+                message: \`\${amountFormatted} | \${userName} | \${profile.email} | \${planData.name}\`,
                 severity: 'success',
                 metadata: {
                   customer_id: customerId,
@@ -799,7 +505,7 @@ Deno.serve(async (req: Request) => {
         : session.customer?.id;
 
       if (!customerId) {
-        console.warn(`[${event.id}] No customer in checkout session`);
+        console.warn(\`[\${event.id}] No customer in checkout session\`);
         return new Response(JSON.stringify({ received: true }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
@@ -807,21 +513,21 @@ Deno.serve(async (req: Request) => {
       }
 
       if (session.mode === 'payment') {
-        console.info(`[${event.id}] Expanding line_items for payment session`);
+        console.info(\`[\${event.id}] Expanding line_items for payment session\`);
         session = await stripe.checkout.sessions.retrieve(session.id, {
           expand: ['line_items', 'line_items.data.price'],
         });
       }
 
       if (session.mode === 'subscription') {
-        console.info(`[${event.id}] Subscription checkout completed - already processed by customer.subscription.created event`);
+        console.info(\`[\${event.id}] Subscription checkout completed - already processed by customer.subscription.created event\`);
       } else if (session.mode === 'payment' && session.payment_status === 'paid') {
-        console.info(`[${event.id}] Processing token payment`);
+        console.info(\`[\${event.id}] Processing token payment\`);
 
-        const priceId = session.line_items?.data?.[0]?.price?.id;
+        const priceId = session.line_items?.data[0]?.price?.id;
 
         if (!priceId) {
-          console.error(`[${event.id}] No price ID in session`);
+          console.error(\`[\${event.id}] No price ID in session\`);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -835,152 +541,68 @@ Deno.serve(async (req: Request) => {
           .maybeSingle();
 
         if (!tokenPackage) {
-          console.error(`[${event.id}] Token package not found`);
+          console.error(\`[\${event.id}] Token package not found\`);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
           });
         }
 
-        let customerData = (await supabase
-          .from('stripe_customers')
-          .select('user_id, customer_id')
-          .eq('customer_id', customerId)
-          .maybeSingle()).data;
+        console.info(\`[\${event.id}] Adding \${tokenPackage.tokens_amount} extra tokens for customer \${customerId}\`);
 
-        let actualCustomerId = customerId;
-
-        if (!customerData) {
-          console.warn(`[${event.id}] Customer not found by customer_id, trying email fallback`);
-
-          const stripeCustomer = await stripe.customers.retrieve(customerId);
-          const customerEmail = 'email' in stripeCustomer ? stripeCustomer.email : null;
-
-          if (customerEmail) {
-            console.info(`[${event.id}] Found email: ${customerEmail}, searching by email`);
-
-            const { data: profile } = await supabase
-              .from('user_profiles')
-              .select('id')
-              .eq('email', customerEmail)
-              .maybeSingle();
-
-            if (profile) {
-              const { data: fallbackCustomer } = await supabase
-                .from('stripe_customers')
-                .select('user_id, customer_id')
-                .eq('user_id', profile.id)
-                .maybeSingle();
-
-              if (fallbackCustomer) {
-                customerData = fallbackCustomer;
-                actualCustomerId = fallbackCustomer.customer_id;
-                console.info(`[${event.id}] Found user by email, using customer_id: ${actualCustomerId}`);
-              }
-            }
-          }
-        }
-
-        if (!customerData) {
-          console.error(`[${event.id}] User not found by customer_id or email`);
-          return new Response(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          });
-        }
-
-        const { data: subscription } = await supabase
+        const { data: subscription, error: subError } = await supabase
           .from('stripe_subscriptions')
-          .select('extra_tokens')
-          .eq('customer_id', actualCustomerId)
+          .select('*')
+          .eq('customer_id', customerId)
+          .is('deleted_at', null)
           .maybeSingle();
 
-        const currentExtraTokens = subscription?.extra_tokens || 0;
-        const newExtraTokens = currentExtraTokens + tokenPackage.tokens_amount;
+        if (subError || !subscription) {
+          console.error(\`[\${event.id}] Subscription not found for customer \${customerId}:\`, subError);
+          return new Response(JSON.stringify({ received: true }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        const newExtraTokens = (subscription.extra_tokens || 0) + tokenPackage.tokens_amount;
+        const newTotalTokens = subscription.plan_tokens + newExtraTokens;
 
         const { error: updateError } = await supabase
           .from('stripe_subscriptions')
           .update({
             extra_tokens: newExtraTokens,
+            tokens_total: newTotalTokens,
             updated_at: new Date().toISOString(),
           })
-          .eq('customer_id', actualCustomerId);
+          .eq('customer_id', customerId);
 
         if (updateError) {
-          console.error(`[${event.id}] Error updating tokens:`, updateError);
-        } else {
-          console.info(`[${event.id}] Added ${tokenPackage.tokens_amount} tokens`);
-
-          await logTokenCreditAudit({
-            event_id: event.id,
-            event_type: 'token_purchase',
-            customer_id: actualCustomerId,
-            price_id: priceId,
-            operation: 'add_extra_tokens',
-            status: 'success',
-            subscription_found: !!subscription,
-            before_extra_tokens: currentExtraTokens,
-            after_extra_tokens: newExtraTokens,
-            tokens_amount: tokenPackage.tokens_amount,
-            processing_time_ms: Date.now() - startTime,
-            metadata: customerId !== actualCustomerId ? {
-              original_customer_id: customerId,
-              resolved_via_email: true,
-            } : undefined,
-          });
-
-          const { data: profile } = await supabase
-            .from('user_profiles')
-            .select('email, first_name, last_name')
-            .eq('id', customerData.user_id)
-            .maybeSingle();
-
-          if (profile) {
-            const userName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || profile.email;
-            const amountFormatted = ((session.amount_total || 0) / 100).toLocaleString('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            });
-            const tokensFormatted = tokenPackage.tokens_amount.toLocaleString('pt-BR');
-
-            await notifyAdminSafe({
-              type: 'token_purchase',
-              title: 'Compra de Tokens',
-              message: `${amountFormatted} | ${userName} | ${profile.email} | ${tokenPackage.name}`,
-              severity: 'success',
-              metadata: {
-                customer_id: actualCustomerId,
-                original_customer_id: customerId !== actualCustomerId ? customerId : undefined,
-                user_name: userName,
-                user_email: profile.email,
-                tokens_purchased: tokensFormatted,
-                amount: amountFormatted,
-                package_name: tokenPackage.name,
-                before_tokens: currentExtraTokens.toLocaleString('pt-BR'),
-                after_tokens: newExtraTokens.toLocaleString('pt-BR'),
-              },
-              userId: customerData.user_id,
-            });
-          }
-
-          const supabaseUrl = Deno.env.get('SUPABASE_URL');
-          const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-
-          if (supabaseUrl && supabaseAnonKey) {
-            await fetch(`${supabaseUrl}/functions/v1/send-token-purchase-email`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseAnonKey}`,
-              },
-              body: JSON.stringify({
-                user_id: customerData.user_id,
-                package_name: tokenPackage.name,
-                tokens_amount: tokenPackage.tokens_amount,
-              }),
-            });
-          }
+          console.error(\`[\${event.id}] Error updating extra tokens:\`, updateError);
+          throw updateError;
         }
+
+        await logTokenCreditAudit({
+          event_id: event.id,
+          event_type: 'token_purchase',
+          customer_id: customerId,
+          price_id: priceId,
+          operation: 'token_purchase',
+          status: 'success',
+          subscription_found: true,
+          before_extra_tokens: subscription.extra_tokens || 0,
+          before_tokens_total: subscription.tokens_total,
+          after_extra_tokens: newExtraTokens,
+          after_tokens_total: newTotalTokens,
+          tokens_amount: tokenPackage.tokens_amount,
+          processing_time_ms: 0,
+          metadata: {
+            package_name: tokenPackage.name,
+            tokens_added: tokenPackage.tokens_amount,
+          },
+        });
+
+        console.info(\`[\${event.id}] Successfully added \${tokenPackage.tokens_amount} tokens\`);
       }
 
       return new Response(JSON.stringify({ received: true }), {
@@ -989,17 +611,20 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    console.info(`[${event.id}] Unhandled event type: ${event.type}`);
+    console.info(\`[\${event.id}] Unhandled event type: \${event.type}\`);
     return new Response(JSON.stringify({ received: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
 
-  } catch (error: any) {
-    console.error(`[${event.id}] Error:`, error.message, error.stack);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+  } catch (error) {
+    console.error(\`[\${event.id}] Error processing webhook:\`, error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 });
