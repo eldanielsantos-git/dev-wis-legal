@@ -237,8 +237,9 @@ export function SchedulePage({
             </button>
 
             <div className="rounded-xl shadow-sm p-2 sm:p-3 transition-all" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center justify-center mb-1">
-                <Filter className="w-4 h-4 schedule-icon" strokeWidth={1.5} style={{ color: colors.textSecondary }} />
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4 schedule-icon" strokeWidth={1.5} />
+                <span className="text-xs" style={{ color: colors.textSecondary }}>Filtro</span>
               </div>
               <CustomSelect
                 value={filterStatus}
