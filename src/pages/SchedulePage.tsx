@@ -208,25 +208,25 @@ export function SchedulePage({
         activePage="schedule"
       />
       <div className={`${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'} pt-16 lg:pt-0 flex-1 flex flex-col transition-[margin-left] duration-300 ease-in-out`}>
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-7xl mx-auto relative">
+        <main className="flex-1 p-4 sm:p-6 lg:p-6 w-full max-w-7xl mx-auto relative">
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center z-10" style={{ backgroundColor: `${colors.bgPrimary}CC` }}>
               <Loader className="w-8 h-8 animate-spin" style={{ color: colors.textPrimary }} />
             </div>
           )}
-          <div className="mb-8 sm:mb-10 lg:mb-12">
-            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-4">
-              <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textPrimary }} />
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-title font-normal" style={{ color: colors.textPrimary }}>
+          <div className="mb-6 sm:mb-8 lg:mb-6">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 mb-3 lg:mb-3">
+              <CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 lg:w-7 lg:h-7" style={{ color: colors.textPrimary }} />
+              <h1 className="text-2xl sm:text-3xl lg:text-3xl font-title font-normal" style={{ color: colors.textPrimary }}>
                 Agenda de Processos
               </h1>
             </div>
-            <p className="text-sm sm:text-base font-body text-center" style={{ color: colors.textSecondary }}>
+            <p className="text-sm sm:text-base lg:text-sm font-body text-center" style={{ color: colors.textSecondary }}>
               Gerencie prazos e compromissos dos seus processos
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4 mb-4 lg:mb-4">
             <button
               onClick={() => setIsCreateModalOpen(true)}
               className="rounded-xl shadow-sm p-2 sm:p-4 transition-all hover:opacity-80 cursor-pointer flex flex-col items-center justify-center schedule-create-btn"
@@ -294,7 +294,7 @@ export function SchedulePage({
             </div>
           </div>
 
-          <div className="mb-8">
+          <div className="mb-4 lg:mb-4">
             <ProcessCalendar
               deadlines={deadlines}
               selectedDate={selectedDate}

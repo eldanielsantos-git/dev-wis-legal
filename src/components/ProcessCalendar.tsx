@@ -173,7 +173,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           key={i}
           onClick={(e) => handleDateClick(date, e)}
           className={`
-            aspect-square p-1.5 lg:p-1 text-sm lg:text-xs font-medium transition-all
+            aspect-square p-1 lg:p-0.5 text-sm lg:text-xs font-medium transition-all
             ${dayDeadlines.length > 0 ? 'font-bold' : ''}
           `}
           style={{
@@ -192,8 +192,8 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
             borderLeft: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FFFFFF',
             borderRight: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FFFFFF',
             borderBottom: theme === 'dark' ? '1px solid rgba(255, 255, 255, 0.05)' : '1px solid #FFFFFF',
-            borderRadius: isToday(date) ? '6px' : '0',
-            margin: isToday(date) ? '1px' : '0'
+            borderRadius: isToday(date) ? '4px' : '0',
+            margin: isToday(date) ? '0.5px' : '0'
           }}
           onMouseEnter={(e) => {
             if (!isToday(date) && !isSelected(date)) {
@@ -209,7 +209,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           <div className="flex flex-col items-center justify-center h-full">
             <span>{displayDay}</span>
             {dayDeadlines.length > 0 && (
-              <div className="flex gap-0.5 lg:gap-0.5 mt-0.5 lg:mt-0.5">
+              <div className="flex gap-0.5 lg:gap-0.5 mt-0.5 lg:mt-0">
                 {hasPending && (
                   <div className="w-1.5 h-1.5 lg:w-1 lg:h-1 rounded-full bg-orange-500" />
                 )}
@@ -230,16 +230,16 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
   };
 
   return (
-    <div className="rounded-xl shadow-lg p-4 lg:p-4" style={{ backgroundColor: colors.bgSecondary }}>
-      <div className="flex items-center justify-between mb-4 lg:mb-3">
-        <h2 className="text-lg lg:text-lg font-bold flex items-center gap-2" style={{ color: colors.textPrimary }}>
-          <CalendarIcon className="w-4 h-4 lg:w-4 lg:h-4" style={{ color: colors.accent }} />
+    <div className="rounded-xl shadow-lg p-3 lg:p-2.5" style={{ backgroundColor: colors.bgSecondary }}>
+      <div className="flex items-center justify-between mb-2.5 lg:mb-2">
+        <h2 className="text-base lg:text-base font-bold flex items-center gap-1.5" style={{ color: colors.textPrimary }}>
+          <CalendarIcon className="w-3.5 h-3.5 lg:w-3.5 lg:h-3.5" style={{ color: colors.accent }} />
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </h2>
-        <div className="flex gap-2 lg:gap-1.5">
+        <div className="flex gap-1.5 lg:gap-1">
           <button
             onClick={handleToday}
-            className="px-2.5 lg:px-2.5 py-1 lg:py-0.5 text-sm lg:text-xs font-medium rounded-lg transition-all calendar-today-btn"
+            className="px-2 lg:px-2 py-0.5 lg:py-0.5 text-xs lg:text-xs font-medium rounded-md transition-all calendar-today-btn"
             style={{
               color: theme === 'dark' ? colors.accent : colors.textPrimary,
               backgroundColor: `${colors.accent}15`
@@ -255,7 +255,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
           </button>
           <button
             onClick={handlePreviousMonth}
-            className="p-1.5 lg:p-1 rounded-lg transition-all"
+            className="p-1 lg:p-0.5 rounded-md transition-all"
             aria-label="Mês anterior"
             style={{ color: colors.textPrimary }}
             onMouseEnter={(e) => {
@@ -265,11 +265,11 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <ChevronLeft className="w-4 h-4 lg:w-4 lg:h-4" />
+            <ChevronLeft className="w-3.5 h-3.5 lg:w-3.5 lg:h-3.5" />
           </button>
           <button
             onClick={handleNextMonth}
-            className="p-1.5 lg:p-1 rounded-lg transition-all"
+            className="p-1 lg:p-0.5 rounded-md transition-all"
             aria-label="Próximo mês"
             style={{ color: colors.textPrimary }}
             onMouseEnter={(e) => {
@@ -279,16 +279,16 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            <ChevronRight className="w-4 h-4 lg:w-4 lg:h-4" />
+            <ChevronRight className="w-3.5 h-3.5 lg:w-3.5 lg:h-3.5" />
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-7 mb-1.5 lg:mb-1">
+      <div className="grid grid-cols-7 mb-0.5 lg:mb-0.5">
         {weekDays.map(day => (
           <div
             key={day}
-            className="text-center text-sm lg:text-xs font-semibold py-1.5 lg:py-1"
+            className="text-center text-xs lg:text-xs font-semibold py-1 lg:py-0.5"
             style={{
               color: colors.textSecondary,
               borderRight: `1px solid ${colors.border}20`,
@@ -304,18 +304,18 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
         {renderCalendarDays()}
       </div>
 
-      <div className="mt-4 lg:mt-3 pt-3 lg:pt-2" style={{ borderTop: `1px solid ${colors.border}` }}>
-        <div className="flex flex-wrap gap-3 lg:gap-2.5 text-sm lg:text-xs">
-          <div className="flex items-center gap-1.5 lg:gap-1">
-            <div className="w-2.5 h-2.5 lg:w-2 lg:h-2 rounded-full bg-orange-500" />
+      <div className="mt-2.5 lg:mt-2 pt-2 lg:pt-1.5" style={{ borderTop: `1px solid ${colors.border}` }}>
+        <div className="flex flex-wrap gap-2.5 lg:gap-2 text-xs lg:text-xs">
+          <div className="flex items-center gap-1 lg:gap-1">
+            <div className="w-2 h-2 lg:w-1.5 lg:h-1.5 rounded-full bg-orange-500" />
             <span style={{ color: colors.textSecondary }}>Pendente</span>
           </div>
-          <div className="flex items-center gap-1.5 lg:gap-1">
-            <div className="w-2.5 h-2.5 lg:w-2 lg:h-2 rounded-full bg-green-500" />
+          <div className="flex items-center gap-1 lg:gap-1">
+            <div className="w-2 h-2 lg:w-1.5 lg:h-1.5 rounded-full bg-green-500" />
             <span style={{ color: colors.textSecondary }}>Concluído</span>
           </div>
-          <div className="flex items-center gap-1.5 lg:gap-1">
-            <div className="w-2.5 h-2.5 lg:w-2 lg:h-2 rounded-full bg-red-500" />
+          <div className="flex items-center gap-1 lg:gap-1">
+            <div className="w-2 h-2 lg:w-1.5 lg:h-1.5 rounded-full bg-red-500" />
             <span style={{ color: colors.textSecondary }}>Atrasado</span>
           </div>
         </div>
