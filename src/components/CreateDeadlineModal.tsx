@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { X, Calendar as CalendarIcon, Clock, FileText, Tag, Users, Search } from 'lucide-react';
+import { X, Calendar as CalendarIcon, Clock, FileText, Tag, Users, Search, AlertCircle } from 'lucide-react';
 import { processDeadlinesService, CreateDeadlineInput } from '../services/ProcessDeadlinesService';
 import { DeadlineCategory, DeadlinePartyType } from '../types/analysis';
 import { useToast } from '../hooks/useToast';
@@ -11,7 +11,6 @@ import { Input } from './ui/input';
 import { DatePickerField } from './ui/date-picker-field';
 import { DropdownField } from './ui/dropdown-field';
 import { TimePicker } from './ui/time-picker';
-import { ErrorModal } from './ErrorModal';
 
 interface CreateDeadlineModalProps {
   isOpen: boolean;
@@ -51,10 +50,7 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   const [showResults, setShowResults] = useState(false);
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string }>({
-    isOpen: false,
-    message: ''
-  });
+  const [validationError, setValidationError] = useState<string>('');
 
   const [formData, setFormData] = useState<CreateDeadlineInput>({
     processo_id: processoId || '',
@@ -196,60 +192,42 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
       if (!selectedProcesso) {
         console.error('Validation failed: No processo selected');
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, selecione um processo antes de continuar.'
-        });
+        setValidationError('Por favor, selecione um processo antes de continuar.');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.subject || formData.subject.trim().length < 3) {
         console.error('Validation failed: Invalid subject');
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, informe um assunto válido para o prazo (mínimo 3 caracteres).'
-        });
+        setValidationError('Por favor, informe um assunto válido para o prazo (mínimo 3 caracteres).');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_date) {
         console.error('Validation failed: No deadline_date');
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, informe a data do prazo.'
-        });
+        setValidationError('Por favor, informe a data do prazo.');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_time) {
         console.error('Validation failed: No deadline_time');
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, informe o horário do prazo.'
-        });
+        setValidationError('Por favor, informe o horário do prazo.');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.category) {
         console.error('Validation failed: No category');
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, selecione uma categoria para o prazo.'
-        });
+        setValidationError('Por favor, selecione uma categoria para o prazo.');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.party_type) {
         console.error('Validation failed: No party_type');
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, selecione a parte relacionada ao prazo.'
-        });
+        setValidationError('Por favor, selecione a parte relacionada ao prazo.');
         setIsSubmitting(false);
         return;
       }
@@ -371,6 +349,34 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
+          {validationError && (
+            <div
+              className="flex items-start gap-3 p-4 rounded-lg border"
+              style={{
+                backgroundColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+                borderColor: '#ef4444'
+              }}
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+              <div className="flex-1">
+                <h4 className="font-semibold text-sm mb-1" style={{ color: '#ef4444' }}>
+                  Campos obrigatórios
+                </h4>
+                <p className="text-sm" style={{ color: theme === 'dark' ? '#fca5a5' : '#dc2626' }}>
+                  {validationError}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setValidationError('')}
+                className="flex-shrink-0 p-1 rounded-lg transition-colors hover:bg-black hover:bg-opacity-10"
+                style={{ color: '#ef4444' }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           <div className="relative" ref={searchContainerRef}>
             <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
               <Search className="w-3.5 h-3.5 inline mr-1.5" style={{ color: colors.textSecondary }} />
@@ -648,13 +654,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           </div>
         </form>
       </div>
-
-      <ErrorModal
-        isOpen={errorModal.isOpen}
-        title="Campos Obrigatórios"
-        message={errorModal.message}
-        onClose={() => setErrorModal({ isOpen: false, message: '' })}
-      />
     </div>
   );
 };

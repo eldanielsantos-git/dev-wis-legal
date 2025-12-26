@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { X, Calendar, Clock, FileText, Tag, Users, Trash2 } from 'lucide-react';
+import { X, Calendar, Clock, FileText, Tag, Users, Trash2, AlertCircle } from 'lucide-react';
 import { processDeadlinesService, UpdateDeadlineInput } from '../services/ProcessDeadlinesService';
 import { ProcessDeadline, DeadlineCategory, DeadlinePartyType, DeadlineStatus } from '../types/analysis';
 import { DeadlineBadge } from './DeadlineBadge';
@@ -12,7 +12,6 @@ import { Input } from './ui/input';
 import { DatePickerField } from './ui/date-picker-field';
 import { DropdownField } from './ui/dropdown-field';
 import { TimePicker } from './ui/time-picker';
-import { ErrorModal } from './ErrorModal';
 
 interface EditDeadlineModalProps {
   isOpen: boolean;
@@ -49,10 +48,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [processo, setProcesso] = useState<Processo | null>(null);
   const modalRef = useRef<HTMLDivElement>(null);
-  const [errorModal, setErrorModal] = useState<{ isOpen: boolean; message: string }>({
-    isOpen: false,
-    message: ''
-  });
+  const [validationError, setValidationError] = useState<string>('');
 
   const [formData, setFormData] = useState<UpdateDeadlineInput>({
     deadline_date: '',
@@ -131,46 +127,31 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
 
     try {
       if (!formData.subject || formData.subject.trim().length < 3) {
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, informe um assunto válido para o prazo (mínimo 3 caracteres).'
-        });
+        setValidationError('Por favor, informe um assunto válido para o prazo (mínimo 3 caracteres).');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_date) {
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, informe a data do prazo.'
-        });
+        setValidationError('Por favor, informe a data do prazo.');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.deadline_time) {
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, informe o horário do prazo.'
-        });
+        setValidationError('Por favor, informe o horário do prazo.');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.category) {
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, selecione uma categoria para o prazo.'
-        });
+        setValidationError('Por favor, selecione uma categoria para o prazo.');
         setIsSubmitting(false);
         return;
       }
 
       if (!formData.party_type) {
-        setErrorModal({
-          isOpen: true,
-          message: 'Por favor, selecione a parte relacionada ao prazo.'
-        });
+        setValidationError('Por favor, selecione a parte relacionada ao prazo.');
         setIsSubmitting(false);
         return;
       }
@@ -253,6 +234,34 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
+          {validationError && (
+            <div
+              className="flex items-start gap-3 p-4 rounded-lg border"
+              style={{
+                backgroundColor: theme === 'dark' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(239, 68, 68, 0.05)',
+                borderColor: '#ef4444'
+              }}
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#ef4444' }} />
+              <div className="flex-1">
+                <h4 className="font-semibold text-sm mb-1" style={{ color: '#ef4444' }}>
+                  Campos obrigatórios
+                </h4>
+                <p className="text-sm" style={{ color: theme === 'dark' ? '#fca5a5' : '#dc2626' }}>
+                  {validationError}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setValidationError('')}
+                className="flex-shrink-0 p-1 rounded-lg transition-colors hover:bg-black hover:bg-opacity-10"
+                style={{ color: '#ef4444' }}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {processo && (
             <div>
               <label className="block text-xs font-medium mb-1.5" style={{ color: colors.textSecondary }}>
@@ -476,13 +485,6 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
           </div>
         </div>
       )}
-
-      <ErrorModal
-        isOpen={errorModal.isOpen}
-        title="Campos Obrigatórios"
-        message={errorModal.message}
-        onClose={() => setErrorModal({ isOpen: false, message: '' })}
-      />
     </div>
   );
 };
