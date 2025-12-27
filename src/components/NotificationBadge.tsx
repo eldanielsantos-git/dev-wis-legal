@@ -119,24 +119,24 @@ export function NotificationBadge({ onClick, isCollapsed, isActive }: Notificati
         onClick={onClick}
         onMouseEnter={() => setShowTooltip(true)}
         onMouseLeave={() => setShowTooltip(false)}
-        className={`w-full flex items-center py-[18px] max-h-900:py-0.5 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4 max-h-900:px-0.5'}`}
+        className={`w-full flex items-center py-3 max-h-900:py-2 rounded-lg transition-colors relative ${isCollapsed ? 'justify-center' : 'px-4 max-h-900:px-3'}`}
         style={{ color: colors.textPrimary, backgroundColor: isActive ? activeBg : 'transparent' }}
         onMouseEnterCapture={(e: any) => e.currentTarget.style.backgroundColor = hoverBg}
         onMouseLeaveCapture={(e: any) => e.currentTarget.style.backgroundColor = isActive ? activeBg : 'transparent'}
         title={isCollapsed ? "Notificações" : undefined}
       >
         <div className="relative">
-          <Bell className={`w-5 h-5 max-h-900:w-3 max-h-900:h-3 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
+          <Bell className={`w-5 h-5 flex-shrink-0 ${hasUnread ? 'animate-pulse' : ''}`} />
           {hasUnread && (
             <span
-              className="absolute -top-1 -right-1 w-4 h-4 max-h-900:w-2 max-h-900:h-2 rounded-full text-white text-xs max-h-900:text-[7px] flex items-center justify-center font-bold"
+              className="absolute -top-1 -right-1 w-4 h-4 max-h-900:w-3 max-h-900:h-3 rounded-full text-white text-xs max-h-900:text-[10px] flex items-center justify-center font-bold"
               style={{ backgroundColor: getBadgeColor(), fontSize: '10px' }}
             >
               {unreadCounts.total > 9 ? '9+' : unreadCounts.total}
             </span>
           )}
         </div>
-        {!isCollapsed && <span className="ml-3 max-h-900:ml-0.5 text-sm max-h-900:text-[9px] font-medium">Notificações</span>}
+        {!isCollapsed && <span className="ml-3 max-h-900:ml-2.5 text-sm font-medium">Notificações</span>}
       </button>
 
       {tooltipContent && createPortal(tooltipContent, document.body)}
