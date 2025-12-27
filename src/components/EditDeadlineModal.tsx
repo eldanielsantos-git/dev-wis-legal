@@ -197,7 +197,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: theme === 'dark' ? '#000000' : colors.bgSecondary }}>
         <div className="sticky top-0 px-5 py-3 flex items-center justify-between" style={{ backgroundColor: theme === 'dark' ? '#000000' : colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <div className="flex items-center gap-3">
@@ -444,7 +444,7 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
       </div>
 
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="rounded-lg shadow-xl max-w-md w-full mx-4 p-6" style={{ backgroundColor: theme === 'dark' ? '#000000' : colors.bgSecondary }}>
             <h3 className="text-lg font-bold mb-3" style={{ color: colors.textPrimary }}>
               Confirmar Exclusão
