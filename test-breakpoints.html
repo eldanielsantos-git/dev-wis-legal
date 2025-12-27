@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Teste de Breakpoints - Altura 720px</title>
+  <title>Teste de Breakpoints - Altura 680px</title>
   <link rel="stylesheet" href="/dist/assets/index-CZRU4gfR.css">
   <style>
     body {
@@ -57,11 +57,11 @@
     </svg>
     <span>12px em ≤900px (max-h-900:w-3)</span>
 
-    <p style="margin-top: 10px;">Super compacto (≤720px altura):</p>
-    <svg class="w-5 h-5 max-h-900:w-3 max-h-900:h-3 max-h-720:w-1 max-h-720:h-1" style="border: 1px solid yellow;" viewBox="0 0 24 24" fill="yellow">
+    <p style="margin-top: 10px;">Super compacto (≤680px altura):</p>
+    <svg class="w-5 h-5 max-h-900:w-3 max-h-900:h-3 max-h-680:w-1 max-h-680:h-1" style="border: 1px solid yellow;" viewBox="0 0 24 24" fill="yellow">
       <rect width="24" height="24"/>
     </svg>
-    <span>4px em ≤720px (max-h-720:w-1)</span>
+    <span>4px em ≤680px (max-h-680:w-1)</span>
   </div>
 
   <div class="test-section">
@@ -72,8 +72,8 @@
     <p style="margin-top: 10px;">Compacto (≤900px altura):</p>
     <span class="text-sm max-h-900:text-[9px]">Texto 9px em ≤900px (max-h-900:text-[9px])</span>
 
-    <p style="margin-top: 10px;">Super compacto (≤720px altura):</p>
-    <span class="text-sm max-h-900:text-[9px] max-h-720:text-[3px]" style="background: yellow; color: black;">Texto 3px em ≤720px (max-h-720:text-[3px])</span>
+    <p style="margin-top: 10px;">Super compacto (≤680px altura):</p>
+    <span class="text-sm max-h-900:text-[9px] max-h-680:text-[3px]" style="background: yellow; color: black;">Texto 3px em ≤680px (max-h-680:text-[3px])</span>
   </div>
 
   <div class="test-section">
@@ -81,7 +81,7 @@
     <ol>
       <li>Abra esta página em uma janela com <strong>largura ≥ 1024px</strong></li>
       <li>Reduza a <strong>altura</strong> da janela do navegador</li>
-      <li>Quando a altura for <strong>≤ 720px</strong>, os ícones amarelos devem ficar MUITO pequenos (4px)</li>
+      <li>Quando a altura for <strong>≤ 680px</strong>, os ícones amarelos devem ficar MUITO pequenos (4px)</li>
       <li>O texto amarelo deve ficar minúsculo (3px)</li>
     </ol>
     <p><strong>Importante:</strong> Certifique-se de que a largura da janela está maior que 1024px!</p>
@@ -97,8 +97,8 @@
 
       let breakpoint = 'Nenhum';
       if (width >= 1024) {
-        if (height <= 720) {
-          breakpoint = '✅ max-h-720 ATIVO (altura ≤ 720px, largura ≥ 1024px)';
+        if (height <= 680) {
+          breakpoint = '✅ max-h-680 ATIVO (altura ≤ 680px, largura ≥ 1024px)';
         } else if (height <= 900) {
           breakpoint = '✅ max-h-900 ATIVO (altura ≤ 900px, largura ≥ 1024px)';
         } else {
