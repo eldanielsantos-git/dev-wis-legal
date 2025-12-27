@@ -311,7 +311,7 @@ export function SchedulePage({
 
           {selectedDate && (
             <div className="rounded-xl shadow-lg p-6" style={{ backgroundColor: colors.bgSecondary }}>
-              <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center justify-between mb-6 px-4">
                 <h3 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                   Prazos de {selectedDate ? formatDate(selectedDate.toISOString().split('T')[0]) : ''}
                 </h3>
