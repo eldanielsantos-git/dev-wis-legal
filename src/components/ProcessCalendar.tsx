@@ -310,7 +310,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
       </div>
 
       <div className="mt-1.5 sm:mt-1.5 md:mt-1.5 lg:mt-1 pt-1.5 sm:pt-1.5 md:pt-1.5 lg:pt-1" style={{ borderTop: `1px solid ${colors.border}` }}>
-        <div className="flex flex-wrap gap-1.5 sm:gap-1.5 md:gap-1.5 lg:gap-1.5 text-xs sm:text-xs md:text-xs lg:text-xs">
+        <div className="flex flex-wrap gap-1.5 sm:gap-1.5 md:gap-1.5 lg:gap-1.5 text-xs sm:text-xs md:text-xs lg:text-xs px-4">
           <div className="flex items-center gap-1 sm:gap-1 md:gap-1 lg:gap-1">
             <div className="w-1.5 h-1.5 sm:w-1.5 sm:h-1.5 md:w-1.5 md:h-1.5 lg:w-1.5 lg:h-1.5 rounded-full bg-orange-500" />
             <span style={{ color: colors.textSecondary }}>Pendente</span>
