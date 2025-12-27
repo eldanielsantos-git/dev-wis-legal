@@ -336,8 +336,8 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: colors.bgSecondary }}>
-        <div className="sticky top-0 px-5 py-3 flex items-center justify-between" style={{ backgroundColor: colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
+      <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: '#000000' }}>
+        <div className="sticky top-0 px-5 py-3 flex items-center justify-between" style={{ backgroundColor: '#000000', borderBottom: `1px solid ${colors.border}` }}>
           <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
             Novo Prazo
           </h2>
