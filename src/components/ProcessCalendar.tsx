@@ -236,7 +236,7 @@ export const ProcessCalendar: React.FC<ProcessCalendarProps> = ({
 
   return (
     <div className="rounded-xl shadow-lg p-2 sm:p-2 md:p-2 lg:p-1.5" style={{ backgroundColor: colors.bgSecondary }}>
-      <div className="flex items-center justify-between mb-1.5 sm:mb-1.5 md:mb-1.5 lg:mb-1">
+      <div className="flex items-center justify-between mb-1.5 sm:mb-1.5 md:mb-1.5 lg:mb-1 px-4">
         <h2 className="text-base sm:text-base md:text-base lg:text-base font-bold flex items-center gap-1.5 sm:gap-1.5 md:gap-1.5 lg:gap-1.5" style={{ color: colors.textPrimary }}>
           <CalendarIcon className="w-4 h-4 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-4 lg:h-4" style={{ color: colors.accent }} />
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
