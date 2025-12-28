@@ -1308,3 +1308,437 @@ Usuario       Frontend        ProcessosService       Storage        start-comple
 - [ ] Notificacao enviada
 - [ ] Email enviado
 - [ ] Slack notificado
+
+---
+
+## 15. Pagina de Detalhe do Processo (ProcessoDetailPage)
+
+Apos o upload do arquivo complexo, o usuario e automaticamente redirecionado para a pagina de detalhe do processo (`/lawsuits-detail/:id`). Esta pagina fornece acompanhamento em tempo real do processamento paralelo e exibe os resultados consolidados.
+
+### 15.1. Componente Principal
+
+**Localizacao:** `src/pages/ProcessoDetailPage.tsx`
+
+**Responsabilidades:**
+- Exibir informacoes do processo (nome, data, paginas, tamanho)
+- Monitorar status em tempo real via Realtime Subscriptions
+- Exibir progresso de processamento por fase
+- Mostrar progresso de chunks (para arquivos complexos)
+- Mostrar transcricao quando disponivel
+- Permitir edicao do nome do arquivo
+- Tocar som de notificacao ao concluir
+
+### 15.2. Grid de Estatisticas
+
+A pagina exibe um grid com 4 cards de estatisticas:
+
+| Card | Informacao | Fonte |
+|------|------------|-------|
+| Data Upload | Data e hora do upload | `processo.created_at` |
+| Paginas | Total de paginas do PDF | `processo.transcricao.totalPages` |
+| Caracteres | Total de caracteres extraidos | Soma de `process_content[].content.length` |
+| Tempo | Duracao do processamento | `processo.processing_duration_seconds` |
+
+### 15.3. Sistema de Atualizacoes em Tempo Real
+
+**Realtime Subscription para Processo:**
+```typescript
+const processoChannel = supabase.channel(`processo-detail-${processoId}`)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'processos', filter: `id=eq.${processoId}` },
+    (payload) => {
+      setProcesso(prev => ({ ...prev, ...payload.new }));
+    }
+  )
+  .subscribe();
+```
+
+**Polling Adaptativo (useProcessProgressPolling):**
+
+| Status | Intervalo Inicial | Intervalo Maximo |
+|--------|-------------------|------------------|
+| queuing | 2s | 10s |
+| processing_batch | 3s | 20s |
+| finalizing | 3s | 15s |
+| processing_forensic | 4s | 20s |
+
+**Algoritmo de Backoff:**
+- Se nao ha atualizacoes, incrementa `idleCount`
+- `idleCount > 6`: intervalo = 20s
+- `idleCount > 12`: intervalo = 30s
+- `idleCount > 24`: para o polling (processo travado)
+
+### 15.4. Progresso de Processamento Complexo (ComplexProcessingProgress)
+
+**Localizacao:** `src/components/ComplexProcessingProgress.tsx`
+
+Para arquivos complexos, este componente exibe informacoes detalhadas das fases:
+
+**Dados Monitorados:**
+- `current_phase`: Fase atual (uploading_chunks, processing, consolidating, etc)
+- `chunks_uploaded`: Chunks enviados ao Gemini
+- `chunks_completed`: Chunks processados
+- `chunks_failed`: Chunks com erro
+- `overall_progress_percent`: Progresso geral
+- `total_prompts_processed`: Prompts consolidados
+- `current_active_workers`: Workers ativos no momento
+- `max_concurrent_workers`: Limite de workers paralelos
+
+**Visualizacao por Fase:**
+
+| Fase | Exibicao |
+|------|----------|
+| uploading_chunks | Barra de progresso + contagem de uploads |
+| chunks_uploaded | Confirmacao de uploads completos |
+| processing | Progresso por chunk + workers ativos |
+| consolidating | Progresso de consolidacao por prompt |
+| completed | Resumo final + metricas |
+
+### 15.5. Contador de Tokens (ProcessTokenCounter)
+
+**Localizacao:** `src/components/ProcessTokenCounter.tsx`
+
+Exibe:
+- Total de tokens estimados para o documento
+- Prompt atual sendo processado
+- Total de prompts a serem executados
+- Status do processamento
+
+**Calculo para Arquivos Complexos:**
+```typescript
+const tokensEstimated = totalPages * 5500;
+// Distribuido entre chunks
+const tokensPerChunk = tokensEstimated / totalChunks;
+```
+
+### 15.6. Indicadores de Progresso
+
+**ProcessStatusBadge:**
+- Exibe badge colorido com status atual
+- Estados: `queuing`, `analyzing`, `completed`, `error`
+
+**ProcessStatusProgress:**
+- Barra de progresso percentual
+- Indicador de etapa atual
+- Informacoes de `progress_info`
+
+### 15.7. Progresso das Etapas de Analise (AnalysisStagesProgress)
+
+**Localizacao:** `src/components/AnalysisStagesProgress.tsx`
+
+Este componente exibe o status de cada prompt de analise individualmente. Para arquivos complexos, reflete o status da consolidacao.
+
+**Busca de Dados:**
+```typescript
+const { data } = await supabase
+  .from('analysis_results')
+  .select('id, execution_order, prompt_title, status, processing_at, completed_at, error_message')
+  .eq('processo_id', processoId)
+  .order('execution_order', { ascending: true });
+```
+
+**Estados por Etapa:**
+
+| Status | Icone | Cor | Label |
+|--------|-------|-----|-------|
+| completed | CheckCircle2 | Verde (#10B981) | Concluido |
+| running/processing | Loader (animado) | Azul (#3B82F6) | Processando |
+| failed/error | XCircle | Vermelho (#EF4444) | Erro |
+| pending | Clock | Cinza (#6B7280) | Pendente |
+
+**Comportamento para Arquivos Complexos:**
+- Durante processamento de chunks: todas etapas mostram "Pendente"
+- Durante consolidacao: etapas mudam para "Processando" sequencialmente
+- Apos consolidacao: todas etapas mostram "Concluido"
+
+**Atualizacao:**
+- Polling a cada 1000ms (1 segundo)
+- Realtime subscription para atualizacoes instantaneas
+- Calculo de percentual de progresso: `(completed / total) * 100`
+
+### 15.8. Exibicao de Transcricao
+
+Quando o processo e concluido, a transcricao completa fica disponivel:
+
+**Condicao de Exibicao:**
+```typescript
+const hasValidTranscription = processo &&
+  (processo.status === 'completed' || processo.status === 'error') &&
+  processo.process_content &&
+  processo.process_content.length > 0;
+```
+
+**Funcionalidades:**
+- Expansao/Colapso da transcricao
+- Copia para clipboard
+- Download como arquivo `.txt`
+- Navegacao por paginas
+- Para arquivos complexos: conteudo consolidado de todos os chunks
+
+### 15.9. Notificacoes Sonoras
+
+**Funcao:** `playCompletionSound()`
+
+**Localizacao:** `src/utils/notificationSound.ts`
+
+**Gatilho:**
+```typescript
+useEffect(() => {
+  if (previousStatus && previousStatus !== 'completed' && processo.status === 'completed') {
+    playCompletionSound();
+  }
+}, [processo?.status]);
+```
+
+Tambem disponivel: `playErrorSound()` para notificar erros.
+
+### 15.10. Fluxo de Transicao de Status (Arquivos Complexos)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                TRANSICOES DE STATUS NA PAGINA (ARQUIVOS COMPLEXOS)               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+    Usuario visualiza pagina
+             │
+             ▼
+    ┌────────────────────┐
+    │     uploading      │──── Upload do arquivo original
+    └────────┬───────────┘
+             │
+             ▼
+    ┌────────────────────┐     ┌─────────────────────────────────┐
+    │  uploading_chunks  │────▶│ ComplexProcessingProgress       │
+    │                    │     │ • Barra de upload de chunks     │
+    └────────┬───────────┘     │ • X de Y chunks enviados        │
+             │                 └─────────────────────────────────┘
+             ▼
+    ┌────────────────────┐     ┌─────────────────────────────────┐
+    │    processing      │────▶│ ComplexProcessingProgress       │
+    │                    │     │ • Workers ativos: N             │
+    │                    │     │ • Chunks completos: X de Y      │
+    └────────┬───────────┘     │ • Barra de progresso            │
+             │                 └─────────────────────────────────┘
+             ▼
+    ┌────────────────────┐     ┌─────────────────────────────────┐
+    │   consolidating    │────▶│ AnalysisStagesProgress          │
+    │                    │     │ • Prompt 1: Processando         │
+    └────────┬───────────┘     │ • Prompt 2: Pendente...         │
+             │                 └─────────────────────────────────┘
+             │
+             ├───────────────────────────────────────────────────┐
+             ▼                                                   ▼
+    ┌────────────────────┐                           ┌────────────────────┐
+    │    completed       │                           │      error         │
+    │                    │                           │                    │
+    │ • Som tocado       │                           │ • Som de erro      │
+    │ • Transcricao      │                           │ • Mensagem erro    │
+    │   consolidada      │                           │ • Detalhes chunk   │
+    │ • Resultados       │                           │   que falhou       │
+    │   de analise       │                           │ • Opcao retry      │
+    └────────────────────┘                           └────────────────────┘
+```
+
+### 15.11. Tratamento de Erros na Pagina
+
+**Processo Nao Encontrado:**
+```typescript
+if (!processoData) {
+  setProcessoNotFound(true);
+  // Redireciona para pagina 404
+}
+```
+
+**Erro com Transcricao Valida:**
+- Exibe aviso amarelo informando que analise pode prosseguir
+- Permite visualizar transcricao consolidada
+
+**Erro sem Transcricao:**
+- Exibe card vermelho com mensagem de erro
+- Mostra `progress_info.error_message`
+- Para arquivos complexos: indica qual chunk falhou
+
+**Chunks com Falha:**
+- Exibe contagem de chunks que falharam
+- Mostra tentativas de retry realizadas
+- Indica se limite de tentativas foi atingido
+
+### 15.12. Service de Resultados (AnalysisResultsService)
+
+**Localizacao:** `src/services/AnalysisResultsService.ts`
+
+**Interface AnalysisResult:**
+```typescript
+interface AnalysisResult {
+  id: string;
+  processo_id: string;
+  prompt_id: string;
+  prompt_title: string;
+  execution_order: number;
+  result_content: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  execution_time_ms?: number;
+  current_model_id?: string;
+  current_model_name?: string;
+  tokens_used?: number;
+  completed_at?: string;
+}
+```
+
+**Funcoes:**
+
+| Funcao | Descricao |
+|--------|-----------|
+| `getResultsByProcessoId` | Busca todos os resultados de analise (consolidados) |
+| `subscribeToResultsChanges` | Cria subscription realtime |
+
+**Subscription Realtime:**
+```typescript
+const channel = supabase
+  .channel(`analysis-results-${processoId}`)
+  .on('postgres_changes',
+    { event: '*', schema: 'public', table: 'analysis_results', filter: `processo_id=eq.${processoId}` },
+    (payload) => callback()
+  )
+  .subscribe();
+```
+
+### 15.13. Diagrama de Componentes da Pagina (Arquivos Complexos)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                        ProcessoDetailPage (Arquivo Complexo)                      │
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ Header                                                                       │ │
+│  │  • Botao Voltar                                                              │ │
+│  │  • Nome do arquivo (editavel)                                                │ │
+│  │  • Status icon + texto                                                       │ │
+│  │  • Badge de Tier (MEDIUM/LARGE/VERY_LARGE/etc)                              │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ Stats Grid (4 cards)                                                         │ │
+│  │  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐       │ │
+│  │  │ Data Upload  │ │ Paginas      │ │ Caracteres   │ │ Tempo        │       │ │
+│  │  │              │ │ + Chunks     │ │              │ │ + Est. Total │       │ │
+│  │  └──────────────┘ └──────────────┘ └──────────────┘ └──────────────┘       │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ ProcessTokenCounter                                                          │ │
+│  │  • Tokens estimados (total para arquivo)                                     │ │
+│  │  • Prompt atual / Total                                                      │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ ComplexProcessingProgress (durante processamento)                            │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────┐   │ │
+│  │  │ Fase Atual: [uploading_chunks | processing | consolidating]          │   │ │
+│  │  │                                                                       │   │ │
+│  │  │ ┌─────────────────────────────────────────────────────────────┐      │   │ │
+│  │  │ │ Chunks: [##########----------] 10/20                         │      │   │ │
+│  │  │ └─────────────────────────────────────────────────────────────┘      │   │ │
+│  │  │                                                                       │   │ │
+│  │  │ Workers Ativos: 4/5  |  Falhas: 0  |  Retries: 2                    │   │ │
+│  │  └─────────────────────────────────────────────────────────────────────┘   │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ Transcricao Consolidada (se completed)                                       │ │
+│  │  • Toggle expandir/colapsar                                                  │ │
+│  │  • Botoes copiar/baixar                                                      │ │
+│  │  • Lista de paginas com conteudo (de todos os chunks)                        │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ Progress Section (se analyzing/consolidating)                                │ │
+│  │  ┌─────────────────────┐  ┌─────────────────────┐                          │ │
+│  │  │ ProcessStatusBadge  │  │ ProcessStatusProgress│                          │ │
+│  │  └─────────────────────┘  └─────────────────────┘                          │ │
+│  │                                                                              │ │
+│  │  ┌─────────────────────────────────────────────────────────────────────┐   │ │
+│  │  │ AnalysisStagesProgress (Consolidacao)                                │   │ │
+│  │  │  • Etapa 1: Visao Geral - [status]                                   │   │ │
+│  │  │  • Etapa 2: Resumo Estrategico - [status]                            │   │ │
+│  │  │  • ...                                                                │   │ │
+│  │  │  • Etapa 9: Conclusoes - [status]                                    │   │ │
+│  │  └─────────────────────────────────────────────────────────────────────┘   │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+│                                                                                   │
+│  ┌─────────────────────────────────────────────────────────────────────────────┐ │
+│  │ Error Section (se error)                                                     │ │
+│  │  • Mensagem de erro                                                          │ │
+│  │  • Chunk(s) que falhou(aram)                                                 │ │
+│  │  • Tentativas realizadas                                                     │ │
+│  │  • Botao de retry (se aplicavel)                                             │ │
+│  └─────────────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 15.14. Subscriptions Especificas para Processamento Complexo
+
+Para arquivos complexos, alem das subscriptions padrao, ha monitoramento adicional:
+
+**Subscription para complex_processing_status:**
+```typescript
+const statusChannel = supabase.channel(`complex-status-${processoId}`)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'complex_processing_status', filter: `processo_id=eq.${processoId}` },
+    (payload) => {
+      updateComplexProgress(payload.new);
+    }
+  )
+  .subscribe();
+```
+
+**Subscription para process_chunks:**
+```typescript
+const chunksChannel = supabase.channel(`chunks-${processoId}`)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'process_chunks', filter: `processo_id=eq.${processoId}` },
+    (payload) => {
+      updateChunkProgress(payload.new);
+    }
+  )
+  .subscribe();
+```
+
+### 15.15. Hooks Utilizados
+
+| Hook | Proposito |
+|------|-----------|
+| `useState` | Estados locais (processo, loading, chunks, etc) |
+| `useEffect` | Carregamento inicial, subscriptions |
+| `useRef` | Referencia para status anterior |
+| `useMemo` | Calculo otimizado de totalChars |
+| `useProcessProgressPolling` | Polling adaptativo |
+| `useTheme` | Tema claro/escuro |
+
+### 15.16. Responsividade
+
+A pagina e totalmente responsiva com breakpoints:
+
+| Breakpoint | Comportamento |
+|------------|---------------|
+| Mobile (< 640px) | Grid 2 colunas, texto menor, padding reduzido |
+| Tablet (640-1024px) | Grid 2-4 colunas |
+| Desktop (> 1024px) | Grid 4 colunas, layout expandido |
+
+**Classes Tailwind:**
+- `grid-cols-2 lg:grid-cols-4`
+- `text-xs sm:text-sm`
+- `p-3 sm:p-4`
+- `w-3.5 h-3.5 sm:w-4 sm:h-4`
+
+### 15.17. Metricas Exibidas para Arquivos Complexos
+
+| Metrica | Fonte | Descricao |
+|---------|-------|-----------|
+| Chunks Totais | `processo.total_chunks` | Quantidade de partes do PDF |
+| Chunks Completos | `complex_processing_status.chunks_completed` | Partes ja processadas |
+| Chunks com Erro | `complex_processing_status.chunks_failed` | Partes que falharam |
+| Workers Ativos | `complex_processing_status.current_active_workers` | Workers processando agora |
+| Progresso Geral | `complex_processing_status.overall_progress_percent` | Percentual total |
+| Tempo Estimado | `complex_processing_status.estimated_completion_at` | Previsao de conclusao |
+| Tier | `processo.tier_name` | Classificacao do arquivo |

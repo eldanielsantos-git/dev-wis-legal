@@ -675,3 +675,320 @@ Usuario          Frontend           ProcessosService      Storage       upload-t
 - [ ] Tokens debitados
 - [ ] Notificacao enviada ao usuario
 - [ ] Email de confirmacao enviado
+
+---
+
+## 14. Pagina de Detalhe do Processo (ProcessoDetailPage)
+
+Apos o upload do arquivo, o usuario e automaticamente redirecionado para a pagina de detalhe do processo (`/lawsuits-detail/:id`). Esta pagina fornece acompanhamento em tempo real do processamento e exibe os resultados finais.
+
+### 14.1. Componente Principal
+
+**Localizacao:** `src/pages/ProcessoDetailPage.tsx`
+
+**Responsabilidades:**
+- Exibir informacoes do processo (nome, data, paginas, tamanho)
+- Monitorar status em tempo real via Realtime Subscriptions
+- Exibir progresso de processamento
+- Mostrar transcricao quando disponivel
+- Permitir edicao do nome do arquivo
+- Tocar som de notificacao ao concluir
+
+### 14.2. Grid de Estatisticas
+
+A pagina exibe um grid com 4 cards de estatisticas:
+
+| Card | Informacao | Fonte |
+|------|------------|-------|
+| Data Upload | Data e hora do upload | `processo.created_at` |
+| Paginas | Total de paginas do PDF | `processo.transcricao.totalPages` |
+| Caracteres | Total de caracteres extraidos | Soma de `process_content[].content.length` |
+| Tempo | Duracao do processamento | `processo.processing_duration_seconds` |
+
+### 14.3. Sistema de Atualizacoes em Tempo Real
+
+**Realtime Subscription:**
+```typescript
+const processoChannel = supabase.channel(`processo-detail-${processoId}`)
+  .on('postgres_changes',
+    { event: 'UPDATE', schema: 'public', table: 'processos', filter: `id=eq.${processoId}` },
+    (payload) => {
+      setProcesso(prev => ({ ...prev, ...payload.new }));
+    }
+  )
+  .subscribe();
+```
+
+**Polling Adaptativo (useProcessProgressPolling):**
+
+| Status | Intervalo Inicial | Intervalo Maximo |
+|--------|-------------------|------------------|
+| queuing | 2s | 10s |
+| processing_batch | 3s | 20s |
+| finalizing | 3s | 15s |
+| processing_forensic | 4s | 20s |
+
+**Algoritmo de Backoff:**
+- Se nao ha atualizacoes, incrementa `idleCount`
+- `idleCount > 6`: intervalo = 20s
+- `idleCount > 12`: intervalo = 30s
+- `idleCount > 24`: para o polling (processo travado)
+
+### 14.4. Contador de Tokens (ProcessTokenCounter)
+
+**Localizacao:** `src/components/ProcessTokenCounter.tsx`
+
+Exibe:
+- Total de tokens estimados para o documento
+- Prompt atual sendo processado
+- Total de prompts a serem executados
+- Status do processamento
+
+### 14.5. Indicadores de Progresso
+
+**ProcessStatusBadge:**
+- Exibe badge colorido com status atual
+- Estados: `queuing`, `analyzing`, `completed`, `error`
+
+**ProcessStatusProgress:**
+- Barra de progresso percentual
+- Indicador de etapa atual
+- Informacoes de `progress_info`
+
+### 14.6. Progresso das Etapas de Analise (AnalysisStagesProgress)
+
+**Localizacao:** `src/components/AnalysisStagesProgress.tsx`
+
+Este componente exibe o status de cada prompt de analise individualmente.
+
+**Busca de Dados:**
+```typescript
+const { data } = await supabase
+  .from('analysis_results')
+  .select('id, execution_order, prompt_title, status, processing_at, completed_at, error_message')
+  .eq('processo_id', processoId)
+  .order('execution_order', { ascending: true });
+```
+
+**Estados por Etapa:**
+
+| Status | Icone | Cor | Label |
+|--------|-------|-----|-------|
+| completed | CheckCircle2 | Verde (#10B981) | Concluido |
+| running/processing | Loader (animado) | Azul (#3B82F6) | Processando |
+| failed/error | XCircle | Vermelho (#EF4444) | Erro |
+| pending | Clock | Cinza (#6B7280) | Pendente |
+
+**Atualizacao:**
+- Polling a cada 1000ms (1 segundo)
+- Realtime subscription para atualizacoes instantaneas
+- Calculo de percentual de progresso: `(completed / total) * 100`
+
+### 14.7. Exibicao de Transcricao
+
+Quando o processo e concluido, a transcricao completa fica disponivel:
+
+**Condicao de Exibicao:**
+```typescript
+const hasValidTranscription = processo &&
+  (processo.status === 'completed' || processo.status === 'error') &&
+  processo.process_content &&
+  processo.process_content.length > 0;
+```
+
+**Funcionalidades:**
+- Expansao/Colapso da transcricao
+- Copia para clipboard
+- Download como arquivo `.txt`
+- Navegacao por paginas
+
+### 14.8. Notificacoes Sonoras
+
+**Funcao:** `playCompletionSound()`
+
+**Localizacao:** `src/utils/notificationSound.ts`
+
+**Gatilho:**
+```typescript
+useEffect(() => {
+  if (previousStatus && previousStatus !== 'completed' && processo.status === 'completed') {
+    playCompletionSound();
+  }
+}, [processo?.status]);
+```
+
+Tambem disponivel: `playErrorSound()` para notificar erros.
+
+### 14.9. Fluxo de Transicao de Status
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    TRANSICOES DE STATUS NA PAGINA                        │
+└─────────────────────────────────────────────────────────────────────────┘
+
+    Usuario visualiza pagina
+             │
+             ▼
+    ┌────────────────┐
+    │   uploading    │──────────────────────────────────────┐
+    └────────┬───────┘                                      │
+             │                                              │
+             ▼                                              │
+    ┌────────────────┐     ┌────────────────────────────┐  │
+    │   analyzing    │────▶│ AnalysisStagesProgress     │  │
+    │                │     │ mostra cada prompt         │  │
+    └────────┬───────┘     │ sendo executado            │  │
+             │             └────────────────────────────┘  │
+             │                                              │
+             ▼                                              ▼
+    ┌────────────────┐                            ┌────────────────┐
+    │   completed    │                            │     error      │
+    │                │                            │                │
+    │ • Som tocado   │                            │ • Som de erro  │
+    │ • Transcricao  │                            │ • Mensagem     │
+    │   disponivel   │                            │   de erro      │
+    │ • Resultados   │                            │ • Opcao retry  │
+    │   de analise   │                            │   (se valido)  │
+    └────────────────┘                            └────────────────┘
+```
+
+### 14.10. Tratamento de Erros na Pagina
+
+**Processo Nao Encontrado:**
+```typescript
+if (!processoData) {
+  setProcessoNotFound(true);
+  // Redireciona para pagina 404
+}
+```
+
+**Erro com Transcricao Valida:**
+- Exibe aviso amarelo informando que analise pode prosseguir
+- Permite visualizar transcricao
+
+**Erro sem Transcricao:**
+- Exibe card vermelho com mensagem de erro
+- Mostra `progress_info.error_message`
+
+### 14.11. Service de Resultados (AnalysisResultsService)
+
+**Localizacao:** `src/services/AnalysisResultsService.ts`
+
+**Interface AnalysisResult:**
+```typescript
+interface AnalysisResult {
+  id: string;
+  processo_id: string;
+  prompt_id: string;
+  prompt_title: string;
+  execution_order: number;
+  result_content: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  execution_time_ms?: number;
+  current_model_id?: string;
+  current_model_name?: string;
+  tokens_used?: number;
+  completed_at?: string;
+}
+```
+
+**Funcoes:**
+
+| Funcao | Descricao |
+|--------|-----------|
+| `getResultsByProcessoId` | Busca todos os resultados de analise |
+| `subscribeToResultsChanges` | Cria subscription realtime |
+
+**Subscription Realtime:**
+```typescript
+const channel = supabase
+  .channel(`analysis-results-${processoId}`)
+  .on('postgres_changes',
+    { event: '*', schema: 'public', table: 'analysis_results', filter: `processo_id=eq.${processoId}` },
+    (payload) => callback()
+  )
+  .subscribe();
+```
+
+### 14.12. Diagrama de Componentes da Pagina
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        ProcessoDetailPage                                │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │ Header                                                              │ │
+│  │  • Botao Voltar                                                     │ │
+│  │  • Nome do arquivo (editavel)                                       │ │
+│  │  • Status icon + texto                                              │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │ Stats Grid (4 cards)                                                │ │
+│  │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐  │ │
+│  │  │ Data Upload │ │ Paginas     │ │ Caracteres  │ │ Tempo       │  │ │
+│  │  └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘  │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │ ProcessTokenCounter                                                 │ │
+│  │  • Tokens estimados                                                 │ │
+│  │  • Prompt atual / Total                                             │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │ Transcricao (se completed)                                          │ │
+│  │  • Toggle expandir/colapsar                                         │ │
+│  │  • Botoes copiar/baixar                                             │ │
+│  │  • Lista de paginas com conteudo                                    │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │ Progress Section (se analyzing)                                     │ │
+│  │  ┌────────────────────┐  ┌────────────────────┐                    │ │
+│  │  │ ProcessStatusBadge │  │ ProcessStatusProgress│                   │ │
+│  │  └────────────────────┘  └────────────────────┘                    │ │
+│  │                                                                     │ │
+│  │  ┌────────────────────────────────────────────────────────────┐   │ │
+│  │  │ AnalysisStagesProgress                                      │   │ │
+│  │  │  • Etapa 1: Visao Geral - [status]                          │   │ │
+│  │  │  • Etapa 2: Resumo Estrategico - [status]                   │   │ │
+│  │  │  • ...                                                       │   │ │
+│  │  │  • Etapa 9: Conclusoes - [status]                           │   │ │
+│  │  └────────────────────────────────────────────────────────────┘   │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+│                                                                          │
+│  ┌────────────────────────────────────────────────────────────────────┐ │
+│  │ Error Section (se error)                                            │ │
+│  │  • Mensagem de erro                                                 │ │
+│  │  • Botao de retry (se aplicavel)                                    │ │
+│  └────────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 14.13. Hooks Utilizados
+
+| Hook | Proposito |
+|------|-----------|
+| `useState` | Estados locais (processo, loading, etc) |
+| `useEffect` | Carregamento inicial, subscriptions |
+| `useRef` | Referencia para status anterior |
+| `useMemo` | Calculo otimizado de totalChars |
+| `useProcessProgressPolling` | Polling adaptativo |
+| `useTheme` | Tema claro/escuro |
+
+### 14.14. Responsividade
+
+A pagina e totalmente responsiva com breakpoints:
+
+| Breakpoint | Comportamento |
+|------------|---------------|
+| Mobile (< 640px) | Grid 2 colunas, texto menor, padding reduzido |
+| Tablet (640-1024px) | Grid 2-4 colunas |
+| Desktop (> 1024px) | Grid 4 colunas, layout expandido |
+
+**Classes Tailwind:**
+- `grid-cols-2 lg:grid-cols-4`
+- `text-xs sm:text-sm`
+- `p-3 sm:p-4`
+- `w-3.5 h-3.5 sm:w-4 sm:h-4`
