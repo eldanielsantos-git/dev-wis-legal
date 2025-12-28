@@ -499,7 +499,6 @@ Deno.serve(async (req: Request) => {
 
     for (const modelConfig of activeModels) {
       attemptNumber++;
-      let startTime = 0;
 
       const modelName = modelConfig.display_name || modelConfig.name;
       const modelId = modelConfig.system_model || modelConfig.model_id;
@@ -540,7 +539,7 @@ Deno.serve(async (req: Request) => {
         console.log(`[${callId}]    - Temperature: ${temperature}`);
         console.log(`[${callId}]    - Max Tokens: ${configuredMaxTokens}`);
 
-        startTime = Date.now();
+        const startTime = Date.now();
 
         const model = genAI.getGenerativeModel({
           model: modelId,
