@@ -49,6 +49,7 @@ import { ChatProcessSelectionPage } from './pages/ChatProcessSelectionPage';
 import { WorkspacePage } from './pages/WorkspacePage';
 import { VerifyEmailRequiredPage } from './pages/VerifyEmailRequiredPage';
 import { NotFoundPage } from './pages/NotFoundPage';
+import { StatusPage } from './pages/StatusPage';
 import { RequireEmailVerification } from './components/RequireEmailVerification';
 import { SuccessPage } from './components/subscription/SuccessPage';
 import { Loader } from 'lucide-react';
@@ -109,6 +110,10 @@ function AppContent() {
 
   if (currentPath === '/verify-email-required') {
     return <VerifyEmailRequiredPage />;
+  }
+
+  if (currentPath === '/status') {
+    return <StatusPage />;
   }
 
   if (!user) {
