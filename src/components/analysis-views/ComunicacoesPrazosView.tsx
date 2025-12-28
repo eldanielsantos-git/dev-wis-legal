@@ -155,63 +155,23 @@ const normalizeAto = (atoRaw: any): Ato => {
  return ato;
 };
 
-const normalizarDados = (rawData: any): { comunicacoesPrazos: ComunicacoesPrazos } | null => {
- if (!rawData?.comunicacoesPrazos) return null;
-
- const raw = rawData.comunicacoesPrazos;
-
- if (raw.secoes && Array.isArray(raw.secoes)) {
-  const normalizedData = { ...rawData };
-  normalizedData.comunicacoesPrazos.secoes = raw.secoes.map((secao: any) => ({
-   ...secao,
-   listaAtos: secao.listaAtos.map((ato: any) => normalizeAto(ato))
-  }));
-  return normalizedData;
- }
-
- if (raw.atosComunicacao && Array.isArray(raw.atosComunicacao)) {
-  const secao: Secao = {
-   id: 'secao_principal',
-   titulo: 'Citações e Intimações',
-   listaAtos: raw.atosComunicacao.map((atoRaw: any) => normalizeAto(atoRaw))
-  };
-
-  return {
-   comunicacoesPrazos: {
-    titulo: raw.titulo || 'Comunicações e Prazos',
-    secoes: [secao]
-   }
-  };
- }
-
- return null;
-};
-
 export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps) {
  const normalizationResult = normalizeComunicacoesPrazos(content);
 
  if (!normalizationResult.success || !normalizationResult.data?.comunicacoesPrazos) {
-  console.log('[ComunicacoesPrazosView] Fallback para AnalysisContentRenderer', {
-   method: normalizationResult.method,
-   originalKeys: normalizationResult.originalKeys
-  });
   return <AnalysisContentRenderer content={content} />;
  }
 
- let rawData: any = null;
- try {
-  rawData = JSON.parse(content);
- } catch {
-  return <AnalysisContentRenderer content={content} />;
- }
+ const normalizedData = normalizationResult.data;
 
- const data = normalizarDados(rawData);
-
- if (!data?.comunicacoesPrazos) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
- const { comunicacoesPrazos } = data;
+ const comunicacoesPrazos: ComunicacoesPrazos = {
+  titulo: normalizedData.comunicacoesPrazos.titulo,
+  secoes: normalizedData.comunicacoesPrazos.secoes.map((secao: any) => ({
+   id: secao.id,
+   titulo: secao.titulo,
+   listaAtos: (secao.listaAtos || []).map((ato: any) => normalizeAto(ato))
+  }))
+ };
 
  return (
   <div className="space-y-6">

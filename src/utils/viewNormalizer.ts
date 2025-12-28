@@ -145,6 +145,26 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
     return { success: false, data: null, method: 'fallback' };
   }
 
+  if (parsed.atosComunicacao && Array.isArray(parsed.atosComunicacao) && parsed.atosComunicacao.length > 0) {
+    const normalizedAtos = parsed.atosComunicacao.map((ato: any) => normalizeAtoFromRootFormat(ato));
+    const normalizedData: ComunicacoesExpectedStructure = {
+      comunicacoesPrazos: {
+        titulo: 'Analise de Comunicacoes e Prazos Processuais',
+        secoes: [{
+          id: 'secao_principal',
+          titulo: 'Citacoes, Intimacoes e Notificacoes',
+          listaAtos: normalizedAtos
+        }]
+      }
+    };
+    return {
+      success: true,
+      data: normalizedData,
+      method: 'array-extraction',
+      originalKeys: Object.keys(parsed)
+    };
+  }
+
   const candidateKeys = [
     'comunicacoesPrazos',
     'comunicacoes_prazos',
@@ -169,13 +189,14 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
     }
 
     if (rootData.atosComunicacao && Array.isArray(rootData.atosComunicacao)) {
+      const normalizedAtos = rootData.atosComunicacao.map((ato: any) => normalizeAtoFromRootFormat(ato));
       const normalizedData: ComunicacoesExpectedStructure = {
         comunicacoesPrazos: {
           titulo: rootData.titulo || 'Comunicacoes e Prazos',
           secoes: [{
             id: 'secao_principal',
             titulo: 'Citacoes e Intimacoes',
-            listaAtos: rootData.atosComunicacao
+            listaAtos: normalizedAtos
           }]
         }
       };
@@ -198,13 +219,14 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
     const foundArray = findArrayBySignature(rootData, arraySignatures);
 
     if (foundArray && foundArray.length > 0) {
+      const normalizedAtos = foundArray.map((ato: any) => normalizeAtoFromRootFormat(ato));
       const normalizedData: ComunicacoesExpectedStructure = {
         comunicacoesPrazos: {
           titulo: rootData.titulo || 'Comunicacoes e Prazos',
           secoes: [{
             id: 'secao_extraida',
             titulo: 'Atos de Comunicacao',
-            listaAtos: foundArray
+            listaAtos: normalizedAtos
           }]
         }
       };
@@ -224,13 +246,14 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
                    [];
 
       if (Array.isArray(atos) && atos.length > 0) {
+        const normalizedAtos = atos.map((ato: any) => normalizeAtoFromRootFormat(ato));
         const normalizedData: ComunicacoesExpectedStructure = {
           comunicacoesPrazos: {
             titulo: rootData.titulo || 'Comunicacoes e Prazos',
             secoes: [{
               id: 'secao_normalizada',
               titulo: rootData.secoes?.[0]?.titulo || 'Atos',
-              listaAtos: atos
+              listaAtos: normalizedAtos
             }]
           }
         };
@@ -249,6 +272,45 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
     data: null,
     method: 'fallback',
     originalKeys: Object.keys(parsed || {})
+  };
+}
+
+function normalizeAtoFromRootFormat(atoRaw: any): any {
+  const destinatario = atoRaw.destinatario || {};
+
+  return {
+    id: atoRaw.id || `ato_${Math.random().toString(36).substr(2, 9)}`,
+    tipoAto: atoRaw.tipoAto || atoRaw.tipo || 'Tipo nao identificado',
+    modalidade: atoRaw.modalidade || 'Modalidade nao identificada',
+    destinatario: {
+      nome: destinatario.nome || 'Destinatario nao identificado',
+      documento: destinatario.documento || destinatario.cpf || destinatario.cnpj,
+      tipo: destinatario.qualificacao || destinatario.tipo || 'Tipo nao identificado',
+      status: atoRaw.statusAto || atoRaw.status || 'Status nao identificado',
+      dataAto: atoRaw.datas?.ato || atoRaw.dataAto,
+      dataJuntada: atoRaw.datas?.juntada || atoRaw.dataJuntada,
+      paginaJuntadaAto: atoRaw.referenciaDocumental?.pagina || atoRaw.pagina,
+      notas: atoRaw.notas
+    },
+    validadeStatus: atoRaw.statusAto || atoRaw.status,
+    dataAto: atoRaw.datas?.ato || atoRaw.dataAto,
+    dataJuntada: atoRaw.datas?.juntada || atoRaw.dataJuntada,
+    referencia: atoRaw.referenciaDocumental ? {
+      arquivo: atoRaw.referenciaDocumental.comprovante || atoRaw.referenciaDocumental.instrumento,
+      paginas: atoRaw.referenciaDocumental.pagina
+    } : undefined,
+    notas: atoRaw.notas,
+    prazosDerivados: Array.isArray(atoRaw.prazos) ? atoRaw.prazos.map((prazo: any) => ({
+      id: prazo.idPrazo || prazo.id || `prazo_${Math.random().toString(36).substr(2, 9)}`,
+      tipoPrazo: prazo.tipoPrazo || prazo.tipo || 'Prazo',
+      finalidade: prazo.finalidade || '',
+      baseLegal: prazo.baseLegal,
+      dataInicio: prazo.termoInicial?.data || prazo.dataInicio,
+      duracao: prazo.duracaoLegal || prazo.duracao,
+      dataFinal: prazo.termoFinal?.data || prazo.dataFinal,
+      status: prazo.statusJuridico || prazo.status || 'Status nao identificado',
+      observacoes: prazo.observacoes
+    })) : undefined
   };
 }
 
