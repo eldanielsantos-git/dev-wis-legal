@@ -2,8 +2,6 @@ import React from 'react';
 import { CheckCircle, AlertCircle, FileText, TrendingUp, Target, Lightbulb, Shield } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
 import { safeIncludes } from '../../utils/safeStringUtils';
-import { normalizeGenericView } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface Completude {
  nivel: string;
@@ -89,12 +87,6 @@ const getTendenciaBadge = (tendencia: string | undefined) => {
 };
 
 export function ConclusoesPerspettivasView({ content }: ConclusoesPerspettivasViewProps) {
- const normalizationResult = normalizeGenericView(content, 'conclusoesPerspectivas', ['conclusoes_perspectivas', 'conclusoes', 'perspectivas']);
-
- if (!normalizationResult.success) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
  let parsedData: any = null;
  let conclusoesPerspectivas: ConclusoesPerspectivas | null = null;
 
@@ -106,12 +98,28 @@ export function ConclusoesPerspettivasView({ content }: ConclusoesPerspettivasVi
   } else if (parsedData.titulo && parsedData.secoes) {
    conclusoesPerspectivas = parsedData;
   }
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+ } catch (error) {
+  console.error('Erro ao parsear JSON:', error);
+  return (
+   <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+    <p className="text-red-800">Erro ao processar os dados da análise.</p>
+   </div>
+  );
  }
 
  if (!conclusoesPerspectivas || !conclusoesPerspectivas.titulo || !conclusoesPerspectivas.secoes) {
-  return <AnalysisContentRenderer content={content} />;
+  console.error('Estrutura inválida. Dados recebidos:', parsedData);
+  return (
+   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <p className="text-yellow-800">Estrutura de dados inválida.</p>
+    <details className="mt-2">
+     <summary className="cursor-pointer text-sm font-semibold">Ver dados recebidos</summary>
+     <pre className="mt-2 p-2 bg-yellow-100 rounded text-xs overflow-auto max-h-40">
+      {JSON.stringify(parsedData, null, 2)}
+     </pre>
+    </details>
+   </div>
+  );
  }
 
  return (

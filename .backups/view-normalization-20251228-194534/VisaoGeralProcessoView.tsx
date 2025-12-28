@@ -2,8 +2,6 @@ import React from 'react';
 import { FileText, User, Link as LinkIcon } from 'lucide-react';
 import { safeToString } from '../../utils/safeRender';
 import { isNonEmptyArray } from '../../utils/typeGuards';
-import { normalizeGenericView } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface Campo {
  id: string;
@@ -61,22 +59,24 @@ interface VisaoGeralProcessoViewProps {
 }
 
 export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps) {
- const normalizationResult = normalizeGenericView(content, 'visaoGeralProcesso', ['visao_geral_processo', 'visaoGeral', 'visao_geral']);
-
- if (!normalizationResult.success) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
  let data: { visaoGeralProcesso: VisaoGeralProcesso } | null = null;
 
  try {
   data = JSON.parse(content);
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+ } catch (error) {
+  return (
+   <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+    <p className="text-red-800">Erro ao processar os dados da análise.</p>
+   </div>
+  );
  }
 
  if (!data?.visaoGeralProcesso) {
-  return <AnalysisContentRenderer content={content} />;
+  return (
+   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <p className="text-yellow-800">Estrutura de dados inválida.</p>
+   </div>
+  );
  }
 
  const { visaoGeralProcesso } = data;

@@ -2,8 +2,6 @@ import React from 'react';
 import { Clock, AlertTriangle, Calendar, FileText, Zap, Shield, Info, TrendingUp } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
 import { safeIncludes } from '../../utils/safeStringUtils';
-import { normalizeGenericView } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface BaseDocumental {
  arquivo?: string;
@@ -95,12 +93,6 @@ const getImpactoBadge = (impacto: string | undefined) => {
 };
 
 export function MapaPreclusoesView({ content }: MapaPreclusoesViewProps) {
- const normalizationResult = normalizeGenericView(content, 'mapaPreclusoesProcessuais', ['mapa_preclusoes_processuais', 'mapaPreclusoes', 'mapa_preclusoes', 'preclusoes']);
-
- if (!normalizationResult.success) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
  let parsedData: any = null;
  let mapaPreclusoesProcessuais: MapaPreclusoesProcessuais | null = null;
 
@@ -126,12 +118,28 @@ export function MapaPreclusoesView({ content }: MapaPreclusoesViewProps) {
   } else if (parsedData.titulo && parsedData.secoes) {
    mapaPreclusoesProcessuais = parsedData;
   }
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+ } catch (error) {
+  console.error('Erro ao parsear JSON:', error);
+  return (
+   <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+    <p className="text-red-800">Erro ao processar os dados da análise.</p>
+   </div>
+  );
  }
 
  if (!mapaPreclusoesProcessuais || !mapaPreclusoesProcessuais.titulo || !mapaPreclusoesProcessuais.secoes) {
-  return <AnalysisContentRenderer content={content} />;
+  console.error('Estrutura inválida. Dados recebidos:', parsedData);
+  return (
+   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <p className="text-yellow-800">Estrutura de dados inválida.</p>
+    <details className="mt-2">
+     <summary className="cursor-pointer text-sm font-semibold">Ver dados recebidos</summary>
+     <pre className="mt-2 p-2 bg-yellow-100 rounded text-xs overflow-auto max-h-40">
+      {JSON.stringify(parsedData, null, 2)}
+     </pre>
+    </details>
+   </div>
+  );
  }
 
  const renderBaseDocumental = (base?: BaseDocumental) => {

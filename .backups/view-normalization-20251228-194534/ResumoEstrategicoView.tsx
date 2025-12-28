@@ -1,8 +1,6 @@
 import React from 'react';
 import { FileText, Clock, Scale, AlertCircle } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
-import { normalizeGenericView } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface Campo {
  id: string;
@@ -53,22 +51,24 @@ interface ResumoEstrategicoViewProps {
 }
 
 export function ResumoEstrategicoView({ content }: ResumoEstrategicoViewProps) {
- const normalizationResult = normalizeGenericView(content, 'resumoEstrategico', ['resumo_estrategico', 'resumo']);
-
- if (!normalizationResult.success) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
  let data: { resumoEstrategico: ResumoEstrategico } | null = null;
 
  try {
   data = JSON.parse(content);
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+ } catch (error) {
+  return (
+   <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+    <p className="text-red-800">Erro ao processar os dados da análise.</p>
+   </div>
+  );
  }
 
  if (!data?.resumoEstrategico) {
-  return <AnalysisContentRenderer content={content} />;
+  return (
+   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <p className="text-yellow-800">Estrutura de dados inválida.</p>
+   </div>
+  );
  }
 
  const { resumoEstrategico } = data;

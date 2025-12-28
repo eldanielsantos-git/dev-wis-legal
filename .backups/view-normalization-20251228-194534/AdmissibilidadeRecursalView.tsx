@@ -3,8 +3,6 @@ import { Scale, FileText, Clock, CheckCircle, XCircle, AlertTriangle, HelpCircle
 import { safeToString } from '../../utils/safeRender';
 import { isNonEmptyArray } from '../../utils/typeGuards';
 import { safeIncludes } from '../../utils/safeStringUtils';
-import { normalizeGenericView } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface RecursoIdentificado {
  id: string;
@@ -78,22 +76,24 @@ const getSituacaoBadge = (situacao: string | undefined) => {
 };
 
 export function AdmissibilidadeRecursalView({ content }: AdmissibilidadeRecursalViewProps) {
- const normalizationResult = normalizeGenericView(content, 'recursosAdmissibilidade', ['recursos_admissibilidade', 'admissibilidade', 'recursos']);
-
- if (!normalizationResult.success) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
  let data: { recursosAdmissibilidade: RecursosAdmissibilidade } | null = null;
 
  try {
   data = JSON.parse(content);
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+ } catch (error) {
+  return (
+   <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+    <p className="text-red-800">Erro ao processar os dados da análise.</p>
+   </div>
+  );
  }
 
  if (!data?.recursosAdmissibilidade) {
-  return <AnalysisContentRenderer content={content} />;
+  return (
+   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <p className="text-yellow-800">Estrutura de dados inválida.</p>
+   </div>
+  );
  }
 
  const { recursosAdmissibilidade } = data;

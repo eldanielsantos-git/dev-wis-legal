@@ -1,8 +1,6 @@
 import React from 'react';
 import { Mail, FileCheck, AlertTriangle, Clock, CheckCircle, XCircle, Hourglass } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
-import { normalizeComunicacoesPrazos } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface DetalhesAR {
  nomeManuscrito?: string;
@@ -188,30 +186,39 @@ const normalizarDados = (rawData: any): { comunicacoesPrazos: ComunicacoesPrazos
 };
 
 export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps) {
- const normalizationResult = normalizeComunicacoesPrazos(content);
-
- if (!normalizationResult.success || !normalizationResult.data?.comunicacoesPrazos) {
-  console.log('[ComunicacoesPrazosView] Fallback para AnalysisContentRenderer', {
-   method: normalizationResult.method,
-   originalKeys: normalizationResult.originalKeys
-  });
-  return <AnalysisContentRenderer content={content} />;
- }
+ console.log('🔍 ComunicacoesPrazosView - Component called', {
+  contentLength: content?.length,
+  firstChars: content?.substring(0, 200)
+ });
 
  let rawData: any = null;
+
  try {
   rawData = JSON.parse(content);
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+  console.log('✅ ComunicacoesPrazosView - JSON parsed successfully', rawData);
+ } catch (error) {
+  console.error('❌ ComunicacoesPrazosView - JSON parse error:', error);
+  return (
+   <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+    <p className="text-red-800 dark:text-red-200">Erro ao processar os dados da análise.</p>
+   </div>
+  );
  }
 
  const data = normalizarDados(rawData);
+ console.log('🔍 ComunicacoesPrazosView - Normalized data:', data);
 
  if (!data?.comunicacoesPrazos) {
-  return <AnalysisContentRenderer content={content} />;
+  console.error('❌ ComunicacoesPrazosView - Invalid data structure', { rawData, data });
+  return (
+   <div className="p-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+    <p className="text-yellow-800 dark:text-yellow-200">Estrutura de dados inválida.</p>
+   </div>
+  );
  }
 
  const { comunicacoesPrazos } = data;
+ console.log('✅ ComunicacoesPrazosView - Will render with:', comunicacoesPrazos);
 
  return (
   <div className="space-y-6">

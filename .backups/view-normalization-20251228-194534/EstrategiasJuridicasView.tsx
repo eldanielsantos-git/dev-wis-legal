@@ -2,8 +2,6 @@ import React from 'react';
 import { Target, Lightbulb, AlertTriangle, DollarSign, TrendingUp, FileText, Info } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
 import { safeIncludes } from '../../utils/safeStringUtils';
-import { normalizeGenericView } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface EstrategiaPrincipal {
  descricao: string;
@@ -117,17 +115,13 @@ const getPoloColor = (polo: string | undefined) => {
 };
 
 export function EstrategiasJuridicasView({ content }: EstrategiasJuridicasViewProps) {
- const normalizationResult = normalizeGenericView(content, 'estrategiasJuridicas', ['estrategias_juridicas', 'estrategias']);
-
- if (!normalizationResult.success) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
  let data: { estrategiasJuridicas: EstrategiasJuridicas } | null = null;
 
  try {
+  // Limpar possíveis marcadores de código que podem estar no JSON
   let cleanContent = content.trim();
 
+  // Remover marcadores ```json no início
   if (cleanContent.startsWith('```json')) {
    cleanContent = cleanContent.substring(7);
   }
@@ -135,6 +129,7 @@ export function EstrategiasJuridicasView({ content }: EstrategiasJuridicasViewPr
    cleanContent = cleanContent.substring(3);
   }
 
+  // Remover marcadores ``` no final
   const lastTripleBacktick = cleanContent.lastIndexOf('```');
   if (lastTripleBacktick > 0) {
    cleanContent = cleanContent.substring(0, lastTripleBacktick);
@@ -143,12 +138,27 @@ export function EstrategiasJuridicasView({ content }: EstrategiasJuridicasViewPr
   cleanContent = cleanContent.trim();
 
   data = JSON.parse(cleanContent);
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+ } catch (error) {
+  console.error('Erro ao parsear EstrategiasJuridicasView:', error);
+  return (
+   <div className="p-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50 rounded-lg">
+    <div className="flex items-start gap-3">
+     <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+     <div>
+      <p className="text-red-800 dark:text-red-200 font-semibold mb-2">Erro ao processar análise</p>
+      <p className="text-red-700 dark:text-red-300 text-sm">JSON inválido</p>
+     </div>
+    </div>
+   </div>
+  );
  }
 
  if (!data?.estrategiasJuridicas) {
-  return <AnalysisContentRenderer content={content} />;
+  return (
+   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <p className="text-yellow-800">Estrutura de dados inválida.</p>
+   </div>
+  );
  }
 
  const { estrategiasJuridicas } = data;

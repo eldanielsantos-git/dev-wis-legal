@@ -10,7 +10,7 @@ import { MapaPreclusoesView } from './MapaPreclusoesView';
 import { ConclusoesPerspettivasView } from './ConclusoesPerspecttivasView';
 import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 import { validateAndSanitizeJson } from '../../utils/jsonValidator';
-import { aggressiveClean, tryParseJSON } from '../../utils/jsonSanitizer';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface AnalysisViewSelectorProps {
  title: string;
@@ -19,25 +19,47 @@ interface AnalysisViewSelectorProps {
 
 export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorProps) {
  try {
-  if (!content || content.trim().length === 0) {
-   return <AnalysisContentRenderer content={content || ''} />;
+  const isComunicacoes = title?.toLowerCase().includes('comunicações');
+
+  if (isComunicacoes) {
+   console.log('🔍 COMUNICAÇÕES - AnalysisViewSelector called:', {
+    title,
+    contentLength: content?.length,
+    firstChars: content?.substring(0, 100)
+   });
   }
 
   const validation = validateAndSanitizeJson(content);
 
-  let sanitizedContent = content;
+  const isRiscos = title?.toLowerCase().includes('riscos');
 
-  if (validation.isValid && validation.sanitizedContent) {
-   sanitizedContent = validation.sanitizedContent;
-  } else {
-   const cleaned = aggressiveClean(content);
-   const parsed = tryParseJSON(cleaned);
-   if (parsed !== null) {
-    sanitizedContent = cleaned;
-   }
+  if (isRiscos) {
+   console.log('🔍 RISCOS - AnalysisViewSelector validation:', {
+    title,
+    validation,
+    contentLength: content?.length,
+    firstChars: content?.substring(0, 100)
+   });
   }
 
-  const normalizedTitle = title.toLowerCase().trim();
+  if (isComunicacoes) {
+   console.log('🔍 COMUNICAÇÕES - Validation result:', validation);
+  }
+
+  if (validation.isEmpty) {
+   if (isRiscos) console.log('❌ RISCOS - Content is empty');
+   if (isComunicacoes) console.log('❌ COMUNICAÇÕES - Content is empty');
+   return null;
+  }
+
+  if (!validation.isValid) {
+   if (isRiscos) console.error('❌ RISCOS - Validation failed:', title, validation.error);
+   if (isComunicacoes) console.error('❌ COMUNICAÇÕES - Validation failed:', title, validation.error);
+   return null;
+  }
+
+ const sanitizedContent = validation.sanitizedContent || content;
+ const normalizedTitle = title.toLowerCase().trim();
 
  if (normalizedTitle.includes('visão geral')) {
   return <VisaoGeralProcessoView content={sanitizedContent} />;
@@ -48,6 +70,12 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
  }
 
  if (normalizedTitle.includes('comunicações') && normalizedTitle.includes('prazos')) {
+  console.log('✅ Matched Comunicações e Prazos!', {
+   title,
+   normalizedTitle,
+   sanitizedLength: sanitizedContent.length,
+   firstChars: sanitizedContent.substring(0, 200)
+  });
   return <ComunicacoesPrazosView content={sanitizedContent} />;
  }
 
@@ -60,6 +88,12 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
  }
 
  if (normalizedTitle.includes('riscos') && normalizedTitle.includes('alertas')) {
+  console.log('✅ Matched Riscos e Alertas!', {
+   title,
+   normalizedTitle,
+   sanitizedLength: sanitizedContent.length,
+   firstChars: sanitizedContent.substring(0, 200)
+  });
   return <RiscosAlertasView content={sanitizedContent} />;
  }
 
@@ -77,7 +111,7 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
 
  return <AnalysisContentRenderer content={sanitizedContent} />;
  } catch (error) {
-  console.log('[AnalysisViewSelector] Fallback devido a erro:', error);
-  return <AnalysisContentRenderer content={content} />;
+  console.error('❌ Error in AnalysisViewSelector:', { title, error });
+  return null;
  }
 }

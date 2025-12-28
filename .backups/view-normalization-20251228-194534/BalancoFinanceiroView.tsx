@@ -2,8 +2,6 @@ import React from 'react';
 import { DollarSign, FileText, Lock, Unlock, TrendingUp, Scale, BadgeDollarSign, Receipt, Calculator } from 'lucide-react';
 import { isNonEmptyArray } from '../../utils/typeGuards';
 import { safeIncludes } from '../../utils/safeStringUtils';
-import { normalizeGenericView } from '../../utils/viewNormalizer';
-import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface BaseDocumental {
  arquivo?: string;
@@ -109,12 +107,6 @@ const isMonetaryValue = (valor: string): boolean => {
 };
 
 export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
- const normalizationResult = normalizeGenericView(content, 'balancoFinanceiro', ['balanco_financeiro', 'balanco', 'financeiro']);
-
- if (!normalizationResult.success) {
-  return <AnalysisContentRenderer content={content} />;
- }
-
  let data: { balancoFinanceiro: BalancoFinanceiro } | null = null;
 
  try {
@@ -133,12 +125,20 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
   cleanContent = cleanContent.trim();
 
   data = JSON.parse(cleanContent);
- } catch {
-  return <AnalysisContentRenderer content={content} />;
+ } catch (error) {
+  return (
+   <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+    <p className="text-red-800">Erro ao processar os dados da análise.</p>
+   </div>
+  );
  }
 
  if (!data?.balancoFinanceiro) {
-  return <AnalysisContentRenderer content={content} />;
+  return (
+   <div className="p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+    <p className="text-yellow-800">Estrutura de dados inválida.</p>
+   </div>
+  );
  }
 
  const { balancoFinanceiro } = data;
