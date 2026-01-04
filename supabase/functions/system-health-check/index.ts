@@ -47,8 +47,8 @@ Deno.serve(async (req: Request) => {
     }
 
     try {
-      const { error: authError } = await supabase.auth.getUser();
-      if (!authError || authError.message.includes('JWT')) {
+      const { data, error: authError } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1 });
+      if (!authError && data) {
         result.auth = 'healthy';
       }
     } catch (err) {
