@@ -35,10 +35,10 @@ Deno.serve(async (req: Request) => {
 
     try {
       const { error: dbError } = await supabase
-        .from('users')
+        .from('user_profiles')
         .select('id')
         .limit(1);
-      
+
       if (!dbError) {
         result.database = 'healthy';
       }
