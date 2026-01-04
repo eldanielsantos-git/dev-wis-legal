@@ -387,24 +387,6 @@ function StatusPageContent() {
             );
           })}
         </div>
-
-        <div className={`mt-8 p-4 rounded-lg ${cardBg} border ${borderColor}`}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              <span className="text-sm">Atualização automática a cada 30 segundos</span>
-            </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={autoRefresh}
-                onChange={(e) => setAutoRefresh(e.target.checked)}
-                className="w-4 h-4"
-              />
-              <span className="text-sm">Ativado</span>
-            </label>
-          </div>
-        </div>
       </div>
     </div>
   );
