@@ -2,6 +2,57 @@ import React, { useEffect, useState } from 'react';
 import { Activity, Database, Shield, HardDrive, Radio, Cloud, RefreshCw, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('StatusPage error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0F0E0D] flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white dark:bg-[#1a1918] border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <XCircle className="w-8 h-8 text-red-500" />
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Erro ao carregar página</h1>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Ocorreu um erro ao carregar a página de status.
+            </p>
+            {this.state.error && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded p-3 mb-4">
+                <p className="text-red-800 dark:text-red-300 text-sm font-mono">
+                  {this.state.error.message}
+                </p>
+              </div>
+            )}
+            <button
+              onClick={() => window.location.reload()}
+              className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Recarregar página
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 interface ServiceStatus {
   database: 'healthy' | 'unhealthy' | 'checking';
   auth: 'healthy' | 'unhealthy' | 'checking';
@@ -51,7 +102,7 @@ const services: ServiceConfig[] = [
   }
 ];
 
-export function StatusPage() {
+function StatusPageContent() {
   const { theme } = useTheme();
   const [status, setStatus] = useState<ServiceStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,22 +112,33 @@ export function StatusPage() {
   const fetchStatus = async () => {
     try {
       setError(null);
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      if (!supabaseUrl || !anonKey) {
+        throw new Error('Variáveis de ambiente não configuradas');
+      }
+
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/system-health-check`,
+        `${supabaseUrl}/functions/v1/system-health-check`,
         {
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+            'Authorization': `Bearer ${anonKey}`,
+            'Content-Type': 'application/json'
           }
         }
       );
 
       if (!response.ok) {
-        throw new Error('Falha ao buscar status');
+        const errorText = await response.text();
+        throw new Error(`Falha ao buscar status (${response.status}): ${errorText}`);
       }
 
       const data = await response.json();
       setStatus(data);
     } catch (err) {
+      console.error('Erro ao buscar status:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);
@@ -159,7 +221,16 @@ export function StatusPage() {
 
         {error && (
           <div className={`mb-6 p-4 rounded-lg border border-red-500 bg-red-500 bg-opacity-10`}>
-            <p className="text-red-500">Erro ao carregar status: {error}</p>
+            <div className="flex flex-col gap-2">
+              <p className="text-red-500 font-semibold">Erro ao carregar status:</p>
+              <p className="text-red-400 text-sm">{error}</p>
+              <button
+                onClick={handleRefresh}
+                className="mt-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
           </div>
         )}
 
@@ -274,5 +345,13 @@ export function StatusPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export function StatusPage() {
+  return (
+    <ErrorBoundary>
+      <StatusPageContent />
+    </ErrorBoundary>
   );
 }
