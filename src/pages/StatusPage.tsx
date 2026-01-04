@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Activity, Database, Shield, HardDrive, Radio, Cloud, RefreshCw, Clock, CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -106,53 +104,9 @@ const services: ServiceConfig[] = [
 
 function StatusPageContent() {
   const { theme } = useTheme();
-  const { user } = useAuth();
   const [status, setStatus] = useState<ServiceStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [checkingAdmin, setCheckingAdmin] = useState(true);
-
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) {
-        setCheckingAdmin(false);
-        setIsAdmin(false);
-        window.location.href = '/signin';
-        return;
-      }
-
-      try {
-        const { data: profile, error } = await supabase
-          .from('user_profiles')
-          .select('is_admin')
-          .eq('id', user.id)
-          .single();
-
-        if (error) {
-          console.error('Erro ao verificar permissões:', error);
-          setIsAdmin(false);
-          setCheckingAdmin(false);
-          return;
-        }
-
-        if (!profile?.is_admin) {
-          window.location.href = '/app';
-          return;
-        }
-
-        setIsAdmin(true);
-        setCheckingAdmin(false);
-      } catch (err) {
-        console.error('Erro ao verificar admin:', err);
-        setIsAdmin(false);
-        setCheckingAdmin(false);
-      }
-    };
-
-    checkAdminStatus();
-  }, [user]);
 
   const fetchStatus = async () => {
     try {
@@ -191,20 +145,8 @@ function StatusPageContent() {
   };
 
   useEffect(() => {
-    if (isAdmin && !checkingAdmin) {
-      fetchStatus();
-    }
-  }, [isAdmin, checkingAdmin]);
-
-  useEffect(() => {
-    if (!autoRefresh || !isAdmin || checkingAdmin) return;
-
-    const interval = setInterval(() => {
-      fetchStatus();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, [autoRefresh, isAdmin, checkingAdmin]);
+    fetchStatus();
+  }, []);
 
   const handleRefresh = () => {
     setLoading(true);
@@ -242,21 +184,6 @@ function StatusPageContent() {
   const borderColor = theme === 'dark' ? 'border-gray-800' : 'border-gray-200';
   const textPrimary = theme === 'dark' ? 'text-white' : 'text-gray-900';
   const textSecondary = theme === 'dark' ? 'text-gray-400' : 'text-gray-600';
-
-  if (checkingAdmin) {
-    return (
-      <div className={`min-h-screen ${bgColor} flex items-center justify-center`}>
-        <div className="text-center">
-          <RefreshCw className={`w-12 h-12 ${textPrimary} animate-spin mx-auto mb-4`} />
-          <p className={textSecondary}>Verificando permissões...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return null;
-  }
 
   return (
     <div className={`min-h-screen ${bgColor} ${textPrimary}`}>
