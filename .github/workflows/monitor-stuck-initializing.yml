@@ -1,0 +1,48 @@
+name: Monitor Stuck Initializing
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  detect-stuck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Detect and fix stuck initializing processes
+        run: |
+          echo "🔍 Verificando processos travados em initializing..."
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/detect-stuck-initializing" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+
+          echo "📄 Response: $body"
+          echo "📊 HTTP Status: $http_code"
+
+          if [ "$http_code" -ne 200 ]; then
+            echo "❌ Falha na verificação com status $http_code"
+            exit 1
+          fi
+
+          fixed=$(echo "$body" | jq -r '.fixed_count // 0')
+          retriggered=$(echo "$body" | jq -r '.retriggered_count // 0')
+          errors=$(echo "$body" | jq -r '.error_count // 0')
+
+          echo ""
+          echo "📈 Resumo:"
+          echo "  ✅ Corrigidos: $fixed"
+          echo "  🔄 Retrigerados: $retriggered"
+          echo "  ❌ Erros: $errors"
+
+          if [ "$fixed" -gt 0 ]; then
+            echo "🎉 $fixed processo(s) foram corrigidos automaticamente!"
+          fi
+
+          if [ "$retriggered" -gt 0 ]; then
+            echo "🔄 $retriggered processo(s) tiveram upload retrigerado!"
+          fi
+        continue-on-error: true
