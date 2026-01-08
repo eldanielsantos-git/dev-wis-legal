@@ -144,7 +144,7 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
         <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
           <div className="text-center">
             <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-12 md:h-16 mx-auto mb-4 md:mb-6" />
-            <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+            <p className="text-white text-lg md:text-xl font-title">Plataforma para análise de processos</p>
           </div>
         </div>
         <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
@@ -163,7 +163,7 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
         <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
           <div className="text-center">
             <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-12 md:h-16 mx-auto mb-4 md:mb-6" />
-            <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+            <p className="text-white text-lg md:text-xl font-title">Plataforma para análise de processos</p>
           </div>
         </div>
         <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">
@@ -190,7 +190,7 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
         <div className="w-full md:w-1/2 bg-wis-dark flex items-center justify-center p-6 md:p-12">
           <div className="text-center">
             <img src="https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-color-white.svg" alt="Wis Legal" className="h-12 md:h-16 mx-auto mb-4 md:mb-6" />
-            <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+            <p className="text-white text-lg md:text-xl font-title">Plataforma para análise de processos</p>
           </div>
         </div>
         <div className="w-full md:w-1/2 bg-white flex items-center justify-center p-6 md:p-12 rounded-3xl md:rounded-none">

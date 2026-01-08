@@ -158,7 +158,7 @@ export function ConfirmEmailPage() {
             alt="Wis Legal"
             className="h-12 md:h-16 mx-auto mb-4 md:mb-6"
           />
-          <p className="text-white text-lg md:text-xl font-title">Simple legal analysis</p>
+          <p className="text-white text-lg md:text-xl font-title">Plataforma para análise de processos</p>
         </div>
       </div>
 
