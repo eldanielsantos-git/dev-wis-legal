@@ -1,810 +1,111 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { logger } from './utils/logger';
-import { ThemeProvider } from './contexts/ThemeContext';
-import { NotificationProvider } from './contexts/NotificationContext';
-import { TokenBalanceProvider } from './contexts/TokenBalanceContext';
-import { useSupabaseConnectionKeepAlive } from './hooks/useSupabaseConnectionKeepAlive';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Scale, LogOut, User } from 'lucide-react';
+import { PricingSection } from './components/PricingSection';
+import { UserSubscription } from './components/UserSubscription';
+import { AuthForm } from './components/AuthForm';
+import { Success } from './pages/Success';
+import { supabase } from './lib/supabase';
 
-// Log module loading with timestamp to detect cache issues
-const BUILD_TIMESTAMP = '2025-12-01T19:45:00Z';
-logger.log('App.tsx', `🔥🔥🔥 MODULE LOADED - BUILD: ${BUILD_TIMESTAMP} 🔥🔥🔥`);
-import { SignInPage } from './pages/SignInPage';
-import { SignUpPage } from './pages/SignUpPage';
-import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
-import { ResetPasswordPage } from './pages/ResetPasswordPage';
-import { TermsPage } from './pages/TermsPage';
-import { PrivacyPage } from './pages/PrivacyPage';
-import { CookiesPage } from './pages/CookiesPage';
-import { ConfirmEmailPage } from './pages/ConfirmEmailPage';
-import { AppHomePage } from './pages/AppHomePage';
-import { MyProcessesPage } from './pages/MyProcessesPage';
-import { ProcessoDetailPage } from './pages/ProcessoDetailPage';
-import { MyProcessDetailPage } from './pages/MyProcessDetailPage';
-import { AdminSystemModelsPage } from './pages/AdminSystemModelsPage';
-import { AdminIntegrityPage } from './pages/AdminIntegrityPage';
-import { AdminForensicPromptsPage } from './pages/AdminForensicPromptsPage';
-import { AdminSettingsPage } from './pages/AdminSettingsPage';
-import { AdminUsersPage } from './pages/AdminUsersPage';
-import { AdminUserDetailPage } from './pages/AdminUserDetailPage';
-import { AdminUserProcessesPage } from './pages/AdminUserProcessesPage';
-import { AdminTokenManagementPage } from './pages/AdminTokenManagementPage';
-import { AdminQuotaManagementPage } from './pages/AdminQuotaManagementPage';
-import { AdminStripeDiagnosticPage } from './pages/AdminStripeDiagnosticPage';
-import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
-import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
-import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
-import { AdminTokenLimitsPage } from './pages/AdminTokenLimitsPage';
-import { AdminSlackNotificationsPage } from './pages/AdminSlackNotificationsPage';
-import AdminFeatureFlagsPage from './pages/AdminFeatureFlagsPage';
-import AdminTierMonitoringPage from './pages/AdminTierMonitoringPage';
-import AdminDeploymentVerificationPage from './pages/AdminDeploymentVerificationPage';
-import { ProfilePage } from './pages/ProfilePage';
-import { NotificationsPage } from './pages/NotificationsPage';
-import { SubscriptionPage } from './pages/SubscriptionPage';
-import { TokensPage } from './pages/TokensPage';
-import { SchedulePage } from './pages/SchedulePage';
-import { ChatPage } from './pages/ChatPage';
-import { ChatProcessSelectionPage } from './pages/ChatProcessSelectionPage';
-import { WorkspacePage } from './pages/WorkspacePage';
-import { VerifyEmailRequiredPage } from './pages/VerifyEmailRequiredPage';
-import { NotFoundPage } from './pages/NotFoundPage';
-import { StatusPage } from './pages/StatusPage';
-import { RequireEmailVerification } from './components/RequireEmailVerification';
-import { SuccessPage } from './components/subscription/SuccessPage';
-import { Loader } from 'lucide-react';
-
-function AppContent() {
-  const { user, loading } = useAuth();
-  const [currentPath, setCurrentPath] = useState(window.location.pathname);
-
-  useSupabaseConnectionKeepAlive(!!user);
-
-  const navigate = (path: string) => {
-    window.history.pushState({}, '', path);
-    setCurrentPath(path);
-  };
+function App() {
+  const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
   useEffect(() => {
-    const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      setLoading(false);
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+
+    getSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (currentPath === '/admin') {
-      window.history.replaceState({}, '', '/admin-settings');
-      setCurrentPath('/admin-settings');
-    }
-  }, [currentPath]);
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
-        <Loader className="w-8 h-8 text-white animate-spin" />
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (currentPath === '/terms') {
-    return <TermsPage onBack={() => navigate(user ? '/app' : '/sign-in')} />;
-  }
-
-  if (currentPath === '/privacy') {
-    return <PrivacyPage onBack={() => navigate(user ? '/app' : '/sign-in')} />;
-  }
-
-  if (currentPath === '/cookies') {
-    return <CookiesPage onBack={() => navigate(user ? '/app' : '/sign-in')} />;
-  }
-
-  if (currentPath === '/reset-password') {
-    return <ResetPasswordPage onNavigateToSignIn={() => navigate('/sign-in')} />;
-  }
-
-  if (currentPath === '/confirm-email') {
-    return <ConfirmEmailPage />;
-  }
-
-  if (currentPath === '/verify-email-required') {
-    return <VerifyEmailRequiredPage />;
-  }
-
-  if (currentPath === '/status') {
-    return <StatusPage />;
-  }
-
-  if (!user) {
-    logger.log('AppContent', 'No user, checking auth routes');
-    if (currentPath === '/sign-up') {
-      logger.log('AppContent', 'Rendering SignUpPage');
-      return (
-        <SignUpPage
-          onNavigateToSignIn={() => navigate('/sign-in')}
-          onNavigateToTerms={() => navigate('/terms')}
-          onNavigateToPrivacy={() => navigate('/privacy')}
-        />
-      );
-    }
-    if (currentPath === '/forgot-password') {
-      logger.log('AppContent', 'Rendering ForgotPasswordPage');
-      return <ForgotPasswordPage onNavigateToSignIn={() => navigate('/sign-in')} />;
-    }
-    logger.log('AppContent', 'Rendering SignInPage (default for non-authenticated)');
-    return (
-      <SignInPage
-        onNavigateToSignUp={() => navigate('/sign-up')}
-        onNavigateToForgotPassword={() => navigate('/forgot-password')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  const pathMatch = currentPath.match(/^\/processo\/([a-f0-9-]+)$/);
-  if (pathMatch) {
-    return (
-      <ProcessoDetailPage
-        processoId={pathMatch[1]}
-        onBack={() => navigate('/app')}
-        onNavigateToNotFound={() => navigate('/404')}
-      />
-    );
-  }
-
-  const detailPathMatch = currentPath.match(/^\/lawsuits-detail\/([a-f0-9-]+)$/);
-  if (detailPathMatch) {
-    return (
-      <MyProcessDetailPage
-        processoId={detailPathMatch[1]}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={(processoId) => navigate(processoId ? `/chat/${processoId}` : '/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToAdmin={() => navigate('/admin')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-        onNavigateToNotFound={() => navigate('/404')}
-      />
-    );
-  }
-
-  if (currentPath === '/workspace') {
-    return (
-      <RequireEmailVerification
-        onNavigateToSignIn={() => navigate('/sign-in')}
-        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
-      >
-        <WorkspacePage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-        onNavigateToProcessDetail={(processoId) => navigate(`/lawsuits-detail/${processoId}`)}
-      />
-      </RequireEmailVerification>
-    );
-  }
-
-  if (currentPath === '/chat') {
-    return (
-      <RequireEmailVerification
-        onNavigateToSignIn={() => navigate('/sign-in')}
-        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
-      >
-        <ChatProcessSelectionPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={(processoId) => navigate(processoId ? `/chat/${processoId}` : '/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToNotifications={() => navigate('/notifications')}
-        onNavigateToTokens={() => navigate('/tokens')}
-        onNavigateToSubscription={() => navigate('/signature')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-      </RequireEmailVerification>
-    );
-  }
-
-  const chatPathMatch = currentPath.match(/^\/chat\/([a-f0-9-]+)$/);
-  if (chatPathMatch) {
-    return (
-      <RequireEmailVerification
-        onNavigateToSignIn={() => navigate('/sign-in')}
-        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
-      >
-        <ChatPage
-        processoId={chatPathMatch[1]}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToNotifications={() => navigate('/notifications')}
-        onNavigateToTokens={() => navigate('/tokens')}
-        onNavigateToSubscription={() => navigate('/signature')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-      </RequireEmailVerification>
-    );
-  }
-
-  if (currentPath === '/profile') {
-    return (
-      <ProfilePage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin')}
-        onNavigateToSettings={() => navigate('/admin')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-        onNavigateToSignIn={() => navigate('/sign-in')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-models') {
-    return (
-      <AdminSystemModelsPage
-        onBack={() => navigate('/admin-settings')}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-tags') {
-    return (
-      <AdminTagsManagementPage
-        onNavigateToAdmin={() => navigate('/admin')}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-slack-notifications') {
-    return (
-      <AdminSlackNotificationsPage
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToSettings={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-integrity') {
-    return (
-      <AdminIntegrityPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-prompts') {
-    return (
-      <AdminForensicPromptsPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-token-limits') {
-    return (
-      <AdminTokenLimitsPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/my-processes')}
-        onNavigateToChat={() => navigate('/chat-processo')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-users')}
-        onNavigateToSettings={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-users') {
-    return (
-      <AdminUsersPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToSettings={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath.startsWith('/admin-user/')) {
-    const pathParts = currentPath.split('/');
-    const userId = pathParts[2];
-    const subPath = pathParts[3];
-
-    if (subPath === 'processes') {
-      return (
-        <AdminUserProcessesPage
-          userId={userId}
-          onNavigateBack={() => navigate(`/admin-user/${userId}`)}
-          onNavigateToProcessDetail={(processoId) => navigate(`/lawsuits-detail/${processoId}`)}
-          onNavigateToApp={() => navigate('/app')}
-          onNavigateToMyProcess={() => navigate('/lawsuits')}
-          onNavigateToChat={() => navigate('/chat')}
-          onNavigateToWorkspace={() => navigate('/workspace')}
-          onNavigateToSchedule={() => navigate('/schedule')}
-          onNavigateToAdmin={() => navigate('/admin-settings')}
-          onNavigateToSettings={() => navigate('/admin-settings')}
-          onNavigateToProfile={() => navigate('/profile')}
-          onNavigateToTerms={() => navigate('/terms')}
-          onNavigateToPrivacy={() => navigate('/privacy')}
-          onNavigateToCookies={() => navigate('/cookies')}
-        />
-      );
-    }
-
-    return (
-      <AdminUserDetailPage
-        userId={userId}
-        onNavigateBack={() => navigate('/admin-users')}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToSettings={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-tokens') {
-    return (
-      <AdminTokenManagementPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToNotifications={() => navigate('/notifications')}
-        onNavigateToTokens={() => navigate('/tokens')}
-        onNavigateToSubscription={() => navigate('/signature')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-quota') {
-    return (
-      <AdminQuotaManagementPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-subscription-plans') {
-    return (
-      <AdminSubscriptionManagementPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-stripe-diagnostic') {
-    return (
-      <AdminStripeDiagnosticPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-token-credits-audit') {
-    return (
-      <AdminTokenCreditsAuditPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-feature-flags') {
-    return (
-      <AdminFeatureFlagsPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/profile#admin')}
-        onNavigateToSettings={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-tier-monitoring') {
-    return (
-      <AdminTierMonitoringPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToNotifications={() => navigate('/notifications')}
-        onNavigateToTokens={() => navigate('/tokens')}
-        onNavigateToSubscription={() => navigate('/signature')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-deployment-verification') {
-    return (
-      <AdminDeploymentVerificationPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToNotifications={() => navigate('/notifications')}
-        onNavigateToTokens={() => navigate('/tokens')}
-        onNavigateToSubscription={() => navigate('/signature')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/admin-settings') {
-    return (
-      <AdminSettingsPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/lawsuits') {
-    return (
-      <MyProcessesPage
-        onNavigateToDetail={(id) => navigate(`/lawsuits-detail/${id}`)}
-        onNavigateToAdmin={() => navigate('/admin')}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/notifications') {
-    return (
-      <NotificationsPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToSettings={() => navigate('/admin-settings')}
-        onNavigateToNotifications={() => navigate('/notifications')}
-        onNavigateToProcessDetail={(id) => navigate(`/lawsuits-detail/${id}`)}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/signature') {
-    return (
-      <SubscriptionPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/tokens') {
-    return (
-      <TokensPage
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToAdmin={() => navigate('/admin-settings')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToSignature={() => navigate('/signature')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-      />
-    );
-  }
-
-  if (currentPath === '/schedule') {
-    return (
-      <RequireEmailVerification
-        onNavigateToSignIn={() => navigate('/sign-in')}
-        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
-      >
-        <SchedulePage
-          onNavigateToAdmin={() => navigate('/admin-settings')}
-          onNavigateToApp={() => navigate('/app')}
-          onNavigateToMyProcess={() => navigate('/lawsuits')}
-          onNavigateToChat={() => navigate('/chat')}
-          onNavigateToWorkspace={() => navigate('/workspace')}
-          onNavigateToSchedule={() => navigate('/schedule')}
-          onNavigateToProfile={() => navigate('/profile')}
-          onNavigateToSettings={() => navigate('/admin-settings')}
-          onNavigateToNotifications={() => navigate('/notifications')}
-          onNavigateToTokens={() => navigate('/tokens')}
-          onNavigateToSubscription={() => navigate('/signature')}
-          onNavigateToTerms={() => navigate('/terms')}
-          onNavigateToPrivacy={() => navigate('/privacy')}
-          onNavigateToCookies={() => navigate('/cookies')}
-        />
-      </RequireEmailVerification>
-    );
-  }
-
-  if (currentPath === '/success') {
-    return <SuccessPage onNavigateToApp={() => navigate('/app')} />;
-  }
-
-  if (currentPath === '/404') {
-    return <NotFoundPage onNavigateToHome={() => navigate('/app')} />;
-  }
-
-  if (currentPath === '/app' || currentPath === '/') {
-    logger.log('AppContent', 'Rendering AppHomePage with RequireEmailVerification');
-    return (
-      <RequireEmailVerification
-        onNavigateToSignIn={() => navigate('/sign-in')}
-        onNavigateToVerifyEmail={() => navigate('/verify-email-required')}
-      >
-        <AppHomePage
-        onNavigateToDetail={(id) => navigate(`/lawsuits-detail/${id}`)}
-        onNavigateToAdmin={() => navigate('/admin')}
-        onNavigateToMyProcess={() => navigate('/lawsuits')}
-        onNavigateToChat={() => navigate('/chat')}
-        onNavigateToWorkspace={() => navigate('/workspace')}
-        onNavigateToSchedule={() => navigate('/schedule')}
-        onNavigateToProfile={() => navigate('/profile')}
-        onNavigateToTerms={() => navigate('/terms')}
-        onNavigateToPrivacy={() => navigate('/privacy')}
-        onNavigateToCookies={() => navigate('/cookies')}
-        onNavigateToApp={() => navigate('/app')}
-        onNavigateToTokens={() => navigate('/tokens')}
-      />
-      </RequireEmailVerification>
-    );
-  }
-
-  logger.log('AppContent', 'No route matched, redirecting to app home');
-  setTimeout(() => navigate('/app'), 0);
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
-      <Loader className="w-8 h-8 text-white animate-spin" />
-    </div>
+    <Router>
+      <div className="min-h-screen bg-gray-50">
+        {/* Header */}
+        <header className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Scale className="w-8 h-8 text-blue-600" />
+                <h1 className="text-2xl font-bold text-gray-900">Wis Legal</h1>
+              </div>
+
+              <div className="flex items-center gap-4">
+                {user && (
+                  <>
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <User className="w-4 h-4" />
+                      {user.email}
+                    </div>
+                    <button
+                      onClick={handleSignOut}
+                      className="flex items-center gap-2 text-sm text-gray-600 hover:text-red-600 transition-colors"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sair
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <Routes>
+          <Route path="/success" element={<Success />} />
+          <Route path="/" element={
+            <main className="py-8">
+              {!user ? (
+                <div className="max-w-md mx-auto px-4">
+                  <AuthForm 
+                    mode={authMode} 
+                    onToggle={() => setAuthMode(authMode === 'login' ? 'signup' : 'login')} 
+                  />
+                </div>
+              ) : (
+                <div className="max-w-7xl mx-auto px-4">
+                  {/* User Subscription Status */}
+                  <div className="mb-8">
+                    <h2 className="text-xl font-semibold text-gray-900 mb-4">Meu Plano</h2>
+                    <UserSubscription />
+                  </div>
+
+                  {/* Pricing Section */}
+                  <PricingSection />
+                </div>
+              )}
+            </main>
+          } />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
-logger.log('App.tsx', '🔥 Defining App function component');
-
-function App() {
-  logger.log('App', '🎯 FUNCTION App() CALLED - Starting render');
-
-  // Test render - bypass all providers temporarily
-  const isTestMode = window.location.search.includes('test=1');
-
-  if (isTestMode) {
-    logger.log('App', 'Test mode active');
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#0F0E0D',
-        color: 'white',
-        fontFamily: 'sans-serif'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '48px', marginBottom: '20px' }}>✓ App OK</h1>
-          <p>React está funcionando corretamente</p>
-          <p style={{ color: '#888', marginTop: '20px' }}>Remova ?test=1 da URL para carregar o app normal</p>
-        </div>
-      </div>
-    );
-  }
-
-  logger.log('App', 'Rendering with all providers');
-
-  try {
-    logger.log('App', 'About to render AuthProvider');
-    return (
-      <AuthProvider>
-        <ThemeProvider>
-          <NotificationProvider>
-            <TokenBalanceProvider>
-              <AppContent />
-            </TokenBalanceProvider>
-          </NotificationProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    );
-  } catch (error) {
-    logger.error('App', 'Error rendering providers:', error);
-    return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#0F0E0D',
-        color: 'white',
-        fontFamily: 'sans-serif'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ color: '#ff4444', marginBottom: '20px' }}>Erro ao Carregar</h1>
-          <pre style={{ fontSize: '12px', color: '#888' }}>{String(error)}</pre>
-        </div>
-      </div>
-    );
-  }
-}
-
-logger.log('App.tsx', '🔥 Exporting App as default');
-
 export default App;
-
-logger.log('App.tsx', '🔥 MODULE FULLY LOADED');
