@@ -418,13 +418,16 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
               {chatIntroPrompts.map((prompt) => (
                 <button
                   key={prompt.id}
-                  onClick={() => {
+                  onClick={async () => {
                     // Verificar se tem tokens disponíveis
                     if (tokensRemaining <= 0) {
                       setShowNoTokensModal(true);
                       return;
                     }
-                    onSendMessage(prompt.prompt_text);
+                    await onSendMessage(prompt.prompt_text);
+                    // Atualizar saldo após enviar o prompt
+                    refreshBalance();
+                    setTimeout(() => refreshBalance(), 1000);
                   }}
                   disabled={isSending}
                   className="px-4 py-3 rounded-lg text-left text-sm transition-all hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
@@ -666,6 +669,9 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                               return;
                             }
                             await onSendMessage(prompt.prompt_text);
+                            // Atualizar saldo após enviar o prompt
+                            refreshBalance();
+                            setTimeout(() => refreshBalance(), 1000);
                           }}
                           className="w-full text-left p-3 rounded-lg transition-colors text-sm"
                           style={{
@@ -705,6 +711,9 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                             return;
                           }
                           await onSendMessage(prompt);
+                          // Atualizar saldo após enviar o prompt
+                          refreshBalance();
+                          setTimeout(() => refreshBalance(), 1000);
                         }}
                         className="w-full text-left p-3 rounded-lg transition-colors text-sm"
                         style={{
@@ -743,6 +752,9 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                             return;
                           }
                           await onSendMessage(prompt);
+                          // Atualizar saldo após enviar o prompt
+                          refreshBalance();
+                          setTimeout(() => refreshBalance(), 1000);
                         }}
                         className="w-full text-left p-3 rounded-lg transition-colors text-sm"
                         style={{
@@ -781,6 +793,9 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
                             return;
                           }
                           await onSendMessage(prompt);
+                          // Atualizar saldo após enviar o prompt
+                          refreshBalance();
+                          setTimeout(() => refreshBalance(), 1000);
                         }}
                         className="w-full text-left p-3 rounded-lg transition-colors text-sm"
                         style={{
