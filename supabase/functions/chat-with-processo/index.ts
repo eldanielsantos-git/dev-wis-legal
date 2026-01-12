@@ -1,32 +1,8 @@
 /**
  * EDGE FUNCTION: chat-with-processo
  *
- * Processa mensagens de chat com contexto de um processo jurídico.
+ * Processa mensagens de chat com contexto de um processo jur\u00eddico.
  * Suporta arquivos pequenos (PDF completo) e grandes (chunks).
- *
- * VARIÁVEIS SUPORTADAS NOS PROMPTS:
- *
- * Usuário:
- * - {{USUARIO_NOME}} / {user_full_name}  → Nome completo
- * - {user_first_name}                    → Primeiro nome
- * - {user_last_name}                     → Sobrenome
- * - {{USUARIO_EMAIL}} / {user_email}     → Email
- * - {{USUARIO_OAB}} / {user_oab}         → OAB (ou "N/A")
- * - {user_cpf}                           → CPF (ou "N/A")
- * - {user_city}                          → Cidade (ou "N/A")
- * - {user_state}                         → Estado (ou "N/A")
- * - {user_phone}                         → Telefone (ou "N/A")
- * - {user_phone_country_code}            → Código do país (padrão: +55)
- *
- * Processo:
- * - {processo_name}                      → Nome do arquivo
- * - {total_pages}                        → Total de páginas
- * - {chunks_count}                       → Número de chunks (arquivos grandes)
- *
- * Sistema:
- * - {{DATA_HORA_ATUAL}}                  → Data/hora atual em Brasília
- *
- * NOTA: A variável {processo_number} foi REMOVIDA do sistema.
  */
 
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
@@ -52,19 +28,19 @@ async function getMaxOutputTokens(
       .maybeSingle();
 
     if (error) {
-      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
+      console.warn(`\u26a0\ufe0f Error fetching token limit for ${contextKey}, using fallback:`, error);
       return fallbackValue;
     }
 
     if (data) {
-      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      console.log(`\u2705 Token limit for ${contextKey}: ${data.max_output_tokens}`);
       return data.max_output_tokens;
     }
 
-    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    console.warn(`\u26a0\ufe0f No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
     return fallbackValue;
   } catch (error) {
-    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    console.warn(`\u26a0\ufe0f Exception fetching token limit for ${contextKey}, using fallback:`, error);
     return fallbackValue;
   }
 }
@@ -106,7 +82,7 @@ function removeIntroductoryPhrases(text: string): string {
     /^(Vou analisar[^.!]*[.!]\s*)/i,
     /^(Baseado [^.!]*[.!]\s*)/i,
     /^(Considerando [^.!]*[.!]\s*)/i,
-    /^(Após análise[^.!]*[.!]\s*)/i,
+    /^(Ap\u00f3s an\u00e1lise[^.!]*[.!]\s*)/i,
     /^(De acordo com[^.!]*[.!]\s*)/i,
     /^\([^)]*,?\s*elaboro[^)]*\)\s*/i,
   ];
@@ -137,7 +113,7 @@ function removeIntroductoryPhrases(text: string): string {
       'vou analisar',
       'baseado',
       'considerando',
-      'após análise',
+      'ap\u00f3s an\u00e1lise',
     ];
 
     const shouldSkipFirstLine = skipPhrases.some(phrase =>
@@ -217,7 +193,7 @@ Deno.serve(async (req: Request) => {
     );
 
     if (tokenCheckError) {
-      console.error('❌ Error checking token availability:', tokenCheckError);
+      console.error('\u274c Error checking token availability:', tokenCheckError);
       return new Response(
         JSON.stringify({
           error: 'Erro ao verificar saldo de tokens',
@@ -234,7 +210,7 @@ Deno.serve(async (req: Request) => {
       return new Response(
         JSON.stringify({
           error: 'Saldo de tokens insuficiente',
-          details: 'Você não possui tokens suficientes para continuar o chat.'
+          details: 'Voc\u00ea n\u00e3o possui tokens suficientes para continuar o chat.'
         }),
         {
           status: 402,
@@ -273,7 +249,7 @@ Deno.serve(async (req: Request) => {
 
     if (analysisResults && analysisResults.length >= 7) {
       promptType = 'consolidated_analysis';
-      console.log(`🎯 Using consolidated analysis: ${analysisResults.length} analyses found`);
+      console.log(`\ud83c\udfaf Using consolidated analysis: ${analysisResults.length} analyses found`);
 
       const analysisContext = analysisResults.map((analysis, index) =>
         `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
@@ -281,25 +257,25 @@ Deno.serve(async (req: Request) => {
 
       contextualMessage = `
 Processo: ${processo.nome_processo || processo.file_name}
-Total de páginas: ${processo.total_pages || 'N/A'}
+Total de p\u00e1ginas: ${processo.total_pages || 'N/A'}
 
-# ANÁLISES CONSOLIDADAS DO PROCESSO
+# AN\u00c1LISES CONSOLIDADAS DO PROCESSO
 
-Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo estão os resultados completos:
+Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo est\u00e3o os resultados completos:
 ${analysisContext}
 
 ---
 
-# PERGUNTA DO USUÁRIO:
+# PERGUNTA DO USU\u00c1RIO:
 ${message}
 
-INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises consolidadas fornecidas. Seja direto, objetivo e cite qual análise você usou quando relevante.`;
+INSTRU\u00c7\u00d5ES: Responda a pergunta acima baseando-se exclusivamente nas an\u00e1lises consolidadas fornecidas. Seja direto, objetivo e cite qual an\u00e1lise voc\u00ea usou quando relevante.`;
 
-      console.log(`✅ Formatted ${analysisResults.length} analyses (~${Math.round(contextualMessage.length/4)} tokens estimated)`);
+      console.log(`\u2705 Formatted ${analysisResults.length} analyses (~${Math.round(contextualMessage.length/4)} tokens estimated)`);
 
     } else if (processo.is_chunked && processo.total_chunks_count > 0) {
       promptType = 'large_file_chunks';
-      console.log(`📚 Large file detected: ${processo.total_chunks_count} chunks`);
+      console.log(`\ud83d\udcda Large file detected: ${processo.total_chunks_count} chunks`);
 
       const { data: chunksData, error: chunksError } = await supabase
         .from('process_chunks')
@@ -311,7 +287,7 @@ INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises
       chunks = chunksData || [];
 
       if (chunksError) {
-        console.error('❌ Error fetching chunks:', chunksError);
+        console.error('\u274c Error fetching chunks:', chunksError);
         return new Response(
           JSON.stringify({
             error: 'Erro ao buscar chunks do processo',
@@ -324,8 +300,8 @@ INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises
       if (!chunks || chunks.length === 0) {
         return new Response(
           JSON.stringify({
-            error: 'Chunks não disponíveis',
-            details: 'Os chunks ainda estão sendo processados. Aguarde alguns instantes e tente novamente.'
+            error: 'Chunks n\u00e3o dispon\u00edveis',
+            details: 'Os chunks ainda est\u00e3o sendo processados. Aguarde alguns instantes e tente novamente.'
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
@@ -335,44 +311,44 @@ INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises
       if (chunksWithValidUris.length === 0) {
         return new Response(
           JSON.stringify({
-            error: 'URIs dos chunks não disponíveis',
-            details: 'Os arquivos ainda estão sendo preparados no Gemini. Aguarde alguns instantes e tente novamente.'
+            error: 'URIs dos chunks n\u00e3o dispon\u00edveis',
+            details: 'Os arquivos ainda est\u00e3o sendo preparados no Gemini. Aguarde alguns instantes e tente novamente.'
           }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      console.log(`✅ Found ${chunks.length} chunks, ${chunksWithValidUris.length} with valid URIs`);
+      console.log(`\u2705 Found ${chunks.length} chunks, ${chunksWithValidUris.length} with valid URIs`);
 
       const chunksInfo = chunks.map(c =>
-        `Chunk ${c.chunk_index}: Páginas ${c.start_page}-${c.end_page} (${c.pages_count} páginas)`
+        `Chunk ${c.chunk_index}: P\u00e1ginas ${c.start_page}-${c.end_page} (${c.pages_count} p\u00e1ginas)`
       ).join('\n');
 
       contextualMessage = `
 Processo: ${processo.nome_processo || processo.file_name}
-Número: ${processo.numero_processo || 'N/A'}
-Total de páginas: ${processo.total_pages || 'N/A'}
+N\u00famero: ${processo.numero_processo || 'N/A'}
+Total de p\u00e1ginas: ${processo.total_pages || 'N/A'}
 Dividido em ${chunks.length} partes
 
-Chunks disponíveis:
+Chunks dispon\u00edveis:
 ${chunksInfo}
 
-Pergunta do usuário:
+Pergunta do usu\u00e1rio:
 ${message}`;
 
-      console.log(`✅ Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
+      console.log(`\u2705 Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
     } else {
       promptType = 'small_file';
-      console.log('📄 Small file detected, using transcription');
+      console.log('\ud83d\udcc4 Small file detected, using transcription');
 
       contextualMessage = `
 Processo: ${processo.nome_processo || processo.file_name}
-Número: ${processo.numero_processo || 'N/A'}
+N\u00famero: ${processo.numero_processo || 'N/A'}
 
-Transcrição completa:
-${processo.transcricao || 'Transcrição não disponível'}
+Transcri\u00e7\u00e3o completa:
+${processo.transcricao || 'Transcri\u00e7\u00e3o n\u00e3o dispon\u00edvel'}
 
-Pergunta do usuário:
+Pergunta do usu\u00e1rio:
 ${message}`;
     }
 
@@ -386,11 +362,11 @@ ${message}`;
       .maybeSingle();
 
     if (promptError || !systemPromptData) {
-      console.error('❌ Error fetching system prompt:', promptError);
+      console.error('\u274c Error fetching system prompt:', promptError);
       return new Response(
         JSON.stringify({
-          error: 'Prompt do sistema não encontrado',
-          details: `Não há prompt ativo para o tipo: ${promptType}`
+          error: 'Prompt do sistema n\u00e3o encontrado',
+          details: `N\u00e3o h\u00e1 prompt ativo para o tipo: ${promptType}`
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -403,9 +379,9 @@ ${message}`;
       .maybeSingle();
 
     const fullName = userProfile
-      ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Usuário'
-      : 'Usuário';
-    const firstName = userProfile?.first_name || 'Usuário';
+      ? `${userProfile.first_name || ''} ${userProfile.last_name || ''}`.trim() || 'Usu\u00e1rio'
+      : 'Usu\u00e1rio';
+    const firstName = userProfile?.first_name || 'Usu\u00e1rio';
     const lastName = userProfile?.last_name || '';
 
     let systemPrompt = systemPromptData.system_prompt;
@@ -444,7 +420,7 @@ ${message}`;
 
     systemPrompt = systemPrompt.replace(/\{processo_number\}/g, '');
 
-    console.log(`📝 Using prompt type: ${promptType}`);
+    console.log(`\ud83d\udcdd Using prompt type: ${promptType}`);
 
     const { data: priorityModel } = await supabase
       .from('admin_chat_models')
@@ -455,18 +431,18 @@ ${message}`;
       .maybeSingle();
 
     if (!priorityModel) {
-      console.error('❌ No active chat model found');
+      console.error('\u274c No active chat model found');
       return new Response(
         JSON.stringify({
-          error: 'Modelo de chat não configurado',
-          details: 'Não há nenhum modelo de chat ativo. Configure um modelo na área administrativa.'
+          error: 'Modelo de chat n\u00e3o configurado',
+          details: 'N\u00e3o h\u00e1 nenhum modelo de chat ativo. Configure um modelo na \u00e1rea administrativa.'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const modelName = priorityModel.system_model;
-    console.log(`📱 Using chat model: ${priorityModel.model_name} (${modelName})`);
+    console.log(`\ud83d\udcf1 Using chat model: ${priorityModel.model_name} (${modelName})`);
 
     await supabase
       .from('chat_messages')
@@ -513,10 +489,10 @@ ${message}`;
 
     let result;
     if (promptType === 'consolidated_analysis') {
-      console.log('🎯 Sending consolidated analysis context (text only, highly efficient)');
+      console.log('\ud83c\udfaf Sending consolidated analysis context (text only, highly efficient)');
       result = await chat.sendMessage(contextualMessage);
     } else if (promptType === 'small_file' && processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
-      console.log('📎 Sending small file with inlineData (base64)');
+      console.log('\ud83d\udcce Sending small file with inlineData (base64)');
       result = await chat.sendMessage([
         {
           inlineData: {
@@ -530,7 +506,7 @@ ${message}`;
       const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
 
       if (chunksWithValidUris.length > 0) {
-        console.log(`📎 Sending ${chunksWithValidUris.length} chunks as fileData (URIs)`);
+        console.log(`\ud83d\udcce Sending ${chunksWithValidUris.length} chunks as fileData (URIs)`);
 
         const messageParts: any[] = chunksWithValidUris.map(chunk => ({
           fileData: {
@@ -541,14 +517,14 @@ ${message}`;
 
         messageParts.push({ text: contextualMessage });
 
-        console.log(`📤 Sending message with ${messageParts.length - 1} file parts + 1 text part`);
+        console.log(`\ud83d\udce4 Sending message with ${messageParts.length - 1} file parts + 1 text part`);
         result = await chat.sendMessage(messageParts);
       } else {
-        console.log('⚠️ No valid URIs found, sending text only');
+        console.log('\u26a0\ufe0f No valid URIs found, sending text only');
         result = await chat.sendMessage(contextualMessage);
       }
     } else {
-      console.log('📝 Sending text only (no files attached)');
+      console.log('\ud83d\udcdd Sending text only (no files attached)');
       result = await chat.sendMessage(contextualMessage);
     }
 
@@ -567,25 +543,42 @@ ${message}`;
       });
 
     const estimatedTokens = Math.ceil((message.length + aiResponse.length) / 4);
+    console.log(`\ud83d\udcca Estimated tokens to debit: ${estimatedTokens} (message: ${message.length} chars, response: ${aiResponse.length} chars)`);
 
-    const { data: debitResult, error: debitError } = await supabase.rpc('debit_user_tokens', {
-      p_user_id: user.id,
-      p_tokens_required: estimatedTokens,
-      p_operation_type: 'chat',
-      p_metadata: {
-        processo_id: processo_id,
-        processo_name: processo.nome_processo || processo.file_name,
-        message_length: message.length,
-        response_length: aiResponse.length
+    try {
+      const { data: debitResult, error: debitError } = await supabase.rpc('debit_user_tokens', {
+        p_user_id: user.id,
+        p_tokens_required: estimatedTokens,
+        p_operation_type: 'chat',
+        p_metadata: {
+          processo_id: processo_id,
+          processo_name: processo.nome_processo || processo.file_name,
+          message_length: message.length,
+          response_length: aiResponse.length
+        }
+      });
+
+      if (debitError) {
+        console.error('\u274c Error debiting tokens (RPC error):', JSON.stringify(debitError));
+      } else if (debitResult?.success === false) {
+        console.warn('\u26a0\ufe0f Token debit failed:', debitResult?.error, JSON.stringify(debitResult));
+      } else {
+        console.log(`\u2705 Debited ${estimatedTokens} tokens from user ${user.id}`, JSON.stringify(debitResult));
+
+        await supabase
+          .from('token_usage_history')
+          .insert({
+            user_id: user.id,
+            processo_id: processo_id,
+            tokens_consumed: estimatedTokens,
+            pages_processed: 0,
+            operation_type: 'chat',
+            notes: `Chat: ${processo.nome_processo || processo.file_name}`
+          });
+        console.log(`\u2705 Token usage history recorded`);
       }
-    });
-
-    if (debitError) {
-      console.error('❌ Error debiting tokens:', debitError);
-    } else if (debitResult?.success === false) {
-      console.warn('⚠️ Token debit failed:', debitResult?.error);
-    } else {
-      console.log(`✅ Debited ${estimatedTokens} tokens from user ${user.id}`);
+    } catch (debitException) {
+      console.error('\u274c Exception during token debit:', debitException);
     }
 
     return new Response(
