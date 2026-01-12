@@ -167,7 +167,7 @@ async function notifyModelSwitch(
       .insert({
         user_id: processo.user_id,
         type: 'model_switch',
-        message: `Troca de modelo: ${fromModel} → ${toModel}. Motivo: ${reason}`,
+        message: `Troca de modelo: ${fromModel} \u2192 ${toModel}. Motivo: ${reason}`,
         processo_id: processoId,
       });
   }
@@ -187,19 +187,19 @@ async function getMaxOutputTokens(
       .maybeSingle();
 
     if (error) {
-      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
+      console.warn(`\u26a0\ufe0f Error fetching token limit for ${contextKey}, using fallback:`, error);
       return fallbackValue;
     }
 
     if (data) {
-      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      console.log(`\u2705 Token limit for ${contextKey}: ${data.max_output_tokens}`);
       return data.max_output_tokens;
     }
 
-    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    console.warn(`\u26a0\ufe0f No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
     return fallbackValue;
   } catch (error) {
-    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    console.warn(`\u26a0\ufe0f Exception fetching token limit for ${contextKey}, using fallback:`, error);
     return fallbackValue;
   }
 }
@@ -218,14 +218,14 @@ async function ensureChunksUploaded(
     .order('chunk_index', { ascending: true });
 
   if (chunksError || !chunks || chunks.length === 0) {
-    throw new Error('Chunks não encontrados');
+    throw new Error('Chunks n\u00e3o encontrados');
   }
 
-  console.log(`[${callId}] 🔍 Verificando uploads de ${chunks.length} chunks...`);
+  console.log(`[${callId}] \ud83d\udd0d Verificando uploads de ${chunks.length} chunks...`);
 
   for (const chunk of chunks) {
     if (!chunk.gemini_file_uri || chunk.gemini_file_state !== 'ACTIVE') {
-      console.log(`[${callId}] 📤 Upload necessário para chunk ${chunk.chunk_index}/${chunks.length}`);
+      console.log(`[${callId}] \ud83d\udce4 Upload necess\u00e1rio para chunk ${chunk.chunk_index}/${chunks.length}`);
 
       try {
         const uploadResponse = await fetch(`${supabaseUrl}/functions/v1/upload-to-gemini`, {
@@ -246,20 +246,20 @@ async function ensureChunksUploaded(
         }
 
         const uploadData = await uploadResponse.json();
-        console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} enviado: ${uploadData.file_uri}`);
+        console.log(`[${callId}] \u2705 Chunk ${chunk.chunk_index} enviado: ${uploadData.file_uri}`);
 
         chunk.gemini_file_uri = uploadData.file_uri;
         chunk.gemini_file_state = 'ACTIVE';
       } catch (uploadError: any) {
-        console.error(`[${callId}] ❌ Erro no upload do chunk ${chunk.chunk_index}:`, uploadError);
+        console.error(`[${callId}] \u274c Erro no upload do chunk ${chunk.chunk_index}:`, uploadError);
         throw new Error(`Falha no upload do chunk ${chunk.chunk_index}: ${uploadError.message}`);
       }
     } else {
-      console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} já enviado`);
+      console.log(`[${callId}] \u2705 Chunk ${chunk.chunk_index} j\u00e1 enviado`);
     }
   }
 
-  console.log(`[${callId}] ✅ Todos os chunks prontos para processamento`);
+  console.log(`[${callId}] \u2705 Todos os chunks prontos para processamento`);
   return chunks as ProcessChunk[];
 }
 
@@ -269,7 +269,7 @@ async function loadPDFData(
   processo_id: string
 ): Promise<string> {
   if (processo.is_chunked && processo.total_chunks) {
-    console.log(`📦 Carregando PDF chunkeado (${processo.total_chunks} chunks)...`);
+    console.log(`\ud83d\udce6 Carregando PDF chunkeado (${processo.total_chunks} chunks)...`);
 
     const { data: chunks, error: chunksError } = await supabase
       .from('pdf_chunks')
@@ -282,24 +282,24 @@ async function loadPDFData(
     }
 
     const base64Data = chunks.map((c: any) => c.chunk_data).join('');
-    console.log(`✅ ${chunks.length} chunks reunidos`);
+    console.log(`\u2705 ${chunks.length} chunks reunidos`);
     return base64Data;
   }
 
   if (processo.pdf_base64) {
-    console.log('📄 Usando PDF inline do banco de dados');
+    console.log('\ud83d\udcc4 Usando PDF inline do banco de dados');
     return processo.pdf_base64;
   }
 
   if (processo.file_path) {
-    console.log('⚠️ PDF não encontrado no banco, baixando do Storage...');
+    console.log('\u26a0\ufe0f PDF n\u00e3o encontrado no banco, baixando do Storage...');
 
     const { data: storageData } = await supabase.storage
       .from('processos')
       .download(processo.file_path);
 
     if (!storageData) {
-      throw new Error('Arquivo não encontrado no storage');
+      throw new Error('Arquivo n\u00e3o encontrado no storage');
     }
 
     const arrayBuffer = await storageData.arrayBuffer();
@@ -316,7 +316,7 @@ async function loadPDFData(
     return btoa(binary);
   }
 
-  throw new Error('Nenhuma fonte de PDF disponível (base64, chunks ou file_path)');
+  throw new Error('Nenhuma fonte de PDF dispon\u00edvel (base64, chunks ou file_path)');
 }
 
 function isTimeoutError(error: any): boolean {
@@ -336,7 +336,7 @@ async function scheduleRetry(
   analysis_result_id: string,
   error: any
 ): Promise<void> {
-  console.log(`🔄 Agendando retry automático devido a timeout...`);
+  console.log(`\ud83d\udd04 Agendando retry autom\u00e1tico devido a timeout...`);
 
   try {
     await supabase
@@ -350,9 +350,9 @@ async function scheduleRetry(
       })
       .eq('id', analysis_result_id);
 
-    console.log(`✅ Retry agendado - prompt voltou para pending`);
+    console.log(`\u2705 Retry agendado - prompt voltou para pending`);
   } catch (retryError) {
-    console.error('❌ Erro ao agendar retry:', retryError);
+    console.error('\u274c Erro ao agendar retry:', retryError);
   }
 }
 
@@ -371,7 +371,7 @@ Deno.serve(async (req: Request) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')!;
 
     if (!supabaseUrl || !supabaseServiceKey || !geminiApiKey) {
-      throw new Error('Variáveis de ambiente ausentes');
+      throw new Error('Vari\u00e1veis de ambiente ausentes');
     }
 
     const authHeader = req.headers.get('Authorization');
@@ -384,7 +384,7 @@ Deno.serve(async (req: Request) => {
 
     if (!processo_id) {
       return new Response(
-        JSON.stringify({ success: false, error: 'processo_id é obrigatório' }),
+        JSON.stringify({ success: false, error: 'processo_id \u00e9 obrigat\u00f3rio' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -404,11 +404,11 @@ Deno.serve(async (req: Request) => {
         throw new Error('Unauthorized');
       }
     } else {
-      console.log(`[${callId}] 🔑 Chamada interna com service key detectada`);
+      console.log(`[${callId}] \ud83d\udd11 Chamada interna com service key detectada`);
     }
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    console.log(`[${callId}] 📋 Obtendo próximo prompt para processo ${processo_id}...`);
+    console.log(`[${callId}] \ud83d\udccb Obtendo pr\u00f3ximo prompt para processo ${processo_id}...`);
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
@@ -417,18 +417,18 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (processoError || !processo) {
-      throw new Error(`Processo não encontrado: ${processo_id}`);
+      throw new Error(`Processo n\u00e3o encontrado: ${processo_id}`);
     }
 
     const processoData = processo as ProcessoData;
 
     if (processoData.status === 'completed') {
-      console.log(`[${callId}] ✅ Processo já concluído`);
+      console.log(`[${callId}] \u2705 Processo j\u00e1 conclu\u00eddo`);
       return new Response(
         JSON.stringify({
           success: true,
           completed: true,
-          message: 'Processo já concluído',
+          message: 'Processo j\u00e1 conclu\u00eddo',
         }),
         {
           status: 200,
@@ -448,7 +448,7 @@ Deno.serve(async (req: Request) => {
       });
 
     if (lockError) {
-      console.error(`[${callId}] ❌ Erro ao obter lock:`, lockError);
+      console.error(`[${callId}] \u274c Erro ao obter lock:`, lockError);
       return new Response(
         JSON.stringify({ success: false, error: 'Falha ao obter lock' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -456,9 +456,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!lockResult || !Array.isArray(lockResult) || lockResult.length === 0) {
-      console.log(`[${callId}] ⏭️ Nenhum prompt pendente ou já em processamento`);
+      console.log(`[${callId}] \u23ed\ufe0f Nenhum prompt pendente ou j\u00e1 em processamento`);
       return new Response(
-        JSON.stringify({ success: true, message: 'Nenhum prompt disponível' }),
+        JSON.stringify({ success: true, message: 'Nenhum prompt dispon\u00edvel' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -466,15 +466,15 @@ Deno.serve(async (req: Request) => {
     const analysisResult = lockResult[0] as AnalysisResult;
     analysis_result_id = analysisResult.id;
 
-    console.log(`[${callId}] ✅ Lock obtido para: ${analysisResult.prompt_title}`);
+    console.log(`[${callId}] \u2705 Lock obtido para: ${analysisResult.prompt_title}`);
     console.log(`[${callId}]    - Analysis Result ID: ${analysis_result_id}`);
     console.log(`[${callId}]    - Execution Order: ${analysisResult.execution_order}`);
     console.log(`[${callId}]    - Retry Count: ${analysisResult.retry_count || 0}/${analysisResult.max_retries || 3}`);
 
-    console.log(`[${callId}] 📄 Processo: ${processoData.file_name}`);
-    console.log(`[${callId}] 📝 Prompt: ${analysisResult.prompt_title}`);
+    console.log(`[${callId}] \ud83d\udcc4 Processo: ${processoData.file_name}`);
+    console.log(`[${callId}] \ud83d\udcdd Prompt: ${analysisResult.prompt_title}`);
     console.log(`[${callId}]    - Is chunked: ${processoData.is_chunked}`);
-    console.log(`[${callId}] 🏃 Prompt já marcado como 'processing' pela função acquire_next_prompt_lock`);
+    console.log(`[${callId}] \ud83c\udfc3 Prompt j\u00e1 marcado como 'processing' pela fun\u00e7\u00e3o acquire_next_prompt_lock`);
 
     const useFileApi = processoData.is_chunked
       ? (processoData.total_chunks_count || 0) > 0
@@ -483,14 +483,14 @@ Deno.serve(async (req: Request) => {
     let chunks: ProcessChunk[] | null = null;
 
     if (useFileApi && processoData.is_chunked && (processoData.total_chunks_count || 0) > 0) {
-      console.log(`[${callId}] 📂 Usando File API do Gemini para chunks`);
+      console.log(`[${callId}] \ud83d\udcc2 Usando File API do Gemini para chunks`);
       chunks = await ensureChunksUploaded(supabase, supabaseUrl, supabaseServiceKey, processo_id, callId);
     } else if (!useFileApi) {
-      console.log(`[${callId}] 📦 Usando Base64 inline`);
+      console.log(`[${callId}] \ud83d\udce6 Usando Base64 inline`);
     }
 
     const activeModels = await getActiveModels(supabase);
-    console.log(`[${callId}] 🤖 ${activeModels.length} modelo(s) ativo(s) disponível(is)`);
+    console.log(`[${callId}] \ud83e\udd16 ${activeModels.length} modelo(s) ativo(s) dispon\u00edvel(is)`);
 
     const contextKey = processoData.is_chunked ? 'analysis_complex_files' : 'analysis_small_files';
 
@@ -505,7 +505,7 @@ Deno.serve(async (req: Request) => {
       const modelId = modelConfig.system_model || modelConfig.model_id;
       const temperature = modelConfig.temperature ?? 0.2;
 
-      console.log(`\n[${callId}] 🔍 Tentativa ${attemptNumber}/${activeModels.length}: ${modelName}`);
+      console.log(`\n[${callId}] \ud83d\udd0d Tentativa ${attemptNumber}/${activeModels.length}: ${modelName}`);
 
       await updateProcessoModelInfo(
         supabase,
@@ -524,9 +524,9 @@ Deno.serve(async (req: Request) => {
           processo_id,
           previousModelName,
           modelName,
-          'Modelo anterior indisponível ou com erro'
+          'Modelo anterior indispon\u00edvel ou com erro'
         );
-        console.log(`[${callId}] 📢 Notificação de troca de modelo enviada`);
+        console.log(`[${callId}] \ud83d\udce2 Notifica\u00e7\u00e3o de troca de modelo enviada`);
       }
 
       try {
@@ -546,7 +546,7 @@ Deno.serve(async (req: Request) => {
           model: modelId,
         });
 
-        console.log(`[${callId}] 🚀 Enviando prompt para Gemini...`);
+        console.log(`[${callId}] \ud83d\ude80 Enviando prompt para Gemini...`);
 
         if (!analysisResult.prompt_content || analysisResult.prompt_content.trim() === '') {
           throw new Error('Prompt content is empty or invalid');
@@ -556,16 +556,16 @@ Deno.serve(async (req: Request) => {
         let totalTokensUsed = 0;
 
         if (useFileApi && chunks && chunks.length >= 3) {
-          console.log(`[${callId}] ⚡ Processando ${chunks.length} chunks individualmente`);
+          console.log(`[${callId}] \u26a1 Processando ${chunks.length} chunks individualmente`);
 
           const chunkResults: string[] = [];
 
           for (const chunk of chunks) {
             if (!chunk.gemini_file_uri) {
-              throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
+              throw new Error(`Chunk ${chunk.chunk_index} n\u00e3o foi enviado para Gemini`);
             }
 
-            console.log(`[${callId}] 📄 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
+            console.log(`[${callId}] \ud83d\udcc4 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
 
             const chunkParts = [
               {
@@ -575,7 +575,7 @@ Deno.serve(async (req: Request) => {
                 },
               },
               {
-                text: `${analysisResult.prompt_content}\n\nIMPORTANTE: Esta é a parte ${chunk.chunk_index} de ${chunks.length} do documento. Analise apenas este trecho e forneça os resultados correspondentes.`
+                text: `${analysisResult.prompt_content}\n\nIMPORTANTE: Esta \u00e9 a parte ${chunk.chunk_index} de ${chunks.length} do documento. Analise apenas este trecho e forne\u00e7a os resultados correspondentes.`
               }
             ];
 
@@ -594,7 +594,7 @@ Deno.serve(async (req: Request) => {
             const chunkTokens = chunkResponse.usageMetadata?.totalTokenCount || 0;
             totalTokensUsed += chunkTokens;
 
-            console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} processado: ${chunkTokens} tokens`);
+            console.log(`[${callId}] \u2705 Chunk ${chunk.chunk_index} processado: ${chunkTokens} tokens`);
 
             if (chunkText.startsWith('```json')) {
               chunkText = chunkText.replace(/^```json\n?/, '');
@@ -609,9 +609,9 @@ Deno.serve(async (req: Request) => {
             chunkResults.push(chunkText.trim());
           }
 
-          console.log(`[${callId}] 🔄 Combinando resultados de ${chunks.length} chunks...`);
+          console.log(`[${callId}] \ud83d\udd04 Combinando resultados de ${chunks.length} chunks...`);
 
-          const combinationPrompt = `Você está combinando ${chunks.length} análises parciais de um documento dividido em partes.\n\nANÁLISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas análises em uma única análise completa e coerente, removendo duplicações e garantindo consistência.\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua texto introdutório como \"Com base na consolidação...\" ou explicações. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: começando com \"{\" para JSON).`;
+          const combinationPrompt = `Voc\u00ea est\u00e1 combinando ${chunks.length} an\u00e1lises parciais de um documento dividido em partes.\n\nAN\u00c1LISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas an\u00e1lises em uma \u00fanica an\u00e1lise completa e coerente, removendo duplica\u00e7\u00f5es e garantindo consist\u00eancia.\n\nIMPORTANTE: Responda APENAS com o JSON ou conte\u00fado estruturado. N\u00c3O inclua texto introdut\u00f3rio como "Com base na consolida\u00e7\u00e3o..." ou explica\u00e7\u00f5es. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: come\u00e7ando com "{" para JSON).`;
 
           const combinationResult = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: combinationPrompt }] }],
@@ -625,16 +625,16 @@ Deno.serve(async (req: Request) => {
           const combinationTokens = combinationResult.response.usageMetadata?.totalTokenCount || 0;
           totalTokensUsed += combinationTokens;
 
-          console.log(`[${callId}] ✅ Combinação concluída: ${combinationTokens} tokens`);
-          console.log(`[${callId}] 📊 Total de tokens: ${totalTokensUsed}`);
+          console.log(`[${callId}] \u2705 Combina\u00e7\u00e3o conclu\u00edda: ${combinationTokens} tokens`);
+          console.log(`[${callId}] \ud83d\udcca Total de tokens: ${totalTokensUsed}`);
         } else if (useFileApi && chunks) {
-          console.log(`[${callId}] 📂 Processando ${chunks.length} chunks com File API`);
+          console.log(`[${callId}] \ud83d\udcc2 Processando ${chunks.length} chunks com File API`);
 
           const parts: any[] = [];
 
           for (const chunk of chunks) {
             if (!chunk.gemini_file_uri) {
-              throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
+              throw new Error(`Chunk ${chunk.chunk_index} n\u00e3o foi enviado para Gemini`);
             }
 
             parts.push({
@@ -656,7 +656,7 @@ Deno.serve(async (req: Request) => {
             },
           });
         } else if (useFileApi && processoData.gemini_file_uri) {
-          console.log(`[${callId}] 📂 Processando com File API (arquivo único)`);
+          console.log(`[${callId}] \ud83d\udcc2 Processando com File API (arquivo \u00fanico)`);
 
           result = await model.generateContent({
             contents: [
@@ -680,7 +680,7 @@ Deno.serve(async (req: Request) => {
             },
           });
         } else {
-          console.log(`[${callId}] 📦 Processando com Base64 inline`);
+          console.log(`[${callId}] \ud83d\udce6 Processando com Base64 inline`);
 
           const pdfBase64Data = await loadPDFData(supabase, processoData, processo_id);
 
@@ -722,27 +722,29 @@ Deno.serve(async (req: Request) => {
           totalTokensUsed = response.usageMetadata?.totalTokenCount || 0;
         }
 
-        console.log(`[${callId}] ✅ Resposta recebida do Gemini`);
+        console.log(`[${callId}] \u2705 Resposta recebida do Gemini`);
         console.log(`[${callId}]    - Tamanho: ${text.length} caracteres`);
         console.log(`[${callId}]    - Tokens: ${totalTokensUsed}`);
         console.log(`[${callId}]    - Tempo: ${executionTime}ms`);
 
-        console.log(`[${callId}] 💾 SALVAMENTO FASE 1: Salvando conteúdo RAW...`);
+        console.log(`[${callId}] \ud83d\udcbe SALVAMENTO FASE 1: Salvando conte\u00fado RAW + status completed...`);
 
         const { error: phase1Error } = await supabase
           .from('analysis_results')
           .update({
+            status: 'completed',
             result_content: text,
             raw_received_at: new Date().toISOString(),
+            completed_at: new Date().toISOString(),
           })
           .eq('id', analysis_result_id);
 
         if (phase1Error) {
-          console.error(`[${callId}] ❌ CRÍTICO: Falha ao salvar conteúdo RAW:`, phase1Error);
+          console.error(`[${callId}] \u274c CR\u00cdTICO: Falha ao salvar conte\u00fado RAW:`, phase1Error);
           throw phase1Error;
         }
 
-        console.log(`[${callId}] ✅ FASE 1 CONCLUÍDA: Conteúdo protegido contra 502`);
+        console.log(`[${callId}] \u2705 FASE 1 CONCLU\u00cdDA: Conte\u00fado + status 'completed' salvos`);
 
         if (text.startsWith('```json')) {
           text = text.replace(/^```json\n?/, '');
@@ -755,7 +757,7 @@ Deno.serve(async (req: Request) => {
         }
         text = text.trim();
 
-        console.log(`[${callId}] 💾 SALVAMENTO FASE 2: Atualizando metadados...`);
+        console.log(`[${callId}] \ud83d\udcbe SALVAMENTO FASE 2: Atualizando metadados...`);
 
         const { error: phase2Error } = await supabase
           .from('analysis_results')
@@ -772,9 +774,9 @@ Deno.serve(async (req: Request) => {
           .eq('id', analysis_result_id);
 
         if (phase2Error) {
-          console.warn(`[${callId}] ⚠️ Falha ao atualizar metadados (conteúdo já salvo):`, phase2Error);
+          console.warn(`[${callId}] \u26a0\ufe0f Falha ao atualizar metadados (conte\u00fado j\u00e1 salvo):`, phase2Error);
         } else {
-          console.log(`[${callId}] ✅ FASE 2 CONCLUÍDA: Metadados atualizados`);
+          console.log(`[${callId}] \u2705 FASE 2 CONCLU\u00cdDA: Metadados atualizados`);
         }
 
         await supabase
@@ -785,7 +787,7 @@ Deno.serve(async (req: Request) => {
         await addModelAttempt(supabase, processo_id, modelConfig.id, modelName, 'success');
         await recordExecution(supabase, processo_id, analysis_result_id, modelConfig, attemptNumber, 'success', null, null, executionTime);
 
-        console.log(`[${callId}] ✅ Sucesso com modelo: ${modelName}`);
+        console.log(`[${callId}] \u2705 Sucesso com modelo: ${modelName}`);
 
         const { data: promptsStatus, error: statusError } = await supabase
           .from('analysis_results')
@@ -793,7 +795,7 @@ Deno.serve(async (req: Request) => {
           .eq('processo_id', processo_id);
 
         if (statusError) {
-          console.error(`[${callId}] ⚠️ Erro ao verificar status dos prompts:`, statusError);
+          console.error(`[${callId}] \u26a0\ufe0f Erro ao verificar status dos prompts:`, statusError);
         }
 
         const totalPrompts = promptsStatus?.length || 0;
@@ -801,13 +803,13 @@ Deno.serve(async (req: Request) => {
         const pendingPrompts = promptsStatus?.filter(p => p.status === 'pending').length || 0;
         const runningPrompts = promptsStatus?.filter(p => p.status === 'processing').length || 0;
 
-        console.log(`[${callId}] 📊 Status dos prompts: ${completedPrompts}/${totalPrompts} concluídos, ${pendingPrompts} pendentes, ${runningPrompts} em execução`);
+        console.log(`[${callId}] \ud83d\udcca Status dos prompts: ${completedPrompts}/${totalPrompts} conclu\u00eddos, ${pendingPrompts} pendentes, ${runningPrompts} em execu\u00e7\u00e3o`);
 
         const allPromptsCompleted = totalPrompts > 0 && completedPrompts === totalPrompts;
         const hasMoreToProcess = pendingPrompts > 0 || runningPrompts > 0;
 
         if (pendingPrompts > 0 && runningPrompts === 0) {
-          console.log(`[${callId}] 🔄 Disparando processamento do próximo prompt...`);
+          console.log(`[${callId}] \ud83d\udd04 Disparando processamento do pr\u00f3ximo prompt...`);
 
           const dispatchNextPrompt = async (retries = 3) => {
             for (let attempt = 1; attempt <= retries; attempt++) {
@@ -822,13 +824,13 @@ Deno.serve(async (req: Request) => {
                 });
 
                 if (response.ok) {
-                  console.log(`[${callId}] ✅ Próximo prompt disparado com sucesso`);
+                  console.log(`[${callId}] \u2705 Pr\u00f3ximo prompt disparado com sucesso`);
                   return;
                 } else {
-                  console.warn(`[${callId}] ⚠️ Resposta não-OK ao disparar próximo prompt (tentativa ${attempt}/${retries}): ${response.status}`);
+                  console.warn(`[${callId}] \u26a0\ufe0f Resposta n\u00e3o-OK ao disparar pr\u00f3ximo prompt (tentativa ${attempt}/${retries}): ${response.status}`);
                 }
               } catch (err: any) {
-                console.error(`[${callId}] ❌ Erro ao disparar próximo prompt (tentativa ${attempt}/${retries}):`, err?.message);
+                console.error(`[${callId}] \u274c Erro ao disparar pr\u00f3ximo prompt (tentativa ${attempt}/${retries}):`, err?.message);
               }
 
               if (attempt < retries) {
@@ -836,7 +838,7 @@ Deno.serve(async (req: Request) => {
               }
             }
 
-            console.error(`[${callId}] 💥 FALHA CRÍTICA: Não foi possível disparar próximo prompt após ${retries} tentativas`);
+            console.error(`[${callId}] \ud83d\udca5 FALHA CR\u00cdTICA: N\u00e3o foi poss\u00edvel disparar pr\u00f3ximo prompt ap\u00f3s ${retries} tentativas`);
             await supabase
               .from('processos')
               .update({ status: 'analyzing' })
@@ -844,12 +846,12 @@ Deno.serve(async (req: Request) => {
           };
 
           dispatchNextPrompt().catch(err => {
-            console.error(`[${callId}] 💥 Erro fatal no dispatchNextPrompt:`, err);
+            console.error(`[${callId}] \ud83d\udca5 Erro fatal no dispatchNextPrompt:`, err);
           });
         } else if (hasMoreToProcess && runningPrompts > 0) {
-          console.log(`[${callId}] ⏳ Há mais prompts pendentes, mas um já está em execução. Aguardando...`);
+          console.log(`[${callId}] \u23f3 H\u00e1 mais prompts pendentes, mas um j\u00e1 est\u00e1 em execu\u00e7\u00e3o. Aguardando...`);
         } else if (allPromptsCompleted) {
-          console.log(`[${callId}] 🎉 Todos os ${totalPrompts} prompts concluídos com sucesso! Finalizando processo...`);
+          console.log(`[${callId}] \ud83c\udf89 Todos os ${totalPrompts} prompts conclu\u00eddos com sucesso! Finalizando processo...`);
 
           const { data: processoInfo } = await supabase
             .from('processos')
@@ -858,7 +860,7 @@ Deno.serve(async (req: Request) => {
             .single();
 
           const totalPages = processoInfo?.transcricao?.totalPages || 0;
-          console.log(`[${callId}] 📄 Total de páginas processadas: ${totalPages}`);
+          console.log(`[${callId}] \ud83d\udcc4 Total de p\u00e1ginas processadas: ${totalPages}`);
 
           const { error: processoUpdateError } = await supabase
             .from('processos')
@@ -870,25 +872,25 @@ Deno.serve(async (req: Request) => {
             .eq('id', processo_id);
 
           if (processoUpdateError) {
-            console.error(`[${callId}] ❌ Erro ao atualizar status do processo:`, processoUpdateError);
+            console.error(`[${callId}] \u274c Erro ao atualizar status do processo:`, processoUpdateError);
           } else {
-            console.log(`[${callId}] ✅ Processo marcado como completed`);
+            console.log(`[${callId}] \u2705 Processo marcado como completed`);
           }
 
           const { error: notificationError } = await supabase.from('notifications').insert({
             user_id: processoData.user_id,
             type: 'analysis_completed',
-            message: 'Análise de documento concluída com sucesso',
+            message: 'An\u00e1lise de documento conclu\u00edda com sucesso',
             processo_id: processo_id,
           });
 
           if (notificationError) {
-            console.error(`[${callId}] ❌ Erro ao criar notificação:`, notificationError);
+            console.error(`[${callId}] \u274c Erro ao criar notifica\u00e7\u00e3o:`, notificationError);
           } else {
-            console.log(`[${callId}] 📩 Notificação criada para o usuário`);
+            console.log(`[${callId}] \ud83d\udce9 Notifica\u00e7\u00e3o criada para o usu\u00e1rio`);
           }
 
-          console.log(`[${callId}] 📧 Enviando email de processo concluído...`);
+          console.log(`[${callId}] \ud83d\udce7 Enviando email de processo conclu\u00eddo...`);
           try {
             const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
               method: 'POST',
@@ -901,16 +903,16 @@ Deno.serve(async (req: Request) => {
 
             if (emailResponse.ok) {
               const emailResult = await emailResponse.json();
-              console.log(`[${callId}] ✅ Email enviado:`, emailResult.resend_id);
+              console.log(`[${callId}] \u2705 Email enviado:`, emailResult.resend_id);
             } else {
               const errorText = await emailResponse.text();
-              console.error(`[${callId}] ❌ Falha ao enviar email:`, errorText);
+              console.error(`[${callId}] \u274c Falha ao enviar email:`, errorText);
             }
           } catch (emailError) {
-            console.error(`[${callId}] ❌ Erro ao chamar edge function de email:`, emailError);
+            console.error(`[${callId}] \u274c Erro ao chamar edge function de email:`, emailError);
           }
 
-          console.log(`[${callId}] 🔔 Enviando notificação administrativa Slack...`);
+          console.log(`[${callId}] \ud83d\udd14 Enviando notifica\u00e7\u00e3o administrativa Slack...`);
 
           const { data: userData } = await supabase
             .from('user_profiles')
@@ -935,7 +937,7 @@ Deno.serve(async (req: Request) => {
 
           notifyAdminSafe({
             type: 'analysis_completed',
-            title: 'Análise Concluída',
+            title: 'An\u00e1lise Conclu\u00edda',
             message: `${userName || userEmail} | ${fileName} | ${durationText}`,
             severity: 'success',
             metadata: {
@@ -950,7 +952,7 @@ Deno.serve(async (req: Request) => {
             processoId: processo_id,
           });
 
-          console.log(`[${callId}] ✅ Processo finalizado com sucesso!`);
+          console.log(`[${callId}] \u2705 Processo finalizado com sucesso!`);
         }
 
         console.log(`[${callId}] ========== PROCESS-NEXT-PROMPT END ==========\n`);
@@ -974,19 +976,19 @@ Deno.serve(async (req: Request) => {
       } catch (modelError: any) {
         const executionTime = Date.now() - startTime;
         lastError = modelError;
-        console.error(`[${callId}] ❌ Falha com modelo ${modelName}:`, modelError.message);
+        console.error(`[${callId}] \u274c Falha com modelo ${modelName}:`, modelError.message);
 
         await addModelAttempt(supabase, processo_id, modelConfig.id, modelName, 'failed');
         await recordExecution(supabase, processo_id, analysis_result_id, modelConfig, attemptNumber, 'failed', modelError.message, modelError.code || null, executionTime);
 
         if (isTimeoutError(modelError)) {
-          console.log(`[${callId}] ⏱️ Timeout detectado com ${modelName}`);
+          console.log(`[${callId}] \u23f1\ufe0f Timeout detectado com ${modelName}`);
 
           if (attemptNumber < activeModels.length) {
-            console.log(`[${callId}] 🔄 Tentando próximo modelo disponível...`);
+            console.log(`[${callId}] \ud83d\udd04 Tentando pr\u00f3ximo modelo dispon\u00edvel...`);
             continue;
           } else {
-            console.log(`[${callId}] ⏱️ Timeout no último modelo, agendando retry...`);
+            console.log(`[${callId}] \u23f1\ufe0f Timeout no \u00faltimo modelo, agendando retry...`);
             await scheduleRetry(supabase, processo_id!, analysis_result_id!, modelError);
 
             return new Response(
@@ -1005,16 +1007,16 @@ Deno.serve(async (req: Request) => {
         }
 
         if (attemptNumber < activeModels.length) {
-          console.log(`[${callId}] 🔄 Tentando próximo modelo (${attemptNumber + 1}/${activeModels.length})...`);
+          console.log(`[${callId}] \ud83d\udd04 Tentando pr\u00f3ximo modelo (${attemptNumber + 1}/${activeModels.length})...`);
           continue;
         }
 
-        console.error(`[${callId}] ❌ Todos os ${activeModels.length} modelos falharam`);
+        console.error(`[${callId}] \u274c Todos os ${activeModels.length} modelos falharam`);
         break;
       }
     }
 
-    console.error(`[${callId}] 💥 Nenhum modelo conseguiu processar o prompt`);
+    console.error(`[${callId}] \ud83d\udca5 Nenhum modelo conseguiu processar o prompt`);
 
     if (analysis_result_id) {
       await supabase
@@ -1022,7 +1024,7 @@ Deno.serve(async (req: Request) => {
         .update({
           status: 'failed',
           processing_at: null,
-          error_message: `Todos os modelos falharam. Último erro: ${lastError?.message || 'Unknown'}`,
+          error_message: `Todos os modelos falharam. \u00daltimo erro: ${lastError?.message || 'Unknown'}`,
         })
         .eq('id', analysis_result_id);
     }
@@ -1030,7 +1032,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: `Falha em todos os ${activeModels.length} modelo(s) disponíveis`,
+        error: `Falha em todos os ${activeModels.length} modelo(s) dispon\u00edveis`,
         last_error: lastError?.message,
         attempts: attemptNumber,
         processo_id,
@@ -1040,7 +1042,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error: any) {
-    console.error(`[${callId}] 💥 ERRO CRÍTICO:`, error);
+    console.error(`[${callId}] \ud83d\udca5 ERRO CR\u00cdTICO:`, error);
     console.error(`[${callId}] Stack:`, error?.stack);
 
     if (analysis_result_id) {
@@ -1050,7 +1052,7 @@ Deno.serve(async (req: Request) => {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         if (isTimeoutError(error)) {
-          console.log(`[${callId}] ⏱️ Timeout detectado no catch geral, agendando retry...`);
+          console.log(`[${callId}] \u23f1\ufe0f Timeout detectado no catch geral, agendando retry...`);
           await scheduleRetry(supabase, processo_id!, analysis_result_id, error);
 
           return new Response(
@@ -1075,9 +1077,9 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', analysis_result_id);
 
-        console.log(`[${callId}] 🔓 Lock liberado para analysis_result: ${analysis_result_id}`);
+        console.log(`[${callId}] \ud83d\udd13 Lock liberado para analysis_result: ${analysis_result_id}`);
       } catch (unlockError) {
-        console.error(`[${callId}] ❌ Erro ao liberar lock:`, unlockError);
+        console.error(`[${callId}] \u274c Erro ao liberar lock:`, unlockError);
       }
     }
 

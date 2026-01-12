@@ -18,7 +18,7 @@ export function validateAndCleanJSON(jsonString: string, schema: any): Validatio
     result.cleanedData = parsed;
 
     if (!schema || typeof schema !== 'object') {
-      result.warnings.push('Schema de validação não fornecido ou inválido');
+      result.warnings.push('Schema de valida\u00e7\u00e3o n\u00e3o fornecido ou inv\u00e1lido');
       return result;
     }
 
@@ -43,7 +43,7 @@ function validateObject(data: any, schema: any, path: string, result: Validation
     if (schema.required && Array.isArray(schema.required)) {
       for (const requiredField of schema.required) {
         if (!(requiredField in data)) {
-          result.errors.push(`${path}.${requiredField}: Campo obrigatório ausente`);
+          result.errors.push(`${path}.${requiredField}: Campo obrigat\u00f3rio ausente`);
         }
       }
     }
