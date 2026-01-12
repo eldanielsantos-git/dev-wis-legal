@@ -2,15 +2,193 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
+html, body, #root {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #0F0E0D;
+  overflow-x: hidden;
+  max-width: 100vw;
+  position: relative;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Prevenir scroll lateral em mobile */
+body {
+  overflow-x: hidden;
+  width: 100%;
+  position: relative;
+}
+
+/* Ajustar viewport quando teclado mobile é ativado */
+@supports (-webkit-touch-callout: none) {
+  /* iOS specific */
+  body {
+    min-height: -webkit-fill-available;
+  }
+
+  html {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Prevenir que elementos fixos causem scroll */
+.chat-fixed-header,
+.chat-fixed-input {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+:root[data-theme='dark'] {
+  --theme-bg-primary: #0F0E0D;
+  --theme-bg-secondary: #141312;
+  --theme-bg-tertiary: #14181B;
+  --theme-text-primary: #C8C8C8;
+  --theme-text-secondary: #808080;
+  --theme-text-tertiary: #8B8B8B;
+  --theme-border: #242424;
+  --theme-card: #0F0E0D;
+}
+
+:root[data-theme='light'] {
+  --theme-bg-primary: #FFFFFF;
+  --theme-bg-secondary: #FAFAFA;
+  --theme-bg-tertiary: #F5F5F5;
+  --theme-text-primary: #0F0E0D;
+  --theme-text-secondary: #1D1C1B;
+  --theme-text-tertiary: #1D1C1B;
+  --theme-border: #E5E5E5;
+  --theme-card: #FFFFFF;
+}
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 20 14.3% 4.1%;
+    --card: 0 0% 100%;
+    --card-foreground: 20 14.3% 4.1%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 14.3% 4.1%;
+    --primary: 24 9.8% 10%;
+    --primary-foreground: 60 9.1% 97.8%;
+    --secondary: 60 4.8% 95.9%;
+    --secondary-foreground: 24 9.8% 10%;
+    --muted: 60 4.8% 95.9%;
+    --muted-foreground: 25 5.3% 44.7%;
+    --accent: 60 4.8% 95.9%;
+    --accent-foreground: 24 9.8% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 20 5.9% 90%;
+    --input: 20 5.9% 90%;
+    --ring: 20 14.3% 4.1%;
+    --radius: 0.5rem;
+  }
+
+  :root[data-theme='dark'] {
+    --background: 20 14.3% 4.1%;
+    --foreground: 60 9.1% 97.8%;
+    --card: 20 14.3% 4.1%;
+    --card-foreground: 60 9.1% 97.8%;
+    --popover: 20 14.3% 4.1%;
+    --popover-foreground: 60 9.1% 97.8%;
+    --primary: 60 9.1% 97.8%;
+    --primary-foreground: 24 9.8% 10%;
+    --secondary: 12 6.5% 15.1%;
+    --secondary-foreground: 60 9.1% 97.8%;
+    --muted: 12 6.5% 15.1%;
+    --muted-foreground: 24 5.4% 63.9%;
+    --accent: 12 6.5% 15.1%;
+    --accent-foreground: 60 9.1% 97.8%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 60 9.1% 97.8%;
+    --border: 12 6.5% 15.1%;
+    --input: 12 6.5% 15.1%;
+    --ring: 24 5.7% 82.9%;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 rounded-full;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(209 213 219) transparent;
+  }
+
+  /* Scrollbar para tema escuro */
+  :root[data-theme='dark'] .scrollbar-thin::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded-full;
+  }
+
+  :root[data-theme='dark'] .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+
+  :root[data-theme='dark'] .scrollbar-thin {
+    scrollbar-color: rgb(75 85 99) transparent;
+  }
+
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite;
+  }
+}
+
+/* Force correct colors in dark mode for schedule page icons and text */
+:root[data-theme='dark'] .schedule-icon {
+  color: #FFFFFF !important;
+}
+
+:root[data-theme='dark'] .schedule-icon-pending {
+  color: #F97316 !important;
+}
+
+:root[data-theme='dark'] .schedule-text {
+  color: #FFFFFF !important;
+}
+
+:root[data-theme='dark'] .calendar-today-btn {
+  color: #FFFFFF !important;
+}
+
+/* Force correct colors in light mode for schedule page icons */
+:root[data-theme='light'] .schedule-icon {
+  color: #374151 !important;
+}
+
+:root[data-theme='light'] .schedule-icon-pending {
+  color: #F97316 !important;
+}
+
+:root[data-theme='light'] .calendar-today-btn {
+  color: #374151 !important;
 }
