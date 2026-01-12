@@ -141,10 +141,11 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
       await onSendMessage(messageToSend);
       playMessageReceivedSound();
 
-      // Atualiza o saldo múltiplas vezes para garantir captura do débito
-      setTimeout(() => refreshBalance(), 500);
-      setTimeout(() => refreshBalance(), 2000);
-      setTimeout(() => refreshBalance(), 4000);
+      // Atualiza o saldo após a mensagem ser enviada e processada
+      // O débito acontece no edge function, então fazemos refresh logo após
+      refreshBalance();
+      // Refresh adicional após 1s para garantir que o realtime capturou
+      setTimeout(() => refreshBalance(), 1000);
     } catch (error) {
       console.error('Error sending message:', error);
       setInputValue(messageToSend);
@@ -311,10 +312,10 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
 
       playMessageReceivedSound();
 
-      // Atualiza o saldo múltiplas vezes para garantir captura do débito
-      setTimeout(() => refreshBalance(), 500);
-      setTimeout(() => refreshBalance(), 2000);
-      setTimeout(() => refreshBalance(), 4000);
+      // Atualiza o saldo após o áudio ser processado
+      refreshBalance();
+      // Refresh adicional após 1s para garantir que o realtime capturou
+      setTimeout(() => refreshBalance(), 1000);
 
     } catch (error) {
       console.error('[ChatInterface] Error processing audio:', error);
