@@ -568,14 +568,22 @@ ${message}`;
 
     const estimatedTokens = Math.ceil((message.length + aiResponse.length) / 4);
 
-    const { error: debitError } = await supabase.rpc('debit_user_tokens', {
+    const { data: debitResult, error: debitError } = await supabase.rpc('debit_user_tokens', {
       p_user_id: user.id,
-      p_tokens: estimatedTokens,
-      p_description: `Chat com processo ${processo.nome_processo || processo.file_name}`
+      p_tokens_required: estimatedTokens,
+      p_operation_type: 'chat',
+      p_metadata: {
+        processo_id: processo_id,
+        processo_name: processo.nome_processo || processo.file_name,
+        message_length: message.length,
+        response_length: aiResponse.length
+      }
     });
 
     if (debitError) {
       console.error('❌ Error debiting tokens:', debitError);
+    } else if (debitResult?.success === false) {
+      console.warn('⚠️ Token debit failed:', debitResult?.error);
     } else {
       console.log(`✅ Debited ${estimatedTokens} tokens from user ${user.id}`);
     }
