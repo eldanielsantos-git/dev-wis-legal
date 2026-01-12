@@ -1,5 +1,6 @@
 import React from 'react';
 import type { GravidadeNivel, UrgenciaNivel, RiscoNivel, ImpactoNivel, PrioridadeNivel } from '../../../types/analysis';
+import { safeExtractString } from '../../../utils/typeGuards';
 
 type BadgeVariant = GravidadeNivel | UrgenciaNivel | RiscoNivel | ImpactoNivel | PrioridadeNivel | string;
 
@@ -9,8 +10,12 @@ interface SeverityBadgeProps {
   className?: string;
 }
 
-function getBadgeClasses(variant: string, type: string): string {
-  const lower = variant.toLowerCase();
+function getBadgeClasses(variant: unknown, type: string): string {
+  const variantStr = safeExtractString(variant);
+  if (!variantStr) {
+    return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
+  }
+  const lower = variantStr.toLowerCase();
 
   if (type === 'gravidade' || type === 'risco') {
     if (lower.includes('alta') || lower.includes('alto')) {
@@ -72,11 +77,12 @@ function getBadgeClasses(variant: string, type: string): string {
 }
 
 export function SeverityBadge({ variant, type, className = '' }: SeverityBadgeProps) {
-  const badgeClasses = getBadgeClasses(variant, type);
+  const variantStr = safeExtractString(variant);
+  const badgeClasses = getBadgeClasses(variantStr, type);
 
   return (
     <span className={`inline-flex px-2 py-1 text-xs font-medium rounded border ${badgeClasses} ${className}`}>
-      {variant}
+      {variantStr || 'N/A'}
     </span>
   );
 }

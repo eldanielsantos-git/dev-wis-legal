@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, Clock, Scale, AlertCircle } from 'lucide-react';
-import { isNonEmptyArray } from '../../utils/typeGuards';
+import { isNonEmptyArray, safeExtractString } from '../../utils/typeGuards';
 import { normalizeGenericView } from '../../utils/viewNormalizer';
 import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
@@ -94,25 +94,27 @@ export function ResumoEstrategicoView({ content }: ResumoEstrategicoViewProps) {
      {/* Renderizar campos (lista de label: valor) */}
      {secao.campos && secao.campos.length > 0 && (
       <div className={
-        secao.titulo.toLowerCase().includes('informação') ||
-        secao.titulo.toLowerCase().includes('informações')
+        safeExtractString(secao.titulo).toLowerCase().includes('informação') ||
+        safeExtractString(secao.titulo).toLowerCase().includes('informações')
           ? 'space-y-4'
           : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
       }>
        {secao.campos.map((campo) => {
-        const isDate = campo.label.toLowerCase().includes('data');
-        const isValor = campo.label.toLowerCase().includes('valor');
-        const isPagina = campo.label.toLowerCase().includes('página');
+        const labelStr = safeExtractString(campo.label);
+        const isDate = labelStr.toLowerCase().includes('data');
+        const isValor = labelStr.toLowerCase().includes('valor');
+        const isPagina = labelStr.toLowerCase().includes('página');
 
+        const valorStr = safeExtractString(campo.valor);
         return (
          <div
           key={campo.id}
           className="bg-theme-bg-tertiary border border-theme-border rounded-lg p-4"
          >
           <div className="font-semibold text-theme-text-primary text-sm mb-2">
-           {campo.label}
+           {labelStr || 'Campo'}
           </div>
-          {campo.valor ? (
+          {valorStr ? (
            <div className={`text-base ${
              isValor
                ? 'text-[#a8ccf5] font-medium text-lg'
@@ -120,7 +122,7 @@ export function ResumoEstrategicoView({ content }: ResumoEstrategicoViewProps) {
                ? 'text-theme-text-secondary'
                : 'text-theme-text-secondary'
            }`}>
-            {campo.valor}
+            {valorStr}
            </div>
           ) : (
            <div className="text-gray-500 dark:text-gray-400 italic text-sm">

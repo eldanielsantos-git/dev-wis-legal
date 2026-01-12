@@ -11,6 +11,7 @@ import { ConclusoesPerspettivasView } from './ConclusoesPerspecttivasView';
 import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 import { validateAndSanitizeJson } from '../../utils/jsonValidator';
 import { aggressiveClean, tryParseJSON } from '../../utils/jsonSanitizer';
+import { safeExtractString } from '../../utils/typeGuards';
 
 interface AnalysisViewSelectorProps {
  title: string;
@@ -37,7 +38,7 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
    }
   }
 
-  const normalizedTitle = title.toLowerCase().trim();
+  const normalizedTitle = safeExtractString(title).toLowerCase().trim();
 
  if (normalizedTitle.includes('visão geral')) {
   return <VisaoGeralProcessoView content={sanitizedContent} />;

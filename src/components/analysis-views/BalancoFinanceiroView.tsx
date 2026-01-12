@@ -1,6 +1,6 @@
 import React from 'react';
 import { DollarSign, FileText, Lock, Unlock, TrendingUp, Scale, BadgeDollarSign, Receipt, Calculator } from 'lucide-react';
-import { isNonEmptyArray } from '../../utils/typeGuards';
+import { isNonEmptyArray, safeExtractString } from '../../utils/typeGuards';
 import { safeIncludes } from '../../utils/safeStringUtils';
 import { normalizeGenericView } from '../../utils/viewNormalizer';
 import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
@@ -98,13 +98,15 @@ const formatCurrency = (valor: string | number): string => {
  return valor;
 };
 
-const isMonetaryValue = (valor: string): boolean => {
- const monetary = valor.toLowerCase();
+const isMonetaryValue = (valor: unknown): boolean => {
+ const valorStr = safeExtractString(valor);
+ if (!valorStr) return false;
+ const monetary = valorStr.toLowerCase();
  return (
   monetary.includes('r$') ||
   monetary.includes('real') ||
   monetary.includes('reais') ||
-  /^\d+[.,]\d{2}$/.test(valor)
+  /^\d+[.,]\d{2}$/.test(valorStr)
  );
 };
 

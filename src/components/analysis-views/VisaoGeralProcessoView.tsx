@@ -1,7 +1,7 @@
 import React from 'react';
 import { FileText, User, Link as LinkIcon } from 'lucide-react';
 import { safeToString } from '../../utils/safeRender';
-import { isNonEmptyArray } from '../../utils/typeGuards';
+import { isNonEmptyArray, safeExtractString } from '../../utils/typeGuards';
 import { normalizeGenericView } from '../../utils/viewNormalizer';
 import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
@@ -103,9 +103,10 @@ export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps)
      {secao.campos && secao.campos.length > 0 && (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
        {secao.campos.map((campo) => {
-        const isDate = campo.label.toLowerCase().includes('data');
-        const isValor = campo.label.toLowerCase().includes('valor');
-        const isPagina = campo.label.toLowerCase().includes('página');
+        const labelStr = safeExtractString(campo.label);
+        const isDate = labelStr.toLowerCase().includes('data');
+        const isValor = labelStr.toLowerCase().includes('valor');
+        const isPagina = labelStr.toLowerCase().includes('página');
 
         return (
          <div
@@ -113,7 +114,7 @@ export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps)
           className="bg-theme-bg-tertiary border border-theme-border rounded-lg p-4"
          >
           <div className="font-semibold text-theme-text-primary text-sm mb-2">
-           {campo.label}
+           {labelStr || 'Campo'}
           </div>
           <div className={`text-base ${
             isValor

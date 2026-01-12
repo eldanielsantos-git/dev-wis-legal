@@ -1,6 +1,6 @@
 import React from 'react';
 import { Mail, FileCheck, AlertTriangle, Clock, CheckCircle, XCircle, Hourglass } from 'lucide-react';
-import { isNonEmptyArray } from '../../utils/typeGuards';
+import { isNonEmptyArray, safeExtractString } from '../../utils/typeGuards';
 import { normalizeComunicacoesPrazos } from '../../utils/viewNormalizer';
 import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
@@ -68,11 +68,12 @@ interface ComunicacoesPrazosViewProps {
  content: string;
 }
 
-const getStatusBadgeColor = (status: string | undefined) => {
- if (!status) {
+const getStatusBadgeColor = (status: unknown) => {
+ const statusStr = safeExtractString(status);
+ if (!statusStr) {
   return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border';
  }
- const statusLower = status.toLowerCase();
+ const statusLower = statusStr.toLowerCase();
  if (statusLower.includes('bem-sucedida') || statusLower.includes('cumprido')) {
   return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700';
  }
@@ -92,64 +93,74 @@ const getStatusBadgeColor = (status: string | undefined) => {
 };
 
 const normalizeAto = (atoRaw: any): Ato => {
+ const extractStatus = (raw: any): string => {
+  if (!raw) return 'Status não identificado';
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object' && raw.status) return safeExtractString(raw.status);
+  return safeExtractString(raw) || 'Status não identificado';
+ };
+
  const ato: Ato = {
-  id: atoRaw.id || 'ato_sem_id',
-  tipoAto: atoRaw.tipoAto || 'Tipo não identificado',
-  modalidade: atoRaw.modalidade || 'Modalidade não identificada',
+  id: safeExtractString(atoRaw.id) || 'ato_sem_id',
+  tipoAto: safeExtractString(atoRaw.tipoAto) || 'Tipo não identificado',
+  modalidade: safeExtractString(atoRaw.modalidade) || 'Modalidade não identificada',
   destinatario: Array.isArray(atoRaw.destinatario)
    ? atoRaw.destinatario.map((dest: any) => ({
-      nome: dest.nome || 'Destinatário não identificado',
-      documento: dest.documento,
-      tipo: dest.qualificacao || dest.tipo || 'Tipo não identificado',
-      status: dest.status || atoRaw.validadeStatus || 'Status não identificado',
-      dataAto: dest.dataAto || atoRaw.dataAto,
-      dataJuntada: dest.dataJuntada || atoRaw.dataJuntada,
-      paginaJuntadaAto: dest.paginaJuntadaAto || atoRaw.referencia?.paginas,
-      notas: dest.notas || atoRaw.notas,
-      pagina: dest.pagina || atoRaw.referencia?.paginas
+      nome: safeExtractString(dest.nome) || 'Destinatário não identificado',
+      documento: safeExtractString(dest.documento),
+      tipo: safeExtractString(dest.qualificacao || dest.tipo) || 'Tipo não identificado',
+      status: extractStatus(dest.status || atoRaw.validadeStatus),
+      dataAto: safeExtractString(dest.dataAto || atoRaw.dataAto),
+      dataJuntada: safeExtractString(dest.dataJuntada || atoRaw.dataJuntada),
+      paginaJuntadaAto: safeExtractString(dest.paginaJuntadaAto || atoRaw.referencia?.paginas),
+      notas: safeExtractString(dest.notas || atoRaw.notas),
+      pagina: safeExtractString(dest.pagina || atoRaw.referencia?.paginas)
      }))
    : {
-      nome: atoRaw.destinatario?.nome || 'Destinatário não identificado',
-      documento: atoRaw.destinatario?.documento,
-      tipo: atoRaw.destinatario?.qualificacao || atoRaw.destinatario?.tipo || 'Tipo não identificado',
-      status: typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.status : atoRaw.statusAto || atoRaw.destinatario?.status || atoRaw.validadeStatus || 'Status não identificado',
-      dataAto: atoRaw.datas?.dataExpedicaoAto || atoRaw.destinatario?.dataAto || atoRaw.dataAto,
-      dataJuntada: atoRaw.datas?.dataJuntadaComprovante || atoRaw.destinatario?.dataJuntada || atoRaw.dataJuntada,
-      paginaJuntadaAto: atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.paginaJuntadaAto,
-      notas: atoRaw.notas || (typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.justificativa : undefined) || atoRaw.destinatario?.notas,
-      pagina: atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.pagina
+      nome: safeExtractString(atoRaw.destinatario?.nome) || 'Destinatário não identificado',
+      documento: safeExtractString(atoRaw.destinatario?.documento),
+      tipo: safeExtractString(atoRaw.destinatario?.qualificacao || atoRaw.destinatario?.tipo) || 'Tipo não identificado',
+      status: extractStatus(atoRaw.statusAto || atoRaw.destinatario?.status || atoRaw.validadeStatus),
+      dataAto: safeExtractString(atoRaw.datas?.dataExpedicaoAto || atoRaw.destinatario?.dataAto || atoRaw.dataAto),
+      dataJuntada: safeExtractString(atoRaw.datas?.dataJuntadaComprovante || atoRaw.destinatario?.dataJuntada || atoRaw.dataJuntada),
+      paginaJuntadaAto: safeExtractString(atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.paginaJuntadaAto),
+      notas: safeExtractString(atoRaw.notas || (typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.justificativa : undefined) || atoRaw.destinatario?.notas),
+      pagina: safeExtractString(atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.pagina)
      },
-  validadeStatus: atoRaw.validadeStatus,
-  dataAto: atoRaw.dataAto,
-  dataJuntada: atoRaw.dataJuntada,
+  validadeStatus: safeExtractString(atoRaw.validadeStatus),
+  dataAto: safeExtractString(atoRaw.dataAto),
+  dataJuntada: safeExtractString(atoRaw.dataJuntada),
   referencia: atoRaw.referencia,
-  notas: atoRaw.notas
+  notas: safeExtractString(atoRaw.notas)
  };
 
  if (atoRaw.detalhesAR && atoRaw.detalhesAR.status !== 'Não localizado nos autos') {
   ato.detalhesAR = {
-   nomeManuscrito: atoRaw.detalhesAR.nomeManuscritoRecebedor || atoRaw.detalhesAR.nomeManuscrito || atoRaw.detalhesAR.recebedor,
-   assinaturaPresente: atoRaw.detalhesAR.assinaturaPresente,
-   motivoDevolucaoExistente: atoRaw.detalhesAR.motivoDevolucao ? 'Sim' : atoRaw.detalhesAR.motivoDevolucaoExistente,
-   motivoDevolucaoIndicado: atoRaw.detalhesAR.motivoDevolucao ? [atoRaw.detalhesAR.motivoDevolucao] : atoRaw.detalhesAR.motivoDevolucaoIndicado,
-   notas: atoRaw.detalhesAR.notas
+   nomeManuscrito: safeExtractString(atoRaw.detalhesAR.nomeManuscritoRecebedor || atoRaw.detalhesAR.nomeManuscrito || atoRaw.detalhesAR.recebedor),
+   assinaturaPresente: safeExtractString(atoRaw.detalhesAR.assinaturaPresente),
+   motivoDevolucaoExistente: atoRaw.detalhesAR.motivoDevolucao ? 'Sim' : safeExtractString(atoRaw.detalhesAR.motivoDevolucaoExistente),
+   motivoDevolucaoIndicado: atoRaw.detalhesAR.motivoDevolucao ? [safeExtractString(atoRaw.detalhesAR.motivoDevolucao)] : atoRaw.detalhesAR.motivoDevolucaoIndicado,
+   notas: safeExtractString(atoRaw.detalhesAR.notas)
   };
  }
 
  if (atoRaw.prazos && Array.isArray(atoRaw.prazos) && atoRaw.prazos.length > 0) {
   ato.prazosDerivados = atoRaw.prazos.map((prazoRaw: any) => ({
-   id: prazoRaw.idPrazo || prazoRaw.id || 'prazo_sem_id',
-   tipoPrazo: prazoRaw.tipo || prazoRaw.tipoPrazo || 'Tipo não identificado',
-   finalidade: prazoRaw.finalidade || 'Finalidade não especificada',
-   baseLegal: prazoRaw.baseLegal,
-   dataInicio: prazoRaw.calculo?.termoInicial || prazoRaw.termoInicial || prazoRaw.dataInicio,
-   duracao: prazoRaw.calculo?.duracaoDias || prazoRaw.duracaoDias || prazoRaw.duracao,
-   dataFinal: prazoRaw.calculo?.termoFinal || prazoRaw.termoFinal || prazoRaw.dataFinal,
-   status: prazoRaw.calculo?.statusJuridico || prazoRaw.statusJuridico || prazoRaw.status || 'Status não identificado',
-   observacoes: prazoRaw.calculo?.observacoes || prazoRaw.observacoes
+   id: safeExtractString(prazoRaw.idPrazo || prazoRaw.id) || 'prazo_sem_id',
+   tipoPrazo: safeExtractString(prazoRaw.tipo || prazoRaw.tipoPrazo) || 'Tipo não identificado',
+   finalidade: safeExtractString(prazoRaw.finalidade) || 'Finalidade não especificada',
+   baseLegal: safeExtractString(prazoRaw.baseLegal),
+   dataInicio: safeExtractString(prazoRaw.calculo?.termoInicial || prazoRaw.termoInicial || prazoRaw.dataInicio),
+   duracao: safeExtractString(prazoRaw.calculo?.duracaoDias || prazoRaw.duracaoDias || prazoRaw.duracao),
+   dataFinal: safeExtractString(prazoRaw.calculo?.termoFinal || prazoRaw.termoFinal || prazoRaw.dataFinal),
+   status: extractStatus(prazoRaw.calculo?.statusJuridico || prazoRaw.statusJuridico || prazoRaw.status),
+   observacoes: safeExtractString(prazoRaw.calculo?.observacoes || prazoRaw.observacoes)
   }));
  } else if (atoRaw.prazosDerivados && Array.isArray(atoRaw.prazosDerivados)) {
-  ato.prazosDerivados = atoRaw.prazosDerivados;
+  ato.prazosDerivados = atoRaw.prazosDerivados.map((prazo: any) => ({
+   ...prazo,
+   status: extractStatus(prazo.status)
+  }));
  }
 
  return ato;

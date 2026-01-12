@@ -46,3 +46,39 @@ export function hasProperty<K extends string>(
 ): obj is Record<K, unknown> {
   return typeof obj === 'object' && obj !== null && key in obj;
 }
+
+export function safeExtractString(value: unknown): string {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if ('status' in obj && typeof obj.status === 'string') {
+      return obj.status;
+    }
+    if ('nome' in obj && typeof obj.nome === 'string') {
+      return obj.nome;
+    }
+    if ('valor' in obj && typeof obj.valor === 'string') {
+      return obj.valor;
+    }
+    if ('texto' in obj && typeof obj.texto === 'string') {
+      return obj.texto;
+    }
+    if ('descricao' in obj && typeof obj.descricao === 'string') {
+      return obj.descricao;
+    }
+    const values = Object.values(obj);
+    const firstString = values.find(v => typeof v === 'string');
+    if (firstString && typeof firstString === 'string') {
+      return firstString;
+    }
+  }
+  return '';
+}
