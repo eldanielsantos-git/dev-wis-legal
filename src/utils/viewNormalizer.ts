@@ -145,6 +145,26 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
     return { success: false, data: null, method: 'fallback' };
   }
 
+  if (parsed.atosProcessuais?.listaAtosComunicacao && Array.isArray(parsed.atosProcessuais.listaAtosComunicacao)) {
+    const normalizedAtos = parsed.atosProcessuais.listaAtosComunicacao.map((ato: any) => normalizeAtoFromRootFormat(ato));
+    const normalizedData: ComunicacoesExpectedStructure = {
+      comunicacoesPrazos: {
+        titulo: 'Analise de Comunicacoes e Prazos Processuais',
+        secoes: [{
+          id: 'secao_principal',
+          titulo: parsed.atosProcessuais.focoPrincipal || 'Citacoes, Intimacoes e Notificacoes',
+          listaAtos: normalizedAtos
+        }]
+      }
+    };
+    return {
+      success: true,
+      data: normalizedData,
+      method: 'array-extraction',
+      originalKeys: Object.keys(parsed)
+    };
+  }
+
   if (parsed.atosComunicacao && Array.isArray(parsed.atosComunicacao) && parsed.atosComunicacao.length > 0) {
     const normalizedAtos = parsed.atosComunicacao.map((ato: any) => normalizeAtoFromRootFormat(ato));
     const normalizedData: ComunicacoesExpectedStructure = {
@@ -170,6 +190,7 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
     'comunicacoes_prazos',
     'comunicacoesEPrazos',
     'comunicacoes',
+    'atosProcessuais',
     'dados',
     'resultado',
     'output',
@@ -277,6 +298,15 @@ export function normalizeComunicacoesPrazos(content: string): NormalizationResul
 
 function normalizeAtoFromRootFormat(atoRaw: any): any {
   const destinatario = atoRaw.destinatario || {};
+  const datasRelevantes = atoRaw.datasRelevantes || {};
+  const statusAtoObj = atoRaw.statusAto || {};
+
+  const extractStatus = (statusData: any): string => {
+    if (!statusData) return 'Status nao identificado';
+    if (typeof statusData === 'string') return statusData;
+    if (typeof statusData === 'object' && statusData.status) return statusData.status;
+    return 'Status nao identificado';
+  };
 
   return {
     id: atoRaw.id || `ato_${Math.random().toString(36).substr(2, 9)}`,
@@ -286,30 +316,30 @@ function normalizeAtoFromRootFormat(atoRaw: any): any {
       nome: destinatario.nome || 'Destinatario nao identificado',
       documento: destinatario.documento || destinatario.cpf || destinatario.cnpj,
       tipo: destinatario.qualificacao || destinatario.tipo || 'Tipo nao identificado',
-      status: atoRaw.statusAto || atoRaw.status || 'Status nao identificado',
-      dataAto: atoRaw.datas?.ato || atoRaw.dataAto,
-      dataJuntada: atoRaw.datas?.juntada || atoRaw.dataJuntada,
-      paginaJuntadaAto: atoRaw.referenciaDocumental?.pagina || atoRaw.pagina,
-      notas: atoRaw.notas
+      status: extractStatus(atoRaw.statusAto),
+      dataAto: datasRelevantes.dataAto || atoRaw.datas?.ato || atoRaw.dataAto,
+      dataJuntada: datasRelevantes.dataJuntada || atoRaw.datas?.juntada || atoRaw.dataJuntada,
+      paginaJuntadaAto: datasRelevantes.referenciaArquivoPagina?.certidaoCumprimento || atoRaw.referenciaDocumental?.pagina || atoRaw.pagina,
+      notas: atoRaw.notasGerais || atoRaw.notas || (typeof statusAtoObj === 'object' ? statusAtoObj.detalhes : undefined)
     },
-    validadeStatus: atoRaw.statusAto || atoRaw.status,
-    dataAto: atoRaw.datas?.ato || atoRaw.dataAto,
-    dataJuntada: atoRaw.datas?.juntada || atoRaw.dataJuntada,
-    referencia: atoRaw.referenciaDocumental ? {
-      arquivo: atoRaw.referenciaDocumental.comprovante || atoRaw.referenciaDocumental.instrumento,
-      paginas: atoRaw.referenciaDocumental.pagina
+    validadeStatus: extractStatus(atoRaw.statusAto),
+    dataAto: datasRelevantes.dataAto || atoRaw.datas?.ato || atoRaw.dataAto,
+    dataJuntada: datasRelevantes.dataJuntada || atoRaw.datas?.juntada || atoRaw.dataJuntada,
+    referencia: (datasRelevantes.referenciaArquivoPagina || atoRaw.referenciaDocumental) ? {
+      arquivo: datasRelevantes.referenciaArquivoPagina?.mandado || atoRaw.referenciaDocumental?.comprovante || atoRaw.referenciaDocumental?.instrumento,
+      paginas: datasRelevantes.referenciaArquivoPagina?.certidaoCumprimento || atoRaw.referenciaDocumental?.pagina
     } : undefined,
-    notas: atoRaw.notas,
+    notas: atoRaw.notasGerais || atoRaw.notas,
     prazosDerivados: Array.isArray(atoRaw.prazos) ? atoRaw.prazos.map((prazo: any) => ({
       id: prazo.idPrazo || prazo.id || `prazo_${Math.random().toString(36).substr(2, 9)}`,
       tipoPrazo: prazo.tipoPrazo || prazo.tipo || 'Prazo',
       finalidade: prazo.finalidade || '',
       baseLegal: prazo.baseLegal,
-      dataInicio: prazo.termoInicial?.data || prazo.dataInicio,
-      duracao: prazo.duracaoLegal || prazo.duracao,
-      dataFinal: prazo.termoFinal?.data || prazo.dataFinal,
-      status: prazo.statusJuridico || prazo.status || 'Status nao identificado',
-      observacoes: prazo.observacoes
+      dataInicio: prazo.termoInicial?.data || prazo.termoInicial || prazo.dataInicio,
+      duracao: prazo.duracao?.valor ? `${prazo.duracao.valor} ${prazo.duracao.unidade || 'dias'}` : (prazo.duracaoLegal || prazo.duracao),
+      dataFinal: prazo.termoFinal?.data || prazo.termoFinal || prazo.dataFinal,
+      status: prazo.statusPrazo || prazo.statusJuridico || prazo.status || 'Status nao identificado',
+      observacoes: prazo.notas || prazo.observacoes
     })) : undefined
   };
 }
