@@ -39,9 +39,9 @@ export function AddTokensSection({
     return `${tokens.toLocaleString('pt-BR')} tokens`;
   };
 
-  const handlePurchaseTokens = (checkoutUrl: string, packageId: string) => {
-    if (!checkoutUrl) {
-      const errorMessage = 'Link de checkout não disponível para este pacote';
+  const handlePurchaseTokens = async (priceId: string, packageId: string) => {
+    if (!priceId) {
+      const errorMessage = 'Preço não configurado para este pacote';
       console.error(errorMessage);
       if (onPurchaseError) {
         onPurchaseError(errorMessage);
@@ -56,12 +56,40 @@ export function AddTokensSection({
     }
 
     try {
-      if (onPurchaseComplete) {
-        onPurchaseComplete();
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        throw new Error('Usuario nao autenticado');
       }
-      window.location.href = checkoutUrl;
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/stripe-checkout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          price_id: priceId,
+          mode: 'payment',
+          success_url: `${window.location.origin}/success`,
+          cancel_url: `${window.location.origin}/tokens`,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao criar sessao de checkout');
+      }
+
+      if (data.url) {
+        if (onPurchaseComplete) {
+          onPurchaseComplete();
+        }
+        window.location.href = data.url;
+      }
     } catch (error) {
-      console.error('Erro ao redirecionar para checkout:', error);
+      console.error('Erro ao processar compra de tokens:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao processar compra';
 
       if (onPurchaseError) {
@@ -99,8 +127,8 @@ export function AddTokensSection({
           return (
             <button
               key={pkg.id}
-              onClick={() => handlePurchaseTokens(pkg.checkout_url || '', pkg.id)}
-              disabled={isLoading || loading !== null || !pkg.checkout_url}
+              onClick={() => handlePurchaseTokens(pkg.stripe_price_id, pkg.id)}
+              disabled={isLoading || loading !== null || !pkg.stripe_price_id}
               className="p-6 rounded-xl text-left transition-all duration-200 hover:shadow-lg hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: colors.bgPrimary,
@@ -132,10 +160,10 @@ export function AddTokensSection({
                   </span>
                 </div>
               )}
-              {!pkg.checkout_url && (
+              {!pkg.stripe_price_id && (
                 <div className="mt-4 text-center">
                   <span className="text-xs" style={{ color: '#EF4444' }}>
-                    Link indisponível
+                    Preco nao configurado
                   </span>
                 </div>
               )}
