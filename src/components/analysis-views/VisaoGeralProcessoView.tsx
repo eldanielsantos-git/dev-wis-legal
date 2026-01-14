@@ -177,12 +177,9 @@ export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps)
             </span>
            )}
           </div>
-          <div className="mt-2 space-y-1 text-sm text-theme-text-secondary">
+          <div className="mt-2 text-sm text-theme-text-secondary">
            <p>
             <span className="font-medium text-theme-text-primary">CPF/CNPJ:</span> {safeToString(parte.cpfCnpj)}
-           </p>
-           <p>
-            <span className="font-medium text-theme-text-primary">Polo:</span> {safeToString(parte.Polo)}
            </p>
           </div>
          </div>
