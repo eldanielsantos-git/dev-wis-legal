@@ -1,5 +1,4 @@
-import React from 'react';
-import { DollarSign, FileText, Lock, Unlock, TrendingUp, Scale, BadgeDollarSign, Receipt, Calculator } from 'lucide-react';
+import { DollarSign, FileText, Lock, Unlock, Scale, BadgeDollarSign, Receipt, Calculator, Calendar, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { isNonEmptyArray, safeExtractString } from '../../utils/typeGuards';
 import { safeIncludes } from '../../utils/safeStringUtils';
 import { normalizeGenericView } from '../../utils/viewNormalizer';
@@ -7,33 +6,33 @@ import { AnalysisContentRenderer } from '../AnalysisContentRenderer';
 
 interface BaseDocumental {
  arquivo?: string;
- pagina?: number | string;
+ pagina?: string;
  eventoNoSistema?: string;
 }
 
 interface Campo {
  id: string;
  label?: string;
- valor: string | number;
+ valor?: string | number;
 }
 
 interface Honorario {
  id: string;
- tipo: string;
+ tipo?: string;
  percentualOuValor?: string;
- valorEstimado?: string | number;
+ valorEstimado?: string;
  faseFixacao?: string;
  poloBeneficiado?: string;
  baseLegal?: string;
  dataFixacao?: string;
- paginaReferencia?: number | string;
+ paginaReferencia?: string;
  situacao?: string;
  observacoes?: string;
 }
 
 interface Constricao {
  id: string;
- tipo: string;
+ tipo?: string;
  valorConstrito?: string;
  dataConstricao?: string;
  tipoDeBem?: string;
@@ -79,7 +78,7 @@ const getSituacaoBadge = (situacao: string | undefined) => {
  if (safeIncludes(situacao, 'pendente') || safeIncludes(situacao, 'ativo')) {
   return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 border-blue-200 dark:border-blue-700';
  }
- if (safeIncludes(situacao, 'execução')) {
+ if (safeIncludes(situacao, 'execução') || safeIncludes(situacao, 'execucao')) {
   return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700';
  }
  if (safeIncludes(situacao, 'revogado') || safeIncludes(situacao, 'compensado')) {
@@ -88,14 +87,29 @@ const getSituacaoBadge = (situacao: string | undefined) => {
  return 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-600';
 };
 
-const formatCurrency = (valor: string | number): string => {
- if (typeof valor === 'number') {
-  return new Intl.NumberFormat('pt-BR', {
-   style: 'currency',
-   currency: 'BRL'
-  }).format(valor);
+const getStatusAtualizacaoBadge = (status: string | undefined) => {
+ if (safeIncludes(status, 'homologado')) {
+  return {
+   classes: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 border-green-200 dark:border-green-700',
+   icon: CheckCircle
+  };
  }
- return valor;
+ if (safeIncludes(status, 'impugnado')) {
+  return {
+   classes: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-200 dark:border-red-700',
+   icon: AlertCircle
+  };
+ }
+ if (safeIncludes(status, 'pendente')) {
+  return {
+   classes: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200 dark:border-amber-700',
+   icon: Clock
+  };
+ }
+ return {
+  classes: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 border-gray-200 dark:border-theme-border',
+  icon: null
+ };
 };
 
 const isMonetaryValue = (valor: unknown): boolean => {
@@ -166,7 +180,7 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
      )}
      {base.pagina && (
       <div>
-       <span className="text-xs font-semibold text-theme-text-secondary uppercase">Página</span>
+       <span className="text-xs font-semibold text-theme-text-secondary uppercase">Pagina</span>
        <p className="text-sm text-theme-text-primary mt-0.5">{base.pagina}</p>
       </div>
      )}
@@ -187,7 +201,7 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
   return (
    <div className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-4 border border-theme-border mt-4">
     <h4 className="text-sm font-semibold text-theme-text-primary uppercase tracking-wide mb-2">
-     Observações
+     Observacoes
     </h4>
     <p className="text-sm text-theme-text-primary leading-relaxed">
      {observacoes}
@@ -196,21 +210,82 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
   );
  };
 
+ const renderCampo = (campo: Campo, isConsolidacao: boolean, isValorCausa: boolean) => {
+  const valor = campo.valor;
+  if (valor === null || valor === undefined) return null;
+
+  const isValorMonetario = typeof valor === 'string' && isMonetaryValue(valor);
+  const isStatusAtualizacao = campo.id === 'status_atualizacao';
+  const isDataField = campo.id?.includes('data_');
+
+  if (isStatusAtualizacao && typeof valor === 'string') {
+   const statusBadge = getStatusAtualizacaoBadge(valor);
+   const StatusIcon = statusBadge.icon;
+   return (
+    <div
+     key={campo.id}
+     className="bg-slate-50 dark:bg-gray-700/30 rounded-lg p-3 border border-theme-border"
+    >
+     {campo.label && (
+      <span className="text-xs font-semibold text-theme-text-primary uppercase tracking-wide block mb-1">
+       {campo.label}
+      </span>
+     )}
+     <span className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded border ${statusBadge.classes}`}>
+      {StatusIcon && <StatusIcon className="w-3.5 h-3.5" />}
+      {valor}
+     </span>
+    </div>
+   );
+  }
+
+  return (
+   <div
+    key={campo.id}
+    className={`${
+     isConsolidacao
+      ? 'bg-theme-card/80 rounded-lg p-4 border border-theme-border'
+      : 'bg-slate-50 dark:bg-gray-700/30 rounded-lg p-3 border border-theme-border'
+    }`}
+   >
+    {campo.label && (
+     <span className={`text-xs font-semibold ${isConsolidacao ? 'text-green-800 dark:text-green-300' : 'text-theme-text-primary'} uppercase tracking-wide block mb-1`}>
+      {campo.label}
+     </span>
+    )}
+    {isDataField ? (
+     <div className="flex items-center gap-2">
+      <Calendar className="w-4 h-4 text-theme-text-secondary" />
+      <p className="text-sm text-theme-text-primary">{valor}</p>
+     </div>
+    ) : (
+     <p
+      className={`${
+       isValorMonetario
+        ? `text-lg font-bold ${isConsolidacao ? 'text-green-700 dark:text-green-300' : 'text-blue-700 dark:text-blue-300'}`
+        : 'text-sm text-theme-text-primary'
+      }`}
+     >
+      {valor}
+     </p>
+    )}
+   </div>
+  );
+ };
+
  return (
   <div className="space-y-6">
-   {/* Título Principal */}
    <h1 className="text-2xl font-bold text-theme-text-primary flex items-center gap-3">
     <BadgeDollarSign className="w-8 h-8 text-green-600 dark:text-green-400" />
     {balancoFinanceiro.titulo}
    </h1>
 
-   {/* Renderizar cada seção */}
    {isNonEmptyArray(balancoFinanceiro.secoes) && balancoFinanceiro.secoes.map((secao) => {
     const isConsolidacao = secao.id === 'consolidacao_financeira';
+    const isValorCausa = secao.id === 'valor_causa';
 
     return (
      <div key={secao.id} className="space-y-4">
-      {/* Título da Seção */}
       <h2 className="text-xl font-semibold text-theme-text-primary border-b border-theme-border pb-2 flex items-center gap-2">
        {secao.id === 'valor_causa' && <DollarSign className="w-5 h-5" />}
        {secao.id === 'honorarios_sucumbenciais' && <Scale className="w-5 h-5" />}
@@ -221,45 +296,16 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
        {secao.titulo}
       </h2>
 
-      {/* Campos Simples */}
-      {secao.campos && secao.campos.length > 0 && (
+      {isNonEmptyArray(secao.campos) && (
        <div
         className={`${
          isConsolidacao
-          ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-700/50 border-2 border-green-200 dark:border-green-700/50 '
-          : 'bg-theme-card border border-theme-border '
+          ? 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-gray-800 dark:via-gray-700 dark:to-gray-700/50 border-2 border-green-200 dark:border-green-700/50'
+          : 'bg-theme-card border border-theme-border'
         } rounded-lg p-5`}
        >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-         {secao.campos.map((campo) => {
-          const isValorMonetario = typeof campo.valor === 'string' && isMonetaryValue(campo.valor);
-
-          return (
-           <div
-            key={campo.id}
-            className={`${
-             isConsolidacao
-              ? 'bg-theme-card/80 rounded-lg p-4 border border-theme-border'
-              : 'bg-slate-50 dark:bg-gray-700/30 rounded-lg p-3 border border-theme-border'
-            }`}
-           >
-            {campo.label && (
-             <span className={`text-xs font-semibold ${isConsolidacao ? 'text-green-800 dark:text-green-300' : 'text-theme-text-primary'} uppercase tracking-wide block mb-1`}>
-              {campo.label}
-             </span>
-            )}
-            <p
-             className={`${
-              isValorMonetario
-               ? `text-lg font-bold ${isConsolidacao ? 'text-green-700 dark:text-green-300' : 'text-blue-700 dark:text-blue-300'}`
-               : 'text-sm text-theme-text-primary'
-             }`}
-            >
-             {typeof campo.valor === 'string' ? campo.valor : campo.valor}
-            </p>
-           </div>
-          );
-         })}
+         {secao.campos.map((campo) => renderCampo(campo, isConsolidacao, isValorCausa))}
         </div>
 
         {renderBaseDocumental(secao.baseDocumental)}
@@ -267,20 +313,19 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
        </div>
       )}
 
-      {/* Lista de Honorários */}
-      {secao.listaHonorarios && secao.listaHonorarios.length > 0 && (
+      {isNonEmptyArray(secao.listaHonorarios) && (
        <div className="space-y-4">
         {secao.listaHonorarios.map((honorario, index) => (
          <div
           key={honorario.id}
-          className="bg-theme-card border-l-4 border-purple-500 rounded-r-lg overflow-hidden"
+          className="bg-theme-card border-l-4 border-teal-500 rounded-r-lg overflow-hidden"
          >
-          <div className="bg-purple-50 dark:bg-gray-700/50 px-4 py-3 border-b border-purple-200 dark:border-theme-border">
+          <div className="bg-teal-50 dark:bg-gray-700/50 px-4 py-3 border-b border-teal-200 dark:border-theme-border">
            <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-             <Scale className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+             <Scale className="w-5 h-5 text-teal-600 dark:text-teal-400" />
              <h3 className="font-semibold text-theme-text-primary">
-              Honorário #{index + 1} - {honorario.tipo}
+              Honorario #{index + 1}{honorario.tipo ? ` - ${honorario.tipo}` : ''}
              </h3>
             </div>
             {honorario.situacao && (
@@ -295,44 +340,47 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {honorario.percentualOuValor && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Percentual/Valor</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1 font-medium">{honorario.percentualOuValor}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Percentual/Valor</span>
+              <p className="text-sm text-theme-text-primary mt-1 font-medium">{honorario.percentualOuValor}</p>
              </div>
             )}
             {honorario.valorEstimado && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Valor Estimado</span>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Valor Estimado</span>
               <p className="text-sm text-blue-700 dark:text-blue-300 mt-1 font-bold">{honorario.valorEstimado}</p>
              </div>
             )}
             {honorario.faseFixacao && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Fase de Fixação</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{honorario.faseFixacao}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Fase de Fixacao</span>
+              <p className="text-sm text-theme-text-primary mt-1">{honorario.faseFixacao}</p>
              </div>
             )}
             {honorario.poloBeneficiado && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Polo Beneficiado</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{honorario.poloBeneficiado}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Polo Beneficiado</span>
+              <p className="text-sm text-theme-text-primary mt-1">{honorario.poloBeneficiado}</p>
              </div>
             )}
             {honorario.baseLegal && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Base Legal</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{honorario.baseLegal}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Base Legal</span>
+              <p className="text-sm text-theme-text-primary mt-1">{honorario.baseLegal}</p>
              </div>
             )}
             {honorario.dataFixacao && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Data de Fixação</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{honorario.dataFixacao}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Data de Fixacao</span>
+              <div className="flex items-center gap-2 mt-1">
+               <Calendar className="w-4 h-4 text-theme-text-secondary" />
+               <p className="text-sm text-theme-text-primary">{honorario.dataFixacao}</p>
+              </div>
              </div>
             )}
             {honorario.paginaReferencia && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Página</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{honorario.paginaReferencia}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Referencia</span>
+              <p className="text-sm text-theme-text-primary mt-1">{honorario.paginaReferencia}</p>
              </div>
             )}
            </div>
@@ -343,20 +391,19 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
        </div>
       )}
 
-      {/* Lista de Constrições */}
-      {secao.listaConstricoes && secao.listaConstricoes.length > 0 && (
+      {isNonEmptyArray(secao.listaConstricoes) && (
        <div className="space-y-4">
         {secao.listaConstricoes.map((constricao, index) => (
          <div
           key={constricao.id}
           className="bg-theme-card border-l-4 border-red-500 rounded-r-lg overflow-hidden"
          >
-          <div className="bg-theme-bg-tertiary px-4 py-3 border-b border-red-200 dark:border-theme-border">
+          <div className="bg-red-50 dark:bg-gray-700/50 px-4 py-3 border-b border-red-200 dark:border-theme-border">
            <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
              <Lock className="w-5 h-5 text-red-600 dark:text-red-400" />
              <h3 className="font-semibold text-theme-text-primary">
-              Constrição #{index + 1} - {constricao.tipo}
+              Constricao #{index + 1}{constricao.tipo ? ` - ${constricao.tipo}` : ''}
              </h3>
             </div>
             {constricao.situacaoAtual && (
@@ -371,20 +418,23 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {constricao.valorConstrito && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Valor Constrito</span>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Valor Constrito</span>
               <p className="text-sm text-red-700 dark:text-red-300 mt-1 font-bold">{constricao.valorConstrito}</p>
              </div>
             )}
             {constricao.dataConstricao && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Data</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{constricao.dataConstricao}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Data</span>
+              <div className="flex items-center gap-2 mt-1">
+               <Calendar className="w-4 h-4 text-theme-text-secondary" />
+               <p className="text-sm text-theme-text-primary">{constricao.dataConstricao}</p>
+              </div>
              </div>
             )}
             {constricao.tipoDeBem && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Tipo de Bem</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{constricao.tipoDeBem}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Tipo de Bem</span>
+              <p className="text-sm text-theme-text-primary mt-1">{constricao.tipoDeBem}</p>
              </div>
             )}
            </div>
@@ -396,19 +446,18 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
        </div>
       )}
 
-      {/* Lista de Liberações */}
-      {secao.listaLiberacoes && secao.listaLiberacoes.length > 0 && (
+      {isNonEmptyArray(secao.listaLiberacoes) && (
        <div className="space-y-4">
         {secao.listaLiberacoes.map((liberacao, index) => (
          <div
           key={liberacao.id}
           className="bg-theme-card border-l-4 border-green-500 rounded-r-lg overflow-hidden"
          >
-          <div className="bg-theme-bg-tertiary px-4 py-3 border-b border-theme-border">
+          <div className="bg-green-50 dark:bg-gray-700/50 px-4 py-3 border-b border-green-200 dark:border-theme-border">
            <div className="flex items-center gap-3">
             <Unlock className="w-5 h-5 text-green-600 dark:text-green-400" />
             <h3 className="font-semibold text-theme-text-primary">
-             Liberação #{index + 1}
+             Liberacao #{index + 1}
             </h3>
            </div>
           </div>
@@ -417,26 +466,29 @@ export function BalancoFinanceiroView({ content }: BalancoFinanceiroViewProps) {
            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {liberacao.valorLiberado && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Valor Liberado</span>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Valor Liberado</span>
               <p className="text-sm text-green-700 dark:text-green-300 mt-1 font-bold">{liberacao.valorLiberado}</p>
              </div>
             )}
             {liberacao.beneficiario && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Beneficiário</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{liberacao.beneficiario}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Beneficiario</span>
+              <p className="text-sm text-theme-text-primary mt-1">{liberacao.beneficiario}</p>
              </div>
             )}
             {liberacao.dataLiberacao && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Data</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{liberacao.dataLiberacao}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Data</span>
+              <div className="flex items-center gap-2 mt-1">
+               <Calendar className="w-4 h-4 text-theme-text-secondary" />
+               <p className="text-sm text-theme-text-primary">{liberacao.dataLiberacao}</p>
+              </div>
              </div>
             )}
             {liberacao.meioLiberacao && (
              <div>
-              <span className="text-xs font-semibold text-theme-text-primary uppercase">Meio de Liberação</span>
-              <p className="text-sm text-gray-900 dark:text-gray-100 mt-1">{liberacao.meioLiberacao}</p>
+              <span className="text-xs font-semibold text-theme-text-secondary uppercase">Meio de Liberacao</span>
+              <p className="text-sm text-theme-text-primary mt-1">{liberacao.meioLiberacao}</p>
              </div>
             )}
            </div>
