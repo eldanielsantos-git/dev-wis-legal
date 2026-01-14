@@ -167,19 +167,15 @@ export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps)
         >
          <User className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
          <div className="flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-           <p className="font-semibold text-theme-text-primary">
-            {safeToString(parte.nome)}
-           </p>
-           {parte.poloDoUsuario && (
-            <span className="px-2 py-0.5 text-xs font-medium bg-blue-600 text-white dark:bg-blue-500 rounded">
-             Cliente
-            </span>
-           )}
-          </div>
-          <div className="mt-2 text-sm text-theme-text-secondary">
+          <p className="font-semibold text-theme-text-primary">
+           {safeToString(parte.nome)}
+          </p>
+          <div className="mt-2 space-y-1 text-sm text-theme-text-secondary">
            <p>
             <span className="font-medium text-theme-text-primary">CPF/CNPJ:</span> {safeToString(parte.cpfCnpj)}
+           </p>
+           <p>
+            <span className="font-medium text-theme-text-primary">Polo:</span> {safeToString(parte.Polo)}
            </p>
           </div>
          </div>
