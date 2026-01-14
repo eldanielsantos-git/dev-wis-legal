@@ -1,14 +1,701 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
-import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
+import { GoogleGenerativeAI, SchemaType } from 'npm:@google/generative-ai@0.24.1';
 import { notifyAdminSafe } from './_shared/notify-admin-safe.ts';
-import { getSchemaByExecutionOrder } from '../_shared/response-schemas.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
+
+const campoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    label: { type: SchemaType.STRING },
+    valor: { type: SchemaType.STRING, nullable: true },
+    paginas_referencia: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id", "label"]
+};
+
+const documentoAnalisadoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    arquivo: { type: SchemaType.STRING },
+    paginas: { type: SchemaType.INTEGER },
+    tipoProcesso: { type: SchemaType.STRING }
+  },
+  required: ["id", "arquivo"]
+};
+
+const parteSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    nome: { type: SchemaType.STRING },
+    cpfCnpj: { type: SchemaType.STRING, nullable: true },
+    Polo: { type: SchemaType.STRING },
+    poloDoUsuario: { type: SchemaType.BOOLEAN }
+  },
+  required: ["id", "nome", "Polo"]
+};
+
+const eventoProcessualSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    evento: { type: SchemaType.STRING },
+    data: { type: SchemaType.STRING, nullable: true },
+    resumo: { type: SchemaType.STRING }
+  },
+  required: ["id", "evento", "resumo"]
+};
+
+const processoRelacionadoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    numero: { type: SchemaType.STRING, nullable: true },
+    relacao: { type: SchemaType.STRING, nullable: true },
+    notas: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const secaoGenericaEtapa1Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    campos: { type: SchemaType.ARRAY, items: campoSchema },
+    documentosAnalisados: { type: SchemaType.ARRAY, items: documentoAnalisadoSchema },
+    lista: { type: SchemaType.ARRAY, items: parteSchema },
+    eventosProcessuais: { type: SchemaType.ARRAY, items: eventoProcessualSchema },
+    processosRelacionados: { type: SchemaType.ARRAY, items: processoRelacionadoSchema }
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa1Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    visaoGeralProcesso: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoGenericaEtapa1Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["visaoGeralProcesso"]
+};
+
+const proximaProvidenciaSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    parte: { type: SchemaType.STRING, nullable: true },
+    providencia: { type: SchemaType.STRING, nullable: true },
+    prazo: { type: SchemaType.STRING, nullable: true },
+    carater_urgencia: { type: SchemaType.BOOLEAN },
+    paginas_referencia: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const statusProcessualSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    descricao: { type: SchemaType.STRING, nullable: true },
+    paginas_referencia: { type: SchemaType.STRING, nullable: true },
+    proximaProvidencia: proximaProvidenciaSchema
+  }
+};
+
+const secaoEtapa2Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    campos: { type: SchemaType.ARRAY, items: campoSchema },
+    statusProcessual: statusProcessualSchema
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa2Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    resumoEstrategico: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa2Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["resumoEstrategico"]
+};
+
+const prazoDerivadoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipoPrazo: { type: SchemaType.STRING, nullable: true },
+    finalidade: { type: SchemaType.STRING, nullable: true },
+    baseLegal: { type: SchemaType.STRING, nullable: true },
+    dataInicio: { type: SchemaType.STRING, nullable: true },
+    duracao: { type: SchemaType.STRING, nullable: true },
+    dataFinal: { type: SchemaType.STRING, nullable: true },
+    status: { type: SchemaType.STRING, nullable: true },
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const destinatarioSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    nome: { type: SchemaType.STRING, nullable: true },
+    documento: { type: SchemaType.STRING, nullable: true },
+    tipo: { type: SchemaType.STRING, nullable: true },
+    status: { type: SchemaType.STRING, nullable: true },
+    dataAto: { type: SchemaType.STRING, nullable: true },
+    dataJuntada: { type: SchemaType.STRING, nullable: true },
+    notas: { type: SchemaType.STRING, nullable: true },
+    pagina: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const detalhesARSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    nomeManuscrito: { type: SchemaType.STRING, nullable: true },
+    assinaturaPresente: { type: SchemaType.STRING, nullable: true },
+    motivoDevolucaoExistente: { type: SchemaType.STRING, nullable: true },
+    motivoDevolucaoIndicado: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+    notas: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const atoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipoAto: { type: SchemaType.STRING, nullable: true },
+    modalidade: { type: SchemaType.STRING, nullable: true },
+    destinatario: destinatarioSchema,
+    detalhesAR: detalhesARSchema,
+    prazosDerivados: { type: SchemaType.ARRAY, items: prazoDerivadoSchema }
+  },
+  required: ["id"]
+};
+
+const secaoEtapa3Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    listaAtos: { type: SchemaType.ARRAY, items: atoSchema }
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa3Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    comunicacoesPrazos: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa3Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["comunicacoesPrazos"]
+};
+
+const recursoIdentificadoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipoRecurso: { type: SchemaType.STRING, nullable: true },
+    dataInterposicao: { type: SchemaType.STRING, nullable: true },
+    paginas_referencia: { type: SchemaType.STRING, nullable: true },
+    tempestividade: { type: SchemaType.STRING, nullable: true },
+    preparoComprovado: { type: SchemaType.STRING, nullable: true },
+    regularidadeFormal: { type: SchemaType.STRING, nullable: true },
+    juizoAdmissibilidade: { type: SchemaType.STRING, nullable: true },
+    dataDecisaoAdmissibilidade: { type: SchemaType.STRING, nullable: true },
+    decisaoAdmissibilidadePagina: { type: SchemaType.STRING, nullable: true },
+    situacaoAtual: { type: SchemaType.STRING, nullable: true },
+    notas: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const recursoCabivelSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipoDecisaoRecorrivel: { type: SchemaType.STRING, nullable: true },
+    dataDecisao: { type: SchemaType.STRING, nullable: true },
+    paginas_referencia: { type: SchemaType.STRING, nullable: true },
+    recursoCabivel: { type: SchemaType.STRING, nullable: true },
+    prazoLegal: { type: SchemaType.STRING, nullable: true },
+    baseLegal: { type: SchemaType.STRING, nullable: true },
+    dataFinalInterposicao: { type: SchemaType.STRING, nullable: true },
+    situacao: { type: SchemaType.STRING, nullable: true },
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const secaoEtapa4Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    listaRecursosIdentificados: { type: SchemaType.ARRAY, items: recursoIdentificadoSchema },
+    listaRecursosCabiveis: { type: SchemaType.ARRAY, items: recursoCabivelSchema }
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa4Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    recursosAdmissibilidade: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa4Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["recursosAdmissibilidade"]
+};
+
+const estrategiaComplementarSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    descricao: { type: SchemaType.STRING, nullable: true },
+    condicaoAdocao: { type: SchemaType.STRING, nullable: true },
+    fundamentacaoLegal: { type: SchemaType.STRING, nullable: true },
+    finalidadePratica: { type: SchemaType.STRING, nullable: true },
+    riscoProcessual: { type: SchemaType.STRING, nullable: true },
+    prioridade: { type: SchemaType.STRING, nullable: true },
+    paginasReferencia: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const estrategiaPrincipalSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    descricao: { type: SchemaType.STRING, nullable: true },
+    fundamentacaoLegal: { type: SchemaType.STRING, nullable: true },
+    finalidadePratica: { type: SchemaType.STRING, nullable: true },
+    riscoProcessual: { type: SchemaType.STRING, nullable: true },
+    custoEstimado: { type: SchemaType.STRING, nullable: true },
+    prioridade: { type: SchemaType.STRING, nullable: true },
+    paginasReferencia: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const estrategiaPoloSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    polo: { type: SchemaType.STRING },
+    situacaoAtualPolo: { type: SchemaType.STRING, nullable: true },
+    estrategiaPrincipal: estrategiaPrincipalSchema,
+    estrategiasComplementares: { type: SchemaType.ARRAY, items: estrategiaComplementarSchema }
+  },
+  required: ["id", "polo"]
+};
+
+const analiseGlobalEtapa5Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    sinteseEstrategica: { type: SchemaType.STRING, nullable: true },
+    pontosAtencaoCriticos: { type: SchemaType.STRING, nullable: true },
+    oportunidadesJuridicasGerais: { type: SchemaType.STRING, nullable: true },
+    riscosGeraisIdentificados: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const secaoEtapa5Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    listaEstrategias: { type: SchemaType.ARRAY, items: estrategiaPoloSchema },
+    analiseGlobal: analiseGlobalEtapa5Schema
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa5Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    estrategiasJuridicas: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa5Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["estrategiasJuridicas"]
+};
+
+const alertaSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    categoria: { type: SchemaType.STRING, nullable: true },
+    descricaoRisco: { type: SchemaType.STRING, nullable: true },
+    poloAfetado: { type: SchemaType.STRING, nullable: true },
+    gravidade: { type: SchemaType.STRING, nullable: true },
+    urgencia: { type: SchemaType.STRING, nullable: true },
+    acaoRecomendada: { type: SchemaType.STRING, nullable: true },
+    fundamentacaoLegal: { type: SchemaType.STRING, nullable: true },
+    paginasReferencia: { type: SchemaType.STRING, nullable: true },
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const secaoEtapa6Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    listaAlertas: { type: SchemaType.ARRAY, items: alertaSchema },
+    campos: { type: SchemaType.ARRAY, items: campoSchema }
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa6Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    riscosAlertasProcessuais: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa6Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["riscosAlertasProcessuais"]
+};
+
+const honorarioSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipo: { type: SchemaType.STRING, nullable: true },
+    percentualOuValor: { type: SchemaType.STRING, nullable: true },
+    valorEstimado: { type: SchemaType.STRING, nullable: true },
+    faseFixacao: { type: SchemaType.STRING, nullable: true },
+    poloBeneficiado: { type: SchemaType.STRING, nullable: true },
+    baseLegal: { type: SchemaType.STRING, nullable: true },
+    dataFixacao: { type: SchemaType.STRING, nullable: true },
+    paginaReferencia: { type: SchemaType.STRING, nullable: true },
+    situacao: { type: SchemaType.STRING, nullable: true },
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const baseDocumentalSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    arquivo: { type: SchemaType.STRING, nullable: true },
+    pagina: { type: SchemaType.STRING, nullable: true },
+    eventoNoSistema: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const constricaoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipo: { type: SchemaType.STRING, nullable: true },
+    valorConstrito: { type: SchemaType.STRING, nullable: true },
+    dataConstricao: { type: SchemaType.STRING, nullable: true },
+    tipoDeBem: { type: SchemaType.STRING, nullable: true },
+    situacaoAtual: { type: SchemaType.STRING, nullable: true },
+    baseDocumental: baseDocumentalSchema,
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const liberacaoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipo: { type: SchemaType.STRING, nullable: true },
+    valorLiberado: { type: SchemaType.STRING, nullable: true },
+    dataLiberacao: { type: SchemaType.STRING, nullable: true },
+    beneficiario: { type: SchemaType.STRING, nullable: true },
+    baseDocumental: baseDocumentalSchema,
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const depositoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipo: { type: SchemaType.STRING, nullable: true },
+    valorDepositado: { type: SchemaType.STRING, nullable: true },
+    dataDeposito: { type: SchemaType.STRING, nullable: true },
+    depositante: { type: SchemaType.STRING, nullable: true },
+    finalidade: { type: SchemaType.STRING, nullable: true },
+    baseDocumental: baseDocumentalSchema,
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const secaoEtapa7Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    campos: { type: SchemaType.ARRAY, items: campoSchema },
+    observacoes: { type: SchemaType.STRING, nullable: true },
+    listaHonorarios: { type: SchemaType.ARRAY, items: honorarioSchema },
+    listaConstricoes: { type: SchemaType.ARRAY, items: constricaoSchema },
+    listaLiberacoes: { type: SchemaType.ARRAY, items: liberacaoSchema },
+    listaDepositos: { type: SchemaType.ARRAY, items: depositoSchema }
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa7Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    balancoFinanceiro: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa7Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["balancoFinanceiro"]
+};
+
+const preclusaoRecenteSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    tipo: { type: SchemaType.STRING, nullable: true },
+    atoOuFaseAtingida: { type: SchemaType.STRING, nullable: true },
+    poloAfetado: { type: SchemaType.STRING, nullable: true },
+    dataInicioPrazo: { type: SchemaType.STRING, nullable: true },
+    dataFinalPrazo: { type: SchemaType.STRING, nullable: true },
+    baseLegal: { type: SchemaType.STRING, nullable: true },
+    consequenciaPratica: { type: SchemaType.STRING, nullable: true },
+    acaoRecomendada: { type: SchemaType.STRING, nullable: true },
+    statusPrazo: { type: SchemaType.STRING, nullable: true },
+    paginasReferencia: { type: SchemaType.STRING, nullable: true },
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const riscoImediatoSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    atoOuFase: { type: SchemaType.STRING, nullable: true },
+    poloAfetado: { type: SchemaType.STRING, nullable: true },
+    prazoFinalEstimado: { type: SchemaType.STRING, nullable: true },
+    urgencia: { type: SchemaType.STRING, nullable: true },
+    acaoRecomendada: { type: SchemaType.STRING, nullable: true },
+    baseLegal: { type: SchemaType.STRING, nullable: true },
+    baseDocumental: baseDocumentalSchema,
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  },
+  required: ["id"]
+};
+
+const analiseGlobalEtapa8Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    totalPreclusoesRecentes: { type: SchemaType.INTEGER, nullable: true },
+    totalRiscosImediatos: { type: SchemaType.INTEGER, nullable: true },
+    analiseImpactoEstrategico: { type: SchemaType.STRING, nullable: true },
+    oportunidadesAlegacao: { type: SchemaType.STRING, nullable: true },
+    acoesPrioritariasGerais: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const secaoEtapa8Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    listaPreclusoesRecentes: { type: SchemaType.ARRAY, items: preclusaoRecenteSchema },
+    listaRiscosImediatos: { type: SchemaType.ARRAY, items: riscoImediatoSchema },
+    analiseGlobal: analiseGlobalEtapa8Schema
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa8Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    mapaPreclusoesProcessuais: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa8Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["mapaPreclusoesProcessuais"]
+};
+
+const completudeSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    nivel: { type: SchemaType.STRING, nullable: true },
+    descricao: { type: SchemaType.STRING, nullable: true },
+    premissasFundamentais: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+  }
+};
+
+const legibilidadeSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    nivel: { type: SchemaType.STRING, nullable: true },
+    descricao: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const coerenciaCronologicaSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    status: { type: SchemaType.STRING, nullable: true },
+    observacoes: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const analiseConfiancaSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    nivelConfianca: { type: SchemaType.STRING, nullable: true },
+    justificativa: { type: SchemaType.STRING, nullable: true },
+    limitacoesAnalise: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const sinteseGlobalSchema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    situacaoAtualProcesso: { type: SchemaType.STRING, nullable: true },
+    tendenciaEvolucao: { type: SchemaType.STRING, nullable: true },
+    sinteseRiscosOportunidades: { type: SchemaType.STRING, nullable: true },
+    proximosPassosPossiveis: { type: SchemaType.STRING, nullable: true },
+    observacoesFinais: { type: SchemaType.STRING, nullable: true }
+  }
+};
+
+const secaoEtapa9Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    id: { type: SchemaType.STRING },
+    titulo: { type: SchemaType.STRING },
+    completude: completudeSchema,
+    legibilidade: legibilidadeSchema,
+    coerenciaCronologica: coerenciaCronologicaSchema,
+    analiseConfianca: analiseConfiancaSchema,
+    sinteseGlobal: sinteseGlobalSchema
+  },
+  required: ["id", "titulo"]
+};
+
+const etapa9Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    conclusoesPerspectivas: {
+      type: SchemaType.OBJECT,
+      properties: {
+        titulo: { type: SchemaType.STRING },
+        secoes: {
+          type: SchemaType.ARRAY,
+          items: secaoEtapa9Schema
+        }
+      },
+      required: ["titulo", "secoes"]
+    }
+  },
+  required: ["conclusoesPerspectivas"]
+};
+
+const schemasMap: Record<number, any> = {
+  1: etapa1Schema,
+  2: etapa2Schema,
+  3: etapa3Schema,
+  4: etapa4Schema,
+  5: etapa5Schema,
+  6: etapa6Schema,
+  7: etapa7Schema,
+  8: etapa8Schema,
+  9: etapa9Schema,
+};
+
+function getSchemaByExecutionOrder(executionOrder: number | null | undefined): any {
+  if (executionOrder === null || executionOrder === undefined) {
+    return undefined;
+  }
+  if (executionOrder < 1 || executionOrder > 9) {
+    return undefined;
+  }
+  return schemasMap[executionOrder];
+}
 
 interface AnalysisResult {
   id: string;
@@ -168,7 +855,7 @@ async function notifyModelSwitch(
       .insert({
         user_id: processo.user_id,
         type: 'model_switch',
-        message: `Troca de modelo: ${fromModel} \u2192 ${toModel}. Motivo: ${reason}`,
+        message: `Troca de modelo: ${fromModel} → ${toModel}. Motivo: ${reason}`,
         processo_id: processoId,
       });
   }
@@ -188,19 +875,19 @@ async function getMaxOutputTokens(
       .maybeSingle();
 
     if (error) {
-      console.warn(`\u26a0\ufe0f Error fetching token limit for ${contextKey}, using fallback:`, error);
+      console.warn(`⚠️ Error fetching token limit for ${contextKey}, using fallback:`, error);
       return fallbackValue;
     }
 
     if (data) {
-      console.log(`\u2705 Token limit for ${contextKey}: ${data.max_output_tokens}`);
+      console.log(`✅ Token limit for ${contextKey}: ${data.max_output_tokens}`);
       return data.max_output_tokens;
     }
 
-    console.warn(`\u26a0\ufe0f No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
+    console.warn(`⚠️ No active token limit found for ${contextKey}, using fallback: ${fallbackValue}`);
     return fallbackValue;
   } catch (error) {
-    console.warn(`\u26a0\ufe0f Exception fetching token limit for ${contextKey}, using fallback:`, error);
+    console.warn(`⚠️ Exception fetching token limit for ${contextKey}, using fallback:`, error);
     return fallbackValue;
   }
 }
@@ -219,14 +906,14 @@ async function ensureChunksUploaded(
     .order('chunk_index', { ascending: true });
 
   if (chunksError || !chunks || chunks.length === 0) {
-    throw new Error('Chunks n\u00e3o encontrados');
+    throw new Error('Chunks não encontrados');
   }
 
-  console.log(`[${callId}] \ud83d\udd0d Verificando uploads de ${chunks.length} chunks...`);
+  console.log(`[${callId}] 🔍 Verificando uploads de ${chunks.length} chunks...`);
 
   for (const chunk of chunks) {
     if (!chunk.gemini_file_uri || chunk.gemini_file_state !== 'ACTIVE') {
-      console.log(`[${callId}] \ud83d\udce4 Upload necess\u00e1rio para chunk ${chunk.chunk_index}/${chunks.length}`);
+      console.log(`[${callId}] 📤 Upload necessário para chunk ${chunk.chunk_index}/${chunks.length}`);
 
       try {
         const uploadResponse = await fetch(`${supabaseUrl}/functions/v1/upload-to-gemini`, {
@@ -247,20 +934,20 @@ async function ensureChunksUploaded(
         }
 
         const uploadData = await uploadResponse.json();
-        console.log(`[${callId}] \u2705 Chunk ${chunk.chunk_index} enviado: ${uploadData.file_uri}`);
+        console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} enviado: ${uploadData.file_uri}`);
 
         chunk.gemini_file_uri = uploadData.file_uri;
         chunk.gemini_file_state = 'ACTIVE';
       } catch (uploadError: any) {
-        console.error(`[${callId}] \u274c Erro no upload do chunk ${chunk.chunk_index}:`, uploadError);
+        console.error(`[${callId}] ❌ Erro no upload do chunk ${chunk.chunk_index}:`, uploadError);
         throw new Error(`Falha no upload do chunk ${chunk.chunk_index}: ${uploadError.message}`);
       }
     } else {
-      console.log(`[${callId}] \u2705 Chunk ${chunk.chunk_index} j\u00e1 enviado`);
+      console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} já enviado`);
     }
   }
 
-  console.log(`[${callId}] \u2705 Todos os chunks prontos para processamento`);
+  console.log(`[${callId}] ✅ Todos os chunks prontos para processamento`);
   return chunks as ProcessChunk[];
 }
 
@@ -270,7 +957,7 @@ async function loadPDFData(
   processo_id: string
 ): Promise<string> {
   if (processo.is_chunked && processo.total_chunks) {
-    console.log(`\ud83d\udce6 Carregando PDF chunkeado (${processo.total_chunks} chunks)...`);
+    console.log(`📦 Carregando PDF chunkeado (${processo.total_chunks} chunks)...`);
 
     const { data: chunks, error: chunksError } = await supabase
       .from('pdf_chunks')
@@ -283,24 +970,24 @@ async function loadPDFData(
     }
 
     const base64Data = chunks.map((c: any) => c.chunk_data).join('');
-    console.log(`\u2705 ${chunks.length} chunks reunidos`);
+    console.log(`✅ ${chunks.length} chunks reunidos`);
     return base64Data;
   }
 
   if (processo.pdf_base64) {
-    console.log('\ud83d\udcc4 Usando PDF inline do banco de dados');
+    console.log('📄 Usando PDF inline do banco de dados');
     return processo.pdf_base64;
   }
 
   if (processo.file_path) {
-    console.log('\u26a0\ufe0f PDF n\u00e3o encontrado no banco, baixando do Storage...');
+    console.log('⚠️ PDF não encontrado no banco, baixando do Storage...');
 
     const { data: storageData } = await supabase.storage
       .from('processos')
       .download(processo.file_path);
 
     if (!storageData) {
-      throw new Error('Arquivo n\u00e3o encontrado no storage');
+      throw new Error('Arquivo não encontrado no storage');
     }
 
     const arrayBuffer = await storageData.arrayBuffer();
@@ -317,7 +1004,7 @@ async function loadPDFData(
     return btoa(binary);
   }
 
-  throw new Error('Nenhuma fonte de PDF dispon\u00edvel (base64, chunks ou file_path)');
+  throw new Error('Nenhuma fonte de PDF disponível (base64, chunks ou file_path)');
 }
 
 function isTimeoutError(error: any): boolean {
@@ -337,7 +1024,7 @@ async function scheduleRetry(
   analysis_result_id: string,
   error: any
 ): Promise<void> {
-  console.log(`\ud83d\udd04 Agendando retry autom\u00e1tico devido a timeout...`);
+  console.log(`🔄 Agendando retry automático devido a timeout...`);
 
   try {
     await supabase
@@ -351,9 +1038,9 @@ async function scheduleRetry(
       })
       .eq('id', analysis_result_id);
 
-    console.log(`\u2705 Retry agendado - prompt voltou para pending`);
+    console.log(`✅ Retry agendado - prompt voltou para pending`);
   } catch (retryError) {
-    console.error('\u274c Erro ao agendar retry:', retryError);
+    console.error('❌ Erro ao agendar retry:', retryError);
   }
 }
 
@@ -372,7 +1059,7 @@ Deno.serve(async (req: Request) => {
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY')!;
 
     if (!supabaseUrl || !supabaseServiceKey || !geminiApiKey) {
-      throw new Error('Vari\u00e1veis de ambiente ausentes');
+      throw new Error('Variáveis de ambiente ausentes');
     }
 
     const authHeader = req.headers.get('Authorization');
@@ -385,7 +1072,7 @@ Deno.serve(async (req: Request) => {
 
     if (!processo_id) {
       return new Response(
-        JSON.stringify({ success: false, error: 'processo_id \u00e9 obrigat\u00f3rio' }),
+        JSON.stringify({ success: false, error: 'processo_id é obrigatório' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -405,11 +1092,11 @@ Deno.serve(async (req: Request) => {
         throw new Error('Unauthorized');
       }
     } else {
-      console.log(`[${callId}] \ud83d\udd11 Chamada interna com service key detectada`);
+      console.log(`[${callId}] 🔑 Chamada interna com service key detectada`);
     }
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    console.log(`[${callId}] \ud83d\udccb Obtendo pr\u00f3ximo prompt para processo ${processo_id}...`);
+    console.log(`[${callId}] 📋 Obtendo próximo prompt para processo ${processo_id}...`);
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
@@ -418,18 +1105,18 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (processoError || !processo) {
-      throw new Error(`Processo n\u00e3o encontrado: ${processo_id}`);
+      throw new Error(`Processo não encontrado: ${processo_id}`);
     }
 
     const processoData = processo as ProcessoData;
 
     if (processoData.status === 'completed') {
-      console.log(`[${callId}] \u2705 Processo j\u00e1 conclu\u00eddo`);
+      console.log(`[${callId}] ✅ Processo já concluído`);
       return new Response(
         JSON.stringify({
           success: true,
           completed: true,
-          message: 'Processo j\u00e1 conclu\u00eddo',
+          message: 'Processo já concluído',
         }),
         {
           status: 200,
@@ -449,7 +1136,7 @@ Deno.serve(async (req: Request) => {
       });
 
     if (lockError) {
-      console.error(`[${callId}] \u274c Erro ao obter lock:`, lockError);
+      console.error(`[${callId}] ❌ Erro ao obter lock:`, lockError);
       return new Response(
         JSON.stringify({ success: false, error: 'Falha ao obter lock' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -457,9 +1144,9 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!lockResult || !Array.isArray(lockResult) || lockResult.length === 0) {
-      console.log(`[${callId}] \u23ed\ufe0f Nenhum prompt pendente ou j\u00e1 em processamento`);
+      console.log(`[${callId}] ⏭️ Nenhum prompt pendente ou já em processamento`);
       return new Response(
-        JSON.stringify({ success: true, message: 'Nenhum prompt dispon\u00edvel' }),
+        JSON.stringify({ success: true, message: 'Nenhum prompt disponível' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -467,15 +1154,15 @@ Deno.serve(async (req: Request) => {
     const analysisResult = lockResult[0] as AnalysisResult;
     analysis_result_id = analysisResult.id;
 
-    console.log(`[${callId}] \u2705 Lock obtido para: ${analysisResult.prompt_title}`);
+    console.log(`[${callId}] ✅ Lock obtido para: ${analysisResult.prompt_title}`);
     console.log(`[${callId}]    - Analysis Result ID: ${analysis_result_id}`);
     console.log(`[${callId}]    - Execution Order: ${analysisResult.execution_order}`);
     console.log(`[${callId}]    - Retry Count: ${analysisResult.retry_count || 0}/${analysisResult.max_retries || 3}`);
 
-    console.log(`[${callId}] \ud83d\udcc4 Processo: ${processoData.file_name}`);
-    console.log(`[${callId}] \ud83d\udcdd Prompt: ${analysisResult.prompt_title}`);
+    console.log(`[${callId}] 📄 Processo: ${processoData.file_name}`);
+    console.log(`[${callId}] 📝 Prompt: ${analysisResult.prompt_title}`);
     console.log(`[${callId}]    - Is chunked: ${processoData.is_chunked}`);
-    console.log(`[${callId}] \ud83c\udfc3 Prompt j\u00e1 marcado como 'processing' pela fun\u00e7\u00e3o acquire_next_prompt_lock`);
+    console.log(`[${callId}] 🏃 Prompt já marcado como 'processing' pela função acquire_next_prompt_lock`);
 
     const useFileApi = processoData.is_chunked
       ? (processoData.total_chunks_count || 0) > 0
@@ -484,14 +1171,14 @@ Deno.serve(async (req: Request) => {
     let chunks: ProcessChunk[] | null = null;
 
     if (useFileApi && processoData.is_chunked && (processoData.total_chunks_count || 0) > 0) {
-      console.log(`[${callId}] \ud83d\udcc2 Usando File API do Gemini para chunks`);
+      console.log(`[${callId}] 📂 Usando File API do Gemini para chunks`);
       chunks = await ensureChunksUploaded(supabase, supabaseUrl, supabaseServiceKey, processo_id, callId);
     } else if (!useFileApi) {
-      console.log(`[${callId}] \ud83d\udce6 Usando Base64 inline`);
+      console.log(`[${callId}] 📦 Usando Base64 inline`);
     }
 
     const activeModels = await getActiveModels(supabase);
-    console.log(`[${callId}] \ud83e\udd16 ${activeModels.length} modelo(s) ativo(s) dispon\u00edvel(is)`);
+    console.log(`[${callId}] 🤖 ${activeModels.length} modelo(s) ativo(s) disponível(is)`);
 
     const contextKey = processoData.is_chunked ? 'analysis_complex_files' : 'analysis_small_files';
 
@@ -506,7 +1193,7 @@ Deno.serve(async (req: Request) => {
       const modelId = modelConfig.system_model || modelConfig.model_id;
       const temperature = modelConfig.temperature ?? 0.2;
 
-      console.log(`\n[${callId}] \ud83d\udd0d Tentativa ${attemptNumber}/${activeModels.length}: ${modelName}`);
+      console.log(`\n[${callId}] 🔍 Tentativa ${attemptNumber}/${activeModels.length}: ${modelName}`);
 
       await updateProcessoModelInfo(
         supabase,
@@ -525,9 +1212,9 @@ Deno.serve(async (req: Request) => {
           processo_id,
           previousModelName,
           modelName,
-          'Modelo anterior indispon\u00edvel ou com erro'
+          'Modelo anterior indisponível ou com erro'
         );
-        console.log(`[${callId}] \ud83d\udce2 Notifica\u00e7\u00e3o de troca de modelo enviada`);
+        console.log(`[${callId}] 📢 Notificação de troca de modelo enviada`);
       }
 
       try {
@@ -547,7 +1234,7 @@ Deno.serve(async (req: Request) => {
           model: modelId,
         });
 
-        console.log(`[${callId}] \ud83d\ude80 Enviando prompt para Gemini...`);
+        console.log(`[${callId}] 🚀 Enviando prompt para Gemini...`);
 
         if (!analysisResult.prompt_content || analysisResult.prompt_content.trim() === '') {
           throw new Error('Prompt content is empty or invalid');
@@ -557,16 +1244,16 @@ Deno.serve(async (req: Request) => {
         let totalTokensUsed = 0;
 
         if (useFileApi && chunks && chunks.length >= 3) {
-          console.log(`[${callId}] \u26a1 Processando ${chunks.length} chunks individualmente`);
+          console.log(`[${callId}] ⚡ Processando ${chunks.length} chunks individualmente`);
 
           const chunkResults: string[] = [];
 
           for (const chunk of chunks) {
             if (!chunk.gemini_file_uri) {
-              throw new Error(`Chunk ${chunk.chunk_index} n\u00e3o foi enviado para Gemini`);
+              throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
             }
 
-            console.log(`[${callId}] \ud83d\udcc4 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
+            console.log(`[${callId}] 📄 Processando chunk ${chunk.chunk_index}/${chunks.length}...`);
 
             const chunkParts = [
               {
@@ -576,7 +1263,7 @@ Deno.serve(async (req: Request) => {
                 },
               },
               {
-                text: `${analysisResult.prompt_content}\n\nIMPORTANTE: Esta \u00e9 a parte ${chunk.chunk_index} de ${chunks.length} do documento. Analise apenas este trecho e forne\u00e7a os resultados correspondentes.`
+                text: `${analysisResult.prompt_content}\n\nIMPORTANTE: Esta é a parte ${chunk.chunk_index} de ${chunks.length} do documento. Analise apenas este trecho e forneça os resultados correspondentes.`
               }
             ];
 
@@ -597,7 +1284,7 @@ Deno.serve(async (req: Request) => {
             const chunkTokens = chunkResponse.usageMetadata?.totalTokenCount || 0;
             totalTokensUsed += chunkTokens;
 
-            console.log(`[${callId}] \u2705 Chunk ${chunk.chunk_index} processado: ${chunkTokens} tokens`);
+            console.log(`[${callId}] ✅ Chunk ${chunk.chunk_index} processado: ${chunkTokens} tokens`);
 
             if (chunkText.startsWith('```json')) {
               chunkText = chunkText.replace(/^```json\n?/, '');
@@ -612,9 +1299,9 @@ Deno.serve(async (req: Request) => {
             chunkResults.push(chunkText.trim());
           }
 
-          console.log(`[${callId}] \ud83d\udd04 Combinando resultados de ${chunks.length} chunks...`);
+          console.log(`[${callId}] 🔄 Combinando resultados de ${chunks.length} chunks...`);
 
-          const combinationPrompt = `Voc\u00ea est\u00e1 combinando ${chunks.length} an\u00e1lises parciais de um documento dividido em partes.\n\nAN\u00c1LISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas an\u00e1lises em uma \u00fanica an\u00e1lise completa e coerente, removendo duplica\u00e7\u00f5es e garantindo consist\u00eancia.\n\nIMPORTANTE: Responda APENAS com o JSON ou conte\u00fado estruturado. N\u00c3O inclua texto introdut\u00f3rio como "Com base na consolida\u00e7\u00e3o..." ou explica\u00e7\u00f5es. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: come\u00e7ando com "{" para JSON).`;
+          const combinationPrompt = `Você está combinando ${chunks.length} análises parciais de um documento dividido em partes.\n\nANÁLISES PARCIAIS:\n${chunkResults.map((r, i) => `=== PARTE ${i + 1} ===\n${r}`).join('\n\n')}\n\nTAREFA: Combine essas análises em uma única análise completa e coerente, removendo duplicações e garantindo consistência.\n\nIMPORTANTE: Responda APENAS com o JSON ou conteúdo estruturado. NÃO inclua texto introdutório como "Com base na consolidação..." ou explicações. Inicie sua resposta DIRETAMENTE com o formato esperado (ex: começando com "{" para JSON).`;
 
           const combinationResult = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: combinationPrompt }] }],
@@ -628,16 +1315,16 @@ Deno.serve(async (req: Request) => {
           const combinationTokens = combinationResult.response.usageMetadata?.totalTokenCount || 0;
           totalTokensUsed += combinationTokens;
 
-          console.log(`[${callId}] \u2705 Combina\u00e7\u00e3o conclu\u00edda: ${combinationTokens} tokens`);
-          console.log(`[${callId}] \ud83d\udcca Total de tokens: ${totalTokensUsed}`);
+          console.log(`[${callId}] ✅ Combinação concluída: ${combinationTokens} tokens`);
+          console.log(`[${callId}] 📊 Total de tokens: ${totalTokensUsed}`);
         } else if (useFileApi && chunks) {
-          console.log(`[${callId}] \ud83d\udcc2 Processando ${chunks.length} chunks com File API`);
+          console.log(`[${callId}] 📂 Processando ${chunks.length} chunks com File API`);
 
           const parts: any[] = [];
 
           for (const chunk of chunks) {
             if (!chunk.gemini_file_uri) {
-              throw new Error(`Chunk ${chunk.chunk_index} n\u00e3o foi enviado para Gemini`);
+              throw new Error(`Chunk ${chunk.chunk_index} não foi enviado para Gemini`);
             }
 
             parts.push({
@@ -661,7 +1348,7 @@ Deno.serve(async (req: Request) => {
             },
           });
         } else if (useFileApi && processoData.gemini_file_uri) {
-          console.log(`[${callId}] \ud83d\udcc2 Processando com File API (arquivo \u00fanico)`);
+          console.log(`[${callId}] 📂 Processando com File API (arquivo único)`);
 
           result = await model.generateContent({
             contents: [
@@ -687,7 +1374,7 @@ Deno.serve(async (req: Request) => {
             },
           });
         } else {
-          console.log(`[${callId}] \ud83d\udce6 Processando com Base64 inline`);
+          console.log(`[${callId}] 📦 Processando com Base64 inline`);
 
           const pdfBase64Data = await loadPDFData(supabase, processoData, processo_id);
 
@@ -731,12 +1418,12 @@ Deno.serve(async (req: Request) => {
           totalTokensUsed = response.usageMetadata?.totalTokenCount || 0;
         }
 
-        console.log(`[${callId}] \u2705 Resposta recebida do Gemini`);
+        console.log(`[${callId}] ✅ Resposta recebida do Gemini`);
         console.log(`[${callId}]    - Tamanho: ${text.length} caracteres`);
         console.log(`[${callId}]    - Tokens: ${totalTokensUsed}`);
         console.log(`[${callId}]    - Tempo: ${executionTime}ms`);
 
-        console.log(`[${callId}] \ud83d\udcbe SALVAMENTO FASE 1: Salvando conte\u00fado RAW + status completed...`);
+        console.log(`[${callId}] 💾 SALVAMENTO FASE 1: Salvando conteúdo RAW + status completed...`);
 
         const { error: phase1Error } = await supabase
           .from('analysis_results')
@@ -749,11 +1436,11 @@ Deno.serve(async (req: Request) => {
           .eq('id', analysis_result_id);
 
         if (phase1Error) {
-          console.error(`[${callId}] \u274c CR\u00cdTICO: Falha ao salvar conte\u00fado RAW:`, phase1Error);
+          console.error(`[${callId}] ❌ CRÍTICO: Falha ao salvar conteúdo RAW:`, phase1Error);
           throw phase1Error;
         }
 
-        console.log(`[${callId}] \u2705 FASE 1 CONCLU\u00cdDA: Conte\u00fado + status 'completed' salvos`);
+        console.log(`[${callId}] ✅ FASE 1 CONCLUÍDA: Conteúdo + status 'completed' salvos`);
 
         if (text.startsWith('```json')) {
           text = text.replace(/^```json\n?/, '');
@@ -766,7 +1453,7 @@ Deno.serve(async (req: Request) => {
         }
         text = text.trim();
 
-        console.log(`[${callId}] \ud83d\udcbe SALVAMENTO FASE 2: Atualizando metadados...`);
+        console.log(`[${callId}] 💾 SALVAMENTO FASE 2: Atualizando metadados...`);
 
         const { error: phase2Error } = await supabase
           .from('analysis_results')
@@ -783,9 +1470,9 @@ Deno.serve(async (req: Request) => {
           .eq('id', analysis_result_id);
 
         if (phase2Error) {
-          console.warn(`[${callId}] \u26a0\ufe0f Falha ao atualizar metadados (conte\u00fado j\u00e1 salvo):`, phase2Error);
+          console.warn(`[${callId}] ⚠️ Falha ao atualizar metadados (conteúdo já salvo):`, phase2Error);
         } else {
-          console.log(`[${callId}] \u2705 FASE 2 CONCLU\u00cdDA: Metadados atualizados`);
+          console.log(`[${callId}] ✅ FASE 2 CONCLUÍDA: Metadados atualizados`);
         }
 
         await supabase
@@ -796,7 +1483,7 @@ Deno.serve(async (req: Request) => {
         await addModelAttempt(supabase, processo_id, modelConfig.id, modelName, 'success');
         await recordExecution(supabase, processo_id, analysis_result_id, modelConfig, attemptNumber, 'success', null, null, executionTime);
 
-        console.log(`[${callId}] \u2705 Sucesso com modelo: ${modelName}`);
+        console.log(`[${callId}] ✅ Sucesso com modelo: ${modelName}`);
 
         const { data: promptsStatus, error: statusError } = await supabase
           .from('analysis_results')
@@ -804,7 +1491,7 @@ Deno.serve(async (req: Request) => {
           .eq('processo_id', processo_id);
 
         if (statusError) {
-          console.error(`[${callId}] \u26a0\ufe0f Erro ao verificar status dos prompts:`, statusError);
+          console.error(`[${callId}] ⚠️ Erro ao verificar status dos prompts:`, statusError);
         }
 
         const totalPrompts = promptsStatus?.length || 0;
@@ -812,13 +1499,13 @@ Deno.serve(async (req: Request) => {
         const pendingPrompts = promptsStatus?.filter(p => p.status === 'pending').length || 0;
         const runningPrompts = promptsStatus?.filter(p => p.status === 'processing').length || 0;
 
-        console.log(`[${callId}] \ud83d\udcca Status dos prompts: ${completedPrompts}/${totalPrompts} conclu\u00eddos, ${pendingPrompts} pendentes, ${runningPrompts} em execu\u00e7\u00e3o`);
+        console.log(`[${callId}] 📊 Status dos prompts: ${completedPrompts}/${totalPrompts} concluídos, ${pendingPrompts} pendentes, ${runningPrompts} em execução`);
 
         const allPromptsCompleted = totalPrompts > 0 && completedPrompts === totalPrompts;
         const hasMoreToProcess = pendingPrompts > 0 || runningPrompts > 0;
 
         if (pendingPrompts > 0 && runningPrompts === 0) {
-          console.log(`[${callId}] \ud83d\udd04 Disparando processamento do pr\u00f3ximo prompt...`);
+          console.log(`[${callId}] 🔄 Disparando processamento do próximo prompt...`);
 
           const dispatchNextPrompt = async (retries = 3) => {
             for (let attempt = 1; attempt <= retries; attempt++) {
@@ -833,13 +1520,13 @@ Deno.serve(async (req: Request) => {
                 });
 
                 if (response.ok) {
-                  console.log(`[${callId}] \u2705 Pr\u00f3ximo prompt disparado com sucesso`);
+                  console.log(`[${callId}] ✅ Próximo prompt disparado com sucesso`);
                   return;
                 } else {
-                  console.warn(`[${callId}] \u26a0\ufe0f Resposta n\u00e3o-OK ao disparar pr\u00f3ximo prompt (tentativa ${attempt}/${retries}): ${response.status}`);
+                  console.warn(`[${callId}] ⚠️ Resposta não-OK ao disparar próximo prompt (tentativa ${attempt}/${retries}): ${response.status}`);
                 }
               } catch (err: any) {
-                console.error(`[${callId}] \u274c Erro ao disparar pr\u00f3ximo prompt (tentativa ${attempt}/${retries}):`, err?.message);
+                console.error(`[${callId}] ❌ Erro ao disparar próximo prompt (tentativa ${attempt}/${retries}):`, err?.message);
               }
 
               if (attempt < retries) {
@@ -847,7 +1534,7 @@ Deno.serve(async (req: Request) => {
               }
             }
 
-            console.error(`[${callId}] \ud83d\udca5 FALHA CR\u00cdTICA: N\u00e3o foi poss\u00edvel disparar pr\u00f3ximo prompt ap\u00f3s ${retries} tentativas`);
+            console.error(`[${callId}] 💥 FALHA CRÍTICA: Não foi possível disparar próximo prompt após ${retries} tentativas`);
             await supabase
               .from('processos')
               .update({ status: 'analyzing' })
@@ -855,12 +1542,12 @@ Deno.serve(async (req: Request) => {
           };
 
           dispatchNextPrompt().catch(err => {
-            console.error(`[${callId}] \ud83d\udca5 Erro fatal no dispatchNextPrompt:`, err);
+            console.error(`[${callId}] 💥 Erro fatal no dispatchNextPrompt:`, err);
           });
         } else if (hasMoreToProcess && runningPrompts > 0) {
-          console.log(`[${callId}] \u23f3 H\u00e1 mais prompts pendentes, mas um j\u00e1 est\u00e1 em execu\u00e7\u00e3o. Aguardando...`);
+          console.log(`[${callId}] ⏳ Há mais prompts pendentes, mas um já está em execução. Aguardando...`);
         } else if (allPromptsCompleted) {
-          console.log(`[${callId}] \ud83c\udf89 Todos os ${totalPrompts} prompts conclu\u00eddos com sucesso! Finalizando processo...`);
+          console.log(`[${callId}] 🎉 Todos os ${totalPrompts} prompts concluídos com sucesso! Finalizando processo...`);
 
           const { data: processoInfo } = await supabase
             .from('processos')
@@ -869,7 +1556,7 @@ Deno.serve(async (req: Request) => {
             .single();
 
           const totalPages = processoInfo?.transcricao?.totalPages || 0;
-          console.log(`[${callId}] \ud83d\udcc4 Total de p\u00e1ginas processadas: ${totalPages}`);
+          console.log(`[${callId}] 📄 Total de páginas processadas: ${totalPages}`);
 
           const { error: processoUpdateError } = await supabase
             .from('processos')
@@ -881,25 +1568,25 @@ Deno.serve(async (req: Request) => {
             .eq('id', processo_id);
 
           if (processoUpdateError) {
-            console.error(`[${callId}] \u274c Erro ao atualizar status do processo:`, processoUpdateError);
+            console.error(`[${callId}] ❌ Erro ao atualizar status do processo:`, processoUpdateError);
           } else {
-            console.log(`[${callId}] \u2705 Processo marcado como completed`);
+            console.log(`[${callId}] ✅ Processo marcado como completed`);
           }
 
           const { error: notificationError } = await supabase.from('notifications').insert({
             user_id: processoData.user_id,
             type: 'analysis_completed',
-            message: 'An\u00e1lise de documento conclu\u00edda com sucesso',
+            message: 'Análise de documento concluída com sucesso',
             processo_id: processo_id,
           });
 
           if (notificationError) {
-            console.error(`[${callId}] \u274c Erro ao criar notifica\u00e7\u00e3o:`, notificationError);
+            console.error(`[${callId}] ❌ Erro ao criar notificação:`, notificationError);
           } else {
-            console.log(`[${callId}] \ud83d\udce9 Notifica\u00e7\u00e3o criada para o usu\u00e1rio`);
+            console.log(`[${callId}] 📩 Notificação criada para o usuário`);
           }
 
-          console.log(`[${callId}] \ud83d\udce7 Enviando email de processo conclu\u00eddo...`);
+          console.log(`[${callId}] 📧 Enviando email de processo concluído...`);
           try {
             const emailResponse = await fetch(`${supabaseUrl}/functions/v1/send-email-process-completed`, {
               method: 'POST',
@@ -912,16 +1599,16 @@ Deno.serve(async (req: Request) => {
 
             if (emailResponse.ok) {
               const emailResult = await emailResponse.json();
-              console.log(`[${callId}] \u2705 Email enviado:`, emailResult.resend_id);
+              console.log(`[${callId}] ✅ Email enviado:`, emailResult.resend_id);
             } else {
               const errorText = await emailResponse.text();
-              console.error(`[${callId}] \u274c Falha ao enviar email:`, errorText);
+              console.error(`[${callId}] ❌ Falha ao enviar email:`, errorText);
             }
           } catch (emailError) {
-            console.error(`[${callId}] \u274c Erro ao chamar edge function de email:`, emailError);
+            console.error(`[${callId}] ❌ Erro ao chamar edge function de email:`, emailError);
           }
 
-          console.log(`[${callId}] \ud83d\udd14 Enviando notifica\u00e7\u00e3o administrativa Slack...`);
+          console.log(`[${callId}] 🔔 Enviando notificação administrativa Slack...`);
 
           const { data: userData } = await supabase
             .from('user_profiles')
@@ -946,7 +1633,7 @@ Deno.serve(async (req: Request) => {
 
           notifyAdminSafe({
             type: 'analysis_completed',
-            title: 'An\u00e1lise Conclu\u00edda',
+            title: 'Análise Concluída',
             message: `${userName || userEmail} | ${fileName} | ${durationText}`,
             severity: 'success',
             metadata: {
@@ -961,7 +1648,7 @@ Deno.serve(async (req: Request) => {
             processoId: processo_id,
           });
 
-          console.log(`[${callId}] \u2705 Processo finalizado com sucesso!`);
+          console.log(`[${callId}] ✅ Processo finalizado com sucesso!`);
         }
 
         console.log(`[${callId}] ========== PROCESS-NEXT-PROMPT END ==========\n`);
@@ -985,19 +1672,19 @@ Deno.serve(async (req: Request) => {
       } catch (modelError: any) {
         const executionTime = Date.now() - startTime;
         lastError = modelError;
-        console.error(`[${callId}] \u274c Falha com modelo ${modelName}:`, modelError.message);
+        console.error(`[${callId}] ❌ Falha com modelo ${modelName}:`, modelError.message);
 
         await addModelAttempt(supabase, processo_id, modelConfig.id, modelName, 'failed');
         await recordExecution(supabase, processo_id, analysis_result_id, modelConfig, attemptNumber, 'failed', modelError.message, modelError.code || null, executionTime);
 
         if (isTimeoutError(modelError)) {
-          console.log(`[${callId}] \u23f1\ufe0f Timeout detectado com ${modelName}`);
+          console.log(`[${callId}] ⏱️ Timeout detectado com ${modelName}`);
 
           if (attemptNumber < activeModels.length) {
-            console.log(`[${callId}] \ud83d\udd04 Tentando pr\u00f3ximo modelo dispon\u00edvel...`);
+            console.log(`[${callId}] 🔄 Tentando próximo modelo disponível...`);
             continue;
           } else {
-            console.log(`[${callId}] \u23f1\ufe0f Timeout no \u00faltimo modelo, agendando retry...`);
+            console.log(`[${callId}] ⏱️ Timeout no último modelo, agendando retry...`);
             await scheduleRetry(supabase, processo_id!, analysis_result_id!, modelError);
 
             return new Response(
@@ -1016,16 +1703,16 @@ Deno.serve(async (req: Request) => {
         }
 
         if (attemptNumber < activeModels.length) {
-          console.log(`[${callId}] \ud83d\udd04 Tentando pr\u00f3ximo modelo (${attemptNumber + 1}/${activeModels.length})...`);
+          console.log(`[${callId}] 🔄 Tentando próximo modelo (${attemptNumber + 1}/${activeModels.length})...`);
           continue;
         }
 
-        console.error(`[${callId}] \u274c Todos os ${activeModels.length} modelos falharam`);
+        console.error(`[${callId}] ❌ Todos os ${activeModels.length} modelos falharam`);
         break;
       }
     }
 
-    console.error(`[${callId}] \ud83d\udca5 Nenhum modelo conseguiu processar o prompt`);
+    console.error(`[${callId}] 💥 Nenhum modelo conseguiu processar o prompt`);
 
     if (analysis_result_id) {
       await supabase
@@ -1033,7 +1720,7 @@ Deno.serve(async (req: Request) => {
         .update({
           status: 'failed',
           processing_at: null,
-          error_message: `Todos os modelos falharam. \u00daltimo erro: ${lastError?.message || 'Unknown'}`,
+          error_message: `Todos os modelos falharam. Último erro: ${lastError?.message || 'Unknown'}`,
         })
         .eq('id', analysis_result_id);
     }
@@ -1041,7 +1728,7 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: `Falha em todos os ${activeModels.length} modelo(s) dispon\u00edveis`,
+        error: `Falha em todos os ${activeModels.length} modelo(s) disponíveis`,
         last_error: lastError?.message,
         attempts: attemptNumber,
         processo_id,
@@ -1051,7 +1738,7 @@ Deno.serve(async (req: Request) => {
     );
 
   } catch (error: any) {
-    console.error(`[${callId}] \ud83d\udca5 ERRO CR\u00cdTICO:`, error);
+    console.error(`[${callId}] 💥 ERRO CRÍTICO:`, error);
     console.error(`[${callId}] Stack:`, error?.stack);
 
     if (analysis_result_id) {
@@ -1061,7 +1748,7 @@ Deno.serve(async (req: Request) => {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
         if (isTimeoutError(error)) {
-          console.log(`[${callId}] \u23f1\ufe0f Timeout detectado no catch geral, agendando retry...`);
+          console.log(`[${callId}] ⏱️ Timeout detectado no catch geral, agendando retry...`);
           await scheduleRetry(supabase, processo_id!, analysis_result_id, error);
 
           return new Response(
@@ -1086,9 +1773,9 @@ Deno.serve(async (req: Request) => {
           })
           .eq('id', analysis_result_id);
 
-        console.log(`[${callId}] \ud83d\udd13 Lock liberado para analysis_result: ${analysis_result_id}`);
+        console.log(`[${callId}] 🔓 Lock liberado para analysis_result: ${analysis_result_id}`);
       } catch (unlockError) {
-        console.error(`[${callId}] \u274c Erro ao liberar lock:`, unlockError);
+        console.error(`[${callId}] ❌ Erro ao liberar lock:`, unlockError);
       }
     }
 

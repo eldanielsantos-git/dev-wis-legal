@@ -44,12 +44,12 @@ export async function notifyAdminSafe(params: NotifyAdminParams): Promise<void> 
     });
 
     if (response.ok) {
-      console.log('[notify-admin-safe] \u2705 Notifica\u00e7\u00e3o admin enviada');
+      console.log('[notify-admin-safe] ✅ Notificação admin enviada');
     } else {
       const errorText = await response.text();
-      console.warn(`[notify-admin-safe] \u26a0\ufe0f Falha ao enviar notifica\u00e7\u00e3o admin: ${response.status} - ${errorText}`);
+      console.warn(`[notify-admin-safe] ⚠️ Falha ao enviar notificação admin: ${response.status} - ${errorText}`);
     }
   } catch (error) {
-    console.warn('[notify-admin-safe] \u26a0\ufe0f Erro ao notificar admin (n\u00e3o-cr\u00edtico):', error instanceof Error ? error.message : 'Unknown');
+    console.warn('[notify-admin-safe] ⚠️ Erro ao notificar admin (não-crítico):', error instanceof Error ? error.message : 'Unknown');
   }
 }
