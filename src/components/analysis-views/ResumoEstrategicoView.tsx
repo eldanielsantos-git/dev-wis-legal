@@ -8,16 +8,20 @@ interface Campo {
  id: string;
  label: string;
  valor?: string;
+ paginas_referencia?: string;
 }
 
 interface ProximaProvidencia {
  parte: string;
  providencia: string;
  prazo: string;
+ carater_urgencia?: boolean;
+ paginas_referencia?: string;
 }
 
 interface StatusProcessual {
  descricao: string;
+ paginas_referencia?: string;
  proximaProvidencia: ProximaProvidencia;
 }
 
@@ -27,11 +31,13 @@ interface ArgumentoPorPolo {
  fundamentacaoLegal?: string;
  fatosRelevantes?: string;
  consistenciaJurisprudencial?: string;
+ paginas_referencia?: string;
 }
 
 interface QuestaoCentral {
  titulo: string;
  descricao: string;
+ paginas_referencia?: string;
  argumentosPorPolo: ArgumentoPorPolo[];
 }
 
@@ -154,13 +160,20 @@ export function ResumoEstrategicoView({ content }: ResumoEstrategicoViewProps) {
        </div>
 
        {/* Próxima Providência */}
-       <div className="bg-theme-bg-tertiary rounded-lg p-4 border border-theme-border">
+       <div className={`bg-theme-bg-tertiary rounded-lg p-4 border ${secao.statusProcessual.proximaProvidencia.carater_urgencia ? 'border-red-500 dark:border-red-400' : 'border-theme-border'}`}>
         <div className="flex items-start gap-3">
-         <Clock className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+         <Clock className={`w-5 h-5 flex-shrink-0 mt-0.5 ${secao.statusProcessual.proximaProvidencia.carater_urgencia ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'}`} />
          <div className="flex-1">
-          <h3 className="text-sm font-semibold text-theme-text-primary mb-2">
-           Próxima Providência
-          </h3>
+          <div className="flex items-center gap-2 mb-2">
+           <h3 className="text-sm font-semibold text-theme-text-primary">
+            Próxima Providência
+           </h3>
+           {secao.statusProcessual.proximaProvidencia.carater_urgencia && (
+            <span className="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">
+             Urgente
+            </span>
+           )}
+          </div>
           <div className="space-y-2 text-sm">
            <p className="text-theme-text-primary">
             <span className="font-medium text-gray-800 dark:text-gray-200">
