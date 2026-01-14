@@ -1,7 +1,6 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
 import { notifyAdminSafe } from './_shared/notify-admin-safe.ts';
-import { getSchemaByExecutionOrder } from '../_shared/response-schemas.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -255,15 +254,7 @@ Deno.serve(async (req: Request) => {
       const fullPrompt = `${analysisResult.system_prompt || ''}\n\n${analysisResult.prompt_content}\n\nDOCUMENTO EM LOTES:\n${allSummaries}`;
 
       const startTime = Date.now();
-      const result = await generativeModel.generateContent({
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig: {
-          temperature: model.temperature,
-          maxOutputTokens: model.maxTokens,
-          responseMimeType: 'application/json',
-          responseSchema: getSchemaByExecutionOrder(analysisResult.execution_order),
-        },
-      });
+      const result = await generativeModel.generateContent(fullPrompt);
       const response = result.response;
       const text = response.text();
 

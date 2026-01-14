@@ -2,7 +2,6 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
 import { notifyAdminSafe } from './_shared/notify-admin-safe.ts';
-import { getSchemaByExecutionOrder } from '../_shared/response-schemas.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -586,8 +585,6 @@ Deno.serve(async (req: Request) => {
               generationConfig: {
                 temperature,
                 maxOutputTokens: configuredMaxTokens,
-                responseMimeType: 'application/json',
-                responseSchema: getSchemaByExecutionOrder(analysisResult.execution_order),
               },
             });
 
@@ -656,8 +653,6 @@ Deno.serve(async (req: Request) => {
             generationConfig: {
               temperature,
               maxOutputTokens: configuredMaxTokens,
-              responseMimeType: 'application/json',
-              responseSchema: getSchemaByExecutionOrder(analysisResult.execution_order),
             },
           });
         } else if (useFileApi && processoData.gemini_file_uri) {
@@ -682,8 +677,6 @@ Deno.serve(async (req: Request) => {
             generationConfig: {
               temperature,
               maxOutputTokens: configuredMaxTokens,
-              responseMimeType: 'application/json',
-              responseSchema: getSchemaByExecutionOrder(analysisResult.execution_order),
             },
           });
         } else {
@@ -716,8 +709,6 @@ Deno.serve(async (req: Request) => {
             generationConfig: {
               temperature,
               maxOutputTokens: configuredMaxTokens,
-              responseMimeType: 'application/json',
-              responseSchema: getSchemaByExecutionOrder(analysisResult.execution_order),
             },
           });
         }

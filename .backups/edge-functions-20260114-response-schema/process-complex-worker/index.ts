@@ -1,6 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
-import { getSchemaByExecutionOrder } from '../_shared/response-schemas.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -306,13 +305,6 @@ Deno.serve(async (req: Request) => {
         console.log(`[${workerId}] 📚 Contexto do chunk anterior carregado`);
       }
 
-      const { data: promptInfo } = await supabase
-        .from('analysis_prompts')
-        .select('execution_order')
-        .eq('id', queueItem.prompt_id)
-        .maybeSingle();
-      const executionOrder = promptInfo?.execution_order;
-
       const models = await getActiveModels(supabase);
       let text = '';
       let tokensUsed = 0;
@@ -377,8 +369,6 @@ IMPORTANTE: Este é o chunk ${chunk.chunk_index + 1} de ${chunk.total_chunks} do
             generationConfig: {
               temperature: model.temperature,
               maxOutputTokens: model.maxTokens,
-              responseMimeType: 'application/json',
-              responseSchema: getSchemaByExecutionOrder(executionOrder),
             },
           });
 
