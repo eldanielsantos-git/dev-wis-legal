@@ -30,7 +30,6 @@ interface EventoProcessual {
  id: string;
  evento: string | any;
  data: string | any;
- pagina: string | number | any;
  resumo: string | any;
 }
 
@@ -209,8 +208,7 @@ export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps)
            {safeToString(evento.evento)}
           </h4>
           <p className="text-sm text-theme-text-secondary mb-2">
-           <span className="font-medium text-theme-text-primary">Data:</span> {safeToString(evento.data)} •{' '}
-           <span className="font-medium text-theme-text-primary">Página:</span> {safeToString(evento.pagina)}
+           <span className="font-medium text-theme-text-primary">Data:</span> {safeToString(evento.data)}
           </p>
           <p className="text-sm text-theme-text-primary leading-relaxed">
            {safeToString(evento.resumo)}
