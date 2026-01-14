@@ -596,8 +596,9 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               onChange={(value) => handleChange('party_type', value as DeadlinePartyType)}
               options={[
                 { value: 'both', label: 'Ambas as Partes' },
-                { value: 'accusation', label: 'Acusação' },
-                { value: 'defendant', label: 'Defesa' }
+                { value: 'author', label: 'Autor' },
+                { value: 'defendant', label: 'Réu' },
+                { value: 'third_party', label: 'Terceiro' }
               ]}
               placeholder="Selecione a parte relacionada"
               className="w-full"

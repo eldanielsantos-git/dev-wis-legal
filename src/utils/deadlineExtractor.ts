@@ -37,8 +37,9 @@ const CATEGORY_KEYWORDS: Record<string, DeadlineCategory> = {
 };
 
 const PARTY_KEYWORDS = {
-  accusation: ['acusação', 'autor', 'querelante', 'ministério público', 'mp'],
-  defendant: ['defesa', 'réu', 'acusado', 'denunciado', 'querelado'],
+  author: ['autor', 'autora', 'querelante', 'requerente'],
+  defendant: ['réu', 'ré', 'requerido', 'requerida', 'acusado', 'denunciado'],
+  third_party: ['terceiro', 'assistente', 'litisconsorte', 'interveniente'],
   both: ['ambas as partes', 'todas as partes']
 };
 
@@ -165,15 +166,21 @@ class DeadlineExtractor {
       }
     }
 
-    for (const keyword of PARTY_KEYWORDS.accusation) {
+    for (const keyword of PARTY_KEYWORDS.author) {
       if (text.includes(keyword)) {
-        return 'accusation';
+        return 'author';
       }
     }
 
     for (const keyword of PARTY_KEYWORDS.defendant) {
       if (text.includes(keyword)) {
         return 'defendant';
+      }
+    }
+
+    for (const keyword of PARTY_KEYWORDS.third_party) {
+      if (text.includes(keyword)) {
+        return 'third_party';
       }
     }
 

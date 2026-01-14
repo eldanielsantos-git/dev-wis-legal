@@ -9,7 +9,7 @@ export interface ProcessDeadline {
   deadline_time?: string;
   subject: string;
   category?: string;
-  party_type: 'accusation' | 'defendant' | 'both';
+  party_type: 'author' | 'defendant' | 'both' | 'third_party';
   source_type: 'auto' | 'manual';
   analysis_result_id?: string;
   status: 'pending' | 'completed' | 'expired';
@@ -24,7 +24,7 @@ export interface CreateDeadlineInput {
   deadline_time?: string;
   subject: string;
   category?: string;
-  party_type?: 'accusation' | 'defendant' | 'both';
+  party_type?: 'author' | 'defendant' | 'both' | 'third_party';
   source_type?: 'auto' | 'manual';
   analysis_result_id?: string;
   notes?: string;
@@ -35,7 +35,7 @@ export interface UpdateDeadlineInput {
   deadline_time?: string;
   subject?: string;
   category?: string;
-  party_type?: 'accusation' | 'defendant' | 'both';
+  party_type?: 'author' | 'defendant' | 'both' | 'third_party';
   status?: 'pending' | 'completed' | 'expired';
   notes?: string;
 }

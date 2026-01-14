@@ -58,7 +58,7 @@ export type DeadlineCategory =
   | 'Prazo de Manifestação'
   | 'Outro';
 
-export type DeadlinePartyType = 'accusation' | 'defendant' | 'both';
+export type DeadlinePartyType = 'author' | 'defendant' | 'both' | 'third_party';
 export type DeadlineSourceType = 'auto' | 'manual';
 export type DeadlineStatus = 'pending' | 'completed' | 'expired';
 
