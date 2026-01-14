@@ -31,9 +31,8 @@ interface Destinatario {
  status: string;
  dataAto?: string;
  dataJuntada?: string;
- paginaJuntadaAto?: number | string;
  notas?: string;
- pagina?: number | string;
+ pagina?: string;
 }
 
 interface Ato {
@@ -112,7 +111,6 @@ const normalizeAto = (atoRaw: any): Ato => {
       status: extractStatus(dest.status || atoRaw.validadeStatus),
       dataAto: safeExtractString(dest.dataAto || atoRaw.dataAto),
       dataJuntada: safeExtractString(dest.dataJuntada || atoRaw.dataJuntada),
-      paginaJuntadaAto: safeExtractString(dest.paginaJuntadaAto || atoRaw.referencia?.paginas),
       notas: safeExtractString(dest.notas || atoRaw.notas),
       pagina: safeExtractString(dest.pagina || atoRaw.referencia?.paginas)
      }))
@@ -123,7 +121,6 @@ const normalizeAto = (atoRaw: any): Ato => {
       status: extractStatus(atoRaw.statusAto || atoRaw.destinatario?.status || atoRaw.validadeStatus),
       dataAto: safeExtractString(atoRaw.datas?.dataExpedicaoAto || atoRaw.destinatario?.dataAto || atoRaw.dataAto),
       dataJuntada: safeExtractString(atoRaw.datas?.dataJuntadaComprovante || atoRaw.destinatario?.dataJuntada || atoRaw.dataJuntada),
-      paginaJuntadaAto: safeExtractString(atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.paginaJuntadaAto),
       notas: safeExtractString(atoRaw.notas || (typeof atoRaw.statusAto === 'object' ? atoRaw.statusAto?.justificativa : undefined) || atoRaw.destinatario?.notas),
       pagina: safeExtractString(atoRaw.referencia?.paginas?.[0] || atoRaw.destinatario?.pagina)
      },
@@ -345,15 +342,9 @@ export function ComunicacoesPrazosView({ content }: ComunicacoesPrazosViewProps)
                <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.dataJuntada}</p>
               </div>
              )}
-             {ato.destinatario.paginaJuntadaAto && (
-              <div>
-               <span className="font-medium text-theme-text-primary">Página da Juntada:</span>
-               <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.paginaJuntadaAto}</p>
-              </div>
-             )}
              {ato.destinatario.pagina && (
               <div>
-               <span className="font-medium text-theme-text-primary">Página:</span>
+               <span className="font-medium text-theme-text-primary">Pagina:</span>
                <p className="text-gray-900 dark:text-gray-100 mt-0.5">{ato.destinatario.pagina}</p>
               </div>
              )}
