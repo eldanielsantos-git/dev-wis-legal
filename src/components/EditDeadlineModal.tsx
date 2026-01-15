@@ -81,28 +81,6 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   }, [deadline]);
 
   useEffect(() => {
-    const handleModalClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-
-      if (showDeleteConfirm) {
-        return;
-      }
-
-      const isPortalClick = target.closest('[role="dialog"]') ||
-                           target.closest('[data-radix-popper-content-wrapper]') ||
-                           target.closest('[data-radix-select-content]') ||
-                           target.closest('[data-radix-popover-content]') ||
-                           target.closest('[data-radix-collection-item]');
-
-      if (isPortalClick) {
-        return;
-      }
-
-      if (modalRef.current && !modalRef.current.contains(target)) {
-        onClose();
-      }
-    };
-
     const handleEscapeKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !showDeleteConfirm) {
         onClose();
@@ -110,15 +88,19 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
     };
 
     if (isOpen) {
-      document.addEventListener('click', handleModalClickOutside);
       document.addEventListener('keydown', handleEscapeKey);
     }
 
     return () => {
-      document.removeEventListener('click', handleModalClickOutside);
       document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [isOpen, onClose, showDeleteConfirm]);
+
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget && !showDeleteConfirm) {
+      onClose();
+    }
+  };
 
   if (!isOpen || !deadline) return null;
 
@@ -198,8 +180,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: theme === 'dark' ? '#000000' : colors.bgSecondary }}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={handleBackdropClick}>
+      <div ref={modalRef} className="rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col" style={{ backgroundColor: theme === 'dark' ? '#000000' : colors.bgSecondary }} onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 px-5 py-3 flex items-center justify-between" style={{ backgroundColor: theme === 'dark' ? '#000000' : colors.bgSecondary, borderBottom: `1px solid ${colors.border}` }}>
           <div className="flex items-center gap-3">
             <h2 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
