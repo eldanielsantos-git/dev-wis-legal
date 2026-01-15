@@ -91,7 +91,8 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
       const isPortalClick = target.closest('[role="dialog"]') ||
                            target.closest('[data-radix-popper-content-wrapper]') ||
                            target.closest('[data-radix-select-content]') ||
-                           target.closest('[data-radix-popover-content]');
+                           target.closest('[data-radix-popover-content]') ||
+                           target.closest('[data-radix-collection-item]');
 
       if (isPortalClick) {
         return;
@@ -109,12 +110,12 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleModalClickOutside);
+      document.addEventListener('click', handleModalClickOutside);
       document.addEventListener('keydown', handleEscapeKey);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleModalClickOutside);
+      document.removeEventListener('click', handleModalClickOutside);
       document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [isOpen, onClose, showDeleteConfirm]);
