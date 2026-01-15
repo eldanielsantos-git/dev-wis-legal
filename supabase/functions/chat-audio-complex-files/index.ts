@@ -419,15 +419,16 @@ Deno.serve(async (req: Request) => {
       systemPrompt = systemPrompt.replace(/\{chunks_count\}/g, String(processo.total_chunks_count || 0));
       systemPrompt = systemPrompt.replace(/\{processo_number\}/g, '');
 
-      let contextPrompt: string;
+      console.log('[chat-audio-complex-files] System prompt prepared with user variables');
+
+      let contextMessage: string;
 
       if (useConsolidatedAnalysis && analysisResults) {
         const analysisContext = analysisResults.map((analysis, index) =>
           `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
         ).join('\n\n---\n');
 
-        contextPrompt = `${systemPrompt}
-
+        contextMessage = `
 # ANÁLISES CONSOLIDADAS DO PROCESSO
 
 Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo estão os resultados completos:
@@ -442,8 +443,7 @@ INSTRUÇÕES: Responda a pergunta acima baseando-se exclusivamente nas análises
 
         console.log(`[chat-audio-complex-files] Using consolidated analysis context with ${analysisResults.length} analyses`);
       } else {
-        contextPrompt = `${systemPrompt}
-
+        contextMessage = `
 Pergunta do usuário (transcrição de áudio): "${transcription}"
 
 Responda de forma direta, clara e objetiva com base no documento do processo.`;
@@ -452,6 +452,10 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
       const chatMaxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio_complex', 16384);
       const chatModel = genAI.getGenerativeModel({
         model: modelId,
+        systemInstruction: {
+          role: 'system',
+          parts: [{ text: systemPrompt }]
+        },
         generationConfig: {
           maxOutputTokens: chatMaxOutputTokens,
           temperature: 0.2
@@ -463,7 +467,7 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
       if (useConsolidatedAnalysis) {
         console.log('[chat-audio-complex-files] Sending consolidated analysis context (text only)');
         chatResult = await chatModel.generateContent([
-          { text: contextPrompt }
+          { text: contextMessage }
         ]);
       } else if (useChunks && chunks.length > 0) {
         const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
@@ -478,19 +482,19 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
             }
           }));
 
-          messageParts.push({ text: contextPrompt });
+          messageParts.push({ text: contextMessage });
 
           chatResult = await chatModel.generateContent(messageParts);
         } else {
           console.log('[chat-audio-complex-files] No valid chunk URIs, sending text only');
           chatResult = await chatModel.generateContent([
-            { text: contextPrompt }
+            { text: contextMessage }
           ]);
         }
       } else {
         console.log('[chat-audio-complex-files] Sending text only (no data available)');
         chatResult = await chatModel.generateContent([
-          { text: contextPrompt }
+          { text: contextMessage }
         ]);
       }
 
