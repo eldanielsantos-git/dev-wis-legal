@@ -611,7 +611,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
               <h2 className="text-xl sm:text-2xl font-title font-bold text-center" style={{ color: colors.textPrimary }}>Análises Recentes</h2>
               <button
                 onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-                className="p-2 rounded-lg transition-all duration-200 hover:scale-110"
+                className="hidden lg:block p-2 rounded-lg transition-all duration-200 hover:scale-110"
                 style={{ backgroundColor: theme === 'dark' ? '#141312' : colors.bgSecondary }}
                 title={viewMode === 'grid' ? 'Visualização em lista' : 'Visualização em cards'}
               >
