@@ -287,8 +287,7 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                       }}
                     >
                       <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span className="hidden sm:inline">Compartilhados</span>
-                      <span className="sm:hidden">Compart.</span>
+                      <span>Compartilhados</span>
                       <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgTertiary }}>
                         {sharedProcessIds.size}
                       </span>
