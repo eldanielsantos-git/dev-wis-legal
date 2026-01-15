@@ -452,10 +452,7 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
       const chatMaxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio_complex', 16384);
       const chatModel = genAI.getGenerativeModel({
         model: modelId,
-        systemInstruction: {
-          role: 'system',
-          parts: [{ text: systemPrompt }]
-        },
+        systemInstruction: systemPrompt,
         generationConfig: {
           maxOutputTokens: chatMaxOutputTokens,
           temperature: 0.2
