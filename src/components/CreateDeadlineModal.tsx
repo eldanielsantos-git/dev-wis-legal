@@ -165,14 +165,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (event.target === event.currentTarget) {
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('=== handleSubmit called ===');
@@ -271,6 +263,14 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
       console.log('=== handleSubmit completed ===');
     }
   };
+
+  const handleBackdropClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (event.target === event.currentTarget) {
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
 
   const handleChange = (
     field: keyof CreateDeadlineInput,
@@ -387,7 +387,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                   }
                 }}
                 placeholder="Digite número, nome ou parte do processo..."
-                required
                 className="pr-10"
               />
               {isSearching && (
@@ -526,7 +525,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               value={formData.subject}
               onChange={(e) => handleChange('subject', e.target.value)}
               placeholder="Ex: Prazo para contestação"
-              required
               maxLength={200}
             />
           </div>
@@ -541,7 +539,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
                 value={formData.deadline_date}
                 onChange={(date) => handleChange('deadline_date', date)}
                 placeholder="Selecione uma data"
-                required
               />
             </div>
 
@@ -553,7 +550,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               <TimePicker
                 value={formData.deadline_time}
                 onChange={(time) => handleChange('deadline_time', time)}
-                required
               />
             </div>
           </div>
@@ -569,7 +565,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               options={CATEGORIES.map(cat => ({ value: cat, label: cat }))}
               placeholder="Selecione uma categoria"
               className="w-full"
-              required
             />
           </div>
 
@@ -589,7 +584,6 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               ]}
               placeholder="Selecione a parte relacionada"
               className="w-full"
-              required
             />
           </div>
 
