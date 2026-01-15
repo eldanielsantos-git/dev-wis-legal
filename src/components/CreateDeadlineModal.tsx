@@ -39,6 +39,8 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   processoId,
   prefilledDate
 }) => {
+  console.log('=== CreateDeadlineModal RENDER ===', { isOpen, processoId, prefilledDate });
+
   const toast = useToast();
   const { theme } = useTheme();
   const colors = useMemo(() => getThemeColors(theme), [theme]);
@@ -166,56 +168,65 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
   }, [isOpen, onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('=== 1. handleSubmit CALLED - Event received ===', e);
     e.preventDefault();
-    console.log('=== handleSubmit called ===');
+    console.log('=== 2. preventDefault executed ===');
     setValidationError('');
+    console.log('=== 3. Starting submission - isSubmitting will be set to true ===');
     setIsSubmitting(true);
 
     try {
+      console.log('=== 4. VALIDATION PHASE START ===');
       console.log('Selected processo:', selectedProcesso);
       console.log('Form data:', formData);
 
       if (!selectedProcesso) {
-        console.error('Validation failed: No processo selected');
+        console.error('=== VALIDATION FAILED: No processo selected ===');
         setValidationError('Por favor, selecione um processo antes de continuar.');
         setIsSubmitting(false);
         return;
       }
+      console.log('✓ Processo validation passed');
 
       if (!formData.subject || formData.subject.trim().length < 3) {
-        console.error('Validation failed: Invalid subject');
+        console.error('=== VALIDATION FAILED: Invalid subject ===', formData.subject);
         setValidationError('Por favor, informe um assunto válido para o prazo (mínimo 3 caracteres).');
         setIsSubmitting(false);
         return;
       }
+      console.log('✓ Subject validation passed');
 
       if (!formData.deadline_date) {
-        console.error('Validation failed: No deadline_date');
+        console.error('=== VALIDATION FAILED: No deadline_date ===');
         setValidationError('Por favor, informe a data do prazo.');
         setIsSubmitting(false);
         return;
       }
+      console.log('✓ Deadline date validation passed');
 
       if (!formData.deadline_time) {
-        console.error('Validation failed: No deadline_time');
+        console.error('=== VALIDATION FAILED: No deadline_time ===');
         setValidationError('Por favor, informe o horário do prazo.');
         setIsSubmitting(false);
         return;
       }
+      console.log('✓ Deadline time validation passed');
 
       if (!formData.category) {
-        console.error('Validation failed: No category');
+        console.error('=== VALIDATION FAILED: No category ===');
         setValidationError('Por favor, selecione uma categoria para o prazo.');
         setIsSubmitting(false);
         return;
       }
+      console.log('✓ Category validation passed');
 
       if (!formData.party_type) {
-        console.error('Validation failed: No party_type');
+        console.error('=== VALIDATION FAILED: No party_type ===');
         setValidationError('Por favor, selecione a parte relacionada ao prazo.');
         setIsSubmitting(false);
         return;
       }
+      console.log('✓ Party type validation passed');
 
       const deadlineData = {
         processo_id: selectedProcesso.id,
@@ -227,11 +238,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
         notes: formData.notes
       };
 
-      console.log('Creating deadline with data:', deadlineData);
-      console.log('Calling processDeadlinesService.createDeadline...');
+      console.log('=== 5. ALL VALIDATIONS PASSED - Creating deadline ===');
+      console.log('Deadline data to be sent:', deadlineData);
+      console.log('=== 6. Calling processDeadlinesService.createDeadline... ===');
 
       const result = await processDeadlinesService.createDeadline(deadlineData);
-      console.log('Deadline created successfully:', result);
+      console.log('=== 7. SUCCESS - Deadline created ===', result);
 
       toast.success('Prazo criado com sucesso!');
 
@@ -270,13 +282,25 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  console.log('=== Before rendering check - isOpen:', isOpen, 'isSubmitting:', isSubmitting);
+
+  if (!isOpen) {
+    console.log('=== Modal is closed - returning null ===');
+    return null;
+  }
+
+  console.log('=== Modal is open - will render ===');
 
   const handleChange = (
     field: keyof CreateDeadlineInput,
     value: string | DeadlineCategory | DeadlinePartyType | undefined
   ) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    console.log(`=== Field changed: ${field} = ${value} ===`);
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      console.log('Updated formData:', updated);
+      return updated;
+    });
   };
 
   const handleSelectProcesso = (processo: Processo) => {
@@ -341,7 +365,13 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
+        <form
+          onSubmit={(e) => {
+            console.log('=== FORM onSubmit triggered ===', e);
+            handleSubmit(e);
+          }}
+          className="p-5 space-y-4 overflow-y-auto"
+        >
           {validationError && (
             <div
               className="flex items-start gap-3 p-4 rounded-lg border"
@@ -629,6 +659,12 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
+              onClick={(e) => {
+                console.log('=== BUTTON CLICKED ===', e);
+                console.log('Button type:', e.currentTarget.type);
+                console.log('Button disabled:', e.currentTarget.disabled);
+                console.log('isSubmitting state:', isSubmitting);
+              }}
               className="flex-1 px-5 py-2.5 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: '#000000',
