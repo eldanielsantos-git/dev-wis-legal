@@ -69,7 +69,13 @@ export function VisaoGeralProcessoView({ content }: VisaoGeralProcessoViewProps)
  let data: { visaoGeralProcesso: VisaoGeralProcesso } | null = null;
 
  try {
-  data = JSON.parse(content);
+  let parsed = JSON.parse(content);
+
+  if (Array.isArray(parsed) && parsed.length > 0) {
+   parsed = parsed[0];
+  }
+
+  data = parsed;
  } catch {
   return <AnalysisContentRenderer content={content} />;
  }

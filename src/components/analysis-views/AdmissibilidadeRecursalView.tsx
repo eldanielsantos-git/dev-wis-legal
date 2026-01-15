@@ -85,7 +85,13 @@ export function AdmissibilidadeRecursalView({ content }: AdmissibilidadeRecursal
  let data: { recursosAdmissibilidade: RecursosAdmissibilidade } | null = null;
 
  try {
-  data = JSON.parse(content);
+  let parsed = JSON.parse(content);
+
+  if (Array.isArray(parsed) && parsed.length > 0) {
+   parsed = parsed[0];
+  }
+
+  data = parsed;
  } catch {
   return <AnalysisContentRenderer content={content} />;
  }
