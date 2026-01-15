@@ -173,8 +173,8 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault?.();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     console.log('=== handleSubmit called ===');
     setValidationError('');
     setIsSubmitting(true);
@@ -633,9 +633,8 @@ export const CreateDeadlineModal: React.FC<CreateDeadlineModalProps> = ({
               Cancelar
             </button>
             <button
-              type="button"
+              type="submit"
               disabled={isSubmitting}
-              onClick={() => handleSubmit()}
               className="flex-1 px-5 py-2.5 rounded-lg transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: '#000000',
