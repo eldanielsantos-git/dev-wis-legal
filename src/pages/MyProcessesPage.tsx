@@ -258,20 +258,20 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
             {!initialLoading && processos.length > 0 && (
               <>
                 <div className="flex justify-center mt-6 mb-4">
-                  <div className="inline-flex rounded-lg p-1" style={{ backgroundColor: colors.bgSecondary }}>
+                  <div className="inline-flex rounded-lg p-0.5 sm:p-1" style={{ backgroundColor: colors.bgSecondary }}>
                     <button
                       onClick={() => {
                         setFilterMode('all');
                         setSelectedTagIds([]);
                       }}
-                      className="px-6 py-2 rounded-lg text-sm font-medium transition-all"
+                      className="px-2.5 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all"
                       style={{
                         backgroundColor: filterMode === 'all' ? colors.bgPrimary : 'transparent',
                         color: filterMode === 'all' ? colors.textPrimary : colors.textSecondary
                       }}
                     >
                       Todos
-                      <span className="ml-2 px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgTertiary }}>
+                      <span className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgTertiary }}>
                         {processos.length}
                       </span>
                     </button>
@@ -280,15 +280,16 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                         setFilterMode('shared');
                         setSelectedTagIds([]);
                       }}
-                      className="px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2"
+                      className="px-2.5 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-1 sm:space-x-2"
                       style={{
                         backgroundColor: filterMode === 'shared' ? colors.bgPrimary : 'transparent',
                         color: filterMode === 'shared' ? colors.textPrimary : colors.textSecondary
                       }}
                     >
-                      <Users className="w-4 h-4" />
-                      <span>Compartilhados</span>
-                      <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgTertiary }}>
+                      <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span className="hidden sm:inline">Compartilhados</span>
+                      <span className="sm:hidden">Compart.</span>
+                      <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.bgTertiary }}>
                         {sharedProcessIds.size}
                       </span>
                     </button>
@@ -297,16 +298,16 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                         setFilterMode('tags');
                         setIsTagFilterPanelOpen(true);
                       }}
-                      className="px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center space-x-2"
+                      className="px-2.5 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-1 sm:space-x-2"
                       style={{
                         backgroundColor: filterMode === 'tags' ? colors.bgPrimary : 'transparent',
                         color: filterMode === 'tags' ? colors.textPrimary : colors.textSecondary
                       }}
                     >
-                      <Tag className="w-4 h-4" />
+                      <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       <span>Tags</span>
                       {selectedTagIds.length > 0 && (
-                        <span className="px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.accent }}>
+                        <span className="px-1.5 sm:px-2 py-0.5 rounded-full text-xs" style={{ backgroundColor: colors.accent }}>
                           {selectedTagIds.length}
                         </span>
                       )}
