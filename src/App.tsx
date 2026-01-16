@@ -164,6 +164,7 @@ function AppContent() {
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={(processoId) => navigate(processoId ? `/chat/${processoId}` : '/chat')}
         onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin')}
         onNavigateToProfile={() => navigate('/profile')}
         onNavigateToTerms={() => navigate('/terms')}
