@@ -342,7 +342,7 @@ Deno.serve(async (req: Request) => {
       const { data: userProfile } = await supabase
         .from('user_profiles')
         .select('first_name, last_name, email, oab, cpf, city, state, phone, phone_country_code')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .maybeSingle();
 
       const fullName = userProfile
@@ -386,15 +386,16 @@ Deno.serve(async (req: Request) => {
 
       systemPrompt = systemPrompt.replace(/\{processo_number\}/g, '');
 
-      const contextPrompt = `${systemPrompt}
+      console.log('[process-audio-message] System prompt prepared with user variables');
 
-Pergunta do usuário (transcrição de áudio): "${transcription}"
+      const userQuestion = `Pergunta do usuário (transcrição de áudio): "${transcription}"
 
 Responda de forma direta, clara e objetiva com base no documento do processo.`;
 
       const chatMaxOutputTokens = await getMaxOutputTokens(supabase, 'chat_audio', 8192);
       const chatModel = genAI.getGenerativeModel({
         model: modelId,
+        systemInstruction: systemPrompt,
         generationConfig: {
           maxOutputTokens: chatMaxOutputTokens,
           temperature: 0.2
@@ -408,7 +409,7 @@ Responda de forma direta, clara e objetiva com base no documento do processo.`;
             data: processo.pdf_base64
           }
         },
-        { text: contextPrompt }
+        { text: userQuestion }
       ]);
 
       let assistantResponse = chatResult.response.text();
