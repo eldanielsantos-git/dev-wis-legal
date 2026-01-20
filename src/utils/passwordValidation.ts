@@ -116,7 +116,7 @@ export function validatePasswordStrict(password: string): PasswordValidationResu
   }
 
   if (!ALLOWED_SPECIAL_CHARS.test(password)) {
-    return { valid: false, message: 'A senha deve conter pelo menos um caractere especial (!@#$%...)' };
+    return { valid: false, message: 'A senha deve conter pelo menos um caractere especial (!@$%...)' };
   }
 
   const validation = validatePasswordCharacters(password);
