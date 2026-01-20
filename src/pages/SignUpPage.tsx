@@ -1025,7 +1025,7 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
                     <XCircle className="w-4 h-4 text-gray-400" />
                   )}
                   <span className={passwordValidation.hasSpecialChar ? 'text-green-600' : 'text-gray-500'}>
-                    Caractere especial (!@#$%...)
+                    Caractere especial (!@$%...)
                   </span>
                 </div>
                 {!passwordValidation.isSafe && (
