@@ -120,6 +120,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
   const [passwordValidation, setPasswordValidation] = useState({
     minLength: false,
+    maxLength: true,
     hasUppercase: false,
     hasLowercase: false,
     hasNumber: false,
@@ -197,6 +198,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
   const validatePassword = (password: string) => {
     return {
       minLength: password.length >= 6,
+      maxLength: password.length <= 24,
       hasUppercase: /[A-Z]/.test(password),
       hasLowercase: /[a-z]/.test(password),
       hasNumber: /[0-9]/.test(password),
@@ -449,6 +451,7 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
       setPasswordValidation({
         minLength: false,
+        maxLength: true,
         hasUppercase: false,
         hasLowercase: false,
         hasNumber: false,
@@ -1632,54 +1635,64 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
                     <div className="space-y-2 p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <p className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>Requisitos da senha:</p>
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-xs">
                           {passwordValidation.minLength ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : (
-                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
+                            <XCircle className="w-4 h-4 text-gray-400" />
                           )}
-                          <span style={{ color: passwordValidation.minLength ? '#10B981' : colors.textSecondary }}>
-                            Mínimo de 8 caracteres
+                          <span style={{ color: passwordValidation.minLength ? '#16a34a' : colors.textSecondary }}>
+                            Mínimo de 6 caracteres
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          {passwordValidation.hasUppercase ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                        <div className="flex items-center gap-2 text-xs">
+                          {passwordValidation.maxLength ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : (
-                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
+                            <XCircle className="w-4 h-4 text-red-600" />
                           )}
-                          <span style={{ color: passwordValidation.hasUppercase ? '#10B981' : colors.textSecondary }}>
+                          <span style={{ color: passwordValidation.maxLength ? '#16a34a' : '#dc2626' }}>
+                            Máximo de 24 caracteres
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          {passwordValidation.hasUppercase ? (
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-gray-400" />
+                          )}
+                          <span style={{ color: passwordValidation.hasUppercase ? '#16a34a' : colors.textSecondary }}>
                             Letra maiúscula
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-xs">
                           {passwordValidation.hasLowercase ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : (
-                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
+                            <XCircle className="w-4 h-4 text-gray-400" />
                           )}
-                          <span style={{ color: passwordValidation.hasLowercase ? '#10B981' : colors.textSecondary }}>
+                          <span style={{ color: passwordValidation.hasLowercase ? '#16a34a' : colors.textSecondary }}>
                             Letra minúscula
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-xs">
                           {passwordValidation.hasNumber ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : (
-                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
+                            <XCircle className="w-4 h-4 text-gray-400" />
                           )}
-                          <span style={{ color: passwordValidation.hasNumber ? '#10B981' : colors.textSecondary }}>
+                          <span style={{ color: passwordValidation.hasNumber ? '#16a34a' : colors.textSecondary }}>
                             Número
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
+                        <div className="flex items-center gap-2 text-xs">
                           {passwordValidation.hasSpecialChar ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-500" />
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : (
-                            <div className="w-4 h-4 rounded-full border-2" style={{ borderColor: colors.textSecondary }} />
+                            <XCircle className="w-4 h-4 text-gray-400" />
                           )}
-                          <span style={{ color: passwordValidation.hasSpecialChar ? '#10B981' : colors.textSecondary }}>
-                            Caractere especial
+                          <span style={{ color: passwordValidation.hasSpecialChar ? '#16a34a' : colors.textSecondary }}>
+                            Caractere especial (!@$%...)
                           </span>
                         </div>
                       </div>
