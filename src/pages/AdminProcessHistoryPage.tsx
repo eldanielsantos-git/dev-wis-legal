@@ -5,7 +5,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ProcessHistoryService, ProcessHistoryRecord, ProcessHistoryFilters } from '../services/ProcessHistoryService';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { History, RefreshCw, ArrowLeft, FileText, User, Calendar, Cpu, Zap, ChevronDown, Filter, X, Copy, Check, ExternalLink, Search } from 'lucide-react';
+import { History, RefreshCw, ArrowLeft, FileText, User, Calendar, Cpu, Zap, ChevronDown, Filter, X, Copy, Check, Search } from 'lucide-react';
 
 interface AdminProcessHistoryPageProps {
   onNavigateToApp: () => void;
@@ -865,42 +865,6 @@ export function AdminProcessHistoryPage({
                       </button>
                     </div>
                   </div>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-lg border-2 border-dashed" style={{ borderColor: colors.border }}>
-                <div className="flex items-center gap-2 mb-3">
-                  <ExternalLink className="w-4 h-4 text-blue-500" />
-                  <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Acoes</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedRecord(null);
-                      window.history.pushState({}, '', `/processo/${selectedRecord.process_id}`);
-                      window.dispatchEvent(new PopStateEvent('popstate'));
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                  >
-                    <ExternalLink className="w-4 h-4" />
-                    Abrir Processo
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedRecord(null);
-                      window.history.pushState({}, '', `/admin/users/${selectedRecord.user_id}`);
-                      window.dispatchEvent(new PopStateEvent('popstate'));
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm border"
-                    style={{
-                      backgroundColor: colors.bgPrimary,
-                      borderColor: colors.border,
-                      color: colors.textPrimary
-                    }}
-                  >
-                    <User className="w-4 h-4" />
-                    Ver Usuario
-                  </button>
                 </div>
               </div>
             </div>
