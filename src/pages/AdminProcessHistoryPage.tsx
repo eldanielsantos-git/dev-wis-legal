@@ -5,7 +5,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ProcessHistoryService, ProcessHistoryRecord, ProcessHistoryFilters } from '../services/ProcessHistoryService';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { History, RefreshCw, ArrowLeft, FileText, User, Calendar, Cpu, Zap, ChevronDown, Filter, X } from 'lucide-react';
+import { History, RefreshCw, ArrowLeft, FileText, User, Calendar, Cpu, Zap, ChevronDown, Filter, X, Copy, Check, ExternalLink } from 'lucide-react';
 
 interface AdminProcessHistoryPageProps {
   onNavigateToApp: () => void;
@@ -51,6 +51,8 @@ export function AdminProcessHistoryPage({
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState<ProcessHistoryFilters>({});
   const [tempFilters, setTempFilters] = useState<ProcessHistoryFilters>({});
+  const [selectedRecord, setSelectedRecord] = useState<ProcessHistoryRecord | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   useEffect(() => {
     loadInitialData();
@@ -168,6 +170,29 @@ export function AdminProcessHistoryPage({
 
   const hasActiveFilters = filters.startDate || filters.endDate;
   const hasMoreToLoad = records.length < totalCount;
+
+  const copyToClipboard = async (text: string, fieldName: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
+
+  const formatFullDate = (dateStr: string): string => {
+    return new Date(dateStr).toLocaleString('pt-BR', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  };
+
+  const formatTokensFull = (tokens: number | null): string => {
+    if (tokens === null || tokens === undefined) return 'N/A';
+    return tokens.toLocaleString('pt-BR');
+  };
 
   return (
     <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
@@ -376,7 +401,14 @@ export function AdminProcessHistoryPage({
                       </thead>
                       <tbody className="divide-y" style={{ borderColor: colors.border }}>
                         {records.map((record) => (
-                          <tr key={record.id} className="hover:opacity-80">
+                          <tr
+                            key={record.id}
+                            className="hover:opacity-80 cursor-pointer transition-colors"
+                            onClick={() => setSelectedRecord(record)}
+                            style={{ backgroundColor: 'inherit' }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = theme === 'dark' ? '#2a2d31' : '#f3f4f6'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'inherit'}
+                          >
                             <td className="px-4 py-3 whitespace-nowrap">
                               <div className="text-sm" style={{ color: colors.textPrimary }}>
                                 {formatDate(record.processed_at)}
@@ -425,7 +457,12 @@ export function AdminProcessHistoryPage({
 
                   <div className="lg:hidden divide-y" style={{ borderColor: colors.border }}>
                     {records.map((record) => (
-                      <div key={record.id} className="p-4 space-y-3">
+                      <div
+                        key={record.id}
+                        className="p-4 space-y-3 cursor-pointer transition-colors"
+                        onClick={() => setSelectedRecord(record)}
+                        style={{ backgroundColor: 'inherit' }}
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium truncate" style={{ color: colors.textPrimary }}>
@@ -518,6 +555,230 @@ export function AdminProcessHistoryPage({
             window.dispatchEvent(new PopStateEvent('popstate'));
           }}
         />
+      )}
+
+      {selectedRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedRecord(null)}>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl"
+            style={{ backgroundColor: colors.bgSecondary }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 flex items-center justify-between p-4 border-b" style={{ borderColor: colors.border, backgroundColor: colors.bgSecondary }}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                  <FileText className="w-5 h-5 text-amber-600" />
+                </div>
+                <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                  Detalhes do Processo
+                </h2>
+              </div>
+              <button
+                onClick={() => setSelectedRecord(null)}
+                className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                <X className="w-5 h-5" style={{ color: colors.textSecondary }} />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calendar className="w-4 h-4 text-blue-500" />
+                    <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Data de Processamento</span>
+                  </div>
+                  <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+                    {formatFullDate(selectedRecord.processed_at)}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-4 h-4 text-green-500" />
+                    <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Total de Paginas</span>
+                  </div>
+                  <div className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
+                    {selectedRecord.total_pages}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <User className="w-4 h-4 text-amber-500" />
+                  <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Usuario</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-base font-medium" style={{ color: colors.textPrimary }}>
+                    {getUserDisplayName(selectedRecord)}
+                  </div>
+                  {selectedRecord.user_email && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm" style={{ color: colors.textSecondary }}>{selectedRecord.user_email}</span>
+                      <button
+                        onClick={() => copyToClipboard(selectedRecord.user_email!, 'email')}
+                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        title="Copiar email"
+                      >
+                        {copiedField === 'email' ? (
+                          <Check className="w-3 h-3 text-green-500" />
+                        ) : (
+                          <Copy className="w-3 h-3" style={{ color: colors.textSecondary }} />
+                        )}
+                      </button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono" style={{ color: colors.textSecondary }}>
+                      ID: {selectedRecord.user_id}
+                    </span>
+                    <button
+                      onClick={() => copyToClipboard(selectedRecord.user_id, 'userId')}
+                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      title="Copiar ID do usuario"
+                    >
+                      {copiedField === 'userId' ? (
+                        <Check className="w-3 h-3 text-green-500" />
+                      ) : (
+                        <Copy className="w-3 h-3" style={{ color: colors.textSecondary }} />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <FileText className="w-4 h-4 text-blue-500" />
+                  <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Arquivo</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <div className="flex-1 break-all text-sm font-medium" style={{ color: colors.textPrimary }}>
+                    {selectedRecord.file_name}
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(selectedRecord.file_name, 'fileName')}
+                    className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
+                    title="Copiar nome do arquivo"
+                  >
+                    {copiedField === 'fileName' ? (
+                      <Check className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Copy className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Cpu className="w-4 h-4 text-purple-500" />
+                    <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Modelo de IA</span>
+                  </div>
+                  <div className="text-sm font-medium" style={{ color: colors.textPrimary }}>
+                    {selectedRecord.llm_model_name || 'N/A'}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Zap className="w-4 h-4 text-yellow-500" />
+                    <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Tokens LLM Utilizados</span>
+                  </div>
+                  <div className="text-2xl font-bold font-mono" style={{ color: colors.textPrimary }}>
+                    {formatTokensFull(selectedRecord.llm_tokens_used)}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <History className="w-4 h-4 text-gray-500" />
+                  <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Identificadores</span>
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs" style={{ color: colors.textSecondary }}>ID do Processo</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <code className="flex-1 text-sm font-mono p-2 rounded break-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}>
+                        {selectedRecord.process_id}
+                      </code>
+                      <button
+                        onClick={() => copyToClipboard(selectedRecord.process_id, 'processId')}
+                        className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
+                        title="Copiar ID do processo"
+                      >
+                        {copiedField === 'processId' ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs" style={{ color: colors.textSecondary }}>ID do Registro</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <code className="flex-1 text-sm font-mono p-2 rounded break-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}>
+                        {selectedRecord.id}
+                      </code>
+                      <button
+                        onClick={() => copyToClipboard(selectedRecord.id, 'recordId')}
+                        className="p-2 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex-shrink-0"
+                        title="Copiar ID do registro"
+                      >
+                        {copiedField === 'recordId' ? (
+                          <Check className="w-4 h-4 text-green-500" />
+                        ) : (
+                          <Copy className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-lg border-2 border-dashed" style={{ borderColor: colors.border }}>
+                <div className="flex items-center gap-2 mb-3">
+                  <ExternalLink className="w-4 h-4 text-blue-500" />
+                  <span className="text-xs font-medium uppercase" style={{ color: colors.textSecondary }}>Acoes</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedRecord(null);
+                      window.history.pushState({}, '', `/processo/${selectedRecord.process_id}`);
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    Abrir Processo
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedRecord(null);
+                      window.history.pushState({}, '', `/admin/users/${selectedRecord.user_id}`);
+                      window.dispatchEvent(new PopStateEvent('popstate'));
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-sm border"
+                    style={{
+                      backgroundColor: colors.bgPrimary,
+                      borderColor: colors.border,
+                      color: colors.textPrimary
+                    }}
+                  >
+                    <User className="w-4 h-4" />
+                    Ver Usuario
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
