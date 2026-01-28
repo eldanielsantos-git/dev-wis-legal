@@ -5,7 +5,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { ProcessHistoryService, ProcessHistoryRecord, ProcessHistoryFilters } from '../services/ProcessHistoryService';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { History, RefreshCw, ArrowLeft, FileText, User, Calendar, Cpu, Zap, ChevronDown, Filter, X, Copy, Check, ExternalLink } from 'lucide-react';
+import { History, RefreshCw, ArrowLeft, FileText, User, Calendar, Cpu, Zap, ChevronDown, Filter, X, Copy, Check, ExternalLink, Search } from 'lucide-react';
 
 interface AdminProcessHistoryPageProps {
   onNavigateToApp: () => void;
@@ -53,6 +53,8 @@ export function AdminProcessHistoryPage({
   const [tempFilters, setTempFilters] = useState<ProcessHistoryFilters>({});
   const [selectedRecord, setSelectedRecord] = useState<ProcessHistoryRecord | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   useEffect(() => {
     loadInitialData();
@@ -171,6 +173,22 @@ export function AdminProcessHistoryPage({
   const hasActiveFilters = filters.startDate || filters.endDate;
   const hasMoreToLoad = records.length < totalCount;
 
+  const filteredRecords = searchQuery.trim()
+    ? records.filter(record => {
+        const query = searchQuery.toLowerCase();
+        return (
+          record.file_name.toLowerCase().includes(query) ||
+          (record.user_email && record.user_email.toLowerCase().includes(query)) ||
+          (record.user_first_name && record.user_first_name.toLowerCase().includes(query)) ||
+          (record.user_last_name && record.user_last_name.toLowerCase().includes(query)) ||
+          record.process_id.toLowerCase().includes(query) ||
+          (record.llm_model_name && record.llm_model_name.toLowerCase().includes(query))
+        );
+      })
+    : records;
+
+  const searchResults = searchQuery.trim() ? filteredRecords.slice(0, 10) : [];
+
   const copyToClipboard = async (text: string, fieldName: string) => {
     await navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
@@ -248,6 +266,102 @@ export function AdminProcessHistoryPage({
               </div>
             </div>
 
+            <div className="relative mb-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: colors.textSecondary }} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                  placeholder="Buscar por arquivo, usuario, email, modelo ou ID..."
+                  className="w-full pl-10 pr-10 py-3 border rounded-lg text-sm transition-all"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    borderColor: isSearchFocused ? '#3b82f6' : colors.border,
+                    color: colors.textPrimary,
+                    boxShadow: isSearchFocused ? '0 0 0 3px rgba(59, 130, 246, 0.1)' : 'none'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                  </button>
+                )}
+              </div>
+
+              {isSearchFocused && searchQuery.trim() && (
+                <div
+                  className="absolute top-full left-0 right-0 mt-2 rounded-lg border shadow-xl z-20 max-h-96 overflow-y-auto"
+                  style={{ backgroundColor: colors.bgSecondary, borderColor: colors.border }}
+                >
+                  {searchResults.length > 0 ? (
+                    <>
+                      <div className="px-4 py-2 border-b" style={{ borderColor: colors.border }}>
+                        <span className="text-xs font-medium" style={{ color: colors.textSecondary }}>
+                          {filteredRecords.length} resultado{filteredRecords.length !== 1 ? 's' : ''} encontrado{filteredRecords.length !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      {searchResults.map((record) => (
+                        <button
+                          key={record.id}
+                          onClick={() => {
+                            setSelectedRecord(record);
+                            setSearchQuery('');
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors border-b last:border-b-0"
+                          style={{ borderColor: colors.border }}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg flex-shrink-0" style={{ backgroundColor: colors.bgPrimary }}>
+                              <FileText className="w-4 h-4 text-amber-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium truncate" style={{ color: colors.textPrimary }}>
+                                {record.file_name}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <User className="w-3 h-3" style={{ color: colors.textSecondary }} />
+                                <span className="text-xs truncate" style={{ color: colors.textSecondary }}>
+                                  {getUserDisplayName(record)}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="text-xs" style={{ color: colors.textSecondary }}>
+                                  {formatDateShort(record.processed_at)}
+                                </span>
+                                <span className="text-xs font-mono" style={{ color: colors.textSecondary }}>
+                                  {formatTokens(record.llm_tokens_used)} tokens
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                      {filteredRecords.length > 10 && (
+                        <div className="px-4 py-2 text-center" style={{ backgroundColor: colors.bgPrimary }}>
+                          <span className="text-xs" style={{ color: colors.textSecondary }}>
+                            Mostrando 10 de {filteredRecords.length} resultados
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="px-4 py-8 text-center">
+                      <Search className="w-8 h-8 mx-auto mb-2" style={{ color: colors.textSecondary }} />
+                      <p className="text-sm" style={{ color: colors.textSecondary }}>
+                        Nenhum resultado encontrado para "{searchQuery}"
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div className="flex items-center gap-3">
                 <button
@@ -292,8 +406,17 @@ export function AdminProcessHistoryPage({
               </div>
 
               <div className="text-sm" style={{ color: colors.textSecondary }}>
-                Exibindo <span className="font-medium" style={{ color: colors.textPrimary }}>{records.length}</span> de{' '}
-                <span className="font-medium" style={{ color: colors.textPrimary }}>{totalCount}</span> registros
+                {searchQuery.trim() ? (
+                  <>
+                    <span className="font-medium" style={{ color: colors.textPrimary }}>{filteredRecords.length}</span> resultado{filteredRecords.length !== 1 ? 's' : ''} de{' '}
+                    <span className="font-medium" style={{ color: colors.textPrimary }}>{totalCount}</span> registros
+                  </>
+                ) : (
+                  <>
+                    Exibindo <span className="font-medium" style={{ color: colors.textPrimary }}>{records.length}</span> de{' '}
+                    <span className="font-medium" style={{ color: colors.textPrimary }}>{totalCount}</span> registros
+                  </>
+                )}
               </div>
             </div>
 
@@ -352,11 +475,15 @@ export function AdminProcessHistoryPage({
                   <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-blue-600" />
                   <p className="text-sm" style={{ color: colors.textSecondary }}>Carregando historico...</p>
                 </div>
-              ) : records.length === 0 ? (
+              ) : filteredRecords.length === 0 ? (
                 <div className="p-12 text-center">
                   <History className="w-12 h-12 mx-auto mb-3" style={{ color: colors.textSecondary }} />
                   <p className="text-sm" style={{ color: colors.textSecondary }}>
-                    {hasActiveFilters ? 'Nenhum registro encontrado para o periodo selecionado' : 'Nenhum registro de processo encontrado'}
+                    {searchQuery.trim()
+                      ? `Nenhum resultado encontrado para "${searchQuery}"`
+                      : hasActiveFilters
+                        ? 'Nenhum registro encontrado para o periodo selecionado'
+                        : 'Nenhum registro de processo encontrado'}
                   </p>
                 </div>
               ) : (
@@ -400,7 +527,7 @@ export function AdminProcessHistoryPage({
                         </tr>
                       </thead>
                       <tbody className="divide-y" style={{ borderColor: colors.border }}>
-                        {records.map((record) => (
+                        {filteredRecords.map((record) => (
                           <tr
                             key={record.id}
                             className="hover:opacity-80 cursor-pointer transition-colors"
@@ -456,7 +583,7 @@ export function AdminProcessHistoryPage({
                   </div>
 
                   <div className="lg:hidden divide-y" style={{ borderColor: colors.border }}>
-                    {records.map((record) => (
+                    {filteredRecords.map((record) => (
                       <div
                         key={record.id}
                         className="p-4 space-y-3 cursor-pointer transition-colors"
@@ -505,7 +632,7 @@ export function AdminProcessHistoryPage({
                     ))}
                   </div>
 
-                  {hasMoreToLoad && (
+                  {hasMoreToLoad && !searchQuery.trim() && (
                     <div className="p-4 border-t flex flex-col sm:flex-row items-center justify-center gap-3" style={{ borderColor: colors.border }}>
                       <button
                         onClick={loadMore}
