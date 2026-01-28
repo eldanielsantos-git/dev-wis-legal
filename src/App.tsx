@@ -32,6 +32,7 @@ import { AdminTokenManagementPage } from './pages/AdminTokenManagementPage';
 import { AdminQuotaManagementPage } from './pages/AdminQuotaManagementPage';
 import { AdminStripeDiagnosticPage } from './pages/AdminStripeDiagnosticPage';
 import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
+import { AdminProcessHistoryPage } from './pages/AdminProcessHistoryPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import { AdminTokenLimitsPage } from './pages/AdminTokenLimitsPage';
@@ -517,6 +518,26 @@ function AppContent() {
         onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
         onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
+  }
+
+  if (currentPath === '/admin-process-history') {
+    return (
+      <AdminProcessHistoryPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
+        onNavigateToAdmin={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToNotifications={() => navigate('/notifications')}
+        onNavigateToTokens={() => navigate('/tokens')}
+        onNavigateToSubscription={() => navigate('/signature')}
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}

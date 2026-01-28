@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { Settings, Cpu, Scale, AlertTriangle, ArrowRight, Info, Users, Activity, FileText, CreditCard, Tag, Flag, Bell } from 'lucide-react';
+import { Settings, Cpu, Scale, AlertTriangle, ArrowRight, Info, Users, Activity, FileText, CreditCard, Tag, Flag, Bell, History } from 'lucide-react';
 
 interface AdminSettingsPageProps {
   onNavigateToApp: () => void;
@@ -72,6 +72,11 @@ export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNa
 
   const handleNavigateToStripeDiagnostic = () => {
     window.history.pushState({}, '', '/admin-stripe-diagnostic');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  const handleNavigateToProcessHistory = () => {
+    window.history.pushState({}, '', '/admin-process-history');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
@@ -373,6 +378,32 @@ export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNa
               <div className="pt-1">
                 <span className="inline-flex items-center text-xs font-medium" style={{ color: '#10B981' }}>
                   Configurar Webhooks
+                  <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={handleNavigateToProcessHistory}
+            className="group rounded-lg p-4 shadow-lg transition-all hover:scale-105 hover:shadow-2xl h-full"
+            style={{ backgroundColor: colors.bgSecondary }}
+          >
+            <div className="flex flex-col items-center text-center space-y-3 h-full">
+              <div className="p-3 rounded-lg transition-transform group-hover:scale-110" style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F3F4F6' }}>
+                <History className="w-8 h-8" style={{ color: '#F59E0B' }} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold mb-1" style={{ color: colors.textPrimary }}>
+                  Historico de Processos
+                </h3>
+                <p className="text-xs break-words" style={{ color: colors.textSecondary }}>
+                  Registro permanente de todos os processos concluidos no sistema
+                </p>
+              </div>
+              <div className="pt-1">
+                <span className="inline-flex items-center text-xs font-medium" style={{ color: '#F59E0B' }}>
+                  Ver Historico
                   <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </span>
               </div>
