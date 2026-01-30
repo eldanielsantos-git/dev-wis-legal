@@ -33,7 +33,6 @@ interface ProcessoData {
   gemini_file_uri: string | null;
   gemini_file_state: string | null;
   gemini_file_mime_type: string | null;
-  upload_method: 'base64' | 'file_uri' | null;
 }
 
 interface ProcessChunk {
@@ -413,7 +412,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
-      .select('id, file_name, user_id, created_at, status, pdf_base64, is_chunked, total_chunks, total_chunks_count, file_path, gemini_file_uri, gemini_file_state, gemini_file_mime_type, upload_method')
+      .select('id, file_name, user_id, created_at, status, pdf_base64, is_chunked, total_chunks, total_chunks_count, file_path, gemini_file_uri, gemini_file_state, gemini_file_mime_type')
       .eq('id', processo_id)
       .single();
 
@@ -475,23 +474,11 @@ Deno.serve(async (req: Request) => {
     console.log(`[${callId}] 📄 Processo: ${processoData.file_name}`);
     console.log(`[${callId}] 📝 Prompt: ${analysisResult.prompt_title}`);
     console.log(`[${callId}]    - Is chunked: ${processoData.is_chunked}`);
-    console.log(`[${callId}]    - Upload method: ${processoData.upload_method || 'legacy (null)'}`);
     console.log(`[${callId}] 🏃 Prompt já marcado como 'processing' pela função acquire_next_prompt_lock`);
 
-    let useFileApi: boolean;
-
-    if (processoData.is_chunked) {
-      useFileApi = (processoData.total_chunks_count || 0) > 0;
-    } else if (processoData.upload_method === 'base64') {
-      useFileApi = false;
-      console.log(`[${callId}] 📦 upload_method=base64 detectado - usando Base64 inline (otimizado)`);
-    } else if (processoData.upload_method === 'file_uri') {
-      useFileApi = processoData.gemini_file_uri !== null && processoData.gemini_file_state === 'ACTIVE';
-      console.log(`[${callId}] 📂 upload_method=file_uri detectado - usando File API`);
-    } else {
-      useFileApi = processoData.gemini_file_uri !== null && processoData.gemini_file_state === 'ACTIVE';
-      console.log(`[${callId}] ⚠️ upload_method não definido (registro legado) - fallback para lógica anterior`);
-    }
+    const useFileApi = processoData.is_chunked
+      ? (processoData.total_chunks_count || 0) > 0
+      : processoData.gemini_file_uri && processoData.gemini_file_state === 'ACTIVE';
 
     let chunks: ProcessChunk[] | null = null;
 

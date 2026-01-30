@@ -1,6 +1,8 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleAIFileManager } from 'npm:@google/generative-ai@0.24.1/server';
 
+const FILE_SIZE_THRESHOLD_BYTES = 18874368; // 18MB - files <= this use base64, > this use File API
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -188,7 +190,7 @@ Deno.serve(async (req: Request) => {
 
       throw new Error(`Falha no upload do chunk ${chunk.chunk_index} após ${MAX_RETRIES} tentativas: ${lastError?.message || 'Erro desconhecido'}`);
     } else {
-      console.log(`📤 Iniciando upload para Gemini File API - Processo: ${processo_id}`);
+      console.log(`📤 Iniciando processamento de arquivo - Processo: ${processo_id}`);
 
       const { data: processo, error: processoError } = await supabase
         .from('processos')
@@ -210,7 +212,9 @@ Deno.serve(async (req: Request) => {
         throw new Error(`Erro ao baixar arquivo: ${downloadError?.message}`);
       }
 
-      console.log(`✅ Arquivo baixado: ${(fileData.size / 1024 / 1024).toFixed(2)}MB`);
+      const fileSizeBytes = fileData.size;
+      const fileSizeMB = (fileSizeBytes / 1024 / 1024).toFixed(2);
+      console.log(`✅ Arquivo baixado: ${fileSizeMB}MB (${fileSizeBytes} bytes)`);
 
       const arrayBuffer = await fileData.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
@@ -224,6 +228,36 @@ Deno.serve(async (req: Request) => {
 
       const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
+      if (fileSizeBytes <= FILE_SIZE_THRESHOLD_BYTES) {
+        console.log(`📦 Arquivo <= 18MB (${fileSizeMB}MB) - Usando método BASE64 (mais rápido)`);
+        console.log(`⏭️ Pulando upload para File API (desnecessário para arquivos pequenos)`);
+
+        await supabase
+          .from('processos')
+          .update({
+            pdf_base64: pdfBase64,
+            upload_method: 'base64',
+            use_file_api: false,
+          })
+          .eq('id', processo_id);
+
+        console.log(`✅ Base64 salvo com sucesso - upload_method: base64`);
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            method: 'base64',
+            file_size_mb: fileSizeMB,
+            message: 'Arquivo processado com base64 inline (otimizado para arquivos pequenos)',
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      console.log(`📂 Arquivo > 18MB (${fileSizeMB}MB) - Usando método FILE_URI (File API)`);
       console.log(`📤 Fazendo upload para Gemini File API...`);
 
       const tempFilePath = `/tmp/${processo_id}_${processo.file_name}`;
@@ -256,6 +290,7 @@ Deno.serve(async (req: Request) => {
           gemini_file_expires_at: expiresAt.toISOString(),
           use_file_api: true,
           pdf_base64: pdfBase64,
+          upload_method: 'file_uri',
         })
         .eq('id', processo_id);
 
@@ -274,12 +309,16 @@ Deno.serve(async (req: Request) => {
         console.log(`✅ Arquivo pronto: ${fileMetadata.state}`);
       }
 
+      console.log(`✅ File API configurado - upload_method: file_uri`);
+
       return new Response(
         JSON.stringify({
           success: true,
+          method: 'file_uri',
           file_uri: uploadResult.file.uri,
           file_name: uploadResult.file.name,
           state: uploadResult.file.state,
+          file_size_mb: fileSizeMB,
         }),
         {
           status: 200,
