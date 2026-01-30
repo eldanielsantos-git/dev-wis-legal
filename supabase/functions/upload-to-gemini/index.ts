@@ -219,18 +219,17 @@ Deno.serve(async (req: Request) => {
       const arrayBuffer = await fileData.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
 
-      const chunkSize = 32768;
-      let base64String = '';
-      for (let i = 0; i < uint8Array.length; i += chunkSize) {
-        const chunk = uint8Array.slice(i, i + chunkSize);
-        base64String += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
-      }
-
-      const pdfBase64 = `data:application/pdf;base64,${base64String}`;
-
       if (fileSizeBytes <= FILE_SIZE_THRESHOLD_BYTES) {
         console.log(`📦 Arquivo <= 18MB (${fileSizeMB}MB) - Usando método BASE64 (mais rápido)`);
         console.log(`⏭️ Pulando upload para File API (desnecessário para arquivos pequenos)`);
+
+        const chunkSize = 32768;
+        let base64String = '';
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          const chunk = uint8Array.slice(i, i + chunkSize);
+          base64String += btoa(String.fromCharCode.apply(null, Array.from(chunk)));
+        }
+        const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
         await supabase
           .from('processos')
@@ -258,7 +257,7 @@ Deno.serve(async (req: Request) => {
       }
 
       console.log(`📂 Arquivo > 18MB (${fileSizeMB}MB) - Usando método FILE_URI (File API)`);
-      console.log(`📤 Fazendo upload para Gemini File API...`);
+      console.log(`📤 Fazendo upload para Gemini File API (sem converter para base64)...`);
 
       const tempFilePath = `/tmp/${processo_id}_${processo.file_name}`;
       await Deno.writeFile(tempFilePath, uint8Array);
@@ -289,7 +288,6 @@ Deno.serve(async (req: Request) => {
           gemini_file_uploaded_at: uploadedAt.toISOString(),
           gemini_file_expires_at: expiresAt.toISOString(),
           use_file_api: true,
-          pdf_base64: pdfBase64,
           upload_method: 'file_uri',
         })
         .eq('id', processo_id);

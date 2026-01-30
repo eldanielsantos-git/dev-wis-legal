@@ -42,7 +42,7 @@ Deno.serve(async (req: Request) => {
       })
       .eq('id', processo_id)
       .eq('status', 'created')
-      .select()
+      .select('id, is_chunked, total_chunks_count, gemini_file_uri, file_path, file_name')
       .maybeSingle();
 
     if (updateError) {
@@ -92,14 +92,8 @@ Deno.serve(async (req: Request) => {
         console.log(`[${callId}] ✅ Todos os chunks já foram enviados para Gemini`);
       }
     } else {
-      const BASE64_SIZE_THRESHOLD = 15 * 1024 * 1024;
-      const base64Length = updatedProcesso.pdf_base64?.length || 0;
-      const estimatedFileSize = Math.round(base64Length * 0.75);
-
-      console.log(`[${callId}] 📄 Arquivo simples - tamanho estimado: ${(estimatedFileSize / (1024 * 1024)).toFixed(2)}MB`);
-
-      if (estimatedFileSize > BASE64_SIZE_THRESHOLD && geminiApiKey && !updatedProcesso.gemini_file_uri) {
-        console.log(`[${callId}] 📤 Arquivo grande detectado - enviando para Gemini File API...`);
+      if (updatedProcesso.file_path && geminiApiKey && !updatedProcesso.gemini_file_uri) {
+        console.log(`[${callId}] 📤 Arquivo em Storage detectado - processando via upload-to-gemini...`);
 
         try {
           const uploadResponse = await fetch(`${supabaseUrl}/functions/v1/upload-to-gemini`, {
@@ -113,20 +107,21 @@ Deno.serve(async (req: Request) => {
 
           if (uploadResponse.ok) {
             const uploadResult = await uploadResponse.json();
-            console.log(`[${callId}] ✅ Upload para Gemini concluído: ${uploadResult.gemini_file_uri}`);
+            console.log(`[${callId}] ✅ Processamento concluído - método: ${uploadResult.method}`);
+            if (uploadResult.file_uri) {
+              console.log(`[${callId}]    File URI: ${uploadResult.file_uri}`);
+            }
           } else {
             const errorText = await uploadResponse.text();
-            console.error(`[${callId}] ⚠️ Falha no upload para Gemini: ${errorText}`);
-            console.log(`[${callId}] ⚠️ Continuando com base64 (pode falhar para arquivos muito grandes)`);
+            console.error(`[${callId}] ⚠️ Falha no processamento: ${errorText}`);
           }
         } catch (uploadError) {
           console.error(`[${callId}] ⚠️ Erro ao chamar upload-to-gemini:`, uploadError);
-          console.log(`[${callId}] ⚠️ Continuando com base64 (pode falhar para arquivos muito grandes)`);
         }
       } else if (updatedProcesso.gemini_file_uri) {
         console.log(`[${callId}] ✅ Arquivo já possui gemini_file_uri: ${updatedProcesso.gemini_file_uri}`);
       } else {
-        console.log(`[${callId}] 📦 Arquivo pequeno - usando base64 inline (otimizado)`);
+        console.log(`[${callId}] 📦 Arquivo sem file_path - usando dados existentes`);
       }
     }
 
