@@ -25,7 +25,6 @@ interface ProcessoData {
   file_name: string;
   user_id: string;
   created_at: string;
-  pdf_base64: string | null;
   is_chunked: boolean;
   total_chunks: number | null;
   total_chunks_count?: number;
@@ -287,13 +286,8 @@ async function loadPDFData(
     return base64Data;
   }
 
-  if (processo.pdf_base64) {
-    console.log('📄 Usando PDF inline do banco de dados');
-    return processo.pdf_base64;
-  }
-
   if (processo.file_path) {
-    console.log('⚠️ PDF não encontrado no banco, baixando do Storage...');
+    console.log('📥 Baixando PDF do Storage...');
 
     const { data: storageData } = await supabase.storage
       .from('processos')
@@ -314,10 +308,12 @@ async function loadPDFData(
       binary += String.fromCharCode.apply(null, Array.from(chunk));
     }
 
-    return btoa(binary);
+    const base64 = btoa(binary);
+    console.log(`✅ PDF convertido para base64: ${(base64.length / 1024 / 1024).toFixed(2)}MB`);
+    return base64;
   }
 
-  throw new Error('Nenhuma fonte de PDF disponível (base64, chunks ou file_path)');
+  throw new Error('Nenhuma fonte de PDF disponível (file_path não encontrado)');
 }
 
 function isTimeoutError(error: any): boolean {
@@ -413,7 +409,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
-      .select('id, file_name, user_id, created_at, status, pdf_base64, is_chunked, total_chunks, total_chunks_count, file_path, gemini_file_uri, gemini_file_state, gemini_file_mime_type, upload_method')
+      .select('id, file_name, user_id, created_at, status, is_chunked, total_chunks, total_chunks_count, file_path, gemini_file_uri, gemini_file_state, gemini_file_mime_type, upload_method')
       .eq('id', processo_id)
       .single();
 
