@@ -91,6 +91,43 @@ Deno.serve(async (req: Request) => {
       } else {
         console.log(`[${callId}] ✅ Todos os chunks já foram enviados para Gemini`);
       }
+    } else {
+      const BASE64_SIZE_THRESHOLD = 15 * 1024 * 1024;
+      const base64Length = updatedProcesso.pdf_base64?.length || 0;
+      const estimatedFileSize = Math.round(base64Length * 0.75);
+
+      console.log(`[${callId}] 📄 Arquivo simples - tamanho estimado: ${(estimatedFileSize / (1024 * 1024)).toFixed(2)}MB`);
+
+      if (estimatedFileSize > BASE64_SIZE_THRESHOLD && geminiApiKey && !updatedProcesso.gemini_file_uri) {
+        console.log(`[${callId}] 📤 Arquivo grande detectado - enviando para Gemini File API...`);
+
+        try {
+          const uploadResponse = await fetch(`${supabaseUrl}/functions/v1/upload-to-gemini`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({ processo_id }),
+          });
+
+          if (uploadResponse.ok) {
+            const uploadResult = await uploadResponse.json();
+            console.log(`[${callId}] ✅ Upload para Gemini concluído: ${uploadResult.gemini_file_uri}`);
+          } else {
+            const errorText = await uploadResponse.text();
+            console.error(`[${callId}] ⚠️ Falha no upload para Gemini: ${errorText}`);
+            console.log(`[${callId}] ⚠️ Continuando com base64 (pode falhar para arquivos muito grandes)`);
+          }
+        } catch (uploadError) {
+          console.error(`[${callId}] ⚠️ Erro ao chamar upload-to-gemini:`, uploadError);
+          console.log(`[${callId}] ⚠️ Continuando com base64 (pode falhar para arquivos muito grandes)`);
+        }
+      } else if (updatedProcesso.gemini_file_uri) {
+        console.log(`[${callId}] ✅ Arquivo já possui gemini_file_uri: ${updatedProcesso.gemini_file_uri}`);
+      } else {
+        console.log(`[${callId}] 📦 Arquivo pequeno - usando base64 inline (otimizado)`);
+      }
     }
 
     const { data: prompts, error: promptsError } = await supabase
