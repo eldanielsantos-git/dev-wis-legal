@@ -71,6 +71,30 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log("Step 1.5: Checking rate limiting (should send notification?)...");
+    const { data: shouldNotify, error: rateLimitError } = await supabaseClient
+      .rpc('should_send_error_notification', {
+        p_processo_id: errorData.processo_id,
+        p_chunk_id: errorData.chunk_id,
+        p_min_interval_hours: 6
+      });
+
+    if (rateLimitError) {
+      console.error("Error checking rate limit:", rateLimitError);
+    } else if (shouldNotify === false) {
+      console.warn("Rate limit: email already sent in last 6 hours for this processo/chunk. Skipping.");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Rate limited: notification already sent recently"
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
     console.log("Complex error data found:", {
       error_type: errorData.error_type,
       severity: errorData.severity,
@@ -334,7 +358,8 @@ Deno.serve(async (req: Request) => {
       .update({
         admin_notified: true,
         admin_notified_at: new Date().toISOString(),
-        admin_email_id: emailResults[0]
+        admin_email_id: emailResults[0],
+        last_error_notification_at: new Date().toISOString()
       })
       .eq("id", error_id);
 

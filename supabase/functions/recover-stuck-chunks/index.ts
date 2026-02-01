@@ -20,6 +20,12 @@ Deno.serve(async (req: Request) => {
 
     console.log(`🔍 Buscando chunks travados há mais de ${threshold_minutes} minutos...`);
 
+    console.log('🧹 Limpando chunks órfãos (>48h) antes de recuperar chunks travados...');
+    const { data: cleanupResult } = await supabase.rpc('cleanup_orphan_chunks', { p_ttl_hours: 48 });
+    if (cleanupResult) {
+      console.log(`✅ Limpeza: ${cleanupResult.cleaned_chunks} chunks órfãos removidos`);
+    }
+
     const { data: stuckChunks, error: stuckError } = await supabase
       .rpc('get_stuck_chunks', { p_stuck_threshold_minutes: threshold_minutes });
 

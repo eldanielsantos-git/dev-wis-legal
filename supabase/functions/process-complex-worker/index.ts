@@ -269,6 +269,12 @@ Deno.serve(async (req: Request) => {
       if (!chunk.gemini_file_uri || chunk.gemini_file_state !== 'ACTIVE') {
         console.error(`[${workerId}] Chunk nao ficou ATIVO apos ${maxRetries * 5}s. Estado: ${chunk.gemini_file_state}`);
 
+        const chunkAgeHours = (Date.now() - new Date(chunk.created_at).getTime()) / (1000 * 60 * 60);
+        if (chunkAgeHours > 48) {
+          console.error(`[${workerId}] Chunk criado há ${chunkAgeHours.toFixed(1)}h - arquivo Gemini expirou (TTL 48h)`);
+          throw new Error(`Gemini file expired: chunk created ${chunkAgeHours.toFixed(1)}h ago (TTL: 48h). Cannot retry.`);
+        }
+
         console.log(`[${workerId}] Tentando reenviar chunk para Gemini...`);
 
         try {
