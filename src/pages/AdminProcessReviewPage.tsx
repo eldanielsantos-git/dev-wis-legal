@@ -372,7 +372,7 @@ export function AdminProcessReviewPage({
         <button
           onClick={() => setViewMode('stuck')}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            viewMode === 'stuck' ? 'bg-blue-600 text-white' : ''
+            viewMode === 'stuck' ? 'bg-gray-200 text-gray-900 ring-1 ring-gray-300' : 'hover:bg-gray-100'
           }`}
           style={viewMode !== 'stuck' ? { backgroundColor: colors.bgSecondary, color: colors.textPrimary } : {}}
         >
@@ -382,12 +382,12 @@ export function AdminProcessReviewPage({
         <button
           onClick={() => { setViewMode('audit'); loadAuditRecords(); }}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-            viewMode === 'audit' ? 'bg-blue-600 text-white' : ''
+            viewMode === 'audit' ? 'bg-gray-200 text-gray-900 ring-1 ring-gray-300' : 'hover:bg-gray-100'
           }`}
           style={viewMode !== 'audit' ? { backgroundColor: colors.bgSecondary, color: colors.textPrimary } : {}}
         >
           <History className="w-4 h-4 inline mr-2" />
-          Histórico de Auditorias
+          Historico de Auditorias
         </button>
       </div>
 
@@ -638,7 +638,7 @@ export function AdminProcessReviewPage({
                 <button
                   onClick={handleSimulate}
                   disabled={selectedProcesses.size === 0 || isSimulating}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSimulating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -657,7 +657,7 @@ export function AdminProcessReviewPage({
                     !rateLimit.allowed ||
                     cooldown > 0
                   }
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RefreshCcw className="w-4 h-4" />
                   Destravar Selecionados
