@@ -72,6 +72,7 @@ export function AdminProcessReviewPage({
   const { user } = useAuth();
   const colors = getThemeColors(theme);
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [stuckProcesses, setStuckProcesses] = useState<StuckProcessInfo[]>([]);
   const [auditRecords, setAuditRecords] = useState<AuditRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -279,8 +280,9 @@ export function AdminProcessReviewPage({
         onNavigateToNotifications={onNavigateToNotifications}
         onNavigateToTokens={onNavigateToTokens}
         onNavigateToSubscription={onNavigateToSubscription}
+        onCollapsedChange={setIsSidebarCollapsed}
       />
-      <div className="flex-1 flex flex-col">
+      <div className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           <div className="w-full max-w-7xl mx-auto">
             <div className="flex items-center justify-between mb-6">
@@ -297,10 +299,10 @@ export function AdminProcessReviewPage({
                   </div>
                   <div>
                     <h1 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
-                      Revisao de Processos
+                      Revisão de Processos
                     </h1>
                     <p className="text-sm" style={{ color: colors.textSecondary }}>
-                      Diagnostique e destraque processos com problemas
+                      Diagnostique e destrave processos com problemas
                     </p>
                   </div>
                 </div>
@@ -336,7 +338,7 @@ export function AdminProcessReviewPage({
             </div>
             <div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.eligible}</p>
-              <p className="text-xs" style={{ color: colors.textSecondary }}>Elegiveis</p>
+              <p className="text-xs" style={{ color: colors.textSecondary }}>Elegíveis</p>
             </div>
           </div>
         </div>
@@ -348,7 +350,7 @@ export function AdminProcessReviewPage({
             </div>
             <div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.avgMinutes}m</p>
-              <p className="text-xs" style={{ color: colors.textSecondary }}>Tempo Medio</p>
+              <p className="text-xs" style={{ color: colors.textSecondary }}>Tempo Médio</p>
             </div>
           </div>
         </div>
@@ -360,7 +362,7 @@ export function AdminProcessReviewPage({
             </div>
             <div>
               <p className="text-2xl font-bold" style={{ color: colors.textPrimary }}>{stats.totalPages}</p>
-              <p className="text-xs" style={{ color: colors.textSecondary }}>Paginas Afetadas</p>
+              <p className="text-xs" style={{ color: colors.textSecondary }}>Páginas Afetadas</p>
             </div>
           </div>
         </div>
@@ -385,7 +387,7 @@ export function AdminProcessReviewPage({
           style={viewMode !== 'audit' ? { backgroundColor: colors.bgSecondary, color: colors.textPrimary } : {}}
         >
           <History className="w-4 h-4 inline mr-2" />
-          Historico de Auditorias
+          Histórico de Auditorias
         </button>
       </div>
 
@@ -417,7 +419,7 @@ export function AdminProcessReviewPage({
                   onChange={(e) => setShowOnlyEligible(e.target.checked)}
                   className="w-4 h-4 rounded"
                 />
-                <span className="text-sm" style={{ color: colors.textPrimary }}>Apenas elegiveis</span>
+                <span className="text-sm" style={{ color: colors.textPrimary }}>Apenas elegíveis</span>
               </label>
 
               <div className="flex-1 min-w-[200px]">
@@ -471,7 +473,7 @@ export function AdminProcessReviewPage({
                   Nenhum processo travado
                 </p>
                 <p className="text-sm" style={{ color: colors.textSecondary }}>
-                  Todos os processos estao funcionando normalmente
+                  Todos os processos estão funcionando normalmente
                 </p>
               </div>
             ) : (
@@ -505,7 +507,7 @@ export function AdminProcessReviewPage({
                           </p>
                           {process.isEligibleForUnlock ? (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                              Destravavel
+                              Destravável
                             </span>
                           ) : (
                             <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
@@ -522,7 +524,7 @@ export function AdminProcessReviewPage({
                         <p className="text-sm font-medium" style={{ color: colors.textPrimary }}>
                           {process.totalPages}
                         </p>
-                        <p className="text-xs" style={{ color: colors.textSecondary }}>paginas</p>
+                        <p className="text-xs" style={{ color: colors.textSecondary }}>páginas</p>
                       </div>
 
                       <div className="text-center">
@@ -597,7 +599,7 @@ export function AdminProcessReviewPage({
                               </span>
                             </div>
                             <div>
-                              <span style={{ color: colors.textSecondary }}>Ultima Atividade:</span>
+                              <span style={{ color: colors.textSecondary }}>Última Atividade:</span>
                               <span className="ml-2" style={{ color: colors.textPrimary }}>
                                 {process.lastActivity ? new Date(process.lastActivity).toLocaleString('pt-BR') : 'N/A'}
                               </span>
@@ -614,13 +616,13 @@ export function AdminProcessReviewPage({
 
           <div className="rounded-xl p-4" style={{ backgroundColor: colors.bgSecondary }}>
             <h3 className="text-lg font-medium mb-4" style={{ color: colors.textPrimary }}>
-              Painel de Acoes
+              Painel de Ações
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                  Motivo do destravamento (obrigatorio)
+                  Motivo do destravamento (obrigatório)
                 </label>
                 <textarea
                   value={unlockReason}
@@ -678,7 +680,7 @@ export function AdminProcessReviewPage({
               {simulationResults.size > 0 && (
                 <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: theme === 'dark' ? '#1a1c23' : '#F9FAFB' }}>
                   <h4 className="text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-                    Resultado da Simulacao
+                    Resultado da Simulação
                   </h4>
                   <div className="space-y-2">
                     {Array.from(simulationResults.entries()).map(([id, result]) => (
@@ -708,7 +710,7 @@ export function AdminProcessReviewPage({
         <div className="rounded-xl overflow-hidden" style={{ backgroundColor: colors.bgSecondary }}>
           <div className="p-4 border-b" style={{ borderColor: theme === 'dark' ? '#374151' : '#E5E7EB' }}>
             <h3 className="text-lg font-medium" style={{ color: colors.textPrimary }}>
-              Historico de Auditorias ({auditRecords.length})
+              Histórico de Auditorias ({auditRecords.length})
             </h3>
           </div>
 
@@ -727,8 +729,8 @@ export function AdminProcessReviewPage({
                     <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Data/Hora</th>
                     <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Admin</th>
                     <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Processo</th>
-                    <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Acao</th>
-                    <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Paginas</th>
+                    <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Ação</th>
+                    <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Páginas</th>
                     <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Tempo Travado</th>
                     <th className="px-4 py-3 text-left font-medium" style={{ color: colors.textSecondary }}>Resultado</th>
                   </tr>
@@ -751,7 +753,7 @@ export function AdminProcessReviewPage({
                             ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                         }`}>
-                          {record.actionType === 'unlock' ? 'Destravamento' : 'Simulacao'}
+                          {record.actionType === 'unlock' ? 'Destravamento' : 'Simulação'}
                         </span>
                       </td>
                       <td className="px-4 py-3" style={{ color: colors.textPrimary }}>
