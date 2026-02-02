@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { sendToSlack } from "../_shared/slack-client.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,6 +11,7 @@ const corsHeaders = {
 const MAX_PAGES_FOR_DETECTION = 1000;
 const STUCK_THRESHOLD_MINUTES = 30;
 const NOTIFICATION_THROTTLE_MINUTES = 60;
+const NOTIFICATION_TYPE_SLUG = "process_stuck";
 
 interface StuckProcess {
   processo_id: string;
@@ -121,121 +123,47 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      const { data: webhookConfig } = await supabase
-        .from("admin_notification_webhooks")
-        .select("webhook_url")
-        .eq("notification_type", "process_stuck")
-        .eq("is_active", true)
-        .limit(1)
-        .maybeSingle();
+      const { data: slackConfigs, error: slackConfigError } = await supabase
+        .from("slack_notifications")
+        .select("webhook_url, is_active, notification_types")
+        .eq("is_active", true);
 
-      if (!webhookConfig?.webhook_url) {
-        const { data: fallbackConfig } = await supabase
-          .from("admin_notification_webhooks")
-          .select("webhook_url")
-          .eq("notification_type", "general")
-          .eq("is_active", true)
-          .limit(1)
-          .maybeSingle();
-
-        if (!fallbackConfig?.webhook_url) {
-          console.log("No Slack webhook configured for stuck process notifications");
-          continue;
-        }
-
-        webhookConfig.webhook_url = fallbackConfig.webhook_url;
+      if (slackConfigError) {
+        console.error("Error fetching Slack configs:", slackConfigError);
+        continue;
       }
 
-      const slackMessage = {
-        blocks: [
-          {
-            type: "header",
-            text: {
-              type: "plain_text",
-              text: "Processo Travado Detectado",
-              emoji: true,
-            },
-          },
-          {
-            type: "section",
-            fields: [
-              {
-                type: "mrkdwn",
-                text: `*Processo:*\n${process.processo_numero}`,
-              },
-              {
-                type: "mrkdwn",
-                text: `*Usuario:*\n${process.user_email}`,
-              },
-            ],
-          },
-          {
-            type: "section",
-            fields: [
-              {
-                type: "mrkdwn",
-                text: `*Etapa Travada:*\n${process.stuck_at_prompt_order}. ${process.stuck_at_prompt_title}`,
-              },
-              {
-                type: "mrkdwn",
-                text: `*Tempo Travado:*\n${process.minutes_stuck} minutos`,
-              },
-            ],
-          },
-          {
-            type: "section",
-            fields: [
-              {
-                type: "mrkdwn",
-                text: `*Total de Paginas:*\n${process.total_pages}`,
-              },
-              {
-                type: "mrkdwn",
-                text: `*Status:*\n:warning: Requer Atencao`,
-              },
-            ],
-          },
-          {
-            type: "context",
-            elements: [
-              {
-                type: "mrkdwn",
-                text: `Detectado em: ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`,
-              },
-            ],
-          },
-          {
-            type: "actions",
-            elements: [
-              {
-                type: "button",
-                text: {
-                  type: "plain_text",
-                  text: "Ir para Revisao",
-                  emoji: true,
-                },
-                url: `${supabaseUrl.replace(".supabase.co", ".vercel.app")}/admin-process-review`,
-                action_id: "go_to_review",
-              },
-            ],
-          },
-        ],
-      };
+      const matchingConfig = slackConfigs?.find(
+        (config: { notification_types: string[] }) =>
+          config.notification_types && config.notification_types.includes(NOTIFICATION_TYPE_SLUG)
+      );
+
+      if (!matchingConfig?.webhook_url) {
+        console.log("No Slack webhook configured for stuck process notifications (process_stuck type)");
+        continue;
+      }
+
+      const message = `*Processo:* ${process.processo_numero}\n*Usuario:* ${process.user_email}\n*Etapa Travada:* ${process.stuck_at_prompt_order}. ${process.stuck_at_prompt_title}\n*Tempo Travado:* ${process.minutes_stuck} minutos\n*Total de Paginas:* ${process.total_pages}`;
 
       try {
-        const slackResponse = await fetch(webhookConfig.webhook_url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(slackMessage),
+        const slackResult = await sendToSlack({
+          webhookUrl: matchingConfig.webhook_url,
+          severity: "high",
+          title: "Processo Travado Detectado",
+          message,
+          metadata: {
+            processo_id: process.processo_id,
+            etapa: `${process.stuck_at_prompt_order}. ${process.stuck_at_prompt_title}`,
+            tempo_travado: `${process.minutes_stuck} min`,
+            paginas: process.total_pages,
+          },
         });
-
-        const notificationSuccess = slackResponse.ok;
 
         await supabase.from("stuck_process_notifications").insert({
           processo_id: process.processo_id,
           processo_numero: process.processo_numero,
-          notification_sent_successfully: notificationSuccess,
-          error_message: notificationSuccess ? null : `Slack returned ${slackResponse.status}`,
+          notification_sent_successfully: slackResult.success,
+          error_message: slackResult.success ? null : slackResult.error,
           metadata: {
             stuck_at_prompt_order: process.stuck_at_prompt_order,
             stuck_at_prompt_title: process.stuck_at_prompt_title,
@@ -245,8 +173,11 @@ Deno.serve(async (req: Request) => {
           },
         });
 
-        if (notificationSuccess) {
+        if (slackResult.success) {
           notificationsSent++;
+          console.log(`Slack notification sent for process ${process.processo_id}`);
+        } else {
+          console.error(`Failed to send Slack notification: ${slackResult.error}`);
         }
       } catch (slackError) {
         console.error("Error sending Slack notification:", slackError);
