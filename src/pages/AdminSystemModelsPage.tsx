@@ -745,7 +745,16 @@ export function AdminSystemModelsPage({
         </div>
       )}
 
-      {isSearchOpen && <IntelligentSearch onClose={() => setIsSearchOpen(false)} />}
+      {isSearchOpen && (
+        <IntelligentSearch
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          onSelectProcess={(processoId) => {
+            window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+        />
+      )}
     </div>
   );
 }

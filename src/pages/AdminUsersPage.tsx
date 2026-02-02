@@ -400,6 +400,7 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
 
       {isSearchOpen && (
         <IntelligentSearch
+          isOpen={isSearchOpen}
           onClose={() => setIsSearchOpen(false)}
           onSelectProcess={(processoId) => {
             window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);

@@ -78,11 +78,11 @@ export function SubscriptionPage({
 
       {isSearchOpen && (
         <IntelligentSearch
+          isOpen={isSearchOpen}
           onClose={() => setIsSearchOpen(false)}
-          onNavigateToDetail={(id) => {
-            window.history.pushState({}, '', `/lawsuits-detail/${id}`);
+          onSelectProcess={(processoId) => {
+            window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
             window.dispatchEvent(new PopStateEvent('popstate'));
-            setIsSearchOpen(false);
           }}
         />
       )}

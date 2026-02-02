@@ -675,6 +675,7 @@ export function AdminProcessHistoryPage({
 
       {isSearchOpen && (
         <IntelligentSearch
+          isOpen={isSearchOpen}
           onClose={() => setIsSearchOpen(false)}
           onSelectProcess={(processoId) => {
             setIsSearchOpen(false);

@@ -1055,6 +1055,7 @@ export function AdminUserDetailPage({
 
       {isSearchOpen && (
         <IntelligentSearch
+          isOpen={isSearchOpen}
           onClose={() => setIsSearchOpen(false)}
           onSelectProcess={(processoId) => {
             window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);

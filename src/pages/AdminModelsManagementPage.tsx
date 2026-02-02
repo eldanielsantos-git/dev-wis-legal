@@ -199,11 +199,12 @@ export function AdminModelsManagementPage({
 
       {isSearchOpen && (
         <IntelligentSearch
+          isOpen={isSearchOpen}
           onClose={() => setIsSearchOpen(false)}
-          onNavigateToMyProcess={onNavigateToMyProcess}
-          onNavigateToChat={onNavigateToChat}
-          onNavigateToWorkspace={onNavigateToWorkspace}
-          onNavigateToProfile={onNavigateToProfile}
+          onSelectProcess={(processoId) => {
+            window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
         />
       )}
     </div>
