@@ -33,6 +33,7 @@ import { AdminQuotaManagementPage } from './pages/AdminQuotaManagementPage';
 import { AdminStripeDiagnosticPage } from './pages/AdminStripeDiagnosticPage';
 import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
 import { AdminProcessHistoryPage } from './pages/AdminProcessHistoryPage';
+import { AdminProcessReviewPage } from './pages/AdminProcessReviewPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import { AdminTokenLimitsPage } from './pages/AdminTokenLimitsPage';
@@ -541,6 +542,16 @@ function AppContent() {
         onNavigateToTerms={() => navigate('/terms')}
         onNavigateToPrivacy={() => navigate('/privacy')}
         onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
+  }
+
+  if (currentPath === '/admin-process-review') {
+    return (
+      <AdminProcessReviewPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToSettings={() => navigate('/admin-settings')}
+        onNavigateToAdmin={() => navigate('/admin-settings')}
       />
     );
   }
