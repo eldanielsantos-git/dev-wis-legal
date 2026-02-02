@@ -699,7 +699,8 @@ export function AdminProcessReviewPage({
                     !rateLimit.allowed ||
                     cooldown > 0
                   }
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors text-white hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ backgroundColor: '#000000' }}
                 >
                   <RefreshCcw className="w-4 h-4" />
                   Destravar Selecionados
