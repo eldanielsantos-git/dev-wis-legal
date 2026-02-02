@@ -645,7 +645,7 @@ export function AdminProcessReviewPage({
                   ) : (
                     <Play className="w-4 h-4" />
                   )}
-                  Simular Destravamento
+                  Checar Travamento
                 </button>
 
                 <button
