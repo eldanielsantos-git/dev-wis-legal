@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../hooks/useAuth';
 import { getThemeColors } from '../utils/themeUtils';
+import { SidebarWis } from '../components/SidebarWis';
+import { FooterWis } from '../components/FooterWis';
 import {
   RefreshCcw,
   AlertTriangle,
   Clock,
   FileText,
-  Users,
   ChevronDown,
   ChevronUp,
   Check,
@@ -17,8 +18,7 @@ import {
   ArrowLeft,
   Filter,
   Search,
-  History,
-  Settings
+  History
 } from 'lucide-react';
 import { ProcessDiagnosticService } from '../services/ProcessDiagnosticService';
 import { ProcessUnlockService } from '../services/ProcessUnlockService';
@@ -34,8 +34,19 @@ import { UnlockConfirmationModal } from '../components/UnlockConfirmationModal';
 
 interface AdminProcessReviewPageProps {
   onNavigateToApp: () => void;
-  onNavigateToSettings: () => void;
+  onNavigateToMyProcess: () => void;
+  onNavigateToChat: () => void;
+  onNavigateToWorkspace: () => void;
+  onNavigateToSchedule: () => void;
   onNavigateToAdmin: () => void;
+  onNavigateToSettings: () => void;
+  onNavigateToProfile: () => void;
+  onNavigateToNotifications: () => void;
+  onNavigateToTokens: () => void;
+  onNavigateToSubscription: () => void;
+  onNavigateToTerms: () => void;
+  onNavigateToPrivacy: () => void;
+  onNavigateToCookies: () => void;
 }
 
 type TimeFilter = 'all' | '15-30' | '30-60' | '60+';
@@ -43,8 +54,19 @@ type ViewMode = 'stuck' | 'audit';
 
 export function AdminProcessReviewPage({
   onNavigateToApp,
+  onNavigateToMyProcess,
+  onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToSchedule,
+  onNavigateToAdmin,
   onNavigateToSettings,
-  onNavigateToAdmin
+  onNavigateToProfile,
+  onNavigateToNotifications,
+  onNavigateToTokens,
+  onNavigateToSubscription,
+  onNavigateToTerms,
+  onNavigateToPrivacy,
+  onNavigateToCookies
 }: AdminProcessReviewPageProps) {
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -244,39 +266,55 @@ export function AdminProcessReviewPage({
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onNavigateToSettings}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" style={{ color: colors.textSecondary }} />
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg" style={{ backgroundColor: '#F59E0B20' }}>
-              <RefreshCcw className="w-6 h-6" style={{ color: '#F59E0B' }} />
+    <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
+      <SidebarWis
+        onNavigateToApp={onNavigateToApp}
+        onNavigateToMyProcess={onNavigateToMyProcess}
+        onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
+        onNavigateToAdmin={onNavigateToAdmin}
+        onNavigateToSettings={onNavigateToSettings}
+        onNavigateToProfile={onNavigateToProfile}
+        onNavigateToNotifications={onNavigateToNotifications}
+        onNavigateToTokens={onNavigateToTokens}
+        onNavigateToSubscription={onNavigateToSubscription}
+      />
+      <div className="flex-1 flex flex-col">
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
+          <div className="w-full max-w-7xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={onNavigateToSettings}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  <ArrowLeft className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg" style={{ backgroundColor: '#F59E0B20' }}>
+                    <RefreshCcw className="w-6 h-6" style={{ color: '#F59E0B' }} />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
+                      Revisao de Processos
+                    </h1>
+                    <p className="text-sm" style={{ color: colors.textSecondary }}>
+                      Diagnostique e destraque processos com problemas
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={loadStuckProcesses}
+                disabled={isLoading}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
+                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+              >
+                <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </button>
             </div>
-            <div>
-              <h1 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
-                Revisao de Processos
-              </h1>
-              <p className="text-sm" style={{ color: colors.textSecondary }}>
-                Diagnostique e destraque processos com problemas
-              </p>
-            </div>
-          </div>
-        </div>
-        <button
-          onClick={loadStuckProcesses}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors"
-          style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
-        >
-          <RefreshCcw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          Atualizar
-        </button>
-      </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div className="rounded-xl p-4" style={{ backgroundColor: colors.bgSecondary }}>
@@ -751,6 +789,14 @@ export function AdminProcessReviewPage({
         reason={unlockReason}
         isLoading={isUnlocking}
       />
+          </div>
+        </main>
+        <FooterWis
+          onNavigateToTerms={onNavigateToTerms}
+          onNavigateToPrivacy={onNavigateToPrivacy}
+          onNavigateToCookies={onNavigateToCookies}
+        />
+      </div>
     </div>
   );
 }

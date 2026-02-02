@@ -550,8 +550,19 @@ function AppContent() {
     return (
       <AdminProcessReviewPage
         onNavigateToApp={() => navigate('/app')}
-        onNavigateToSettings={() => navigate('/admin-settings')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
         onNavigateToAdmin={() => navigate('/admin-settings')}
+        onNavigateToSettings={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToNotifications={() => navigate('/notifications')}
+        onNavigateToTokens={() => navigate('/tokens')}
+        onNavigateToSubscription={() => navigate('/signature')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
       />
     );
   }
