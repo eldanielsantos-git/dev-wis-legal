@@ -18,7 +18,8 @@ import {
   ArrowLeft,
   Filter,
   Search,
-  History
+  History,
+  Radar
 } from 'lucide-react';
 import { ProcessDiagnosticService } from '../services/ProcessDiagnosticService';
 import { ProcessUnlockService } from '../services/ProcessUnlockService';
@@ -93,6 +94,34 @@ export function AdminProcessReviewPage({
 
   const [rateLimit, setRateLimit] = useState({ allowed: true, remaining: 10, resetIn: 0 });
   const [cooldown, setCooldown] = useState(0);
+  const [isDetecting, setIsDetecting] = useState(false);
+  const [detectionResult, setDetectionResult] = useState<{ total_stuck: number; notifications_sent: number } | null>(null);
+
+  const invokeDetectStuckProcesses = async () => {
+    setIsDetecting(true);
+    setDetectionResult(null);
+    try {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+      const response = await fetch(`${supabaseUrl}/functions/v1/detect-stuck-processes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      setDetectionResult(data);
+
+      await loadStuckProcesses();
+    } catch (error) {
+      console.error('Error invoking detect-stuck-processes:', error);
+    } finally {
+      setIsDetecting(false);
+    }
+  };
 
   const loadStuckProcesses = useCallback(async () => {
     setIsLoading(true);
@@ -636,6 +665,19 @@ export function AdminProcessReviewPage({
 
               <div className="flex flex-wrap items-center gap-4">
                 <button
+                  onClick={invokeDetectStuckProcesses}
+                  disabled={isDetecting}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isDetecting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Radar className="w-4 h-4" />
+                  )}
+                  Detectar Travados
+                </button>
+
+                <button
                   onClick={handleSimulate}
                   disabled={selectedProcesses.size === 0 || isSimulating}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 text-gray-900 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -666,6 +708,11 @@ export function AdminProcessReviewPage({
                 <div className="flex-1" />
 
                 <div className="flex items-center gap-4 text-sm" style={{ color: colors.textSecondary }}>
+                  {detectionResult && (
+                    <span className="text-green-600">
+                      {detectionResult.total_stuck} travados, {detectionResult.notifications_sent} notificados
+                    </span>
+                  )}
                   <span>
                     {rateLimit.remaining}/{UNLOCK_CONFIG.RATE_LIMIT_MAX} restantes
                   </span>
