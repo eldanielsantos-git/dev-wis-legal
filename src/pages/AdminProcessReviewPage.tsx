@@ -87,7 +87,6 @@ export function AdminProcessReviewPage({
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('stuck');
 
-  const [unlockReason, setUnlockReason] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
   const [isUnlocking, setIsUnlocking] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -229,13 +228,12 @@ export function AdminProcessReviewPage({
         Array.from(selectedProcesses),
         user.id,
         user.email || 'unknown',
-        unlockReason
+        'Destravamento administrativo'
       );
 
       if (result.success.length > 0) {
         setSelectedProcesses(new Set());
         setSimulationResults(new Map());
-        setUnlockReason('');
         await loadStuckProcesses();
         await loadAuditRecords();
       }
@@ -649,20 +647,6 @@ export function AdminProcessReviewPage({
             </h3>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-                  Motivo do destravamento (obrigatório)
-                </label>
-                <textarea
-                  value={unlockReason}
-                  onChange={(e) => setUnlockReason(e.target.value)}
-                  placeholder="Descreva o motivo do destravamento..."
-                  className="w-full px-3 py-2 rounded-lg border-0 resize-none"
-                  style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F3F4F6', color: colors.textPrimary }}
-                  rows={2}
-                />
-              </div>
-
               <div className="flex flex-wrap items-center gap-4">
                 <button
                   onClick={invokeDetectStuckProcesses}
@@ -695,7 +679,6 @@ export function AdminProcessReviewPage({
                   disabled={
                     selectedProcesses.size === 0 ||
                     simulationResults.size === 0 ||
-                    !unlockReason.trim() ||
                     !rateLimit.allowed ||
                     cooldown > 0
                   }
@@ -836,7 +819,7 @@ export function AdminProcessReviewPage({
         onConfirm={handleConfirmUnlock}
         selectedProcesses={filteredProcesses.filter(p => selectedProcesses.has(p.processoId))}
         simulationResults={simulationResults}
-        reason={unlockReason}
+        reason="Destravamento administrativo"
         isLoading={isUnlocking}
       />
           </div>
