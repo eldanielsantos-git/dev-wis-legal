@@ -116,7 +116,6 @@ export function AdminProcessReviewPage({
 
       await loadStuckProcesses();
     } catch (error) {
-      console.error('Error invoking detect-stuck-processes:', error);
     } finally {
       setIsDetecting(false);
     }
@@ -128,7 +127,6 @@ export function AdminProcessReviewPage({
       const processes = await ProcessDiagnosticService.getStuckProcesses();
       setStuckProcesses(processes);
     } catch (error) {
-      console.error('Error loading stuck processes:', error);
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +137,6 @@ export function AdminProcessReviewPage({
       const records = await ProcessUnlockAuditService.getAllAuditRecords();
       setAuditRecords(records);
     } catch (error) {
-      console.error('Error loading audit records:', error);
     }
   }, []);
 
@@ -211,7 +208,6 @@ export function AdminProcessReviewPage({
         const simulation = await ProcessUnlockService.simulateUnlock(processoId);
         results.set(processoId, simulation);
       } catch (error) {
-        console.error(`Error simulating unlock for ${processoId}:`, error);
       }
     }
 
@@ -240,7 +236,6 @@ export function AdminProcessReviewPage({
 
       updateRateLimitInfo();
     } catch (error) {
-      console.error('Error unlocking processes:', error);
     } finally {
       setIsUnlocking(false);
       setShowConfirmModal(false);

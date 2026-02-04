@@ -106,13 +106,11 @@ export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProces
           .maybeSingle();
 
         if (error) {
-          console.error('Error checking admin status:', error);
           setIsAdmin(false);
         } else {
           setIsAdmin(data?.is_admin || false);
         }
       } catch (error) {
-        console.error('Error checking admin status:', error);
         setIsAdmin(false);
       } finally {
         setCheckingAdmin(false);
@@ -157,7 +155,6 @@ export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProces
       if (error) throw error;
       setCoupons(data || []);
     } catch (error) {
-      console.error('Error loading coupons:', error);
       setCoupons([]);
     } finally {
       setLoadingCoupons(false);
@@ -188,11 +185,9 @@ export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProces
       }
 
       const result = await response.json();
-      console.log('Cupons sincronizados:', result);
 
       await loadCoupons();
     } catch (error) {
-      console.error('Error syncing coupons:', error);
       setCoupons([]);
     } finally {
       setLoadingCoupons(false);
@@ -205,7 +200,6 @@ export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProces
       const data = await billingAnalyticsService.fetchBillingData(billingPeriod, billingView);
       setBillingData(data);
     } catch (error) {
-      console.error('Error loading billing data:', error);
       setBillingData(null);
     } finally {
       setLoadingBilling(false);
@@ -280,7 +274,6 @@ export function AdminQuotaManagementPage({ onNavigateToApp, onNavigateToMyProces
       if (error) throw error;
       setSubscriptions(data || []);
     } catch (error) {
-      console.error('Error loading subscriptions:', error);
     }
   };
 

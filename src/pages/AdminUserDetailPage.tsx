@@ -96,7 +96,6 @@ export function AdminUserDetailPage({
       if (error) throw error;
       setUser(data);
     } catch (error: any) {
-      console.error('Error loading user:', error);
       setMessage({ type: 'error', text: 'Erro ao carregar usuário' });
       playErrorSound();
     } finally {
@@ -119,7 +118,6 @@ export function AdminUserDetailPage({
       if (error) throw error;
       setUserProcessCount(count || 0);
     } catch (error) {
-      console.error('Error loading process count:', error);
       setUserProcessCount(0);
     } finally {
       setLoadingProcessCount(false);
@@ -181,7 +179,6 @@ export function AdminUserDetailPage({
       setGeneratedPassword(newPassword);
       setMessage({ type: 'success', text: 'Nova senha gerada com sucesso!' });
     } catch (error: any) {
-      console.error('Erro ao gerar senha:', error);
       setMessage({ type: 'error', text: error.message || 'Erro ao gerar nova senha' });
       playErrorSound();
       setGeneratedPassword(null);
@@ -198,7 +195,6 @@ export function AdminUserDetailPage({
       setPasswordCopied(true);
       setTimeout(() => setPasswordCopied(false), 2000);
     } catch (error) {
-      console.error('Erro ao copiar senha:', error);
     }
   };
 
@@ -230,7 +226,6 @@ export function AdminUserDetailPage({
 
       setUser(prev => prev ? { ...prev, is_admin: newAdminStatus } : null);
     } catch (error: any) {
-      console.error('Error in handleToggleAdmin:', error);
       setMessage({ type: 'error', text: error.message || 'Erro ao atualizar permissões' });
       playErrorSound();
     } finally {
@@ -269,7 +264,6 @@ export function AdminUserDetailPage({
             .maybeSingle();
 
           if (error) {
-            console.error('Polling error:', error);
             return;
           }
 
@@ -300,7 +294,6 @@ export function AdminUserDetailPage({
             }
           }
         } catch (error) {
-          console.error('Exception during polling:', error);
         }
       };
 
@@ -337,8 +330,6 @@ export function AdminUserDetailPage({
         throw fetchError;
       }
     } catch (error: any) {
-      console.error('Erro ao excluir usuário:', error);
-
       let errorMessage = 'Erro ao excluir usuário';
       if (error.message) {
         errorMessage = error.message;

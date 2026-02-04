@@ -79,24 +79,18 @@ export function NotificationsPage({
     if (!notificationToDelete) return;
 
     try {
-      console.log('[NotificationsPage] Deletando notificação:', notificationToDelete);
       await deleteNotification(notificationToDelete);
-      console.log('[NotificationsPage] Notificação deletada com sucesso');
       setShowDeleteModal(false);
       setNotificationToDelete(null);
     } catch (error) {
-      console.error('[NotificationsPage] Erro ao deletar notificação:', error);
     }
   };
 
   const handleDeleteAllNotifications = async () => {
     try {
-      console.log('[NotificationsPage] Deletando todas as notificações');
       await deleteAllNotifications();
-      console.log('[NotificationsPage] Todas as notificações deletadas com sucesso');
       setShowDeleteAllModal(false);
     } catch (error) {
-      console.error('[NotificationsPage] Erro ao apagar notificações:', error);
     }
   };
 

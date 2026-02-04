@@ -56,7 +56,6 @@ class SilentErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('🚨 Silent Error Boundary caught error:', error, errorInfo);
   }
 
   render() {
@@ -121,7 +120,6 @@ function MyProcessDetailPageInner({
 
   const shouldStopPolling = (currentProcesso: Processo | null, currentResults: AnalysisResult[]): boolean => {
     if (!currentProcesso) {
-      console.log('⚠️ shouldStopPolling: processo is null');
       return false;
     }
 
@@ -129,20 +127,10 @@ function MyProcessDetailPageInner({
     const hasResults = currentResults.length > 0;
     const allResultsFinished = currentResults.every(r => r.status === 'completed' || r.status === 'failed');
 
-    console.log('🔍 shouldStopPolling check:', {
-      processoStatus: currentProcesso.status,
-      processoFinished,
-      hasResults,
-      resultsCount: currentResults.length,
-      allResultsFinished,
-      shouldStop: processoFinished && hasResults && allResultsFinished
-    });
-
     return processoFinished && hasResults && allResultsFinished;
   };
 
   const cleanupSubscriptionsAndPolling = () => {
-    console.log('Check last subscriptions e polling');
 
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
@@ -180,7 +168,6 @@ function MyProcessDetailPageInner({
       await new Promise(resolve => setTimeout(resolve, 500));
 
       if (isFullyCompletedRef.current) {
-        console.log('✅ Processo já finalizado, não configurando polling/subscriptions');
         return;
       }
 
@@ -188,16 +175,8 @@ function MyProcessDetailPageInner({
         processoId,
         (updatedProcesso) => {
           if (isFullyCompletedRef.current) {
-            console.log('⏭️ Realtime ignorado - processo já finalizado');
             return;
           }
-
-          console.log('🔄 Realtime: Processo updated:', {
-            id: updatedProcesso.id,
-            status: updatedProcesso.status,
-            currentPrompt: updatedProcesso.current_prompt_number,
-            totalPrompts: updatedProcesso.total_prompts
-          });
 
           const wasAnalyzing = processoRef.current?.status === 'analyzing';
           const isNowCompleted = updatedProcesso.status === 'completed';
@@ -206,7 +185,6 @@ function MyProcessDetailPageInner({
           processoRef.current = updatedProcesso;
 
           if (wasAnalyzing && isNowCompleted) {
-            console.log('✅ Processo concluído - carregando resultados finais');
             setTimeout(() => {
               loadAnalysisResults();
             }, 1000);
@@ -214,7 +192,6 @@ function MyProcessDetailPageInner({
 
           // Verificar se deve parar após update
           if (shouldStopPolling(updatedProcesso, analysisResultsRef.current)) {
-            console.log('✅ Processo completo detectado via Realtime - parando tudo');
             cleanupSubscriptionsAndPolling();
           }
         }
@@ -224,11 +201,9 @@ function MyProcessDetailPageInner({
         processoId,
         () => {
           if (isFullyCompletedRef.current) {
-            console.log('⏭️ Realtime results ignorado - processo completo');
             return;
           }
 
-          console.log('🔄 Realtime: Analysis results updated - recarregando...');
           loadAnalysisResults();
         }
       );
@@ -242,7 +217,6 @@ function MyProcessDetailPageInner({
           return;
         }
 
-        console.log('🔄 Polling tick - atualizando dados...');
         refreshProcesso();
         loadAnalysisResults();
         loadShares();
@@ -252,7 +226,6 @@ function MyProcessDetailPageInner({
     setupRealtimeAndPolling();
 
     return () => {
-      console.log('🛡️ Limpando subscriptions e polling no unmount');
       cleanupSubscriptionsAndPolling();
     };
   }, [processoId]);
@@ -270,12 +243,10 @@ function MyProcessDetailPageInner({
         .limit(1);
 
       if (pendingPrompts && pendingPrompts.length > 0) {
-        console.log('🔄 Detectadas etapas pendentes, iniciando processamento automático...');
 
         try {
           await ProcessosService.processPromptsSequentially(processoId);
         } catch (error) {
-          console.error('❌ Erro ao processar prompts pendentes:', error);
         }
       }
     };
@@ -312,19 +283,15 @@ function MyProcessDetailPageInner({
 
       // Verificar se processo já está completo na carga inicial
       if (['completed', 'error'].includes(data.status)) {
-        console.log('ℹ️ Processo já está em status final:', data.status);
 
         // Verificar se deve parar o polling imediatamente
         if (shouldStopPolling(data, analysisResultsRef.current)) {
-          console.log('✅ Processo já completo na carga - não iniciará polling/subscriptions');
           isFullyCompletedRef.current = true;
         }
       }
     } catch (err: any) {
-      console.error('Erro ao carregar processo:', err);
 
       if (err?.message?.includes('Failed to fetch') && retryCount < 3) {
-        console.log(`Tentando novamente... (${retryCount + 1}/3)`);
         setTimeout(() => loadProcesso(retryCount + 1), 1000 * (retryCount + 1));
         return;
       }
@@ -345,7 +312,6 @@ function MyProcessDetailPageInner({
           setProcessoNotFound(true);
         }
       } catch (fallbackErr) {
-        console.error('Erro no fallback:', fallbackErr);
         setProcessoNotFound(true);
       }
     } finally {
@@ -366,12 +332,10 @@ function MyProcessDetailPageInner({
 
         // Verificar se deve parar polling após refresh
         if (shouldStopPolling(data, analysisResultsRef.current)) {
-          console.log('✅ Processo completo detectado no refresh - parando polling');
           cleanupSubscriptionsAndPolling();
         }
       }
     } catch (err) {
-      console.error('Erro ao atualizar processo:', err);
     }
   };
 
@@ -379,62 +343,30 @@ function MyProcessDetailPageInner({
     const startTime = Date.now();
 
     if (isFullyCompletedRef.current) {
-      console.log('⏭️ Skipping loadAnalysisResults - processo completo');
       return;
     }
 
     // Não bloquear se já está carregando - apenas skip silenciosamente para evitar chamadas duplicadas
     if (isLoadingResultsRef.current) {
-      console.log('⏭️ [loadAnalysisResults] BLOQUEADO - já em execução');
       return;
     }
 
     try {
       isLoadingResultsRef.current = true;
-      console.log('📄 [loadAnalysisResults] INICIANDO carregamento...');
       const results = await AnalysisResultsService.getResultsByProcessoId(processoId);
-
-      const loadTime = Date.now() - startTime;
-      console.log(`✅ [loadAnalysisResults] Resultados carregados em ${loadTime}ms:`, {
-        total: results.length,
-        byStatus: results.reduce((acc, r) => {
-          acc[r.status] = (acc[r.status] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>),
-        details: results.map(r => ({
-          order: r.execution_order,
-          title: r.prompt_title,
-          status: r.status
-        }))
-      });
 
       // Força atualização do estado sempre que houver mudanças
       const hasChanged = JSON.stringify(results.map(r => ({ id: r.id, status: r.status }))) !==
                         JSON.stringify(analysisResultsRef.current.map(r => ({ id: r.id, status: r.status })));
-
-      if (hasChanged) {
-        console.log('🔄 [loadAnalysisResults] MUDANÇAS DETECTADAS - atualizando estado React');
-      } else {
-        console.log('ℹ️ [loadAnalysisResults] Sem mudanças nos resultados');
-      }
-
-      console.log('🔄 [loadAnalysisResults] Atualizando estado com:', {
-        newCount: results.length,
-        oldCount: analysisResultsRef.current.length,
-        newStatuses: results.map(r => `${r.execution_order}:${r.status}`),
-        oldStatuses: analysisResultsRef.current.map(r => `${r.execution_order}:${r.status}`)
-      });
 
       setAnalysisResults(results);
       analysisResultsRef.current = results;
 
       // Usa o ref para pegar o processo mais atualizado
       if (shouldStopPolling(processoRef.current, results)) {
-        console.log('✅ Processo completamente finalizado - parando polling e subscriptions');
         cleanupSubscriptionsAndPolling();
       }
     } catch (err) {
-      console.error('❌ Erro ao carregar resultados:', err);
     } finally {
       isLoadingResultsRef.current = false;
     }
@@ -445,7 +377,6 @@ function MyProcessDetailPageInner({
       const processShares = await WorkspaceService.getProcessShares(processoId);
       setShares(processShares);
     } catch (error) {
-      console.error('Error loading shares:', error);
     }
   };
 
@@ -457,7 +388,6 @@ function MyProcessDetailPageInner({
         setShareError(result.reason);
       }
     } catch (error) {
-      console.error('Error checking if can share:', error);
       setCanShare(false);
     }
   };
@@ -468,7 +398,6 @@ function MyProcessDetailPageInner({
       const tags = await ProcessoTagAssignmentsService.getTagsByProcessoId(processoId);
       setProcessoTags(tags);
     } catch (error) {
-      console.error('Erro ao carregar tags:', error);
     } finally {
       setIsLoadingTags(false);
     }
@@ -484,7 +413,6 @@ function MyProcessDetailPageInner({
     const isOwner = processo.user_id === user.id;
 
     if (isOwner || isAdmin) {
-      console.log('🔑 Permissão de edição de tags concedida (dono ou admin)');
       setCanEditTags(true);
       setUserPermissionLevel('owner');
       return;
@@ -501,16 +429,6 @@ function MyProcessDetailPageInner({
       const isEditor = userShare?.permission_level === 'editor';
       const isReadOnly = userShare?.permission_level === 'read_only';
 
-      console.log('🔑 Verificando permissão de edição de tags:', {
-        processoUserId: processo.user_id,
-        currentUserId: user.id,
-        isOwner,
-        isAdmin,
-        isEditor,
-        isReadOnly,
-        hasPermission: isOwner || isAdmin || isEditor
-      });
-
       if (isEditor) {
         setCanEditTags(true);
         setUserPermissionLevel('editor');
@@ -522,7 +440,6 @@ function MyProcessDetailPageInner({
         setUserPermissionLevel(null);
       }
     } catch (error) {
-      console.error('Erro ao verificar permissões de workspace:', error);
       setCanEditTags(false);
       setUserPermissionLevel(null);
     }
@@ -553,7 +470,6 @@ function MyProcessDetailPageInner({
       await WorkspaceService.removeShare(shareId);
       loadShares();
     } catch (error) {
-      console.error('Error removing share:', error);
       alert('Erro ao remover compartilhamento');
     }
   };
@@ -563,7 +479,6 @@ function MyProcessDetailPageInner({
       await WorkspaceService.updateSharePermission(shareId, newPermission);
       loadShares();
     } catch (error) {
-      console.error('Error updating permission:', error);
       alert('Erro ao atualizar permissão');
     }
   };
@@ -596,7 +511,6 @@ function MyProcessDetailPageInner({
       setProcesso({ ...processo, file_name: editedName });
       setIsEditingName(false);
     } catch (err) {
-      console.error('Erro ao atualizar nome:', err);
       setError('Erro ao atualizar nome do processo');
     } finally {
       setIsSavingName(false);
@@ -642,7 +556,6 @@ function MyProcessDetailPageInner({
         URL.revokeObjectURL(url);
       }, 100);
     } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
       if (error instanceof Error) {
         setError(`Erro ao gerar PDF: ${error.message}`);
       } else {
@@ -666,7 +579,6 @@ function MyProcessDetailPageInner({
         alert(result.error || 'Erro ao excluir processo. Tente novamente.');
       }
     } catch (err) {
-      console.error('Erro ao excluir processo:', err);
       alert('Erro ao excluir processo. Tente novamente.');
     } finally {
       setIsDeleting(false);
@@ -725,20 +637,6 @@ function MyProcessDetailPageInner({
   const currentPrompt = processingPrompt
     ? processingPrompt.execution_order
     : completedPrompts;
-
-  // Debug log para ver o cálculo do progresso
-  console.log('📊 [RENDER] Cálculo de progresso:', {
-    totalResults: analysisResults.length,
-    totalPrompts,
-    completedPrompts,
-    processingPrompt: processingPrompt ? {
-      order: processingPrompt.execution_order,
-      title: processingPrompt.prompt_title,
-      status: processingPrompt.status
-    } : null,
-    currentPrompt,
-    allStatuses: analysisResults.map(r => `${r.execution_order}:${r.status}`)
-  });
 
   // Buscar o modelo atual em uso
   const llmModelName = processo.current_llm_model_name || null;
@@ -1026,15 +924,10 @@ function MyProcessDetailPageInner({
                     onStatusChange={(newStatus) => {
                       // Não atualiza se já está concluído
                       if (isFullyCompletedRef.current) {
-                        console.log('⏭️ onStatusChange ignorado - processo já finalizado');
                         return;
                       }
 
                       if (processo.status !== newStatus) {
-                        console.log('🔄 Status mudou, recarregando processo:', {
-                          old: processo.status,
-                          new: newStatus
-                        });
                         loadProcesso();
                       }
                     }}
@@ -1129,25 +1022,7 @@ function MyProcessDetailPageInner({
                         );
                       }
 
-                      console.log('🔍 Renderizando resultado selecionado:', {
-                        id: selectedResult.id,
-                        title: selectedResult.prompt_title,
-                        hasContent: !!selectedResult.result_content,
-                        contentLength: selectedResult.result_content?.length || 0,
-                        status: selectedResult.status,
-                        completedAt: selectedResult.completed_at,
-                      });
-
                       const hasEmptyContent = selectedResult.status === 'completed' && (!selectedResult.result_content || selectedResult.result_content.trim().length === 0);
-
-                      if (hasEmptyContent) {
-                        console.error('⚠️ CONTEÚDO VAZIO DETECTADO:', {
-                          id: selectedResult.id,
-                          title: selectedResult.prompt_title,
-                          status: selectedResult.status,
-                          completedAt: selectedResult.completed_at,
-                        });
-                      }
 
                       return (
                         <div>

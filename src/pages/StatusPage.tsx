@@ -16,7 +16,6 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('StatusPage error:', error, errorInfo);
   }
 
   render() {
@@ -137,7 +136,6 @@ function StatusPageContent() {
       const data = await response.json();
       setStatus(data);
     } catch (err) {
-      console.error('Erro ao buscar status:', err);
       setError(err instanceof Error ? err.message : 'Erro desconhecido');
     } finally {
       setLoading(false);

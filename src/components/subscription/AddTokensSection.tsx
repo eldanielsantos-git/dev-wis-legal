@@ -42,7 +42,6 @@ export function AddTokensSection({
   const handlePurchaseTokens = async (priceId: string, packageId: string) => {
     if (!priceId) {
       const errorMessage = 'Preço não configurado para este pacote';
-      console.error(errorMessage);
       if (onPurchaseError) {
         onPurchaseError(errorMessage);
       }
@@ -89,7 +88,6 @@ export function AddTokensSection({
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Erro ao processar compra de tokens:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro ao processar compra';
 
       if (onPurchaseError) {

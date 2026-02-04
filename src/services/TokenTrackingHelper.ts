@@ -20,12 +20,10 @@ export class TokenTrackingHelper {
       });
 
       if (error) {
-        console.error('Error logging token usage:', error);
-      } else {
-        console.log(`✅ Token usage logged: ${tokensUsed} tokens for ${operationType}`);
+        // Silent error handling
       }
     } catch (error) {
-      console.error('Exception logging token usage:', error);
+      // Silent error handling
     }
   }
 
@@ -40,7 +38,6 @@ export class TokenTrackingHelper {
     const hasTokens = await this.checkTokenAvailability(userId, tokensUsed);
 
     if (!hasTokens) {
-      console.warn(`⚠️ User ${userId} does not have enough tokens for ${operationType}`);
       return false;
     }
 
@@ -56,13 +53,11 @@ export class TokenTrackingHelper {
       });
 
       if (error) {
-        console.error('Error checking token availability:', error);
         return true;
       }
 
       return data === true;
     } catch (error) {
-      console.error('Exception checking token availability:', error);
       return true;
     }
   }

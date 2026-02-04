@@ -121,7 +121,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'processos', filter: `id=eq.${processoId}` },
         (payload) => {
-          console.log('Realtime update for processo:', payload);
           try {
             if (payload.new && typeof payload.new === 'object') {
               const updatedProcesso = payload.new as Processo;
@@ -131,7 +130,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
               });
             }
           } catch (err) {
-            console.error('Erro ao processar update realtime:', err);
           }
         }
       )
@@ -171,18 +169,7 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
       const paginasData = processoData.paginas || [];
       setPaginas(paginasData);
       setPaginasCount(paginasData.length);
-
-      console.log('[ProcessoDetailPage] Dados carregados:', {
-        processoId: processoData.id,
-        fileName: processoData.file_name,
-        status: processoData.status,
-        totalPages: processoData.transcricao?.totalPages,
-        paginasCount: paginasData.length,
-        hasProcessContent: !!processoData.process_content,
-        processContentLength: processoData.process_content?.length || 0
-      });
     } catch (err: any) {
-      console.error('Erro ao carregar dados:', err);
 
       try {
         const { data: fallbackData } = await supabase
@@ -199,7 +186,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
           setProcessoNotFound(true);
         }
       } catch (fallbackErr) {
-        console.error('Erro no fallback:', fallbackErr);
         setProcessoNotFound(true);
       }
     } finally {
@@ -214,7 +200,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
       setCopiedPageId(pageId);
       setTimeout(() => setCopiedPageId(null), 2000);
     } catch (err) {
-      console.error('Erro ao copiar texto:', err);
     }
   };
 
@@ -236,7 +221,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
       setProcesso({ ...processo, file_name: editedName.trim() });
       setIsEditingName(false);
     } catch (err: any) {
-      console.error('Erro ao atualizar nome:', err);
       setError('Falha ao atualizar o nome do processo.');
       playErrorSound();
     } finally {
@@ -335,21 +319,14 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
     if (!processo) return 0;
 
     try {
-      console.log('[ProcessoDetailPage] Calculando totalChars:', {
-        paginasLength: paginas?.length || 0,
-        processContentLength: processo.process_content?.length || 0
-      });
-
       const chars = paginas && paginas.length > 0
         ? paginas.reduce((acc, page) => acc + (page.text?.length || 0), 0)
         : (processo.process_content && Array.isArray(processo.process_content)
             ? processo.process_content.reduce((acc, page) => acc + (page.content?.length || 0), 0)
             : 0);
 
-      console.log('[ProcessoDetailPage] totalChars calculado:', chars);
       return chars;
     } catch (err) {
-      console.error('[ProcessoDetailPage] Erro ao calcular totalChars:', err);
       return 0;
     }
   }, [processo, paginas]);
@@ -540,7 +517,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
                             .join('\n\n') || '';
                           handleCopyText(fullText, 'full-transcription');
                         } catch (err) {
-                          console.error('Erro ao copiar transcrição:', err);
                         }
                       }}
                       className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
@@ -574,7 +550,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
                           document.body.removeChild(a);
                           URL.revokeObjectURL(url);
                         } catch (err) {
-                          console.error('Erro ao baixar transcrição:', err);
                         }
                       }}
                       className="flex items-center gap-2 px-3 py-1.5 text-xs sm:text-sm bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
@@ -613,7 +588,6 @@ export function ProcessoDetailPage({ processoId, onBack, onNavigateToNotFound }:
                               </div>
                             );
                           } catch (err) {
-                            console.error('[ProcessoDetailPage] Erro ao renderizar página:', err, page);
                             return (
                               <div key={index} className="border-b border-gray-200 pb-4 last:border-b-0 last:pb-0">
                                 <div className="text-xs font-semibold text-red-600 mb-2">

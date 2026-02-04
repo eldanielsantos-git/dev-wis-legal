@@ -71,7 +71,6 @@ export function AdminTagsManagementPage({
       const sortedTags = allTags.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
       setTags(sortedTags);
     } catch (error) {
-      console.error('Erro ao carregar tags:', error);
     } finally {
       setLoading(false);
     }

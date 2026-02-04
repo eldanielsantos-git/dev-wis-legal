@@ -75,7 +75,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           setDetectedTier(tier);
           setEstimatedTime(time);
         } catch (error) {
-          console.error('Erro ao calcular número de páginas:', error);
           setEstimatedPages(0);
           setEstimatedTokens(0);
           setDetectedTier(null);

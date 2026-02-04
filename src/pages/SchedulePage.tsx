@@ -124,7 +124,6 @@ export function SchedulePage({
       setProcessos(processosData);
       setStats(statsData);
     } catch (error) {
-      console.error('Error loading schedule data:', error);
       toast.error('Erro ao carregar agenda');
     } finally {
       setIsLoading(false);
@@ -171,7 +170,6 @@ export function SchedulePage({
       }
       loadData(true);
     } catch (error) {
-      console.error('Error toggling deadline status:', error);
       toast.error('Erro ao atualizar status');
     }
   };

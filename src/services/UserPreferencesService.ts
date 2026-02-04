@@ -25,7 +25,6 @@ export class UserPreferencesService {
       .maybeSingle();
 
     if (error) {
-      console.error('Erro ao buscar preferências:', error);
       throw new Error(`Erro ao buscar preferências: ${error.message}`);
     }
 
@@ -56,7 +55,6 @@ export class UserPreferencesService {
       .single();
 
     if (error) {
-      console.error('Erro ao criar preferências padrão:', error);
       throw new Error(`Erro ao criar preferências: ${error.message}`);
     }
 
@@ -77,7 +75,6 @@ export class UserPreferencesService {
       .single();
 
     if (error) {
-      console.error('Erro ao atualizar preferências:', error);
       throw new Error(`Erro ao atualizar preferências: ${error.message}`);
     }
 
@@ -106,7 +103,6 @@ export class UserPreferencesService {
             const preferences = await this.getUserPreferences();
             callback(preferences);
           } catch (error) {
-            console.error('Erro ao atualizar preferências via subscription:', error);
             callback(null);
           }
         }

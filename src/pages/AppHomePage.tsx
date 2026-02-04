@@ -260,11 +260,8 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
     try {
       const interrupted = await ProcessosService.checkForInterruptedUploads();
       if (interrupted.length > 0) {
-        console.log(`🔄 ${interrupted.length} upload(s) interrompido(s) detectado(s)`);
-
         for (const process of interrupted) {
           try {
-            console.log(`🔄 Retomando automaticamente: ${process.file_name}`);
 
             showInfo(`Retomando upload: ${process.file_name}`);
 

@@ -67,14 +67,6 @@ export function AnalysisContentRenderer({ content }: AnalysisContentRendererProp
     // SISTEMA DE SANITIZAÇÃO COM MÚLTIPLAS CAMADAS
     const result = sanitizeContent(text);
 
-    // Log para debug (apenas em desenvolvimento)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[AnalysisContentRenderer] Sanitization result:', {
-        isJSON: result.isJSON,
-        method: result.method,
-        hasContent: result.cleaned.length > 0
-      });
-    }
 
     // Se foi identificado como JSON e parseado com sucesso
     if (result.isJSON && result.parsed && isValidParsedObject(result.parsed)) {

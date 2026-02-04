@@ -92,7 +92,6 @@ export function AdminForensicPromptsPage({ onNavigateToApp, onNavigateToMyProces
         setChatSystemPrompts(data);
       }
     } catch (err: any) {
-      console.error('Erro ao carregar prompts:', err);
       setError(err.message);
     } finally {
       setLoading(false);

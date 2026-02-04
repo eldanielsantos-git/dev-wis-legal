@@ -70,7 +70,6 @@ export function ResetPasswordPage({ onNavigateToSignIn }: ResetPasswordPageProps
         setHasValidToken(true);
         setCheckingToken(false);
       } catch (err) {
-        console.error('Erro ao validar token:', err);
         setError('Erro ao validar link de recuperação. Por favor, tente novamente.');
         setCheckingToken(false);
       }

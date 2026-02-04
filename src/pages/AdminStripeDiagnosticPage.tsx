@@ -199,20 +199,16 @@ export function AdminStripeDiagnosticPage({
   };
 
   const fixSingleCustomer = async (customerId: string) => {
-    console.log(`[fixSingleCustomer] Iniciando correção para: ${customerId}`);
     setFixingCustomer(customerId);
     setError(null);
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        console.error('[fixSingleCustomer] Sessão não encontrada');
         setError('Sessão não encontrada. Faça login novamente.');
         setFixingCustomer(null);
         return;
       }
-
-      console.log(`[fixSingleCustomer] Sessão obtida, chamando edge function...`);
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-stripe-subscription`,
@@ -226,11 +222,8 @@ export function AdminStripeDiagnosticPage({
         }
       );
 
-      console.log(`[fixSingleCustomer] Resposta recebida. Status: ${response.status}`);
-
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[fixSingleCustomer] Erro na resposta:', errorText);
         let errorData;
         try {
           errorData = JSON.parse(errorText);
@@ -241,19 +234,13 @@ export function AdminStripeDiagnosticPage({
       }
 
       const result = await response.json();
-      console.log('[fixSingleCustomer] Sincronização concluída com sucesso:', result);
 
-      console.log('[fixSingleCustomer] Aguardando 1.5 segundos antes de recarregar diagnóstico...');
       await new Promise(resolve => setTimeout(resolve, 1500));
 
-      console.log('[fixSingleCustomer] Recarregando diagnóstico...');
       await runDiagnostic();
-      console.log('[fixSingleCustomer] Diagnóstico recarregado com sucesso');
     } catch (err: any) {
-      console.error('[fixSingleCustomer] Erro ao corrigir customer:', err);
       setError(`Erro ao corrigir ${customerId}: ${err.message || 'Erro desconhecido'}`);
     } finally {
-      console.log('[fixSingleCustomer] Finalizando, removendo loading...');
       setFixingCustomer(null);
     }
   };
@@ -741,7 +728,6 @@ export function AdminStripeDiagnosticPage({
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    console.log(`[Button Click] Customer ID: ${diagnostic.database.customer_id}`);
                                     fixSingleCustomer(diagnostic.database.customer_id);
                                   }}
                                   disabled={fixingCustomer === diagnostic.database.customer_id || !diagnostic.database.customer_id}

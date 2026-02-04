@@ -149,7 +149,6 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
       onClose();
       setTimeout(() => onDeadlineUpdated(), 0);
     } catch (error) {
-      console.error('Error updating deadline:', error);
       toast.error('Erro ao atualizar prazo. Tente novamente.');
     } finally {
       setIsSubmitting(false);
@@ -165,7 +164,6 @@ export const EditDeadlineModal: React.FC<EditDeadlineModalProps> = ({
       onClose();
       setTimeout(() => onDeadlineDeleted(), 0);
     } catch (error) {
-      console.error('Error deleting deadline:', error);
       toast.error('Erro ao excluir prazo. Tente novamente.');
     } finally {
       setIsDeleting(false);

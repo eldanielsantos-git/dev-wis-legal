@@ -120,7 +120,6 @@ class TokenService {
         usage_by_operation: usageByOperation
       };
     } catch (error) {
-      console.error('Error fetching token usage summary:', error);
       return null;
     }
   }
@@ -136,7 +135,6 @@ class TokenService {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fetching user token quota:', error);
       return null;
     }
   }
@@ -157,7 +155,6 @@ class TokenService {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching token usage logs:', error);
       return [];
     }
   }
@@ -188,10 +185,6 @@ class TokenService {
 
       if (subscriptionsError) throw subscriptionsError;
 
-      console.log('Debug - Profiles count:', profiles?.length);
-      console.log('Debug - Customers count:', customers?.length);
-      console.log('Debug - Active subscriptions count:', subscriptions?.length);
-
       const customersMap = new Map(
         (customers || []).map((customer: any) => [customer.user_id, customer.customer_id])
       );
@@ -200,19 +193,12 @@ class TokenService {
         (subscriptions || []).map((sub: any) => [sub.customer_id, sub])
       );
 
-      console.log('Debug - CustomersMap size:', customersMap.size);
-      console.log('Debug - SubscriptionsMap size:', subscriptionsMap.size);
-
       return (profiles || []).map((profile: any) => {
         const customerId = customersMap.get(profile.id);
         const subscription = customerId ? subscriptionsMap.get(customerId) : null;
 
         const tokensTotal = subscription ? Number(subscription.tokens_total) || 0 : 0;
         const tokensUsed = subscription ? Number(subscription.tokens_used) || 0 : 0;
-
-        if (subscription) {
-          console.log(`Debug - User ${profile.email}: customerId=${customerId}, tokens=${tokensTotal}`);
-        }
 
         return {
           user_id: profile.id,
@@ -229,7 +215,6 @@ class TokenService {
         };
       });
     } catch (error) {
-      console.error('Error fetching all users token quotas:', error);
       return [];
     }
   }
@@ -247,7 +232,6 @@ class TokenService {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error updating user quota:', error);
       return false;
     }
   }
@@ -262,7 +246,6 @@ class TokenService {
       if (error) throw error;
       return data === true;
     } catch (error) {
-      console.error('Error checking token availability:', error);
       return false;
     }
   }
@@ -279,7 +262,6 @@ class TokenService {
       const totalTokens = (data || []).reduce((sum, log) => sum + log.tokens_used, 0);
       return totalTokens;
     } catch (error) {
-      console.error('Error fetching processo token usage:', error);
       return 0;
     }
   }

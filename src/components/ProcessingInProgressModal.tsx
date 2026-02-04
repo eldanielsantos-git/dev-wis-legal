@@ -51,7 +51,6 @@ export const ProcessingInProgressModal: React.FC<ProcessingInProgressModalProps>
       const data = await TokenReservationService.getProcessesWithActiveReservations(userId);
       setProcesses(data);
     } catch (error) {
-      console.error('Erro ao carregar processos:', error);
     } finally {
       setLoading(false);
     }

@@ -229,7 +229,6 @@ const AdminDeploymentVerificationPage: React.FC<AdminDeploymentVerificationPageP
         setOverallStatus('success');
       }
     } catch (error) {
-      console.error('Verification failed:', error);
       setOverallStatus('error');
     } finally {
       setRunning(false);

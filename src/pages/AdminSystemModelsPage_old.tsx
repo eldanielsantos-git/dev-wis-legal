@@ -49,7 +49,6 @@ export function AdminSystemModelsPage({ onBack, onNavigateToApp, onNavigateToMyP
       const allModels = await AdminSystemModelsService.getAllModels();
       setModels(allModels);
     } catch (err: any) {
-      console.error('Error loading models:', err);
       setError(err.message || 'Erro ao carregar modelos');
     } finally {
       setLoading(false);
@@ -90,7 +89,6 @@ export function AdminSystemModelsPage({ onBack, onNavigateToApp, onNavigateToMyP
       setTimeout(() => setSuccessMessage(null), 5000);
       handleCancelCreate();
     } catch (err: any) {
-      console.error('Error creating model:', err);
       setError(err.message || 'Erro ao criar modelo');
     } finally {
       setCreating(false);
@@ -106,7 +104,6 @@ export function AdminSystemModelsPage({ onBack, onNavigateToApp, onNavigateToMyP
       setSuccessMessage(model.is_active ? 'Modelo desativado' : 'Modelo ativado com sucesso!');
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err: any) {
-      console.error('Error toggling model status:', err);
       setError(err.message || 'Erro ao alterar status do modelo');
     }
   };
@@ -120,7 +117,6 @@ export function AdminSystemModelsPage({ onBack, onNavigateToApp, onNavigateToMyP
       setSuccessMessage('Prioridade atualizada');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      console.error('Error updating priority:', err);
       setError(err.message || 'Erro ao atualizar prioridade');
     }
   };
@@ -134,7 +130,6 @@ export function AdminSystemModelsPage({ onBack, onNavigateToApp, onNavigateToMyP
       setSuccessMessage('Prioridade atualizada');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (err: any) {
-      console.error('Error updating priority:', err);
       setError(err.message || 'Erro ao atualizar prioridade');
     }
   };
@@ -151,7 +146,6 @@ export function AdminSystemModelsPage({ onBack, onNavigateToApp, onNavigateToMyP
       setSuccessMessage('Modelo excluído com sucesso!');
       setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err: any) {
-      console.error('Error deleting model:', err);
       setError(err.message || 'Erro ao excluir modelo');
     }
   };

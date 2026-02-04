@@ -54,7 +54,6 @@ class TokenNotificationService {
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch user notifications:', error);
       throw error;
     }
   }
@@ -68,13 +67,11 @@ class TokenNotificationService {
         .limit(limit);
 
       if (error) {
-        console.error('Error fetching all notifications:', error);
         throw error;
       }
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch all notifications:', error);
       throw error;
     }
   }
@@ -86,7 +83,6 @@ class TokenNotificationService {
         .select('notification_type, email_sent');
 
       if (error) {
-        console.error('Error fetching notification stats:', error);
         throw error;
       }
 
@@ -116,7 +112,6 @@ class TokenNotificationService {
 
       return stats;
     } catch (error) {
-      console.error('Failed to fetch notification stats:', error);
       throw error;
     }
   }
@@ -130,13 +125,11 @@ class TokenNotificationService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching pending notifications:', error);
         throw error;
       }
 
       return data || [];
     } catch (error) {
-      console.error('Failed to fetch pending notifications:', error);
       throw error;
     }
   }
@@ -155,7 +148,6 @@ class TokenNotificationService {
 
       return await this.triggerTokenLimitNotification(notification.user_id);
     } catch (error) {
-      console.error('Failed to retry notification:', error);
       throw error;
     }
   }

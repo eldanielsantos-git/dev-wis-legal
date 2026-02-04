@@ -174,7 +174,6 @@ export function AdminSlackNotificationsPage({
         loadNotifications(),
       ]);
     } catch (error) {
-      console.error('Error loading admin notifications data:', error);
       setError(error instanceof Error ? error.message : 'Erro ao carregar dados');
     } finally {
       setLoading(false);
@@ -190,7 +189,6 @@ export function AdminSlackNotificationsPage({
         throw new Error(result.error || 'Erro ao buscar tipos de notificação');
       }
     } catch (error) {
-      console.error('Error in loadTypes:', error);
       throw error;
     }
   };
@@ -204,7 +202,6 @@ export function AdminSlackNotificationsPage({
         throw new Error(result.error || 'Erro ao buscar estatísticas');
       }
     } catch (error) {
-      console.error('Error in loadStats:', error);
       throw error;
     }
   };
@@ -223,7 +220,6 @@ export function AdminSlackNotificationsPage({
         throw new Error(result.error || 'Erro ao buscar notificações');
       }
     } catch (error) {
-      console.error('Error in loadNotifications:', error);
       throw error;
     }
   };

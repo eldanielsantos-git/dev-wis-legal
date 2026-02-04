@@ -33,7 +33,6 @@ export const ManageSharesModal: React.FC<ManageSharesModalProps> = ({
       const data = await WorkspaceService.getProcessShares(processoId);
       setShares(data);
     } catch (error) {
-      console.error('Error loading shares:', error);
     } finally {
       setLoading(false);
     }
@@ -53,7 +52,6 @@ export const ManageSharesModal: React.FC<ManageSharesModalProps> = ({
         alert(result.error || 'Erro ao remover compartilhamento');
       }
     } catch (error) {
-      console.error('Error removing share:', error);
       alert('Erro ao remover compartilhamento');
     } finally {
       setRemovingId(null);

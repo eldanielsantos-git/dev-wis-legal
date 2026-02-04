@@ -67,7 +67,6 @@ export function ChatProcessSelectionPage({
       const completedProcessos = allProcessos.filter(p => p.status === 'completed');
       setProcessos(completedProcessos);
     } catch (err) {
-      console.error('Erro ao carregar processos:', err);
       setError('Erro ao carregar processos');
     } finally {
       setLoading(false);
@@ -88,7 +87,6 @@ export function ChatProcessSelectionPage({
       });
       setShareCountByProcesso(countMap);
     } catch (error) {
-      console.error('Error loading shared process IDs:', error);
     }
   };
 

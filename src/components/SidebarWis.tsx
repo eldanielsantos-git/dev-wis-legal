@@ -143,7 +143,6 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
 
             <button
               onClick={() => {
-                console.log('[SidebarWis Mobile] Botão + clicado');
                 onNavigateToApp();
                 closeMobileMenu();
               }}
@@ -186,11 +185,8 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
 
             <button
               onClick={() => {
-                console.log('Workspace button clicked, onNavigateToWorkspace:', onNavigateToWorkspace);
                 if (onNavigateToWorkspace) {
                   onNavigateToWorkspace();
-                } else {
-                  console.error('onNavigateToWorkspace is undefined!');
                 }
                 closeMobileMenu();
               }}
@@ -323,7 +319,6 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
 
             <button
               onClick={() => {
-                console.log('[SidebarWis Desktop] Botão + clicado');
                 onNavigateToApp();
               }}
               className={`w-full flex items-center py-3 max-h-900:py-2 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-900:px-3'}`}
@@ -362,11 +357,8 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
 
             <button
               onClick={() => {
-                console.log('Workspace button clicked (collapsed), onNavigateToWorkspace:', onNavigateToWorkspace);
                 if (onNavigateToWorkspace) {
                   onNavigateToWorkspace();
-                } else {
-                  console.error('onNavigateToWorkspace is undefined!');
                 }
               }}
               className={`w-full flex items-center py-3 max-h-900:py-2 rounded-lg transition-colors ${isCollapsed ? 'justify-center' : 'px-4 max-h-900:px-3'}`}
@@ -485,9 +477,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
       <InviteFriendModal
         isOpen={isInviteModalOpen}
         onClose={() => setIsInviteModalOpen(false)}
-        onInviteSent={() => {
-          console.log('Convite enviado com sucesso!');
-        }}
+        onInviteSent={() => {}}
       />
     </>
   );

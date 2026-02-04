@@ -26,17 +26,13 @@ export function HomePage({ onNavigateToDetail, onNavigateToAdmin }: HomePageProp
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    console.log('[HomePage] useEffect - user:', user?.id);
-
     if (!user?.id) {
-      console.log('[HomePage] Sem usuário, pulando carregamento');
       return;
     }
 
     loadProcessos();
 
     const unsubscribe = ProcessosService.subscribeToProcessos(user.id, (updatedProcessos) => {
-      console.log('[HomePage] Subscription update:', updatedProcessos?.length || 0);
       setProcessos(updatedProcessos);
       setAllProcessos(updatedProcessos);
     });
@@ -53,7 +49,6 @@ export function HomePage({ onNavigateToDetail, onNavigateToAdmin }: HomePageProp
       const previous = previousProcessos.find(p => p.id === processo.id);
 
       if (previous && previous.status !== 'completed' && processo.status === 'completed') {
-        console.log('✅ Processo concluído:', processo.file_name);
         playCompletionSound();
       }
     });
@@ -63,19 +58,10 @@ export function HomePage({ onNavigateToDetail, onNavigateToAdmin }: HomePageProp
 
   const loadProcessos = async () => {
     try {
-      console.log('[HomePage] Iniciando carregamento de processos...');
       const data = await ProcessosService.getProcessos();
-      console.log('[HomePage] Processos carregados:', data?.length || 0);
       setProcessos(data);
       setAllProcessos(data);
     } catch (err: any) {
-      console.error('[HomePage] Erro ao carregar processos:', err);
-      console.error('[HomePage] Detalhes do erro:', {
-        message: err?.message,
-        code: err?.code,
-        details: err?.details,
-        hint: err?.hint
-      });
       // Não mostrar erro se for apenas falta de dados
       if (err?.message && !err?.message.includes('não autenticado')) {
         setError('Erro ao carregar processos. Por favor, recarregue a página.');
@@ -111,8 +97,7 @@ export function HomePage({ onNavigateToDetail, onNavigateToAdmin }: HomePageProp
         setProcessos(results);
         setIsSearching(false);
       } catch (err) {
-        console.error('Erro na busca:', err);
-        setIsSearching(false);
+          setIsSearching(false);
       }
     }, 800);
 
@@ -143,12 +128,10 @@ export function HomePage({ onNavigateToDetail, onNavigateToAdmin }: HomePageProp
         }
 
         await ProcessosService.uploadAndStartProcessing(file, (status) => {
-          console.log(`[PROGRESSO]: ${status}`);
           setProgressMessage(status);
         });
 
       } catch (err: any) {
-        console.error('Erro no upload:', err);
         setError(err.message || 'Erro no upload');
         break;
       }

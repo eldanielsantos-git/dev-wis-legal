@@ -97,7 +97,6 @@ export function AdminTierMonitoringPage({
       const data = await response.json();
       setHealthCheck(data);
     } catch (error) {
-      console.error('Failed to fetch health check:', error);
     }
   };
 
@@ -115,7 +114,6 @@ export function AdminTierMonitoringPage({
 
       setTierStats(data || []);
     } catch (error) {
-      console.error('Failed to fetch tier stats:', error);
     }
   };
 

@@ -101,7 +101,6 @@ export function WorkspacePage({
       setSharedWithMe(received);
       setMyShares(shared);
     } catch (error) {
-      console.error('Error loading shared processes:', error);
     } finally {
       setLoading(false);
     }
@@ -129,7 +128,6 @@ export function WorkspacePage({
         alert(result.error || 'Erro ao excluir processo');
       }
     } catch (error) {
-      console.error('Error deleting processo:', error);
       alert('Erro ao excluir processo');
     }
   };

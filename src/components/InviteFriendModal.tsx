@@ -85,7 +85,6 @@ export function InviteFriendModal({ isOpen, onClose, onInviteSent }: InviteFrien
         setError(result.error || 'Erro ao enviar convite');
       }
     } catch (err) {
-      console.error('Error sending invite:', err);
       setError('Erro ao enviar convite. Tente novamente.');
     } finally {
       setIsLoading(false);

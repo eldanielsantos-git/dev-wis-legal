@@ -78,7 +78,6 @@ export function AnalysisViewSelector({ title, content }: AnalysisViewSelectorPro
 
  return <AnalysisContentRenderer content={sanitizedContent} />;
  } catch (error) {
-  console.log('[AnalysisViewSelector] Fallback devido a erro:', error);
   return <AnalysisContentRenderer content={content} />;
  }
 }

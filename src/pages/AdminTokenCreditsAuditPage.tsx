@@ -94,7 +94,6 @@ export function AdminTokenCreditsAuditPage({
       if (error) throw error;
       setAudits(data || []);
     } catch (error) {
-      console.error('Error loading audits:', error);
     } finally {
       setLoading(false);
     }

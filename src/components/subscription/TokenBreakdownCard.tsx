@@ -32,7 +32,6 @@ export function TokenBreakdownCard() {
           table: 'stripe_subscriptions',
         },
         () => {
-          console.log('🔄 Subscription tokens updated, refreshing breakdown');
           fetchTokenBreakdown();
           refreshBalance();
         }
@@ -52,13 +51,11 @@ export function TokenBreakdownCard() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching token breakdown:', error);
         return;
       }
 
       setBreakdown(data);
     } catch (error) {
-      console.error('Error:', error);
     } finally {
       setLoading(false);
     }

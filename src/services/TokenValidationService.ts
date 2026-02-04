@@ -45,7 +45,6 @@ export class TokenValidationService {
         .maybeSingle();
 
       if (balanceError) {
-        console.error('[TokenValidationService] Error fetching user_token_balance:', balanceError);
         throw balanceError;
       }
 
@@ -123,7 +122,6 @@ export class TokenValidationService {
         planName,
       };
     } catch (error) {
-      console.error('Error checking tokens:', error);
       throw new Error('Erro ao verificar tokens disponíveis');
     }
   }
@@ -144,7 +142,6 @@ export class TokenValidationService {
         .maybeSingle();
 
       if (balanceError) {
-        console.error('[TokenValidationService] Error fetching user_token_balance:', balanceError);
       }
 
       if (balanceData) {
@@ -249,7 +246,6 @@ export class TokenValidationService {
         planName,
       };
     } catch (error) {
-      console.error('Error getting token balance:', error);
       throw new Error('Erro ao obter saldo de tokens');
     }
   }

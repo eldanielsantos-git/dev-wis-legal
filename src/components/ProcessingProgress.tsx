@@ -61,7 +61,6 @@ export const ProcessingProgress: React.FC<ProcessingProgressProps> = ({
           }
         }
       } catch (error) {
-        console.error('Erro ao buscar progresso:', error);
       }
     };
 

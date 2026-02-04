@@ -52,8 +52,6 @@ export function ChatMessageAssistant({ messageId, content, createdAt, isLatestMe
       setIsUpdatingFeedback(true);
       const newFeedback = feedback === type ? null : type;
 
-      console.log('Atualizando feedback:', { messageId, type, newFeedback });
-
       const { data, error } = await supabase
         .from('chat_messages')
         .update({ feedback_chat: newFeedback })
@@ -61,14 +59,11 @@ export function ChatMessageAssistant({ messageId, content, createdAt, isLatestMe
         .select();
 
       if (error) {
-        console.error('Erro ao atualizar feedback no banco:', error);
         throw error;
       }
 
-      console.log('Feedback atualizado com sucesso:', data);
       setFeedback(newFeedback);
     } catch (error) {
-      console.error('Erro ao atualizar feedback:', error);
     } finally {
       setIsUpdatingFeedback(false);
     }
@@ -77,9 +72,7 @@ export function ChatMessageAssistant({ messageId, content, createdAt, isLatestMe
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(content);
-      console.log('Mensagem copiada');
     } catch (error) {
-      console.error('Erro ao copiar:', error);
     }
   };
 
@@ -96,7 +89,6 @@ export function ChatMessageAssistant({ messageId, content, createdAt, isLatestMe
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Erro ao fazer download DOCX:', error);
     }
   };
 

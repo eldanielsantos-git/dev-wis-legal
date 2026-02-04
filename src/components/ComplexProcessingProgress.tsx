@@ -79,7 +79,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
     const fetchProgress = async () => {
       // Se já está completo, não faz mais nada
       if (isCompletedRef.current) {
-        console.log('⏭️ ComplexProcessingProgress: Processo já completo, ignorando fetch');
         return;
       }
 
@@ -94,9 +93,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
 
         // Verifica se processo está completo ou em erro
         if (processo?.status === 'completed' || processo?.status === 'error') {
-          console.log('✅ ComplexProcessingProgress: Processo finalizado, parando interval', {
-            status: processo.status
-          });
           isCompletedRef.current = true;
           if (intervalId) {
             clearInterval(intervalId);
@@ -115,13 +111,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
           setTierData({
             tier: processo.tier_name || null,
             totalPages: processo.transcricao?.totalPages || null,
-          });
-
-          console.log('🔍 complexStatus carregado:', {
-            hasData: !!complexData,
-            metadata: complexData?.metadata,
-            current_model: complexData?.metadata?.current_model,
-            current_phase: complexData?.current_phase,
           });
 
           const { data: results } = await supabase
@@ -200,16 +189,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
 
             const sortedStages = Array.from(promptStagesMap.values()).sort((a, b) => a.order - b.order);
             setStages(sortedStages);
-
-            // Debug logs
-            console.log('🔍 ComplexProcessingProgress Debug:', {
-              totalStages: sortedStages.length,
-              completedStages: sortedStages.filter(s => s.status === 'completed').length,
-              processingStages: sortedStages.filter(s => s.status === 'processing').length,
-              pendingStages: sortedStages.filter(s => s.status === 'pending').length,
-              queueStatsCount: queueStats?.length || 0,
-              complexStatusProgress: complexData?.progress_percent
-            });
           } else {
             // Se não há results ainda, buscar prompts ativos para criar stages vazios
             const { data: prompts } = await supabase
@@ -231,11 +210,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
               }));
 
               setStages(emptyStages);
-
-              console.log('🔍 ComplexProcessingProgress (sem results ainda):', {
-                totalPrompts: prompts.length,
-                totalChunks: processo.total_chunks_count
-              });
             }
           }
         }
@@ -246,7 +220,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
 
         setIsLoading(false);
       } catch (error) {
-        console.error('Erro ao buscar progresso complexo:', error);
         setIsLoading(false);
       }
     };
@@ -267,7 +240,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
     }, 5000);
 
     return () => {
-      console.log('🧹 ComplexProcessingProgress: Limpando interval no unmount');
       if (intervalId) {
         clearInterval(intervalId);
       }
@@ -333,16 +305,6 @@ export const ComplexProcessingProgress: React.FC<ComplexProcessingProgressProps>
     // Usar o maior valor entre calculado e status do banco
     const fromStatus = complexStatus?.overall_progress_percent || 0;
     const finalProgress = Math.max(calculated, fromStatus);
-
-    console.log('📊 Progresso calculado:', {
-      stages: stages.length,
-      totalWork,
-      completedWork,
-      calculated,
-      fromStatus,
-      finalProgress,
-      complexStatus
-    });
 
     return finalProgress;
   };

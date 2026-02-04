@@ -104,7 +104,6 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
       });
       setShareCountByProcesso(countMap);
     } catch (error) {
-      console.error('Error loading shared process IDs:', error);
     }
   };
 
@@ -120,7 +119,6 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
       }
       setTagCounts(counts);
     } catch (error) {
-      console.error('Error loading tags:', error);
     }
   };
 
@@ -132,7 +130,6 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
         );
 
         if (hasProcessingProcessos) {
-          console.log('[MyProcessesPage] Polling: atualizando processos em andamento');
           loadProcessos();
         }
 
@@ -159,7 +156,6 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
           filter: user ? `user_id=eq.${user.id}` : undefined,
         },
         (payload) => {
-          console.log('[MyProcessesPage] Processo atualizado via realtime:', payload);
           loadProcessos();
         }
       )

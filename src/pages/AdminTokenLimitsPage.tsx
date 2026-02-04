@@ -62,7 +62,6 @@ export function AdminTokenLimitsPage({
       setConfigs(data);
     } catch (err) {
       setError('Erro ao carregar configurações de tokens');
-      console.error(err);
     } finally {
       setLoading(false);
     }

@@ -102,42 +102,34 @@ export function AdminSubscriptionManagementPage({
   const [isCreatingToken, setIsCreatingToken] = useState(false);
 
   useEffect(() => {
-    console.log('[AdminSubscriptionManagementPage] Component mounted');
     window.scrollTo(0, 0);
     loadAllData();
   }, []);
 
   const loadAllData = async () => {
-    console.log('[AdminSubscriptionManagementPage] Loading all data...');
     setIsLoading(true);
     await Promise.all([loadPlans(), loadBenefits(), loadTokenPackages()]);
     setIsLoading(false);
-    console.log('[AdminSubscriptionManagementPage] All data loaded');
   };
 
   const loadPlans = async () => {
     try {
-      console.log('[AdminSubscriptionManagementPage] Loading plans...');
       const { data, error } = await supabase
         .from('subscription_plans')
         .select('*')
         .order('display_order', { ascending: true });
 
       if (error) {
-        console.error('[AdminSubscriptionManagementPage] Plans error:', error);
         throw error;
       }
-      console.log('[AdminSubscriptionManagementPage] Plans loaded:', data?.length || 0);
       setPlans(data || []);
     } catch (error: any) {
-      console.error('[AdminSubscriptionManagementPage] Error loading plans:', error);
       setMessage({ type: 'error', text: 'Erro ao carregar planos' });
     }
   };
 
   const loadBenefits = async (planId?: string) => {
     try {
-      console.log('[AdminSubscriptionManagementPage] Loading benefits for plan:', planId || 'all');
       let query = supabase
         .from('subscription_plan_benefits')
         .select('*')
@@ -150,13 +142,10 @@ export function AdminSubscriptionManagementPage({
       const { data, error } = await query;
 
       if (error) {
-        console.error('[AdminSubscriptionManagementPage] Benefits error:', error);
         throw error;
       }
-      console.log('[AdminSubscriptionManagementPage] Benefits loaded:', data?.length || 0);
       setBenefits(data || []);
     } catch (error: any) {
-      console.error('Error loading benefits:', error);
       setMessage({ type: 'error', text: 'Erro ao carregar benefícios' });
     }
   };
@@ -171,7 +160,6 @@ export function AdminSubscriptionManagementPage({
       if (error) throw error;
       setTokenPackages(data || []);
     } catch (error: any) {
-      console.error('Error loading token packages:', error);
       setMessage({ type: 'error', text: 'Erro ao carregar pacotes de tokens' });
     }
   };
@@ -201,7 +189,6 @@ export function AdminSubscriptionManagementPage({
       setMessage({ type: 'success', text: 'Plano atualizado com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
-      console.error('Error saving plan:', error);
       setMessage({ type: 'error', text: 'Erro ao salvar plano' });
     }
   };
@@ -224,7 +211,6 @@ export function AdminSubscriptionManagementPage({
       setMessage({ type: 'success', text: 'Benefício atualizado com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
-      console.error('Error saving benefit:', error);
       setMessage({ type: 'error', text: 'Erro ao salvar benefício' });
     }
   };
@@ -254,7 +240,6 @@ export function AdminSubscriptionManagementPage({
       setMessage({ type: 'success', text: 'Pacote atualizado com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
-      console.error('Error saving token package:', error);
       setMessage({ type: 'error', text: 'Erro ao salvar pacote' });
     }
   };
@@ -284,7 +269,6 @@ export function AdminSubscriptionManagementPage({
       setMessage({ type: 'success', text: 'Benefício criado com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
-      console.error('Error creating benefit:', error);
       setMessage({ type: 'error', text: 'Erro ao criar benefício' });
     }
   };
@@ -304,7 +288,6 @@ export function AdminSubscriptionManagementPage({
       setMessage({ type: 'success', text: 'Benefício excluído com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
-      console.error('Error deleting benefit:', error);
       setMessage({ type: 'error', text: 'Erro ao excluir benefício' });
     }
   };

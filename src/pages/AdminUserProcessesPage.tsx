@@ -66,7 +66,6 @@ export function AdminUserProcessesPage({
   const loadUserAndProcessos = async () => {
     try {
       setLoading(true);
-      console.log('Loading user and processos for userId:', userId);
 
       const [userResult, processosResult] = await Promise.all([
         supabase
@@ -100,23 +99,16 @@ export function AdminUserProcessesPage({
           .order('created_at', { ascending: false })
       ]);
 
-      console.log('User result:', userResult);
-      console.log('Processos result:', processosResult);
-
       if (userResult.error) {
-        console.error('User error:', userResult.error);
         throw userResult.error;
       }
       if (processosResult.error) {
-        console.error('Processos error:', processosResult.error);
         throw processosResult.error;
       }
 
       setUser(userResult.data);
       setProcessos(processosResult.data || []);
-      console.log('Data loaded successfully');
     } catch (error: any) {
-      console.error('Error loading data:', error);
       playErrorSound();
     } finally {
       setLoading(false);

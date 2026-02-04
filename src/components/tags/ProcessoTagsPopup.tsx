@@ -55,7 +55,6 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
       const allTags = await ProcessoTagsService.getAllTags();
       setAvailableTags(allTags);
     } catch (error) {
-      console.error('Erro ao carregar tags:', error);
     } finally {
       setLoading(false);
     }
@@ -89,7 +88,6 @@ export const ProcessoTagsPopup: React.FC<ProcessoTagsPopupProps> = ({
 
       onClose();
     } catch (error) {
-      console.error('Erro ao salvar tags:', error);
       alert('Erro ao salvar tags. Tente novamente.');
     } finally {
       setSaving(false);

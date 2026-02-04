@@ -41,11 +41,7 @@ export function SubscriptionStatus() {
         }
       );
 
-      if (!response.ok) {
-        console.log('Sync response:', await response.text());
-      }
     } catch (error) {
-      console.error('Error syncing with Stripe:', error);
     }
   };
 
@@ -57,13 +53,11 @@ export function SubscriptionStatus() {
         .maybeSingle();
 
       if (error) {
-        console.error('Error fetching subscription:', error);
         return;
       }
 
       setSubscription(data);
     } catch (error) {
-      console.error('Error:', error);
     } finally {
       setLoading(false);
     }

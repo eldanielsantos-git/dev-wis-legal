@@ -42,7 +42,6 @@ export function SuccessPage({ onNavigateToApp }: SuccessPageProps) {
         return;
       }
 
-      console.log('Sincronizando assinatura com Stripe...');
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-stripe-subscription`,
         {
@@ -92,7 +91,6 @@ export function SuccessPage({ onNavigateToApp }: SuccessPageProps) {
       }
       setSyncComplete(true);
     } catch (error: any) {
-      console.error('Erro ao sincronizar:', error);
       setError(error.message || 'Erro ao sincronizar assinatura');
     } finally {
       setSyncing(false);

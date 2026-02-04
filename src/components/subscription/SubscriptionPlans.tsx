@@ -36,7 +36,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        console.log('Sincronizando assinatura com Stripe...');
         await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/sync-stripe-subscription`,
           {
@@ -53,7 +52,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
 
       await fetchCurrentSubscription();
     } catch (error) {
-      console.error('Error syncing subscription:', error);
       await fetchCurrentSubscription();
     } finally {
       setSyncingSubscription(false);
@@ -71,7 +69,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
         setCurrentSubscription(data);
       }
     } catch (error) {
-      console.error('Error fetching subscription:', error);
     }
   };
 
@@ -109,7 +106,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
         window.location.href = data.url;
       }
     } catch (error) {
-      console.error('Erro ao processar assinatura:', error);
       alert('Erro ao processar pagamento. Tente novamente.');
       setLoading(null);
     }
@@ -149,7 +145,6 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError || !session) {
-        console.error('Erro de autenticação:', sessionError);
         return false;
       }
 
@@ -164,14 +159,12 @@ export function SubscriptionPlans({ onSuccess }: SubscriptionPlansProps) {
       const data = await response.json();
 
       if (!response.ok) {
-        console.error('Erro ao cancelar assinatura:', data);
         return false;
       }
 
       await fetchCurrentSubscription();
       return true;
     } catch (error: any) {
-      console.error('Erro ao cancelar assinatura:', error);
       return false;
     } finally {
       setCancelingSubscription(false);

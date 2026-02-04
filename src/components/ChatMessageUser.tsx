@@ -50,12 +50,6 @@ export function ChatMessageUser({ content, createdAt, audioUrl, audioDuration, i
   };
 
   useEffect(() => {
-    console.log('[ChatMessageUser] Profile:', {
-      exists: !!profile,
-      avatar_url: profile?.avatar_url,
-      first_name: profile?.first_name,
-      last_name: profile?.last_name
-    });
   }, [profile]);
 
   return (

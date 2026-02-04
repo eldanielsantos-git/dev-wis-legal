@@ -71,7 +71,6 @@ export const AnalysisStagesProgress: React.FC<AnalysisStagesProgressProps> = ({
 
         setLoading(false);
       } catch (error) {
-        console.error('Erro ao buscar etapas de análise:', error);
         setLoading(false);
       }
     };

@@ -151,7 +151,6 @@ export default function AdminFeatureFlagsPage({
 
       setTierStats(statsArray);
     } catch (err: any) {
-      console.error('Error loading tier stats:', err);
     }
   }
 

@@ -63,7 +63,6 @@ export function IntelligentSearch({ isOpen, onClose, onSelectProcess }: Intellig
         setSearchResults(sortedResults);
         setSelectedIndex(0);
       } catch (error) {
-        console.error('Erro na busca:', error);
       } finally {
         setLoading(false);
       }

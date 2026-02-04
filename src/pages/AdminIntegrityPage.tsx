@@ -47,7 +47,6 @@ export function AdminIntegrityPage({ onNavigateToApp, onNavigateToMyProcess, onN
       const result = await IntegrityValidationService.checkAllProcessosIntegrity();
       setIssues(result);
     } catch (error) {
-      console.error('Erro ao carregar problemas de integridade:', error);
     } finally {
       setLoading(false);
     }
@@ -64,7 +63,6 @@ export function AdminIntegrityPage({ onNavigateToApp, onNavigateToMyProcess, onN
         }, 2000);
       }
     } catch (error) {
-      console.error('Erro ao tentar recuperar processo:', error);
       setHealResults(prev => ({
         ...prev,
         [processoId]: { success: false, message: 'Erro inesperado durante recuperação' }

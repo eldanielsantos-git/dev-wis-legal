@@ -49,7 +49,6 @@ export class TokenReservationService {
       });
 
       if (error) {
-        console.error('[TokenReservation] Erro ao reservar tokens:', error);
         return {
           success: false,
           error: error.message,
@@ -58,7 +57,6 @@ export class TokenReservationService {
 
       return data as ReserveTokensResult;
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao reservar tokens:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -76,13 +74,11 @@ export class TokenReservationService {
       });
 
       if (error) {
-        console.error('[TokenReservation] Erro ao liberar reserva:', error);
         return false;
       }
 
       return data === true;
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao liberar reserva:', error);
       return false;
     }
   }
@@ -97,13 +93,11 @@ export class TokenReservationService {
       });
 
       if (error) {
-        console.error('[TokenReservation] Erro ao consumir reserva:', error);
         return false;
       }
 
       return data === true;
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao consumir reserva:', error);
       return false;
     }
   }
@@ -118,13 +112,11 @@ export class TokenReservationService {
       });
 
       if (error) {
-        console.error('[TokenReservation] Erro ao obter tokens disponíveis:', error);
         return 0;
       }
 
       return data || 0;
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao obter tokens disponíveis:', error);
       return 0;
     }
   }
@@ -142,7 +134,6 @@ export class TokenReservationService {
         .maybeSingle();
 
       if (balanceError) {
-        console.error('[TokenReservation] Erro ao obter saldo:', balanceError);
         return { balance: 0, reserved: 0, available: 0 };
       }
 
@@ -157,7 +148,6 @@ export class TokenReservationService {
         .gt('expires_at', new Date().toISOString());
 
       if (reservationsError) {
-        console.error('[TokenReservation] Erro ao obter reservas:', reservationsError);
         return { balance, reserved: 0, available: balance };
       }
 
@@ -172,7 +162,6 @@ export class TokenReservationService {
         available: Math.max(balance - reserved, 0),
       };
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao obter informações de tokens:', error);
       return { balance: 0, reserved: 0, available: 0 };
     }
   }
@@ -191,13 +180,11 @@ export class TokenReservationService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('[TokenReservation] Erro ao obter reservas ativas:', error);
         return [];
       }
 
       return (data || []) as TokenReservation[];
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao obter reservas ativas:', error);
       return [];
     }
   }
@@ -216,13 +203,11 @@ export class TokenReservationService {
         .maybeSingle();
 
       if (error) {
-        console.error('[TokenReservation] Erro ao obter reserva do processo:', error);
         return null;
       }
 
       return data as TokenReservation | null;
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao obter reserva do processo:', error);
       return null;
     }
   }
@@ -235,7 +220,6 @@ export class TokenReservationService {
       const reservations = await this.getActiveReservations(userId);
       return reservations.length > 0;
     } catch (error) {
-      console.error('[TokenReservation] Erro ao verificar análises ativas:', error);
       return false;
     }
   }
@@ -262,13 +246,11 @@ export class TokenReservationService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('[TokenReservation] Erro ao obter processos com reservas:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('[TokenReservation] Exceção ao obter processos com reservas:', error);
       return [];
     }
   }

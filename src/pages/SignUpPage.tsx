@@ -41,7 +41,6 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
     const invite = urlParams.get('invite');
     if (invite) {
       setInviteId(invite);
-      console.log('[SignUp] Invite ID detected:', invite);
     }
   }, []);
 
@@ -219,7 +218,6 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       setError(null);
       alert('Email de confirmação reenviado com sucesso! Verifique sua caixa de entrada.');
     } catch (err: any) {
-      console.error('[ResendEmail] Erro ao reenviar email:', err);
       setError(err.message || 'Erro ao reenviar email de confirmação');
     } finally {
       setResendLoading(false);
@@ -362,20 +360,15 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       return;
     }
     try {
-      console.log('[SignUp] Tentando criar conta com email:', formData.email);
-
       let avatarUrl: string | undefined = undefined;
 
       if (avatarFile) {
-        console.log('[SignUp] Preparing avatar for upload...');
         try {
           const { supabase } = await import('../lib/supabase');
           const fileExt = avatarFile.name.split('.').pop();
           // Use temp name first, will be renamed after user creation
           const tempFileName = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
           const tempFilePath = `${tempFileName}`;
-
-          console.log('[SignUp] Uploading avatar to temp path:', tempFilePath);
 
           const { data: uploadData, error: uploadError } = await supabase.storage
             .from('avatars')
@@ -384,19 +377,13 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
               upsert: false
             });
 
-          if (uploadError) {
-            console.error('[SignUp] Error uploading avatar:', uploadError);
-            console.error('[SignUp] Error details:', JSON.stringify(uploadError));
-          } else {
+          if (!uploadError) {
             const { data: { publicUrl } } = supabase.storage
               .from('avatars')
               .getPublicUrl(tempFilePath);
             avatarUrl = publicUrl;
-            console.log('[SignUp] Avatar uploaded successfully:', avatarUrl);
-            console.log('[SignUp] Upload data:', uploadData);
           }
         } catch (uploadErr) {
-          console.error('[SignUp] Exception during avatar upload:', uploadErr);
         }
       }
 
@@ -417,20 +404,12 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
 
       if (inviteId) {
         try {
-          console.log('[SignUp] Updating invite status to accepted:', inviteId);
           const { supabase } = await import('../lib/supabase');
           const { error: updateError } = await supabase
             .from('invite_friend')
             .update({ status: 'accepted' })
             .eq('id', inviteId);
-
-          if (updateError) {
-            console.error('[SignUp] Error updating invite status:', updateError);
-          } else {
-            console.log('[SignUp] Invite status updated successfully');
-          }
         } catch (inviteErr) {
-          console.error('[SignUp] Exception updating invite:', inviteErr);
         }
       }
 
@@ -439,7 +418,6 @@ export function SignUpPage({ onNavigateToSignIn, onNavigateToTerms, onNavigateTo
       setResendDisabled(true);
       setResendCountdown(60);
     } catch (err: any) {
-      console.error('[SignUp] Erro ao criar conta:', err);
       setError(translateSupabaseAuthError(err));
     } finally {
       setLoading(false);

@@ -23,20 +23,12 @@ export function AnimatedTokenCounter({
   const previousTokensRef = useRef(tokens);
 
   useEffect(() => {
-    console.log('[AnimatedTokenCounter] Tokens changed:', {
-      previousTokens: previousTokensRef.current,
-      newTokens: tokens,
-      loading,
-      willAnimate: previousTokensRef.current !== tokens && !loading
-    });
-
     if (previousTokensRef.current === tokens || loading) {
       previousTokensRef.current = tokens;
       setDisplayTokens(tokens);
       return;
     }
 
-    console.log('[AnimatedTokenCounter] Starting animation');
     setIsAnimating(true);
 
     const difference = tokens - previousTokensRef.current;

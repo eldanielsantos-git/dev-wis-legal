@@ -83,7 +83,6 @@ export function TokensPage({
           filter: `user_id=eq.${user.id}`,
         },
         () => {
-          console.log('🔔 Novo débito de tokens detectado, recarregando histórico');
           loadProcessHistory();
         }
       )
@@ -133,7 +132,6 @@ export function TokensPage({
 
       setProcessHistory(filteredData);
     } catch (error) {
-      console.error('Error loading process history:', error);
     } finally {
       setLoadingHistory(false);
       setLoadingMore(false);
@@ -340,11 +338,9 @@ export function TokensPage({
                       title={tokensTotal === 0 ? 'Compre tokens para começar' : 'Adicione mais tokens em sua assinatura'}
                       description={tokensTotal === 0 ? 'Compre um pacote de tokens e comece a usar a plataforma:' : 'Escolha uma das opções abaixo:'}
                       onPurchaseComplete={() => {
-                        console.log('Compra concluída, atualizando saldo...');
                         refreshBalance();
                       }}
                       onPurchaseError={(error) => {
-                        console.error('Erro na compra:', error);
                         alert(`Erro ao processar compra: ${error}`);
                       }}
                     />

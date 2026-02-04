@@ -232,7 +232,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
 
   useEffect(() => {
     if (profile) {
-      console.log('Profile loaded:', profile);
       const phoneValue = profile.phone || '';
       let countryCode = '+55';
       let phoneNumber = phoneValue;
@@ -302,7 +301,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         setAchievementProgress(progress);
         setCompletedCount(count);
       } catch (error) {
-        console.error('Erro ao carregar conquistas:', error);
       } finally {
         setIsLoadingAchievements(false);
       }
@@ -322,7 +320,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         const prefs = await UserPreferencesService.getUserPreferences();
         setPreferences(prefs);
       } catch (error) {
-        console.error('Erro ao carregar preferências:', error);
       } finally {
         setIsLoadingPreferences(false);
       }
@@ -514,7 +511,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       }
 
       const result = await response.json();
-      console.log('Email change confirmation sent:', result);
 
       setNewEmail('');
       setIsEditingEmail(false);
@@ -527,7 +523,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         setMessage(null);
       }, 5000);
     } catch (error: any) {
-      console.error('Error sending email change confirmation:', error);
       setMessage({ type: 'error', text: translateSupabaseAuthError(error) });
     } finally {
       setIsEmailLoading(false);
@@ -574,7 +569,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
           fileToUpload = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
           fileExt = 'jpg';
         } catch (conversionError) {
-          console.error('Erro ao converter HEIC:', conversionError);
           setMessage({ type: 'error', text: 'Erro ao processar imagem HEIC. Tente usar outro formato.' });
           setIsUploadingAvatar(false);
           return;
@@ -614,7 +608,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         setAchievementProgress(progress);
         setCompletedCount(count);
       } catch (achievementError) {
-        console.error('Erro ao verificar conquistas:', achievementError);
       }
 
       setMessage({ type: 'success', text: 'Foto atualizada com sucesso!' });
@@ -667,7 +660,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
         setAchievementProgress(progress);
         setCompletedCount(count);
       } catch (achievementError) {
-        console.error('Erro ao verificar conquistas:', achievementError);
       }
 
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
@@ -723,7 +715,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       await supabase.auth.signOut();
       window.location.href = '/sign-in';
     } catch (error: any) {
-      console.error('Error deleting account:', error);
       setMessage({ type: 'error', text: translateError(error) });
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -739,7 +730,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       setMessage({ type: 'success', text: 'Preferência atualizada com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
-      console.error('Erro ao atualizar preferência:', error);
       setMessage({ type: 'error', text: translateError(error) });
       setTimeout(() => setMessage(null), 3000);
     }
@@ -754,7 +744,6 @@ export function ProfilePage({ onNavigateToApp, onNavigateToMyProcess, onNavigate
       setMessage({ type: 'success', text: 'Tema atualizado com sucesso!' });
       setTimeout(() => setMessage(null), 3000);
     } catch (error: any) {
-      console.error('Erro ao atualizar tema:', error);
       setMessage({ type: 'error', text: translateError(error) });
       setTimeout(() => setMessage(null), 3000);
     }

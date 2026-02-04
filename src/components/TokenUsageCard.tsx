@@ -56,7 +56,6 @@ export function TokenUsageCard({ userId, compact = false }: TokenUsageCardProps)
       if (error) throw error;
       setRecentProcesses(data || []);
     } catch (error) {
-      console.error('Error loading recent processes:', error);
     }
   };
 

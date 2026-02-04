@@ -63,8 +63,6 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
       // Só notifica se for erro e ainda não foi notificado nesta sessão
       if (processo.status === 'error' && !errorNotifiedRef.current.has(processo.id)) {
         try {
-          console.log(`🚨 Processo em erro detectado: ${processo.id}`);
-
           // Marcar como notificado para não disparar múltiplas vezes
           errorNotifiedRef.current.add(processo.id);
 
@@ -79,14 +77,7 @@ export const ProcessoCard: React.FC<ProcessoCardProps> = ({
               },
             }
           );
-
-          if (response.ok) {
-            console.log(`✅ Notificação de erro processada para ${processo.id}`);
-          } else {
-            console.error(`❌ Falha ao notificar erro de ${processo.id}`);
-          }
         } catch (error) {
-          console.error('Erro ao notificar admin:', error);
         }
       }
     };

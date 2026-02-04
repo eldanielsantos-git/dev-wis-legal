@@ -138,7 +138,6 @@ export function AdminUsersPage({ onNavigateToApp, onNavigateToMyProcess, onNavig
       setCurrentPage(0);
       setHasMore(sortedUsers.length > USERS_PER_PAGE);
     } catch (error: any) {
-      console.error('Error loading users:', error);
       playErrorSound();
     } finally {
       setLoading(false);

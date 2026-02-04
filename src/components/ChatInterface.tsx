@@ -75,7 +75,6 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
       const prompts = await ChatIntroPromptsService.getActivePrompts();
       setChatIntroPrompts(prompts);
     } catch (error) {
-      console.error('Error loading chat intro prompts:', error);
     }
   };
 
@@ -109,7 +108,6 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
   }, [messages, isInitialLoad]);
 
   useEffect(() => {
-    console.log('[ChatInterface] Profile avatar_url:', profile?.avatar_url);
   }, [profile]);
 
   useEffect(() => {
@@ -147,7 +145,6 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
       // Refresh adicional após 1s para garantir que o realtime capturou
       setTimeout(() => refreshBalance(), 1000);
     } catch (error) {
-      console.error('Error sending message:', error);
       setInputValue(messageToSend);
     } finally {
       setIsSending(false);
@@ -179,18 +176,11 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
     playMessageSendSound();
 
     try {
-      console.log('[ChatInterface] Stopping audio recording...');
       const audioBlob = await audioRecorder.stopRecording();
 
       if (!audioBlob) {
         throw new Error('Não foi possível obter o áudio gravado');
       }
-
-      console.log('[ChatInterface] Audio blob details:', {
-        size: audioBlob.size,
-        type: audioBlob.type,
-        duration: audioRecorder.recordingTime
-      });
 
       if (audioBlob.size === 0) {
         throw new Error('Áudio vazio. Tente gravar novamente.');
@@ -214,32 +204,25 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
       };
 
       if (onAddOptimisticMessage) {
-        console.log('[ChatInterface] Adding optimistic audio message to timeline');
         onAddOptimisticMessage(optimisticMessage);
       }
 
       setIsProcessingAudio(true);
-
-      console.log('[ChatInterface] Converting audio to base64...');
       const reader = new FileReader();
       const audioBase64 = await new Promise<string>((resolve, reject) => {
         reader.onloadend = () => {
           const base64 = (reader.result as string).split(',')[1];
-          console.log('[ChatInterface] Base64 length:', base64.length);
           resolve(base64);
         };
         reader.onerror = reject;
         reader.readAsDataURL(audioBlob);
       });
 
-      console.log('[ChatInterface] Getting session...');
       const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
         throw new Error('Usuário não autenticado');
       }
-
-      console.log('[ChatInterface] Checking if processo is complex...');
       const { data: processoData } = await supabase
         .from('processos')
         .select('total_pages, is_chunked, total_chunks_count')
@@ -258,9 +241,6 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
 
       const edgeFunction = isComplexFile ? 'chat-audio-complex-files' : 'process-audio-message';
 
-      console.log(`[ChatInterface] Using edge function: ${edgeFunction} (complex: ${isComplexFile})`);
-      console.log('[ChatInterface] Sending audio to edge function...');
-
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${edgeFunction}`,
         {
@@ -277,21 +257,16 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
         }
       );
 
-      console.log('[ChatInterface] Response status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('[ChatInterface] Edge function error response:', errorData);
         const errorMessage = errorData.details || errorData.error || 'Failed to process audio';
         const stack = errorData.stack ? `\n\nStack:\n${errorData.stack}` : '';
         throw new Error(errorMessage + stack);
       }
 
       const responseData = await response.json();
-      console.log('[ChatInterface] Audio processed successfully:', responseData);
 
       if (onUpdateMessage && responseData.transcription) {
-        console.log('[ChatInterface] Updating user message with transcription and audio URL');
         onUpdateMessage(tempMessageId, {
           content: responseData.transcription,
           audio_url: responseData.audio_url || audioUrl,
@@ -306,7 +281,6 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
           created_at: new Date().toISOString(),
         };
 
-        console.log('[ChatInterface] Adding assistant response to timeline');
         onAddOptimisticMessage(assistantMessage);
       }
 
@@ -318,7 +292,6 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
       setTimeout(() => refreshBalance(), 1000);
 
     } catch (error) {
-      console.error('[ChatInterface] Error processing audio:', error);
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       alert(`Erro ao processar áudio:\n\n${errorMessage}\n\nVerifique o console para mais detalhes.`);
     } finally {

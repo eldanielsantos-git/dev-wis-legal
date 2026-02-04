@@ -105,7 +105,6 @@ export class UserAchievementsService {
       .order('unlocked_at', { ascending: false });
 
     if (error) {
-      console.error('Erro ao buscar conquistas:', error);
       throw new Error(`Erro ao buscar conquistas: ${error.message}`);
     }
 
@@ -123,7 +122,6 @@ export class UserAchievementsService {
       .eq('status', 'completed');
 
     if (error) {
-      console.error('Erro ao contar processos completados:', error);
       throw new Error(`Erro ao contar processos: ${error.message}`);
     }
 
@@ -239,7 +237,6 @@ export class UserAchievementsService {
     });
 
     if (error) {
-      console.error('Erro ao desbloquear conquistas:', error);
       throw new Error(`Erro ao desbloquear conquistas: ${error.message}`);
     }
 
@@ -260,7 +257,6 @@ export class UserAchievementsService {
           });
 
         if (insertError) {
-          console.error('Erro ao inserir conquista de perfil completo:', insertError);
         }
       }
     }
@@ -294,7 +290,6 @@ export class UserAchievementsService {
             const achievements = await this.getUserAchievements();
             callback(achievements);
           } catch (error) {
-            console.error('Erro ao atualizar conquistas via subscription:', error);
           }
         }
       )

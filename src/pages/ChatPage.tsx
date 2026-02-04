@@ -103,7 +103,6 @@ export function ChatPage({
       if (error) throw error;
       setProcesso(data);
     } catch (error) {
-      console.error('Erro ao carregar detalhes do processo:', error);
     }
   };
 
@@ -124,7 +123,6 @@ export function ChatPage({
         setSelectedProcessoId(data[0].id);
       }
     } catch (error) {
-      console.error('Error loading processos:', error);
     } finally {
       setIsLoadingProcessos(false);
     }
@@ -143,7 +141,6 @@ export function ChatPage({
 
       setMessages(data || []);
     } catch (error) {
-      console.error('Error loading messages:', error);
       setMessages([]);
     } finally {
       setIsLoadingMessages(false);
@@ -216,7 +213,6 @@ export function ChatPage({
       setMessages((prev) => [...prev, assistantMessage]);
       playMessageReceivedSound();
     } catch (error) {
-      console.error('Error sending message:', error);
       const errorMessage: Message = {
         id: crypto.randomUUID(),
         role: 'assistant',

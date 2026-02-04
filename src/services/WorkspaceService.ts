@@ -73,7 +73,6 @@ export class WorkspaceService {
 
       return { canShare: true };
     } catch (error) {
-      console.error('Error checking if process can be shared:', error);
       return { canShare: false, reason: 'Erro ao verificar processo' };
     }
   }
@@ -182,7 +181,6 @@ export class WorkspaceService {
       }
 
       if (error) {
-        console.error('Error creating share:', error);
         return {
           success: false,
           error: 'Erro ao compartilhar processo'
@@ -192,17 +190,6 @@ export class WorkspaceService {
       // Send invitation email via Edge Function
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const { data: { session } } = await supabase.auth.getSession();
-
-      console.log('📧 Calling send-workspace-invite edge function...');
-      console.log('📧 URL:', `${supabaseUrl}/functions/v1/send-workspace-invite`);
-      console.log('📧 Payload:', {
-        shareId: share.id,
-        processoId: request.processoId,
-        invitedEmail: request.email,
-        invitedName: request.name,
-        permissionLevel: request.permissionLevel,
-        userExists: !!invitedUser
-      });
 
       try {
         const response = await fetch(`${supabaseUrl}/functions/v1/send-workspace-invite`, {
@@ -221,18 +208,11 @@ export class WorkspaceService {
           })
         });
 
-        console.log('📧 Response status:', response.status);
-
         const responseData = await response.json();
-        console.log('📧 Response data:', responseData);
 
         if (!response.ok) {
-          console.error('❌ Edge function returned error:', responseData);
-        } else {
-          console.log('✅ Email invitation sent successfully');
         }
       } catch (emailError) {
-        console.error('❌ Error calling edge function:', emailError);
       }
 
       return {
@@ -240,7 +220,6 @@ export class WorkspaceService {
         share
       };
     } catch (error) {
-      console.error('Error in shareProcess:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro ao compartilhar processo'
@@ -266,7 +245,6 @@ export class WorkspaceService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching shared processes:', error);
         return [];
       }
 
@@ -295,7 +273,6 @@ export class WorkspaceService {
         owner: owners?.find(o => o.id === share.owner_user_id)
       }));
     } catch (error) {
-      console.error('Error in getSharedWithMe:', error);
       return [];
     }
   }
@@ -312,13 +289,11 @@ export class WorkspaceService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching process shares:', error);
         return [];
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in getProcessShares:', error);
       return [];
     }
   }
@@ -341,7 +316,6 @@ export class WorkspaceService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching my shares:', error);
         return [];
       }
 
@@ -362,7 +336,6 @@ export class WorkspaceService {
         processo: processos?.find(p => p.id === share.processo_id)
       }));
     } catch (error) {
-      console.error('Error in getMyShares:', error);
       return [];
     }
   }
@@ -381,7 +354,6 @@ export class WorkspaceService {
         .eq('id', shareId);
 
       if (error) {
-        console.error('Error updating share permission:', error);
         return {
           success: false,
           error: 'Erro ao atualizar permissão'
@@ -390,7 +362,6 @@ export class WorkspaceService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error in updateSharePermission:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro ao atualizar permissão'
@@ -409,7 +380,6 @@ export class WorkspaceService {
         .eq('id', shareId);
 
       if (error) {
-        console.error('Error removing share:', error);
         return {
           success: false,
           error: 'Erro ao remover compartilhamento'
@@ -418,7 +388,6 @@ export class WorkspaceService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error in removeShare:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro ao remover compartilhamento'
@@ -464,7 +433,6 @@ export class WorkspaceService {
 
       return { hasAccess: false };
     } catch (error) {
-      console.error('Error checking access:', error);
       return { hasAccess: false };
     }
   }
@@ -506,7 +474,6 @@ export class WorkspaceService {
         supabase.removeChannel(subscription);
       };
     } catch (error) {
-      console.error('Error subscribing to shares:', error);
       return undefined;
     }
   }
@@ -538,7 +505,6 @@ export class WorkspaceService {
         myShares: mySharesResult.count || 0
       };
     } catch (error) {
-      console.error('Error counting shares:', error);
       return { sharedWithMe: 0, myShares: 0 };
     }
   }

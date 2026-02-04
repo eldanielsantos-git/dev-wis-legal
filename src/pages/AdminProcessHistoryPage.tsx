@@ -70,7 +70,6 @@ export function AdminProcessHistoryPage({
       setRecords(data);
       setTotalCount(count);
     } catch (error) {
-      console.error('Error loading history:', error);
     } finally {
       setLoading(false);
     }
@@ -82,7 +81,6 @@ export function AdminProcessHistoryPage({
       const data = await ProcessHistoryService.getHistory(ITEMS_PER_PAGE, records.length, filters);
       setRecords(prev => [...prev, ...data]);
     } catch (error) {
-      console.error('Error loading more:', error);
     } finally {
       setLoadingMore(false);
     }
@@ -94,7 +92,6 @@ export function AdminProcessHistoryPage({
       const data = await ProcessHistoryService.getAllHistory(filters);
       setRecords(data);
     } catch (error) {
-      console.error('Error loading all:', error);
     } finally {
       setLoadingMore(false);
     }
@@ -112,7 +109,6 @@ export function AdminProcessHistoryPage({
       setRecords(data);
       setTotalCount(count);
     } catch (error) {
-      console.error('Error applying filters:', error);
     } finally {
       setLoading(false);
     }
@@ -131,7 +127,6 @@ export function AdminProcessHistoryPage({
       setRecords(data);
       setTotalCount(count);
     } catch (error) {
-      console.error('Error clearing filters:', error);
     } finally {
       setLoading(false);
     }
