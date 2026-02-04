@@ -81,7 +81,6 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       }, 1000);
 
     } catch (err) {
-      console.error('Error starting recording:', err);
       setError('Não foi possível acessar o microfone. Verifique as permissões.');
     }
   }, []);

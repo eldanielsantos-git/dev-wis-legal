@@ -88,7 +88,6 @@ class AdminNotificationsService {
 
       return { success: true, data: typesWithConfig };
     } catch (error) {
-      console.error('Error fetching notification types:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -153,7 +152,6 @@ class AdminNotificationsService {
 
       return { success: true, data: data || [], count: count || 0 };
     } catch (error) {
-      console.error('Error fetching notifications:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -218,7 +216,6 @@ class AdminNotificationsService {
         },
       };
     } catch (error) {
-      console.error('Error fetching notification stats:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -257,7 +254,6 @@ class AdminNotificationsService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error updating notification config:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -306,7 +302,6 @@ class AdminNotificationsService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error testing Slack connection:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }
@@ -349,7 +344,6 @@ class AdminNotificationsService {
 
       return { success: true };
     } catch (error) {
-      console.error('Error sending test notification:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   }

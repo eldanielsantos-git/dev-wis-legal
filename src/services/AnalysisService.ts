@@ -9,7 +9,6 @@ export class AnalysisService {
       .order('execution_order', { ascending: true });
 
     if (error) {
-      console.error('Erro ao buscar prompts:', error);
       throw new Error('Não foi possível carregar os prompts de análise');
     }
 
@@ -24,7 +23,6 @@ export class AnalysisService {
       .order('execution_order', { ascending: true });
 
     if (error) {
-      console.error('Erro ao buscar prompts ativos:', error);
       throw new Error('Não foi possível carregar os prompts ativos');
     }
 
@@ -39,7 +37,6 @@ export class AnalysisService {
       .single();
 
     if (error) {
-      console.error('Erro ao buscar prompt:', error);
       return null;
     }
 
@@ -59,7 +56,6 @@ export class AnalysisService {
       .eq('id', id);
 
     if (error) {
-      console.error('Erro ao atualizar prompt:', error);
       return false;
     }
 
@@ -93,7 +89,6 @@ export class AnalysisService {
       .order('execution_order', { ascending: true });
 
     if (error) {
-      console.error('Erro ao buscar resultados:', error);
       throw new Error('Não foi possível carregar os resultados da análise');
     }
 
@@ -112,7 +107,6 @@ export class AnalysisService {
       .single();
 
     if (error) {
-      console.error('Erro ao buscar progresso:', error);
       throw new Error('Não foi possível carregar o progresso da análise');
     }
 

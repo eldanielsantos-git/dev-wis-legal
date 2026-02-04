@@ -127,7 +127,6 @@ export class ProcessUnlockAuditService {
       .single();
 
     if (error) {
-      console.error('Error creating audit record:', error);
       return null;
     }
 
@@ -142,7 +141,6 @@ export class ProcessUnlockAuditService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching audit history:', error);
       return [];
     }
 
@@ -158,7 +156,6 @@ export class ProcessUnlockAuditService {
       .limit(limit);
 
     if (error) {
-      console.error('Error fetching recent unlocks:', error);
       return [];
     }
 
@@ -196,7 +193,6 @@ export class ProcessUnlockAuditService {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching audit records:', error);
       return [];
     }
 

@@ -52,12 +52,6 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
     try {
       const data = await TokenValidationService.getTokenBalance(user.id);
 
-      console.log('[TokenBalanceContext] Balance fetched:', {
-        tokensRemaining: data.tokensRemaining,
-        tokensUsed: data.tokensUsed,
-        previousTokensUsed: previousTokensUsedRef.current,
-      });
-
       const newBalance = {
         tokensTotal: data.tokensTotal,
         tokensUsed: data.tokensUsed,
@@ -72,22 +66,17 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
         const tokensDebited = data.tokensUsed - previousTokensUsedRef.current;
         const pagesProcessed = Math.ceil(tokensDebited / 5500);
 
-        console.log('[TokenBalanceContext] Tokens debited detected:', tokensDebited);
-
         try {
           await NotificationsService.createNotification({
             type: 'success',
             message: `Análise concluída! ${TokenValidationService.formatTokenCount(tokensDebited)} tokens debitados (${pagesProcessed} páginas processadas)`,
           });
-        } catch (notifError) {
-          console.error('Error creating notification:', notifError);
-        }
+        } catch (notifError) {}
       }
 
       previousTokensUsedRef.current = data.tokensUsed;
       setBalance(newBalance);
     } catch (error) {
-      console.error('Error fetching token balance:', error);
       setBalance(prev => ({ ...prev, loading: false }));
     }
   }, [user]);
@@ -139,7 +128,6 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
               filter: `user_id=eq.${user.id}`,
             },
             (payload) => {
-              console.log('[TokenBalanceContext] Realtime: token_usage_history INSERT detected', payload);
               fetchBalance();
             }
           )
@@ -152,7 +140,6 @@ export function TokenBalanceProvider({ children }: { children: React.ReactNode }
               filter: `user_id=eq.${user.id}`,
             },
             (payload) => {
-              console.log('[TokenBalanceContext] Realtime: token_usage_logs INSERT detected', payload);
               fetchBalance();
             }
           )

@@ -43,7 +43,6 @@ export class ChatSystemPromptsService {
       .order('priority', { ascending: true });
 
     if (error) {
-      console.error('Erro ao buscar prompts do chat:', error);
       throw new Error(`Erro ao buscar prompts do chat: ${error.message}`);
     }
 
@@ -72,7 +71,6 @@ export class ChatSystemPromptsService {
       .maybeSingle();
 
     if (error) {
-      console.error(`Erro ao buscar prompt ativo do tipo ${promptType}:`, error);
       throw new Error(`Erro ao buscar prompt ativo: ${error.message}`);
     }
 
@@ -103,7 +101,6 @@ export class ChatSystemPromptsService {
       .single();
 
     if (error) {
-      console.error('Erro ao criar prompt do chat:', error);
       throw new Error(`Erro ao criar prompt: ${error.message}`);
     }
 
@@ -162,7 +159,6 @@ export class ChatSystemPromptsService {
       .single();
 
     if (error) {
-      console.error('Erro ao atualizar prompt do chat:', error);
       throw new Error(`Erro ao atualizar prompt: ${error.message}`);
     }
 
@@ -197,7 +193,6 @@ export class ChatSystemPromptsService {
       .eq('id', id);
 
     if (error) {
-      console.error('Erro ao excluir prompt do chat:', error);
       throw new Error(`Erro ao excluir prompt: ${error.message}`);
     }
   }
@@ -234,7 +229,6 @@ export class ChatSystemPromptsService {
       .single();
 
     if (error) {
-      console.error('Erro ao duplicar prompt do chat:', error);
       throw new Error(`Erro ao duplicar prompt: ${error.message}`);
     }
 
@@ -258,7 +252,6 @@ export class ChatSystemPromptsService {
     const { error } = await query;
 
     if (error) {
-      console.error('Erro ao desativar outros prompts:', error);
       throw new Error(`Erro ao desativar outros prompts: ${error.message}`);
     }
   }
@@ -280,7 +273,6 @@ export class ChatSystemPromptsService {
     const { count, error } = await query;
 
     if (error) {
-      console.error('Erro ao contar prompts ativos:', error);
       return 0;
     }
 

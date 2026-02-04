@@ -38,7 +38,6 @@ export function useTokenPackages() {
         }
       }
     } catch (err) {
-      console.error('Error loading from cache:', err);
       localStorage.removeItem(CACHE_KEY);
     }
     return false;
@@ -51,9 +50,7 @@ export function useTokenPackages() {
         timestamp: Date.now(),
         version: CACHE_VERSION
       }));
-    } catch (err) {
-      console.error('Error saving to cache:', err);
-    }
+    } catch (err) {}
   };
 
   const fetchPackages = async () => {
@@ -75,7 +72,6 @@ export function useTokenPackages() {
       setPackages(packagesData);
       saveToCache(packagesData);
     } catch (err: any) {
-      console.error('Error fetching token packages:', err);
       setError(err.message || 'Erro ao carregar pacotes de tokens');
     } finally {
       setLoading(false);
@@ -104,7 +100,6 @@ export function useTokenPackages() {
         schema: 'public',
         table: 'token_packages'
       }, () => {
-        console.log('Token packages changed, refreshing...');
         refreshPackages();
       })
       .subscribe();

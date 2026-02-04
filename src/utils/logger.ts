@@ -1,25 +1,6 @@
-const isDevelopment = import.meta.env.DEV;
-
 export const logger = {
-  log: (component: string, ...args: any[]) => {
-    if (isDevelopment) {
-      console.log(`[${component}]`, ...args);
-    }
-  },
-
-  warn: (component: string, ...args: any[]) => {
-    if (isDevelopment) {
-      console.warn(`[${component}]`, ...args);
-    }
-  },
-
-  error: (component: string, ...args: any[]) => {
-    console.error(`[${component}]`, ...args);
-  },
-
-  info: (component: string, ...args: any[]) => {
-    if (isDevelopment) {
-      console.info(`[${component}]`, ...args);
-    }
-  }
+  log: (_component: string, ..._args: any[]) => {},
+  warn: (_component: string, ..._args: any[]) => {},
+  error: (_component: string, ..._args: any[]) => {},
+  info: (_component: string, ..._args: any[]) => {}
 };

@@ -63,7 +63,6 @@ class BillingAnalyticsService {
 
       return result.data;
     } catch (error: any) {
-      console.error('Error fetching billing data:', error);
       throw new Error(error.message || 'Failed to fetch billing analytics');
     }
   }

@@ -17,7 +17,6 @@ async function countPdfPages(file: File): Promise<number> {
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     return pdf.numPages;
   } catch (error) {
-    console.error('Error counting PDF pages:', error);
     throw new Error('Erro ao contar páginas do PDF');
   }
 }
@@ -30,7 +29,6 @@ export class ProcessosService {
       throw new Error('Usuário não autenticado');
     }
 
-    console.log('🔄 Retomando upload interrompido:', processoId);
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
@@ -43,7 +41,6 @@ export class ProcessosService {
     }
 
     if (!processo.upload_interrupted) {
-      console.log('✅ Upload não está interrompido, nada a fazer');
       return;
     }
 
@@ -51,7 +48,6 @@ export class ProcessosService {
       throw new Error('Arquivo original não encontrado');
     }
 
-    console.log(`📥 Baixando arquivo original do storage...`);
     const { data: fileData, error: downloadError } = await supabase.storage
       .from('processos')
       .download(processo.original_file_path);
@@ -63,15 +59,12 @@ export class ProcessosService {
     const file = new File([fileData], processo.file_name, { type: 'application/pdf' });
 
     const { splitPDFIntoChunksWithOverlap } = await import('../utils/pdfSplitter');
-    console.log('📄 Preparando arquivo para retomada...');
     const chunks = await splitPDFIntoChunksWithOverlap(file);
 
     const startFromChunk = processo.chunks_uploaded_count || 0;
-    console.log(`🚀 Retomando do chunk ${startFromChunk + 1}/${chunks.length}`);
 
     for (let i = startFromChunk; i < chunks.length; i++) {
       const chunk = chunks[i];
-      console.log(`📤 Enviando parte ${i + 1}/${chunks.length}...`);
 
       if (onProgress) {
         onProgress(i, chunks.length);
@@ -99,7 +92,6 @@ export class ProcessosService {
 
         if (!uploadError) {
           if (retryCount > 0) {
-            console.log(`✅ Parte ${i + 1} enviada após ${retryCount} tentativa(s)`);
           }
           break;
         }
@@ -108,7 +100,6 @@ export class ProcessosService {
 
         if (retryCount < MAX_RETRIES) {
           const backoffSeconds = Math.min(Math.pow(2, retryCount), 300);
-          console.log(`⏳ Erro no upload da parte ${i + 1} (tentativa ${retryCount}/${MAX_RETRIES}). Tentando novamente em ${backoffSeconds}s...`, uploadError.message);
 
           await supabase
             .from('processos')
@@ -125,7 +116,6 @@ export class ProcessosService {
       }
 
       if (uploadError) {
-        console.error(`❌ Erro fatal no upload da parte ${i + 1} após ${MAX_RETRIES} tentativas:`, uploadError);
         await supabase
           .from('processos')
           .update({
@@ -152,7 +142,6 @@ export class ProcessosService {
       });
 
       if (chunkError) {
-        console.error(`❌ Erro ao salvar parte ${i + 1}:`, chunkError);
         await supabase
           .from('processos')
           .update({ upload_interrupted: true })
@@ -172,7 +161,6 @@ export class ProcessosService {
         })
         .eq('id', processoId);
 
-      console.log(`✅ Parte ${i + 1}/${chunks.length} enviada com sucesso`);
     }
 
     await supabase
@@ -183,7 +171,6 @@ export class ProcessosService {
       })
       .eq('id', processoId);
 
-    console.log('✅ Upload retomado com sucesso! Iniciando análise...');
 
     const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-analysis-complex`;
     const response = await fetch(apiUrl, {
@@ -200,7 +187,6 @@ export class ProcessosService {
       throw new Error(error.error || 'Falha ao iniciar análise complexa');
     }
 
-    console.log('✅ Análise complexa iniciada com sucesso');
   }
 
   private static sanitizeFileName(fileName: string): string {
@@ -237,7 +223,6 @@ export class ProcessosService {
     const sanitizedFileName = this.sanitizeFileName(file.name);
     const fileName = `${user.id}/${Date.now()}-${sanitizedFileName}`;
 
-    console.log('📤 Fazendo backup no Storage...', { fileName });
 
     const { data, error } = await supabase.storage
       .from('processos')
@@ -247,7 +232,6 @@ export class ProcessosService {
       });
 
     if (error) {
-      console.error('❌ Erro no upload:', error);
       throw new Error(`Falha no upload: ${error.message}`);
     }
 
@@ -255,7 +239,6 @@ export class ProcessosService {
       .from('processos')
       .getPublicUrl(fileName);
 
-    console.log('✅ Backup concluído', { filePath: data.path });
 
     return {
       filePath: data.path,
@@ -268,7 +251,6 @@ export class ProcessosService {
     base64Data: string,
     fileSize: number
   ): Promise<void> {
-    console.log('💾 Armazenando PDF em base64 no banco...');
 
     if (fileSize <= MAX_PDF_SIZE_FOR_INLINE) {
       await supabase
@@ -281,10 +263,8 @@ export class ProcessosService {
         })
         .eq('id', processoId);
 
-      console.log('✅ PDF armazenado inline (não chunkeado)');
     } else {
       const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
-      console.log(`📦 Dividindo PDF em ${totalChunks} chunks...`);
 
       const chunks = [];
       for (let i = 0; i < totalChunks; i++) {
@@ -318,7 +298,6 @@ export class ProcessosService {
         })
         .eq('id', processoId);
 
-      console.log(`✅ ${totalChunks} chunks armazenados com sucesso`);
     }
   }
 
@@ -350,7 +329,6 @@ export class ProcessosService {
       .single();
 
     if (error) {
-      console.error('Erro ao criar processo:', error);
       throw new Error('Não foi possível criar o processo');
     }
 
@@ -381,7 +359,6 @@ export class ProcessosService {
       .single();
 
     if (tempError) {
-      console.error('Erro ao criar processo temporário:', tempError);
       throw new Error('Não foi possível criar o processo');
     }
 
@@ -390,10 +367,8 @@ export class ProcessosService {
     }
 
     try {
-      console.log('📤 Iniciando upload e processamento...');
 
       const totalPages = await countPdfPages(file);
-      console.log(`📄 PDF tem ${totalPages} páginas`);
 
       const { filePath, fileUrl } = await this.uploadFileToStorage(file);
 
@@ -411,12 +386,10 @@ export class ProcessosService {
         })
         .eq('id', tempProcessoId);
 
-      console.log('✅ Processo criado, iniciando análise...');
       await this.startAnalysis(tempProcessoId);
 
       return tempProcessoId;
     } catch (error: any) {
-      console.error('❌ Erro no upload e processamento:', error);
 
       await supabase
         .from('processos')
@@ -434,7 +407,6 @@ export class ProcessosService {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-    console.log('🚀 Iniciando análise para processo:', processoId);
 
     const response = await fetch(`${supabaseUrl}/functions/v1/start-analysis`, {
       method: 'POST',
@@ -450,48 +422,38 @@ export class ProcessosService {
       throw new Error(errorData.error || 'Erro ao iniciar análise');
     }
 
-    console.log('✅ Análise iniciada com sucesso');
 
     // Start processing in background (don't await to not block the UI)
     this.processPromptsSequentially(processoId).catch(error => {
-      console.error('❌ Erro no processamento em background:', error);
     });
   }
 
   public static async processPromptsSequentially(processoId: string): Promise<void> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
-    console.log('🔄 Iniciando processamento sequencial de prompts para:', processoId);
 
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.error('❌ Usuário não autenticado - não é possível processar prompts');
       throw new Error('Usuário não autenticado');
     }
 
-    console.log('✅ Sessão válida obtida, iniciando loop de processamento');
 
     let promptCount = 0;
 
     while (true) {
       try {
         promptCount++;
-        console.log(`\n📤 Chamando process-next-prompt (tentativa ${promptCount})...`);
 
         const { data: { session: currentSession } } = await supabase.auth.getSession();
         if (!currentSession) {
-          console.error('❌ Sessão expirou - tentando renovar...');
           const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
           if (refreshError || !refreshedSession) {
-            console.error('❌ Não foi possível renovar a sessão');
             break;
           }
-          console.log('✅ Sessão renovada com sucesso');
         }
 
         const validSession = currentSession || (await supabase.auth.getSession()).data.session;
         if (!validSession) {
-          console.error('❌ Nenhuma sessão válida disponível');
           break;
         }
 
@@ -504,31 +466,23 @@ export class ProcessosService {
           body: JSON.stringify({ processo_id: processoId }),
         });
 
-        console.log(`📥 Resposta recebida: ${response.status} ${response.statusText}`);
 
         if (!response.ok) {
           const errorData = await response.json();
-          console.error('❌ Erro ao processar prompt:', errorData);
           break;
         }
 
         const result = await response.json();
-        console.log('📊 Resultado:', result);
 
         if (result.completed) {
-          console.log('✅ Todos os prompts foram processados');
           break;
         }
 
-        console.log(`✓ Prompt "${result.prompt_title}" concluído em ${result.execution_time_ms}ms usando ${result.model_used}`);
-        console.log(`🔄 Continuando para próximo prompt...`);
       } catch (error) {
-        console.error('❌ Erro no processamento sequencial:', error);
         break;
       }
     }
 
-    console.log(`\n🏁 Processamento finalizado após ${promptCount} chamadas`);
   }
 
   static countPdfPages = countPdfPages;
@@ -597,13 +551,6 @@ export class ProcessosService {
     );
 
     if (error) {
-      console.error('❌ Erro ao buscar processos:', error);
-      console.error('❌ Detalhes do erro:', {
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-        code: error.code
-      });
       throw new Error(`Não foi possível carregar os processos: ${error.message}`);
     }
 
@@ -656,7 +603,6 @@ export class ProcessosService {
       .maybeSingle();
 
     if (error) {
-      console.error('Erro ao buscar processo:', error);
       return null;
     }
 
@@ -692,15 +638,12 @@ export class ProcessosService {
       }
 
       if (filesToDelete.length > 0) {
-        console.log(`🗑️ Deletando ${filesToDelete.length} arquivo(s) do storage...`);
         const { error: storageError } = await supabase.storage
           .from('processos')
           .remove(filesToDelete);
 
         if (storageError) {
-          console.error('Erro ao deletar arquivos:', storageError);
         } else {
-          console.log('✅ Arquivos deletados do storage');
         }
       }
 
@@ -710,14 +653,11 @@ export class ProcessosService {
         .eq('id', id);
 
       if (error) {
-        console.error('Erro ao deletar processo:', error);
         return { success: false, error: 'Não foi possível deletar o processo' };
       }
 
-      console.log('✅ Processo deletado com sucesso:', id);
       return { success: true };
     } catch (error) {
-      console.error('Erro ao deletar processo:', error);
       return { success: false, error: 'Erro inesperado ao deletar o processo' };
     }
   }
@@ -729,11 +669,9 @@ export class ProcessosService {
       .eq('id', id);
 
     if (error) {
-      console.error('Erro ao atualizar nome:', error);
       throw new Error('Não foi possível atualizar o nome do processo');
     }
 
-    console.log('✅ Nome atualizado com sucesso');
   }
 
   static async getPaginasText(processoId: string): Promise<Pagina[]> {
@@ -744,7 +682,6 @@ export class ProcessosService {
       .order('page_number', { ascending: true });
 
     if (error) {
-      console.error('Erro ao buscar páginas:', error);
       return [];
     }
 
@@ -825,7 +762,6 @@ export class ProcessosService {
     const PAGES_PER_CHUNK = 500;
     const totalChunks = Math.ceil(totalPages / PAGES_PER_CHUNK);
 
-    console.log(`📦 PDF grande detectado: ${totalPages} páginas, será dividido em ${totalChunks} chunks`);
 
     const processoId = crypto.randomUUID();
     const { data: processo, error: processoError } = await supabase
@@ -844,7 +780,6 @@ export class ProcessosService {
       .single();
 
     if (processoError) {
-      console.error('Erro ao criar processo:', processoError);
       throw new Error('Não foi possível criar o processo');
     }
 
@@ -861,7 +796,6 @@ export class ProcessosService {
         const startPage = chunkIndex * PAGES_PER_CHUNK;
         const endPage = Math.min(startPage + PAGES_PER_CHUNK, totalPages);
 
-        console.log(`📄 Criando chunk ${chunkIndex + 1}/${totalChunks} (páginas ${startPage + 1}-${endPage})`);
 
         const chunkDoc = await PDFDocument.create();
         for (let pageNum = startPage; pageNum < endPage; pageNum++) {
@@ -874,7 +808,6 @@ export class ProcessosService {
         const chunkFileName = `chunk_${chunkIndex + 1}_of_${totalChunks}.pdf`;
         const chunkFile = new File([chunkBlob], chunkFileName, { type: 'application/pdf' });
 
-        console.log(`📤 Fazendo upload do chunk ${chunkIndex + 1}/${totalChunks}...`);
         const sanitizedFileName = this.sanitizeFileName(file.name);
         const chunkPath = `${user.id}/${Date.now()}-${sanitizedFileName.replace('.pdf', '')}_chunk${chunkIndex + 1}.pdf`;
 
@@ -901,7 +834,6 @@ export class ProcessosService {
           status: 'ready',
         });
 
-        console.log(`✅ Chunk ${chunkIndex + 1}/${totalChunks} criado com sucesso`);
       }
 
       await supabase
@@ -912,9 +844,7 @@ export class ProcessosService {
         })
         .eq('id', processoId);
 
-      console.log(`✅ Processo chunkeado criado com sucesso: ${processoId}`);
 
-      console.log('✅ Processo criado, iniciando análise...');
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-analysis`;
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -930,9 +860,7 @@ export class ProcessosService {
         throw new Error(error.error || 'Falha ao iniciar análise');
       }
 
-      console.log('✅ Análise iniciada com sucesso');
-      console.log('📝 start-analysis irá disparar process-next-prompt automaticamente');
-
+  
       return processoId;
 
     } catch (error) {
@@ -959,8 +887,6 @@ export class ProcessosService {
     const { getChunkConfiguration } = await import('../utils/pdfSplitter');
 
     const config = getChunkConfiguration(totalPages);
-    console.log(`📦 PDF complexo detectado: ${totalPages} páginas, ${config.totalChunks} chunks com ${config.chunkSize} páginas cada`);
-    console.log(`⏱️ Tempo estimado: ~${config.estimatedProcessingTimeMinutes} minutos`);
 
     const processoId = crypto.randomUUID();
     const { data: processo, error: processoError } = await supabase
@@ -983,7 +909,6 @@ export class ProcessosService {
       .single();
 
     if (processoError) {
-      console.error('❌ Erro ao criar processo:', processoError);
       throw new Error('Não foi possível criar o processo');
     }
 
@@ -991,13 +916,9 @@ export class ProcessosService {
       onProcessoCreated(processoId);
     }
 
-    console.log('✅ Processo criado, estamos preparando seu arquivo para análise...');
-    console.log('🚀 Upload de chunks iniciado - você pode navegar livremente durante o processo');
-    console.log('📊 O progresso será monitorado automaticamente');
 
     const uploadChunksInBackground = async () => {
       try {
-        console.log('📦 Salvando arquivo original...');
         const sanitizedFileName = this.sanitizeFileName(file.name);
         const originalPath = `${user.id}/${Date.now()}-original-${sanitizedFileName}`;
 
@@ -1009,7 +930,6 @@ export class ProcessosService {
           });
 
         if (originalUploadError) {
-          console.error('❌ Erro ao salvar arquivo original:', originalUploadError);
           throw new Error(`Falha ao salvar arquivo original: ${originalUploadError.message}`);
         }
 
@@ -1018,18 +938,14 @@ export class ProcessosService {
           .update({ original_file_path: originalPath })
           .eq('id', processoId);
 
-        console.log('✅ Arquivo original salvo com sucesso');
 
         const { splitPDFIntoChunksWithOverlap } = await import('../utils/pdfSplitter');
 
-        console.log('📄 Estamos preparando seu arquivo para análise...');
         const chunks = await splitPDFIntoChunksWithOverlap(file);
-        console.log(`✅ Arquivo preparado: ${chunks.length} partes`);
 
         for (let i = 0; i < chunks.length; i++) {
           const chunk = chunks[i];
-          console.log(`📤 Enviando parte ${i + 1}/${chunks.length}...`);
-
+    
           if (onProgress) {
             onProgress(i, chunks.length);
           }
@@ -1056,8 +972,7 @@ export class ProcessosService {
 
             if (!uploadError) {
               if (retryCount > 0) {
-                console.log(`✅ Parte ${i + 1} enviada após ${retryCount} tentativa(s)`);
-              }
+                  }
               break;
             }
 
@@ -1065,8 +980,6 @@ export class ProcessosService {
 
             if (retryCount < MAX_RETRIES) {
               const backoffSeconds = Math.min(Math.pow(2, retryCount), 300);
-              console.log(`⏳ Tentativa ${retryCount}/${MAX_RETRIES} falhou para parte ${i + 1}. Aguardando ${backoffSeconds}s...`);
-              console.log(`   Erro: ${uploadError.message}`);
 
               await supabase
                 .from('processos')
@@ -1079,13 +992,11 @@ export class ProcessosService {
                 .eq('id', processoId);
 
               await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
-              console.log(`🔄 Retentando parte ${i + 1}...`);
             }
           }
 
           if (uploadError) {
-            console.error(`❌ Erro fatal no upload da parte ${i + 1} após ${MAX_RETRIES} tentativas:`, uploadError);
-            await supabase
+                await supabase
               .from('processos')
               .update({
                 status: 'error',
@@ -1111,8 +1022,7 @@ export class ProcessosService {
           });
 
           if (chunkError) {
-            console.error(`❌ Erro ao salvar parte ${i + 1}:`, chunkError);
-            await supabase
+                await supabase
               .from('processos')
               .update({ upload_interrupted: true })
               .eq('id', processoId);
@@ -1131,8 +1041,7 @@ export class ProcessosService {
             })
             .eq('id', processoId);
 
-          console.log(`✅ Parte ${i + 1}/${chunks.length} enviada com sucesso`);
-        }
+            }
 
         if (onProgress) {
           onProgress(chunks.length, chunks.length);
@@ -1148,8 +1057,6 @@ export class ProcessosService {
           })
           .eq('id', processoId);
 
-        console.log(`✅ Processo complexo criado: ${processoId}`);
-        console.log('🚀 Iniciando análise complexa...');
 
         const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-analysis-complex`;
         const response = await fetch(apiUrl, {
@@ -1166,11 +1073,8 @@ export class ProcessosService {
           throw new Error(error.error || 'Falha ao iniciar análise complexa');
         }
 
-        console.log('✅ Análise complexa iniciada com sucesso');
-        console.log('📝 Workers processarão chunks sequencialmente com contexto');
 
       } catch (error) {
-        console.error('❌ Erro no upload de chunks:', error);
         await supabase
           .from('processos')
           .update({
@@ -1183,7 +1087,6 @@ export class ProcessosService {
     };
 
     uploadChunksInBackground().catch(error => {
-      console.error('❌ Erro fatal no upload de chunks:', error);
     });
 
     return processoId;

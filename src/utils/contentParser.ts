@@ -39,7 +39,6 @@ export function parseContent(content: string): ParsedContent {
       const markdown = convertJSONToMarkdown(parsed);
       return { type: 'text', value: markdown };
     } catch (e) {
-      console.warn('[contentParser] Failed to parse JSON-like content:', e);
       // Fallback: limpar estruturas JSON
       const cleaned = cleanedText
         .replace(/[{}\[\]"]/g, '')

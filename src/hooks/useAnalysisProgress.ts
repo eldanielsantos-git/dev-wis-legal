@@ -61,7 +61,6 @@ export function useAnalysisProgress(processoId: string | null) {
 
         setLoading(false);
       } catch (err: any) {
-        console.error('Erro ao carregar progresso:', err);
         setError(err.message || 'Erro ao carregar progresso');
         setLoading(false);
       }

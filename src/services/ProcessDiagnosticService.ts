@@ -37,7 +37,6 @@ export class ProcessDiagnosticService {
         .not('total_pages', 'is', null);
 
       if (fallbackError) {
-        console.error('Error fetching stuck processes:', fallbackError);
         return [];
       }
 
@@ -105,7 +104,6 @@ export class ProcessDiagnosticService {
       .order('execution_order', { ascending: true });
 
     if (error) {
-      console.error('Error fetching prompt details:', error);
       return [];
     }
 
@@ -142,7 +140,6 @@ export class ProcessDiagnosticService {
       .maybeSingle();
 
     if (processoError || !processo) {
-      console.error('Error fetching process lock status:', processoError);
       return null;
     }
 
@@ -353,7 +350,6 @@ export class ProcessDiagnosticService {
       .lt('processing_at', thresholdTime);
 
     if (error) {
-      console.error('Error counting stuck processes:', error);
       return 0;
     }
 

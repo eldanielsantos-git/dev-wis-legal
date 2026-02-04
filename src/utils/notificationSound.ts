@@ -8,14 +8,8 @@ export function playCompletionSound() {
     const audio = new Audio(COMPLETION_SOUND_URL);
     audio.volume = 0.5;
 
-    audio.play().then(() => {
-      console.log('🔔 Som de conclusão tocado!');
-    }).catch(error => {
-      console.warn('Não foi possível tocar o som:', error);
-    });
-  } catch (error) {
-    console.warn('Erro ao criar áudio:', error);
-  }
+    audio.play().catch(() => {});
+  } catch (error) {}
 }
 
 export function playErrorSound() {
@@ -23,14 +17,8 @@ export function playErrorSound() {
     const audio = new Audio(ERROR_SOUND_URL);
     audio.volume = 0.6;
 
-    audio.play().then(() => {
-      console.log('🔴 Som de erro tocado!');
-    }).catch(error => {
-      console.warn('Não foi possível tocar o som de erro:', error);
-    });
-  } catch (error) {
-    console.warn('Erro ao criar áudio de erro:', error);
-  }
+    audio.play().catch(() => {});
+  } catch (error) {}
 }
 
 export function playMessageSendSound() {
@@ -38,14 +26,8 @@ export function playMessageSendSound() {
     const audio = new Audio(MESSAGE_SEND_SOUND_URL);
     audio.volume = 0.5;
 
-    audio.play().then(() => {
-      console.log('📤 Som de envio de mensagem tocado!');
-    }).catch(error => {
-      console.warn('Não foi possível tocar o som de envio:', error);
-    });
-  } catch (error) {
-    console.warn('Erro ao criar áudio de envio:', error);
-  }
+    audio.play().catch(() => {});
+  } catch (error) {}
 }
 
 export function playMessageReceivedSound() {
@@ -53,12 +35,6 @@ export function playMessageReceivedSound() {
     const audio = new Audio(MESSAGE_RECEIVED_SOUND_URL);
     audio.volume = 0.5;
 
-    audio.play().then(() => {
-      console.log('📥 Som de recebimento de mensagem tocado!');
-    }).catch(error => {
-      console.warn('Não foi possível tocar o som de recebimento:', error);
-    });
-  } catch (error) {
-    console.warn('Erro ao criar áudio de recebimento:', error);
-  }
+    audio.play().catch(() => {});
+  } catch (error) {}
 }

@@ -31,13 +31,11 @@ class TokenNotificationService {
       });
 
       if (error) {
-        console.error('Error triggering token limit notification:', error);
         throw error;
       }
 
       return data;
     } catch (error) {
-      console.error('Failed to trigger token limit notification:', error);
       throw error;
     }
   }
@@ -51,7 +49,6 @@ class TokenNotificationService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching user notifications:', error);
         throw error;
       }
 

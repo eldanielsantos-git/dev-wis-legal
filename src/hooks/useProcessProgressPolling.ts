@@ -91,7 +91,6 @@ export const useProcessProgressPolling = ({
           .single();
 
         if (error) {
-          console.error('Error fetching progress:', error);
           attemptCountRef.current++;
           return;
         }
@@ -108,7 +107,6 @@ export const useProcessProgressPolling = ({
         const newInterval = getPollingInterval(attemptCountRef.current, idleCountRef.current);
 
         if (newInterval === 0) {
-          console.log('[Polling] Processo idle for 2+ minutes, stopping polling');
           if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
@@ -126,7 +124,6 @@ export const useProcessProgressPolling = ({
           intervalRef.current = setInterval(fetchProgress, newInterval);
         }
       } catch (error) {
-        console.error('Error in polling:', error);
         attemptCountRef.current++;
       }
     };

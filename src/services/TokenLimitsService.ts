@@ -37,7 +37,6 @@ export class TokenLimitsService {
       .order('display_order', { ascending: true });
 
     if (error) {
-      console.error('Error fetching token limits:', error);
       throw error;
     }
 
@@ -53,7 +52,6 @@ export class TokenLimitsService {
       .maybeSingle();
 
     if (error) {
-      console.error(`Error fetching token limit for context ${contextKey}:`, error);
       throw error;
     }
 
@@ -80,10 +78,6 @@ export class TokenLimitsService {
         return config.max_output_tokens;
       }
     } catch (error) {
-      console.warn(
-        `Failed to fetch token limit for ${contextKey}, using fallback:`,
-        error
-      );
     }
 
     return fallbackValue;
@@ -102,7 +96,6 @@ export class TokenLimitsService {
       .single();
 
     if (error) {
-      console.error('Error updating token limit:', error);
       throw error;
     }
 
@@ -125,7 +118,6 @@ export class TokenLimitsService {
       .single();
 
     if (error) {
-      console.error('Error toggling token limit status:', error);
       throw error;
     }
 
@@ -149,7 +141,6 @@ export class TokenLimitsService {
     const { data, error } = await query;
 
     if (error) {
-      console.error('Error fetching audit log:', error);
       throw error;
     }
 

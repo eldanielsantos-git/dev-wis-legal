@@ -47,33 +47,27 @@ function parseTextWithBold(text: string): TextSegment[] {
 
 async function fetchImageAsBase64(url: string): Promise<string> {
   try {
-    console.log('[DOCX] Fetching logo from:', url);
     const response = await fetch(url);
 
     if (!response.ok) {
-      console.error('[DOCX] Failed to fetch logo:', response.status, response.statusText);
       return '';
     }
 
     const blob = await response.blob();
-    console.log('[DOCX] Logo blob size:', blob.size, 'type:', blob.type);
 
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         const base64 = reader.result as string;
         const base64Data = base64.split(',')[1];
-        console.log('[DOCX] Logo converted to base64, length:', base64Data.length);
         resolve(base64Data);
       };
       reader.onerror = (error) => {
-        console.error('[DOCX] Error reading image blob:', error);
         reject(error);
       };
       reader.readAsDataURL(blob);
     });
   } catch (error) {
-    console.error('[DOCX] Error fetching image:', error);
     return '';
   }
 }
@@ -262,15 +256,12 @@ export async function generateDocx(content: string, processoId?: string): Promis
     const logoUrl = 'https://rslpleprodloodfsaext.supabase.co/storage/v1/object/public/assets/img/logo-parecer.png';
     const logoBase64 = await fetchImageAsBase64(logoUrl);
 
-    console.log('[DOCX] Logo base64 available:', !!logoBase64, 'length:', logoBase64?.length || 0);
-
     const parsed = parseContent(content);
     const elements = parseMarkdownToElements(parsed.value);
 
     let bodyXml = '';
 
     if (logoBase64) {
-      console.log('[DOCX] Adding logo to document header');
       bodyXml += `
         <w:p>
           <w:pPr>
@@ -328,7 +319,6 @@ export async function generateDocx(content: string, processoId?: string): Promis
           </w:r>
         </w:p>`;
     } else {
-      console.log('[DOCX] Logo not available, adding text only header');
       bodyXml += `
         <w:p>
           <w:pPr>
@@ -401,10 +391,8 @@ export async function generateDocx(content: string, processoId?: string): Promis
       }
     }
 
-    console.log('[DOCX] Generating ZIP with logo:', !!logoBase64);
     return generateMinimalDocx(bodyXml, logoBase64 || undefined);
   } catch (error) {
-    console.error('[DOCX] Error generating DOCX:', error);
     throw new Error('Failed to generate DOCX file');
   }
 }

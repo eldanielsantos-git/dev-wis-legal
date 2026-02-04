@@ -45,9 +45,7 @@ export function useSubscriptionPlans() {
           return true;
         }
       }
-    } catch (err) {
-      console.error('Error loading from cache:', err);
-    }
+    } catch (err) {}
     return false;
   };
 
@@ -61,19 +59,15 @@ export function useSubscriptionPlans() {
         data: benefitsData,
         timestamp: Date.now()
       }));
-    } catch (err) {
-      console.error('Error saving to cache:', err);
-    }
+    } catch (err) {}
   };
 
   const fetchPlans = async () => {
     try {
-      console.log('[useSubscriptionPlans] Starting fetch...');
       setLoading(true);
       setError(null);
 
       const hasCachedData = loadFromCache();
-      console.log('[useSubscriptionPlans] Has cached data:', hasCachedData);
 
       const [plansResponse, benefitsResponse] = await Promise.all([
         supabase
@@ -88,15 +82,10 @@ export function useSubscriptionPlans() {
           .order('plan_id, display_order', { ascending: true })
       ]);
 
-      console.log('[useSubscriptionPlans] Plans response:', plansResponse);
-      console.log('[useSubscriptionPlans] Benefits response:', benefitsResponse);
-
       if (plansResponse.error) {
-        console.error('[useSubscriptionPlans] Plans error:', plansResponse.error);
         throw plansResponse.error;
       }
       if (benefitsResponse.error) {
-        console.error('[useSubscriptionPlans] Benefits error:', benefitsResponse.error);
         throw benefitsResponse.error;
       }
 
@@ -112,18 +101,13 @@ export function useSubscriptionPlans() {
         benefitsByPlan[benefit.plan_id].push(benefit);
       });
 
-      console.log('[useSubscriptionPlans] Fetched plans:', plansData.length);
-      console.log('[useSubscriptionPlans] Benefits by plan:', Object.keys(benefitsByPlan).length);
-
       setPlans(plansData);
       setBenefits(benefitsByPlan);
       saveToCache(plansData, benefitsByPlan);
     } catch (err: any) {
-      console.error('[useSubscriptionPlans] Error fetching plans:', err);
       setError(err.message || 'Erro ao carregar planos');
     } finally {
       setLoading(false);
-      console.log('[useSubscriptionPlans] Fetch complete');
     }
   };
 
@@ -150,7 +134,6 @@ export function useSubscriptionPlans() {
         schema: 'public',
         table: 'subscription_plans'
       }, () => {
-        console.log('Plans changed, refreshing...');
         refreshPlans();
       })
       .on('postgres_changes', {
@@ -158,7 +141,6 @@ export function useSubscriptionPlans() {
         schema: 'public',
         table: 'subscription_plan_benefits'
       }, () => {
-        console.log('Benefits changed, refreshing...');
         refreshPlans();
       })
       .subscribe();

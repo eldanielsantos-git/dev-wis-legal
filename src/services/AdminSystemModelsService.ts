@@ -15,7 +15,6 @@ export class AdminSystemModelsService {
       .order('priority', { ascending: true });
 
     if (error) {
-      console.error('Error fetching active models:', error);
       throw new Error(`Failed to fetch active models: ${error.message}`);
     }
 
@@ -29,7 +28,6 @@ export class AdminSystemModelsService {
       .order('priority', { ascending: true });
 
     if (error) {
-      console.error('Error fetching models:', error);
       throw new Error(`Failed to fetch models: ${error.message}`);
     }
 
@@ -74,7 +72,6 @@ export class AdminSystemModelsService {
       if (error.code === '23505') {
         throw new Error('This model configuration already exists');
       }
-      console.error('Error creating model:', error);
       throw new Error(`Failed to create model: ${error.message}`);
     }
 
@@ -112,7 +109,6 @@ export class AdminSystemModelsService {
       .single();
 
     if (error) {
-      console.error('Error updating model:', error);
       throw new Error(`Failed to update model: ${error.message}`);
     }
 
@@ -130,7 +126,6 @@ export class AdminSystemModelsService {
       .eq('id', modelId);
 
     if (error) {
-      console.error('Error updating model status:', error);
       throw new Error(`Failed to update model status: ${error.message}`);
     }
   }
@@ -188,7 +183,6 @@ export class AdminSystemModelsService {
         .eq('id', update.id);
 
       if (error) {
-        console.error('Error updating priority:', error);
         throw new Error(`Failed to update priority: ${error.message}`);
       }
     }
@@ -201,7 +195,6 @@ export class AdminSystemModelsService {
       .eq('id', modelId);
 
     if (error) {
-      console.error('Error deleting model:', error);
       throw new Error(`Failed to delete model: ${error.message}`);
     }
   }

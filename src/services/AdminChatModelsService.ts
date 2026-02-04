@@ -37,7 +37,6 @@ export class AdminChatModelsService {
       .order('priority', { ascending: true });
 
     if (error) {
-      console.error('Error fetching chat models:', error);
       throw new Error(error.message || 'Erro ao buscar modelos de chat');
     }
 
@@ -52,7 +51,6 @@ export class AdminChatModelsService {
       .single();
 
     if (error) {
-      console.error('Error creating chat model:', error);
       throw new Error(error.message || 'Erro ao criar modelo de chat');
     }
 
@@ -70,7 +68,6 @@ export class AdminChatModelsService {
       .single();
 
     if (error) {
-      console.error('Error updating chat model:', error);
       throw new Error(error.message || 'Erro ao atualizar modelo de chat');
     }
 
@@ -84,7 +81,6 @@ export class AdminChatModelsService {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting chat model:', error);
       throw new Error(error.message || 'Erro ao excluir modelo de chat');
     }
   }

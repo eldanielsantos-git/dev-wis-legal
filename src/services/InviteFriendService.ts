@@ -61,7 +61,6 @@ export class InviteFriendService {
         invite: data.invite
       };
     } catch (error) {
-      console.error('Error in sendInvite:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Erro ao enviar convite'
@@ -84,13 +83,11 @@ export class InviteFriendService {
         .order('created_at', { ascending: false });
 
       if (error) {
-        console.error('Error fetching invites:', error);
         throw error;
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error in getMyInvites:', error);
       throw error;
     }
   }
@@ -109,7 +106,6 @@ export class InviteFriendService {
         .eq('inviter_user_id', session.user.id);
 
       if (error) {
-        console.error('Error counting invites:', error);
         return { total: 0, pending: 0, accepted: 0 };
       }
 
@@ -119,7 +115,6 @@ export class InviteFriendService {
 
       return { total, pending, accepted };
     } catch (error) {
-      console.error('Error in countMyInvites:', error);
       return { total: 0, pending: 0, accepted: 0 };
     }
   }

@@ -17,7 +17,6 @@ export class IntegrityValidationService {
     });
 
     if (error) {
-      console.error('Erro ao verificar integridade:', error);
       return null;
     }
 
@@ -67,7 +66,6 @@ export class IntegrityValidationService {
     const { data, error } = await supabase.rpc('execute_raw_sql', { sql_query: query });
 
     if (error) {
-      console.error('Erro ao verificar integridade de todos os processos:', error);
       return [];
     }
 

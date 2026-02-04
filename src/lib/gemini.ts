@@ -60,9 +60,7 @@ export class GeminiService {
   constructor(config?: Partial<GeminiConfig>) {
     this.apiKey = config?.apiKey || import.meta.env.VITE_GEMINI_API_KEY || '';
 
-    if (!this.apiKey) {
-      console.warn('Gemini API key not configured');
-    } else {
+    if (this.apiKey) {
       this.genAI = new GoogleGenerativeAI(this.apiKey);
     }
 
@@ -76,8 +74,6 @@ export class GeminiService {
       throw new Error('Gemini File Manager não configurado. Verifique a API key.');
     }
 
-    console.log(`📤 Iniciando upload do arquivo para Gemini: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
-
     const maxRetries = 3;
     let lastError: Error | null = null;
 
@@ -87,9 +83,6 @@ export class GeminiService {
           mimeType: file.type || 'application/pdf',
           displayName: displayName || file.name,
         });
-
-        console.log(`✅ Upload concluído: ${uploadResult.file.uri}`);
-        console.log(`📊 Estado inicial: ${uploadResult.file.state}`);
 
         const uploadedAt = new Date();
         const expiresAt = new Date(uploadedAt.getTime() + 48 * 60 * 60 * 1000);
@@ -104,11 +97,9 @@ export class GeminiService {
         };
       } catch (error: any) {
         lastError = error;
-        console.error(`❌ Tentativa ${attempt}/${maxRetries} falhou:`, error.message);
 
         if (attempt < maxRetries) {
           const backoffMs = Math.pow(2, attempt) * 1000;
-          console.log(`⏳ Aguardando ${backoffMs}ms antes de tentar novamente...`);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
         }
       }
@@ -122,8 +113,6 @@ export class GeminiService {
       throw new Error('Gemini File Manager não configurado.');
     }
 
-    console.log(`⏳ Aguardando processamento do arquivo: ${fileName}`);
-
     const startTime = Date.now();
     let attempts = 0;
 
@@ -133,10 +122,7 @@ export class GeminiService {
       try {
         const fileMetadata = await this.fileManager.getFile(fileName);
 
-        console.log(`🔄 Tentativa ${attempts}: Estado = ${fileMetadata.state}`);
-
         if (fileMetadata.state === 'ACTIVE') {
-          console.log(`✅ Arquivo pronto para uso após ${attempts} verificações`);
           return {
             uri: fileMetadata.uri,
             name: fileMetadata.name,
@@ -197,10 +183,8 @@ export class GeminiService {
 
     try {
       await this.fileManager.deleteFile(fileName);
-      console.log(`🗑️ Arquivo deletado do Gemini: ${fileName}`);
       return true;
     } catch (error: any) {
-      console.error(`❌ Erro ao deletar arquivo ${fileName}:`, error.message);
       return false;
     }
   }
@@ -221,8 +205,6 @@ export class GeminiService {
         model: this.model,
       });
 
-      console.log(`🤖 Iniciando análise com File URI: ${fileUri}`);
-
       const result = await model.generateContent([
         {
           fileData: {
@@ -238,12 +220,8 @@ export class GeminiService {
       const response = await result.response;
       const text = response.text();
 
-      const executionTime = Date.now() - startTime;
-      console.log(`✅ Análise concluída em ${executionTime}ms`);
-
       return text;
     } catch (error: any) {
-      console.error('❌ Erro ao chamar Gemini API:', error);
       throw new Error(
         `Falha na análise com Gemini: ${error?.message || 'Erro desconhecido'}`
       );
@@ -251,7 +229,6 @@ export class GeminiService {
   }
 
   async convertPDFToBase64(file: File): Promise<string> {
-    console.warn('⚠️ convertPDFToBase64 está DEPRECADO. Use uploadFileToGemini() para novos processos.');
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -274,8 +251,6 @@ export class GeminiService {
     mimeType: string,
     promptText: string
   ): Promise<string> {
-    console.warn('⚠️ analyzePDFWithPrompt está DEPRECADO. Use analyzeWithFileUri() para novos processos.');
-
     if (!this.genAI) {
       throw new Error('Gemini API não configurada. Verifique a API key.');
     }
@@ -313,12 +288,8 @@ export class GeminiService {
       const response = await result.response;
       const text = response.text();
 
-      const executionTime = Date.now() - startTime;
-      console.log(`Gemini analysis completed in ${executionTime}ms`);
-
       return text;
     } catch (error: any) {
-      console.error('Erro ao chamar Gemini API:', error);
       throw new Error(
         `Falha na análise com Gemini: ${error?.message || 'Erro desconhecido'}`
       );
@@ -331,8 +302,6 @@ export class GeminiService {
     prompts: AnalysisPrompt[],
     onProgress?: (current: number, total: number, promptTitle: string) => void
   ): Promise<AnalysisResult[]> {
-    console.warn('⚠️ analyzeSequentially está DEPRECADO. Use analyzeSequentiallyWithFileUri() para novos processos.');
-
     if (!this.genAI) {
       throw new Error('Gemini API não configurada. Verifique a API key.');
     }
@@ -346,10 +315,6 @@ export class GeminiService {
       if (onProgress) {
         onProgress(i + 1, sortedPrompts.length, prompt.title);
       }
-
-      console.log(
-        `Executando prompt ${i + 1}/${sortedPrompts.length}: ${prompt.title}`
-      );
 
       const startTime = Date.now();
 
@@ -369,12 +334,7 @@ export class GeminiService {
           content,
           executionTimeMs: executionTime,
         });
-
-        console.log(
-          `✓ Prompt ${i + 1} concluído em ${(executionTime / 1000).toFixed(2)}s`
-        );
       } catch (error: any) {
-        console.error(`✗ Erro no prompt ${i + 1}:`, error);
         throw error;
       }
     }

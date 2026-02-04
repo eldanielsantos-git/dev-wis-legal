@@ -47,7 +47,6 @@ class SlackNotificationService {
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching Slack configurations:', error);
       throw new Error('Erro ao buscar configurações do Slack');
     }
 
@@ -62,7 +61,6 @@ class SlackNotificationService {
       .maybeSingle();
 
     if (error) {
-      console.error('Error fetching Slack configuration:', error);
       throw new Error('Erro ao buscar configuração do Slack');
     }
 
@@ -82,7 +80,6 @@ class SlackNotificationService {
       .single();
 
     if (error) {
-      console.error('Error creating Slack configuration:', error);
       throw new Error('Erro ao criar configuração do Slack');
     }
 
@@ -98,7 +95,6 @@ class SlackNotificationService {
       .single();
 
     if (error) {
-      console.error('Error updating Slack configuration:', error);
       throw new Error('Erro ao atualizar configuração do Slack');
     }
 
@@ -112,7 +108,6 @@ class SlackNotificationService {
       .eq('id', id);
 
     if (error) {
-      console.error('Error deleting Slack configuration:', error);
       throw new Error('Erro ao deletar configuração do Slack');
     }
   }
@@ -125,7 +120,6 @@ class SlackNotificationService {
     // DEPRECATED: This method is no longer used.
     // Notifications are now sent automatically through send-admin-notification edge function
     // when configured in admin_notification_config table.
-    console.warn('SlackNotificationService.sendNotification is deprecated. Use admin notification system instead.');
     throw new Error('Este método está obsoleto. Use o sistema de notificações administrativas.');
   }
 
@@ -169,7 +163,6 @@ class SlackNotificationService {
 
       return response.ok;
     } catch (error) {
-      console.error('Error testing webhook:', error);
       return false;
     }
   }

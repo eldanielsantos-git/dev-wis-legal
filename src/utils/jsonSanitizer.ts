@@ -169,8 +169,6 @@ export function sanitizeContent(content: string): SanitizationResult {
     }
 
     // CAMADA 4: JSON detectado mas não parseável - limpar agressivamente
-    console.warn('[jsonSanitizer] JSON detectado mas não parseável, aplicando limpeza agressiva');
-
     const aggressiveCleaned = cleaned
       .replace(/\{/g, '')
       .replace(/\}/g, '')
@@ -193,8 +191,6 @@ export function sanitizeContent(content: string): SanitizationResult {
 
   // CAMADA 5: Verificação final - detectar JSON residual no texto
   if (containsUnparsedJSON(cleaned)) {
-    console.warn('[jsonSanitizer] JSON residual detectado no texto');
-
     // Remover estruturas JSON do texto
     const finalCleaned = cleaned
       .replace(/\{[^}]+\}/g, '[conteúdo formatado]')
