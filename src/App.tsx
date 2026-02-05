@@ -56,6 +56,30 @@ import { RequireEmailVerification } from './components/RequireEmailVerification'
 import { SuccessPage } from './components/subscription/SuccessPage';
 import { Loader } from 'lucide-react';
 
+function VerifyEmailRequiredPageWrapper() {
+  const { user, loading, emailVerified, isAdmin } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
+        <Loader className="w-8 h-8 text-white animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    window.location.href = '/sign-in';
+    return null;
+  }
+
+  if (emailVerified || isAdmin) {
+    window.location.href = '/app';
+    return null;
+  }
+
+  return <VerifyEmailRequiredPage />;
+}
+
 function AppContent() {
   const { user, loading } = useAuth();
   const [currentPath, setCurrentPath] = useState(window.location.pathname);
@@ -111,7 +135,7 @@ function AppContent() {
   }
 
   if (currentPath === '/verify-email-required') {
-    return <VerifyEmailRequiredPage />;
+    return <VerifyEmailRequiredPageWrapper />;
   }
 
   if (currentPath === '/status') {
