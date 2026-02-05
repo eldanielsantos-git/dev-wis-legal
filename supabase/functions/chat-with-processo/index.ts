@@ -7,6 +7,7 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleGenerativeAI } from 'npm:@google/generative-ai@0.24.1';
+import { GoogleAIFileManager } from 'npm:@google/generative-ai@0.24.1/server';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -511,42 +512,100 @@ ${message}`;
     if (promptType === 'consolidated_analysis') {
       console.log('\ud83c\udfaf Sending consolidated analysis context (text only, highly efficient)');
       result = await chat.sendMessage(contextualMessage);
-    } else if (promptType === 'small_file' && processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
-      console.log('\ud83d\udcce Sending small file with inlineData (base64)');
+    } else if (promptType === 'small_file') {
+      let fileUri = processo.gemini_file_uri;
 
-      let pdfData = processo.pdf_base64;
-      if (pdfData.startsWith('data:')) {
-        const commaIndex = pdfData.indexOf(',');
-        if (commaIndex !== -1) {
-          pdfData = pdfData.substring(commaIndex + 1);
-          console.log('[CHAT] Stripped Data URL prefix from pdf_base64');
+      if (!fileUri && processo.file_path) {
+        console.log('[CHAT] No gemini_file_uri, uploading from Storage...');
+
+        try {
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('processos')
+            .download(processo.file_path);
+
+          if (downloadError || !fileData) {
+            throw new Error(`Download failed: ${downloadError?.message}`);
+          }
+
+          console.log(`[CHAT] Downloaded file: ${(fileData.size / 1024 / 1024).toFixed(2)}MB`);
+
+          const fileManager = new GoogleAIFileManager(geminiApiKey);
+          const arrayBuffer = await fileData.arrayBuffer();
+          const uint8Array = new Uint8Array(arrayBuffer);
+
+          const tempFilePath = `/tmp/chat_${processo_id}_${Date.now()}.pdf`;
+          await Deno.writeFile(tempFilePath, uint8Array);
+
+          const uploadResult = await fileManager.uploadFile(tempFilePath, {
+            mimeType: 'application/pdf',
+            displayName: processo.file_name || 'documento.pdf',
+          });
+
+          try {
+            await Deno.remove(tempFilePath);
+          } catch (e) {
+            console.log('[CHAT] Temp file cleanup error:', e);
+          }
+
+          fileUri = uploadResult.file.uri;
+          console.log(`[CHAT] Uploaded to Gemini: ${fileUri}`);
+
+          await supabase
+            .from('processos')
+            .update({
+              gemini_file_uri: uploadResult.file.uri,
+              gemini_file_name: uploadResult.file.name,
+              gemini_file_state: uploadResult.file.state,
+              gemini_file_uploaded_at: new Date().toISOString(),
+            })
+            .eq('id', processo_id);
+
+        } catch (uploadError) {
+          console.error('[CHAT] Upload to Gemini failed:', uploadError);
         }
       }
 
-      pdfData = pdfData.replace(/[^A-Za-z0-9+/=]/g, '');
+      if (fileUri) {
+        console.log(`[CHAT] Using fileData with URI: ${fileUri}`);
+        result = await chat.sendMessage([
+          {
+            fileData: {
+              mimeType: 'application/pdf',
+              fileUri: fileUri
+            }
+          },
+          { text: contextualMessage }
+        ]);
+      } else if (processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
+        console.log('[CHAT] Fallback to inlineData (base64)');
 
-      pdfData = pdfData.replace(/=+$/, '');
-      const remainder = pdfData.length % 4;
-      if (remainder === 2) {
-        pdfData += '==';
-      } else if (remainder === 3) {
-        pdfData += '=';
-      } else if (remainder === 1) {
-        pdfData = pdfData.slice(0, -1);
-        console.log('[CHAT] Removed trailing invalid character for padding');
-      }
-
-      console.log(`[CHAT] Base64 length after cleanup: ${pdfData.length}, starts with: ${pdfData.substring(0, 30)}, ends with: ${pdfData.substring(pdfData.length - 30)}`);
-
-      result = await chat.sendMessage([
-        {
-          inlineData: {
-            mimeType: 'application/pdf',
-            data: pdfData
+        let pdfData = processo.pdf_base64;
+        if (pdfData.startsWith('data:')) {
+          const commaIndex = pdfData.indexOf(',');
+          if (commaIndex !== -1) {
+            pdfData = pdfData.substring(commaIndex + 1);
           }
-        },
-        { text: contextualMessage }
-      ]);
+        }
+        pdfData = pdfData.replace(/[^A-Za-z0-9+/=]/g, '');
+        pdfData = pdfData.replace(/=+$/, '');
+        const remainder = pdfData.length % 4;
+        if (remainder === 2) pdfData += '==';
+        else if (remainder === 3) pdfData += '=';
+        else if (remainder === 1) pdfData = pdfData.slice(0, -1);
+
+        result = await chat.sendMessage([
+          {
+            inlineData: {
+              mimeType: 'application/pdf',
+              data: pdfData
+            }
+          },
+          { text: contextualMessage }
+        ]);
+      } else {
+        console.log('[CHAT] No file available, text only');
+        result = await chat.sendMessage(contextualMessage);
+      }
     } else if (promptType === 'large_file_chunks' && chunks.length > 0) {
       const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
 
