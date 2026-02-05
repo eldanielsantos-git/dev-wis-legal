@@ -247,33 +247,26 @@ Deno.serve(async (req: Request) => {
     let contextualMessage = '';
     let chunks: any[] = [];
 
-    if (analysisResults && analysisResults.length >= 7) {
-      promptType = 'consolidated_analysis';
-      console.log(`\ud83c\udfaf Using consolidated analysis: ${analysisResults.length} analyses found`);
+    const isSmallFile = !processo.is_chunked && processo.pdf_base64 && processo.pdf_base64.trim() !== '';
+    const isLargeFile = processo.is_chunked && processo.total_chunks_count > 0;
+    const hasConsolidatedAnalysis = analysisResults && analysisResults.length >= 7;
+    const isComplexFile = processo.total_pages >= 1000;
 
-      const analysisContext = analysisResults.map((analysis, index) =>
-        `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
-      ).join('\n\n---\n');
+    console.log(`[CHAT] File classification: total_pages=${processo.total_pages}, is_chunked=${processo.is_chunked}, has_pdf_base64=${!!processo.pdf_base64}, analyses_count=${analysisResults?.length || 0}`);
+
+    if (isSmallFile) {
+      promptType = 'small_file';
+      console.log('[CHAT] Small file detected with pdf_base64 available - using original PDF');
 
       contextualMessage = `
 Processo: ${processo.nome_processo || processo.file_name}
-Total de p\u00e1ginas: ${processo.total_pages || 'N/A'}
+Numero: ${processo.numero_processo || 'N/A'}
+Total de paginas: ${processo.total_pages || 'N/A'}
 
-# AN\u00c1LISES CONSOLIDADAS DO PROCESSO
+Pergunta do usuario:
+${message}`;
 
-Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo est\u00e3o os resultados completos:
-${analysisContext}
-
----
-
-# PERGUNTA DO USU\u00c1RIO:
-${message}
-
-INSTRU\u00c7\u00d5ES: Responda a pergunta acima baseando-se exclusivamente nas an\u00e1lises consolidadas fornecidas. Seja direto, objetivo e cite qual an\u00e1lise voc\u00ea usou quando relevante.`;
-
-      console.log(`\u2705 Formatted ${analysisResults.length} analyses (~${Math.round(contextualMessage.length/4)} tokens estimated)`);
-
-    } else if (processo.is_chunked && processo.total_chunks_count > 0) {
+    } else if (isLargeFile) {
       promptType = 'large_file_chunks';
       console.log(`\ud83d\udcda Large file detected: ${processo.total_chunks_count} chunks`);
 
@@ -336,19 +329,46 @@ ${chunksInfo}
 Pergunta do usu\u00e1rio:
 ${message}`;
 
-      console.log(`\u2705 Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
-    } else {
-      promptType = 'small_file';
-      console.log('\ud83d\udcc4 Small file detected, using transcription');
+      console.log(`[CHAT] Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
+
+    } else if (hasConsolidatedAnalysis && isComplexFile) {
+      promptType = 'consolidated_analysis';
+      console.log(`[CHAT] Complex file (>= 1000 pages) with ${analysisResults.length} analyses - using consolidated analysis`);
+
+      const analysisContext = analysisResults.map((analysis, index) =>
+        `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
+      ).join('\n\n---\n');
 
       contextualMessage = `
 Processo: ${processo.nome_processo || processo.file_name}
-N\u00famero: ${processo.numero_processo || 'N/A'}
+Total de paginas: ${processo.total_pages || 'N/A'}
 
-Transcri\u00e7\u00e3o completa:
-${processo.transcricao || 'Transcri\u00e7\u00e3o n\u00e3o dispon\u00edvel'}
+# ANALISES CONSOLIDADAS DO PROCESSO
 
-Pergunta do usu\u00e1rio:
+Este processo foi analisado em ${analysisResults.length} etapas especializadas. Abaixo estao os resultados completos:
+${analysisContext}
+
+---
+
+# PERGUNTA DO USUARIO:
+${message}
+
+INSTRUCOES: Responda a pergunta acima baseando-se exclusivamente nas analises consolidadas fornecidas. Seja direto, objetivo e cite qual analise voce usou quando relevante.`;
+
+      console.log(`[CHAT] Formatted ${analysisResults.length} analyses (~${Math.round(contextualMessage.length/4)} tokens estimated)`);
+
+    } else {
+      promptType = 'small_file';
+      console.log('[CHAT] Fallback: using transcription (no pdf_base64, no chunks, no consolidated analysis for complex file)');
+
+      contextualMessage = `
+Processo: ${processo.nome_processo || processo.file_name}
+Numero: ${processo.numero_processo || 'N/A'}
+
+Transcricao completa:
+${processo.transcricao || 'Transcricao nao disponivel'}
+
+Pergunta do usuario:
 ${message}`;
     }
 

@@ -225,21 +225,14 @@ export function ChatInterface({ processoId, processoName, messages, onSendMessag
       }
       const { data: processoData } = await supabase
         .from('processos')
-        .select('total_pages, is_chunked, total_chunks_count')
+        .select('total_pages, is_chunked, total_chunks_count, pdf_base64')
         .eq('id', processoId)
         .maybeSingle();
 
-      const { data: analysisCount } = await supabase
-        .from('analysis_results')
-        .select('id', { count: 'exact', head: true })
-        .eq('processo_id', processoId)
-        .eq('status', 'completed');
+      const isSmallFile = processoData && !processoData.is_chunked && processoData.pdf_base64 && processoData.pdf_base64.trim() !== '';
+      const isLargeFile = processoData && processoData.is_chunked && processoData.total_chunks_count > 0;
 
-      const isComplexFile = (processoData && processoData.total_pages >= 1000) ||
-                            (analysisCount && analysisCount >= 7) ||
-                            (processoData && processoData.is_chunked && processoData.total_chunks_count > 0);
-
-      const edgeFunction = isComplexFile ? 'chat-audio-complex-files' : 'process-audio-message';
+      const edgeFunction = isSmallFile ? 'process-audio-message' : (isLargeFile ? 'chat-audio-complex-files' : 'process-audio-message');
 
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${edgeFunction}`,
