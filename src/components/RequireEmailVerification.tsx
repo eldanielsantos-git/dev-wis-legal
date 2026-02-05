@@ -18,8 +18,11 @@ export function RequireEmailVerification({
   const [profileRetryCount, setProfileRetryCount] = useState(0);
   const [isRetrying, setIsRetrying] = useState(false);
 
+  const authEmailConfirmed = !!user?.email_confirmed_at;
+  const isEmailVerified = emailVerified || authEmailConfirmed;
+
   useEffect(() => {
-    logger.log('RequireEmailVerification', 'useEffect triggered - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified, 'isAdmin:', isAdmin);
+    logger.log('RequireEmailVerification', 'useEffect triggered - loading:', loading, 'user:', user?.id, 'profile:', !!profile, 'emailVerified:', emailVerified, 'authEmailConfirmed:', authEmailConfirmed, 'isAdmin:', isAdmin);
 
     if (loading) {
       logger.log('RequireEmailVerification', 'Still loading, waiting...');
@@ -53,7 +56,7 @@ export function RequireEmailVerification({
       return;
     }
 
-    if (!emailVerified && !isAdmin) {
+    if (!isEmailVerified && !isAdmin) {
       logger.log('RequireEmailVerification', 'Email not verified and not admin, redirecting to verify page');
       onNavigateToVerifyEmail();
       return;
@@ -64,7 +67,7 @@ export function RequireEmailVerification({
     }
 
     logger.log('RequireEmailVerification', 'All checks passed! User can proceed.');
-  }, [user, profile, loading, emailVerified, isAdmin, onNavigateToSignIn, onNavigateToVerifyEmail, profileRetryCount, isRetrying, refreshProfile]);
+  }, [user, profile, loading, emailVerified, authEmailConfirmed, isEmailVerified, isAdmin, onNavigateToSignIn, onNavigateToVerifyEmail, profileRetryCount, isRetrying, refreshProfile]);
 
   if (loading || !user || (!profile && profileRetryCount < 3)) {
     return (
@@ -83,7 +86,7 @@ export function RequireEmailVerification({
     return null;
   }
 
-  if (!emailVerified && !isAdmin) {
+  if (!isEmailVerified && !isAdmin) {
     return null;
   }
 

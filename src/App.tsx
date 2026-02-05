@@ -59,6 +59,9 @@ import { Loader } from 'lucide-react';
 function VerifyEmailRequiredPageWrapper() {
   const { user, loading, emailVerified, isAdmin } = useAuth();
 
+  const authEmailConfirmed = !!user?.email_confirmed_at;
+  const isEmailVerified = emailVerified || authEmailConfirmed;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0F0E0D' }}>
@@ -72,7 +75,7 @@ function VerifyEmailRequiredPageWrapper() {
     return null;
   }
 
-  if (emailVerified || isAdmin) {
+  if (isEmailVerified || isAdmin) {
     window.location.href = '/app';
     return null;
   }
