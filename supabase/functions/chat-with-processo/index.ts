@@ -513,11 +513,18 @@ ${message}`;
       result = await chat.sendMessage(contextualMessage);
     } else if (promptType === 'small_file' && processo.pdf_base64 && processo.pdf_base64.trim() !== '') {
       console.log('\ud83d\udcce Sending small file with inlineData (base64)');
+
+      let pdfData = processo.pdf_base64;
+      if (pdfData.startsWith('data:')) {
+        pdfData = pdfData.split(',')[1] || pdfData;
+        console.log('[CHAT] Stripped Data URL prefix from pdf_base64');
+      }
+
       result = await chat.sendMessage([
         {
           inlineData: {
             mimeType: 'application/pdf',
-            data: processo.pdf_base64
+            data: pdfData
           }
         },
         { text: contextualMessage }
