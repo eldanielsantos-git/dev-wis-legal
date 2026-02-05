@@ -112,7 +112,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         throw error;
       }
-      setProfile(data);
+
+      let profileData = data;
+
+      if (profileData && !profileData.email_verified) {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const currentUser = sessionData?.session?.user;
+
+        if (currentUser?.email_confirmed_at) {
+          logger.log('AuthContext', 'Email confirmed in Auth but not in profile, syncing...');
+
+          const { error: updateError } = await supabase
+            .from('user_profiles')
+            .update({
+              email_verified: true,
+              email_verified_at: currentUser.email_confirmed_at
+            })
+            .eq('id', userId);
+
+          if (!updateError) {
+            profileData = {
+              ...profileData,
+              email_verified: true,
+              email_verified_at: currentUser.email_confirmed_at
+            };
+            logger.log('AuthContext', 'Profile email_verified synced successfully');
+          } else {
+            logger.error('AuthContext', 'Failed to sync email_verified:', updateError);
+          }
+        }
+      }
+
+      setProfile(profileData);
       hasLoadedProfile.current = userId;
 
       // Auto-accept pending workspace invitations on login
