@@ -520,6 +520,16 @@ ${message}`;
         console.log('[CHAT] Stripped Data URL prefix from pdf_base64');
       }
 
+      pdfData = pdfData.replace(/[\s\r\n]+/g, '');
+
+      const remainder = pdfData.length % 4;
+      if (remainder > 0) {
+        pdfData += '='.repeat(4 - remainder);
+        console.log('[CHAT] Added base64 padding');
+      }
+
+      console.log(`[CHAT] Base64 length after cleanup: ${pdfData.length}, starts with: ${pdfData.substring(0, 20)}`);
+
       result = await chat.sendMessage([
         {
           inlineData: {
