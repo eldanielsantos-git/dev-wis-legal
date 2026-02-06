@@ -629,15 +629,15 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
                     setViewAllProcesses(newValue);
                     loadProcessos(newValue);
                   }}
-                  className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                  className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg transition-all duration-200 hover:scale-105"
                   style={{
                     backgroundColor: viewAllProcesses ? '#8B5CF6' : (theme === 'dark' ? '#141312' : colors.bgSecondary),
                     color: viewAllProcesses ? '#FFFFFF' : colors.textPrimary
                   }}
                   title={viewAllProcesses ? 'Ver apenas meus processos' : 'Ver todos os processos'}
                 >
-                  <Users className="w-5 h-5" />
-                  <span className="text-sm font-medium">{viewAllProcesses ? 'Meus' : 'Todos'}</span>
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <span className="text-xs sm:text-sm font-medium">{viewAllProcesses ? 'Meus' : 'Todos'}</span>
                 </button>
               )}
             </div>
