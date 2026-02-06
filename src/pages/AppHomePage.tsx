@@ -74,6 +74,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const [errorModal, setErrorModal] = useState<{ isOpen: boolean; title: string; message: string }>({ isOpen: false, title: '', message: '' });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewAllProcesses, setViewAllProcesses] = useState(false);
   const { toasts, removeToast, success: showSuccess, error: showError, warning: showWarning, info: showInfo } = useToast();
   const [sharedProcessCount, setSharedProcessCount] = useState<number>(0);
   const [sharedProcessIds, setSharedProcessIds] = useState<Set<string>>(new Set());
@@ -200,9 +201,10 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
     };
   }, [processos]);
 
-  const loadProcessos = useCallback(async () => {
+  const loadProcessos = useCallback(async (forceViewAll?: boolean) => {
     try {
-      const data = await ProcessosService.getProcessos();
+      const shouldViewAll = forceViewAll !== undefined ? forceViewAll : viewAllProcesses;
+      const data = await ProcessosService.getProcessos(shouldViewAll);
       setProcessos(data);
     } catch (err: any) {
       setErrorModal({
@@ -211,7 +213,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         message: err instanceof Error ? err.message : 'Não foi possível carregar os processos. Por favor, recarregue a página.'
       });
     }
-  }, []);
+  }, [viewAllProcesses]);
 
   const detectProcessosEmAndamento = useCallback(async () => {
     try {
@@ -605,7 +607,9 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
           <section className="mb-8 sm:mb-10 lg:mb-12">
             <div className="flex items-center justify-center mb-4 sm:mb-6 gap-4">
-              <h2 className="text-xl sm:text-2xl font-title font-bold text-center" style={{ color: colors.textPrimary }}>Análises Recentes</h2>
+              <h2 className="text-xl sm:text-2xl font-title font-bold text-center" style={{ color: colors.textPrimary }}>
+                {viewAllProcesses ? 'Todos os Processos' : 'Análises Recentes'}
+              </h2>
               <button
                 onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
                 className="hidden lg:block p-2 rounded-lg transition-all duration-200 hover:scale-110"
@@ -618,6 +622,24 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
                   <LayoutGrid className="w-5 h-5" style={{ color: colors.textPrimary }} />
                 )}
               </button>
+              {isAdmin && (
+                <button
+                  onClick={() => {
+                    const newValue = !viewAllProcesses;
+                    setViewAllProcesses(newValue);
+                    loadProcessos(newValue);
+                  }}
+                  className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105"
+                  style={{
+                    backgroundColor: viewAllProcesses ? '#8B5CF6' : (theme === 'dark' ? '#141312' : colors.bgSecondary),
+                    color: viewAllProcesses ? '#FFFFFF' : colors.textPrimary
+                  }}
+                  title={viewAllProcesses ? 'Ver apenas meus processos' : 'Ver todos os processos'}
+                >
+                  <Users className="w-5 h-5" />
+                  <span className="text-sm font-medium">{viewAllProcesses ? 'Meus' : 'Todos'}</span>
+                </button>
+              )}
             </div>
             {recentProcessos.length === 0 ? (
               <div className="rounded-lg p-12 text-center" style={{ backgroundColor: colors.bgSecondary }}><FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" strokeWidth={1} /><h3 className="text-lg font-semibold mb-2" style={{ color: colors.textPrimary }}>Você ainda não tem nenhum processo em análise</h3><p style={{ color: colors.textSecondary }}>Faça upload do seu primeiro processo e descubra uma forma mais ágil e inteligente de trabalhar</p></div>

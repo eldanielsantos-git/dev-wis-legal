@@ -487,7 +487,7 @@ export class ProcessosService {
 
   static countPdfPages = countPdfPages;
 
-  static async getAllProcessos(): Promise<Processo[]> {
+  static async getAllProcessos(viewAll: boolean = false): Promise<Processo[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       throw new Error('Usuário não autenticado');
@@ -542,7 +542,7 @@ export class ProcessosService {
         user_profile:user_profiles(first_name, last_name, email)
       `);
 
-    if (!isAdmin) {
+    if (!isAdmin || !viewAll) {
       query = query.eq('user_id', user.id);
     }
 
