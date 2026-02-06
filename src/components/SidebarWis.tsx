@@ -101,6 +101,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
               firstName={profile?.first_name}
               lastName={profile?.last_name}
               size="sm"
+              isAdmin={isAdmin}
             />
           </button>
 
@@ -441,6 +442,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
                 lastName={profile?.last_name}
                 size="md"
                 showLabel={false}
+                isAdmin={isAdmin}
                 onEditProfile={() => {
                   window.location.hash = '#profile';
                   onNavigateToProfile?.();
@@ -459,6 +461,7 @@ export function SidebarWis({ onNavigateToApp, onNavigateToMyProcess, onNavigateT
                 lastName={profile?.last_name}
                 size="md"
                 showLabel={true}
+                isAdmin={isAdmin}
                 onEditProfile={() => {
                   window.location.hash = '#profile';
                   onNavigateToProfile?.();

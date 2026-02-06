@@ -7,9 +7,10 @@ interface UserAvatarProps {
   lastName?: string | null;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  isAdmin?: boolean;
 }
 
-export function UserAvatar({ avatarUrl, firstName, lastName, size = 'md', className = '' }: UserAvatarProps) {
+export function UserAvatar({ avatarUrl, firstName, lastName, size = 'md', className = '', isAdmin = false }: UserAvatarProps) {
   const { theme } = useTheme();
 
   const sizeClasses = {
@@ -34,9 +35,11 @@ export function UserAvatar({ avatarUrl, firstName, lastName, size = 'md', classN
     setImageError(false);
   }, [avatarUrl]);
 
+  const adminBorderClass = isAdmin ? 'ring-2 ring-purple-500' : '';
+
   return (
     <div
-      className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden ${className}`}
+      className={`${sizeClasses[size]} rounded-full flex items-center justify-center font-semibold flex-shrink-0 overflow-hidden ${adminBorderClass} ${className}`}
       style={{ backgroundColor: bgColor, color: textColor }}
     >
       {avatarUrl && !imageError ? (

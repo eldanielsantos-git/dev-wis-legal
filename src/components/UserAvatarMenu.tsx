@@ -15,6 +15,7 @@ interface UserAvatarMenuProps {
   onViewSubscription?: () => void;
   className?: string;
   showLabel?: boolean;
+  isAdmin?: boolean;
 }
 
 export function UserAvatarMenu({
@@ -25,7 +26,8 @@ export function UserAvatarMenu({
   onEditProfile,
   onViewSubscription,
   className = '',
-  showLabel = true
+  showLabel = true,
+  isAdmin = false
 }: UserAvatarMenuProps) {
   const { theme } = useTheme();
   const { signOut } = useAuth();
@@ -185,6 +187,7 @@ export function UserAvatarMenu({
           firstName={firstName}
           lastName={lastName}
           size={size}
+          isAdmin={isAdmin}
         />
         {showLabel && (
           <div className="flex-1 min-w-0 text-left">
