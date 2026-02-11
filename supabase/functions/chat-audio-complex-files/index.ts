@@ -312,13 +312,28 @@ Deno.serve(async (req: Request) => {
       let useConsolidatedAnalysis = false;
       let useChunks = false;
       let chunks: any[] = [];
+      const isComplexFile = processo.total_pages >= 1000;
 
       if (analysisResults && analysisResults.length >= 7) {
         useConsolidatedAnalysis = true;
         console.log(`[chat-audio-complex-files] Using consolidated analysis: ${analysisResults.length} analyses found`);
+      } else if (isComplexFile) {
+        console.log(`[chat-audio-complex-files] Complex file (>= 1000 pages) but analysis not complete (${analysisResults?.length || 0}/7)`);
+        return new Response(
+          JSON.stringify({
+            transcription,
+            audio_url: audioUrl,
+            error: 'Analise ainda em andamento',
+            details: `Este processo complexo (${processo.total_pages} paginas) requer que a analise esteja completa para o chat. Aguarde a finalizacao da analise.`
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
       } else if (processo.is_chunked && processo.total_chunks_count > 0) {
         useChunks = true;
-        console.log(`[chat-audio-complex-files] Large file detected: ${processo.total_chunks_count} chunks`);
+        console.log(`[chat-audio-complex-files] Large file (< 1000 pages, chunked): ${processo.total_chunks_count} chunks`);
 
         const { data: chunksData, error: chunksError } = await supabase
           .from('process_chunks')
@@ -348,7 +363,7 @@ Deno.serve(async (req: Request) => {
           JSON.stringify({
             transcription,
             audio_url: audioUrl,
-            response: 'Áudio recebido e transcrito com sucesso. O processo ainda está sendo analisado. Aguarde a conclusão para fazer perguntas sobre o conteúdo.'
+            response: 'Audio recebido e transcrito com sucesso. O processo ainda esta sendo analisado. Aguarde a conclusao para fazer perguntas sobre o conteudo.'
           }),
           {
             status: 200,

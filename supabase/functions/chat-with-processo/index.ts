@@ -249,99 +249,22 @@ Deno.serve(async (req: Request) => {
     let chunks: any[] = [];
 
     const isSmallFile = !processo.is_chunked && processo.pdf_base64 && processo.pdf_base64.trim() !== '';
-    const isLargeFile = processo.is_chunked && processo.total_chunks_count > 0;
+    const isLargeFileChunked = processo.is_chunked && processo.total_chunks_count > 0;
     const hasConsolidatedAnalysis = analysisResults && analysisResults.length >= 7;
     const isComplexFile = processo.total_pages >= 1000;
 
-    console.log(`[CHAT] File classification: total_pages=${processo.total_pages}, is_chunked=${processo.is_chunked}, has_pdf_base64=${!!processo.pdf_base64}, analyses_count=${analysisResults?.length || 0}`);
+    console.log(`[CHAT] File classification: total_pages=${processo.total_pages}, is_chunked=${processo.is_chunked}, has_pdf_base64=${!!processo.pdf_base64}, analyses_count=${analysisResults?.length || 0}, isComplexFile=${isComplexFile}`);
 
-    if (isSmallFile) {
-      promptType = 'small_file';
-      console.log('[CHAT] Small file detected with pdf_base64 available - using original PDF');
-
-      contextualMessage = `
-Processo: ${processo.nome_processo || processo.file_name}
-Numero: ${processo.numero_processo || 'N/A'}
-Total de paginas: ${processo.total_pages || 'N/A'}
-
-Pergunta do usuario:
-${message}`;
-
-    } else if (isLargeFile) {
-      promptType = 'large_file_chunks';
-      console.log(`\ud83d\udcda Large file detected: ${processo.total_chunks_count} chunks`);
-
-      const { data: chunksData, error: chunksError } = await supabase
-        .from('process_chunks')
-        .select('chunk_index, start_page, end_page, gemini_file_uri, pages_count, status')
-        .eq('processo_id', processo_id)
-        .eq('status', 'completed')
-        .order('chunk_index', { ascending: true });
-
-      chunks = chunksData || [];
-
-      if (chunksError) {
-        console.error('\u274c Error fetching chunks:', chunksError);
-        return new Response(
-          JSON.stringify({
-            error: 'Erro ao buscar chunks do processo',
-            details: chunksError.message
-          }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (!chunks || chunks.length === 0) {
-        return new Response(
-          JSON.stringify({
-            error: 'Chunks n\u00e3o dispon\u00edveis',
-            details: 'Os chunks ainda est\u00e3o sendo processados. Aguarde alguns instantes e tente novamente.'
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
-      if (chunksWithValidUris.length === 0) {
-        return new Response(
-          JSON.stringify({
-            error: 'URIs dos chunks n\u00e3o dispon\u00edveis',
-            details: 'Os arquivos ainda est\u00e3o sendo preparados no Gemini. Aguarde alguns instantes e tente novamente.'
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      console.log(`\u2705 Found ${chunks.length} chunks, ${chunksWithValidUris.length} with valid URIs`);
-
-      const chunksInfo = chunks.map(c =>
-        `Chunk ${c.chunk_index}: P\u00e1ginas ${c.start_page}-${c.end_page} (${c.pages_count} p\u00e1ginas)`
-      ).join('\n');
-
-      contextualMessage = `
-Processo: ${processo.nome_processo || processo.file_name}
-N\u00famero: ${processo.numero_processo || 'N/A'}
-Total de p\u00e1ginas: ${processo.total_pages || 'N/A'}
-Dividido em ${chunks.length} partes
-
-Chunks dispon\u00edveis:
-${chunksInfo}
-
-Pergunta do usu\u00e1rio:
-${message}`;
-
-      console.log(`[CHAT] Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
-
-    } else if (hasConsolidatedAnalysis && isComplexFile) {
+    if (isComplexFile && hasConsolidatedAnalysis) {
       promptType = 'consolidated_analysis';
-      console.log(`[CHAT] Complex file (>= 1000 pages) with ${analysisResults.length} analyses - using consolidated analysis`);
+      console.log(`[CHAT] Complex file (>= 1000 pages) with ${analysisResults.length} analyses - using consolidated analysis (text-only, efficient)`);
 
       const analysisContext = analysisResults.map((analysis, index) =>
         `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
       ).join('\n\n---\n');
 
       contextualMessage = `
-Processo: ${processo.nome_processo || processo.file_name}
+Processo: ${processo.file_name}
 Total de paginas: ${processo.total_pages || 'N/A'}
 
 # ANALISES CONSOLIDADAS DO PROCESSO
@@ -358,13 +281,98 @@ INSTRUCOES: Responda a pergunta acima baseando-se exclusivamente nas analises co
 
       console.log(`[CHAT] Formatted ${analysisResults.length} analyses (~${Math.round(contextualMessage.length/4)} tokens estimated)`);
 
-    } else {
+    } else if (isComplexFile && !hasConsolidatedAnalysis) {
+      console.log(`[CHAT] Complex file (>= 1000 pages) but analysis not complete (${analysisResults?.length || 0}/7) - cannot chat yet`);
+      return new Response(
+        JSON.stringify({
+          error: 'Analise ainda em andamento',
+          details: `Este processo complexo (${processo.total_pages} paginas) requer que a analise esteja completa para o chat. Aguarde a finalizacao da analise.`
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } else if (isSmallFile) {
       promptType = 'small_file';
-      console.log('[CHAT] Fallback: using transcription (no pdf_base64, no chunks, no consolidated analysis for complex file)');
+      console.log('[CHAT] Small file detected with pdf_base64 available - using original PDF');
 
       contextualMessage = `
-Processo: ${processo.nome_processo || processo.file_name}
-Numero: ${processo.numero_processo || 'N/A'}
+Processo: ${processo.file_name}
+Total de paginas: ${processo.total_pages || 'N/A'}
+
+Pergunta do usuario:
+${message}`;
+
+    } else if (isLargeFileChunked) {
+      promptType = 'large_file_chunks';
+      console.log(`[CHAT] Large file (< 1000 pages, chunked): ${processo.total_chunks_count} chunks`);
+
+      const { data: chunksData, error: chunksError } = await supabase
+        .from('process_chunks')
+        .select('chunk_index, start_page, end_page, gemini_file_uri, pages_count, status')
+        .eq('processo_id', processo_id)
+        .eq('status', 'completed')
+        .order('chunk_index', { ascending: true });
+
+      chunks = chunksData || [];
+
+      if (chunksError) {
+        console.error('[CHAT] Error fetching chunks:', chunksError);
+        return new Response(
+          JSON.stringify({
+            error: 'Erro ao buscar chunks do processo',
+            details: chunksError.message
+          }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!chunks || chunks.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'Chunks nao disponiveis',
+            details: 'Os chunks ainda estao sendo processados. Aguarde alguns instantes e tente novamente.'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const chunksWithValidUris = chunks.filter(c => c.gemini_file_uri && c.gemini_file_uri.trim() !== '');
+      if (chunksWithValidUris.length === 0) {
+        return new Response(
+          JSON.stringify({
+            error: 'URIs dos chunks nao disponiveis',
+            details: 'Os arquivos ainda estao sendo preparados no Gemini. Aguarde alguns instantes e tente novamente.'
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log(`[CHAT] Found ${chunks.length} chunks, ${chunksWithValidUris.length} with valid URIs`);
+
+      const chunksInfo = chunks.map(c =>
+        `Chunk ${c.chunk_index}: Paginas ${c.start_page}-${c.end_page} (${c.pages_count} paginas)`
+      ).join('\n');
+
+      contextualMessage = `
+Processo: ${processo.file_name}
+Total de paginas: ${processo.total_pages || 'N/A'}
+Dividido em ${chunks.length} partes
+
+Chunks disponiveis:
+${chunksInfo}
+
+Pergunta do usuario:
+${message}`;
+
+      console.log(`[CHAT] Using ${chunks.length} chunks for context with ${chunksWithValidUris.length} valid URIs`);
+
+    } else {
+      promptType = 'small_file';
+      console.log('[CHAT] Fallback: using transcription (no pdf_base64, no chunks)');
+
+      contextualMessage = `
+Processo: ${processo.file_name}
+Total de paginas: ${processo.total_pages || 'N/A'}
 
 Transcricao completa:
 ${processo.transcricao || 'Transcricao nao disponivel'}
@@ -488,8 +496,8 @@ ${message}`;
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
-    const tokenContextKey = promptType === 'large_file_chunks' ? 'chat_complex_files' : 'chat_standard';
-    const fallbackTokens = promptType === 'large_file_chunks' ? 16384 : 8192;
+    const tokenContextKey = (promptType === 'large_file_chunks' || promptType === 'consolidated_analysis') ? 'chat_complex_files' : 'chat_standard';
+    const fallbackTokens = (promptType === 'large_file_chunks' || promptType === 'consolidated_analysis') ? 16384 : 8192;
     const maxOutputTokens = await getMaxOutputTokens(supabase, tokenContextKey, fallbackTokens);
 
     const model = genAI.getGenerativeModel({
