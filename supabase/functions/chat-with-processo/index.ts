@@ -248,16 +248,18 @@ Deno.serve(async (req: Request) => {
     let contextualMessage = '';
     let chunks: any[] = [];
 
-    const isSmallFile = !processo.is_chunked && processo.pdf_base64 && processo.pdf_base64.trim() !== '';
-    const isLargeFileChunked = processo.is_chunked && processo.total_chunks_count > 0;
-    const hasConsolidatedAnalysis = analysisResults && analysisResults.length >= 7;
+    const hasDirectFile = !processo.is_chunked && processo.pdf_base64 && processo.pdf_base64.trim() !== '';
+    const isChunked = processo.is_chunked && processo.total_chunks_count > 0;
     const isComplexFile = processo.total_pages >= 1000;
+    const hasConsolidatedAnalysis = analysisResults && analysisResults.length >= 7;
+    const shouldUseConsolidatedAnalysis = isComplexFile && isChunked && hasConsolidatedAnalysis;
 
-    console.log(`[CHAT] File classification: total_pages=${processo.total_pages}, is_chunked=${processo.is_chunked}, has_pdf_base64=${!!processo.pdf_base64}, analyses_count=${analysisResults?.length || 0}, isComplexFile=${isComplexFile}`);
+    console.log(`[CHAT] File classification: total_pages=${processo.total_pages}, is_chunked=${processo.is_chunked}, has_pdf_base64=${!!processo.pdf_base64}, analyses_count=${analysisResults?.length || 0}`);
+    console.log(`[CHAT] Decision: isComplexFile=${isComplexFile}, isChunked=${isChunked}, shouldUseConsolidatedAnalysis=${shouldUseConsolidatedAnalysis}`);
 
-    if (isComplexFile && hasConsolidatedAnalysis) {
+    if (shouldUseConsolidatedAnalysis) {
       promptType = 'consolidated_analysis';
-      console.log(`[CHAT] Complex file (>= 1000 pages) with ${analysisResults.length} analyses - using consolidated analysis (text-only, efficient)`);
+      console.log(`[CHAT] Complex chunked file (>= 1000 pages, is_chunked) with ${analysisResults.length} analyses - using consolidated analysis`);
 
       const analysisContext = analysisResults.map((analysis, index) =>
         `\n## ${index + 1}. ${analysis.prompt_title}\n\n${analysis.result_content}`
@@ -281,8 +283,8 @@ INSTRUCOES: Responda a pergunta acima baseando-se exclusivamente nas analises co
 
       console.log(`[CHAT] Formatted ${analysisResults.length} analyses (~${Math.round(contextualMessage.length/4)} tokens estimated)`);
 
-    } else if (isComplexFile && !hasConsolidatedAnalysis) {
-      console.log(`[CHAT] Complex file (>= 1000 pages) but analysis not complete (${analysisResults?.length || 0}/7) - cannot chat yet`);
+    } else if (isComplexFile && isChunked && !hasConsolidatedAnalysis) {
+      console.log(`[CHAT] Complex chunked file (>= 1000 pages, is_chunked) but analysis not complete (${analysisResults?.length || 0}/7) - cannot chat yet`);
       return new Response(
         JSON.stringify({
           error: 'Analise ainda em andamento',
@@ -291,9 +293,9 @@ INSTRUCOES: Responda a pergunta acima baseando-se exclusivamente nas analises co
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 
-    } else if (isSmallFile) {
+    } else if (hasDirectFile) {
       promptType = 'small_file';
-      console.log('[CHAT] Small file detected with pdf_base64 available - using original PDF');
+      console.log(`[CHAT] Direct file available (pdf_base64) - using original PDF (${processo.total_pages} pages)`);
 
       contextualMessage = `
 Processo: ${processo.file_name}
@@ -302,9 +304,9 @@ Total de paginas: ${processo.total_pages || 'N/A'}
 Pergunta do usuario:
 ${message}`;
 
-    } else if (isLargeFileChunked) {
+    } else if (isChunked) {
       promptType = 'large_file_chunks';
-      console.log(`[CHAT] Large file (< 1000 pages, chunked): ${processo.total_chunks_count} chunks`);
+      console.log(`[CHAT] Chunked file (< 1000 pages): ${processo.total_chunks_count} chunks - using chunks`);
 
       const { data: chunksData, error: chunksError } = await supabase
         .from('process_chunks')

@@ -312,13 +312,20 @@ Deno.serve(async (req: Request) => {
       let useConsolidatedAnalysis = false;
       let useChunks = false;
       let chunks: any[] = [];
-      const isComplexFile = processo.total_pages >= 1000;
 
-      if (analysisResults && analysisResults.length >= 7) {
+      const isChunked = processo.is_chunked && processo.total_chunks_count > 0;
+      const isComplexFile = processo.total_pages >= 1000;
+      const hasConsolidatedAnalysis = analysisResults && analysisResults.length >= 7;
+      const shouldUseConsolidatedAnalysis = isComplexFile && isChunked && hasConsolidatedAnalysis;
+
+      console.log(`[chat-audio-complex-files] File classification: total_pages=${processo.total_pages}, is_chunked=${processo.is_chunked}, analyses_count=${analysisResults?.length || 0}`);
+      console.log(`[chat-audio-complex-files] Decision: isComplexFile=${isComplexFile}, isChunked=${isChunked}, shouldUseConsolidatedAnalysis=${shouldUseConsolidatedAnalysis}`);
+
+      if (shouldUseConsolidatedAnalysis) {
         useConsolidatedAnalysis = true;
-        console.log(`[chat-audio-complex-files] Using consolidated analysis: ${analysisResults.length} analyses found`);
-      } else if (isComplexFile) {
-        console.log(`[chat-audio-complex-files] Complex file (>= 1000 pages) but analysis not complete (${analysisResults?.length || 0}/7)`);
+        console.log(`[chat-audio-complex-files] Complex chunked file (>= 1000 pages, is_chunked) with ${analysisResults.length} analyses - using consolidated analysis`);
+      } else if (isComplexFile && isChunked && !hasConsolidatedAnalysis) {
+        console.log(`[chat-audio-complex-files] Complex chunked file but analysis not complete (${analysisResults?.length || 0}/7)`);
         return new Response(
           JSON.stringify({
             transcription,
@@ -331,9 +338,9 @@ Deno.serve(async (req: Request) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           }
         );
-      } else if (processo.is_chunked && processo.total_chunks_count > 0) {
+      } else if (isChunked) {
         useChunks = true;
-        console.log(`[chat-audio-complex-files] Large file (< 1000 pages, chunked): ${processo.total_chunks_count} chunks`);
+        console.log(`[chat-audio-complex-files] Chunked file (< 1000 pages): ${processo.total_chunks_count} chunks - using chunks`);
 
         const { data: chunksData, error: chunksError } = await supabase
           .from('process_chunks')
