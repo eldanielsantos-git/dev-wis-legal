@@ -123,11 +123,39 @@ const getPoloColor = (polo: string | undefined) => {
 export function EstrategiasJuridicasView({ content }: EstrategiasJuridicasViewProps) {
  const normalizationResult = normalizeGenericView(content, 'estrategiasJuridicas', ['estrategias_juridicas', 'estrategias']);
 
- if (!normalizationResult.success || !normalizationResult.data?.estrategiasJuridicas) {
+ if (!normalizationResult.success) {
   return <AnalysisContentRenderer content={content} />;
  }
 
- const { estrategiasJuridicas } = normalizationResult.data as { estrategiasJuridicas: EstrategiasJuridicas };
+ let data: { estrategiasJuridicas: EstrategiasJuridicas } | null = null;
+
+ try {
+  let cleanContent = content.trim();
+
+  if (cleanContent.startsWith('```json')) {
+   cleanContent = cleanContent.substring(7);
+  }
+  if (cleanContent.startsWith('```')) {
+   cleanContent = cleanContent.substring(3);
+  }
+
+  const lastTripleBacktick = cleanContent.lastIndexOf('```');
+  if (lastTripleBacktick > 0) {
+   cleanContent = cleanContent.substring(0, lastTripleBacktick);
+  }
+
+  cleanContent = cleanContent.trim();
+
+  data = JSON.parse(cleanContent);
+ } catch {
+  return <AnalysisContentRenderer content={content} />;
+ }
+
+ if (!data?.estrategiasJuridicas) {
+  return <AnalysisContentRenderer content={content} />;
+ }
+
+ const { estrategiasJuridicas } = data;
 
  return (
   <div className="space-y-6">

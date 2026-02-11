@@ -461,32 +461,6 @@ export function normalizeGenericView(content: string, expectedRootKey: string, c
   }
 
   const allCandidates = [expectedRootKey, ...candidateKeys];
-
-  if (Array.isArray(parsed)) {
-    for (const item of parsed) {
-      if (item && typeof item === 'object') {
-        const { data: itemData, foundKey } = findRootData(item, allCandidates);
-        if (itemData) {
-          const result: any = {};
-          result[expectedRootKey] = itemData;
-          return {
-            success: true,
-            data: result,
-            method: 'array-extraction',
-            originalKeys: Object.keys(item)
-          };
-        }
-      }
-    }
-
-    return {
-      success: false,
-      data: null,
-      method: 'fallback',
-      originalKeys: []
-    };
-  }
-
   const { data: rootData, foundKey } = findRootData(parsed, allCandidates);
 
   if (rootData) {
