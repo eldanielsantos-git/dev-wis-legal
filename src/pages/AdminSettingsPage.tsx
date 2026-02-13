@@ -460,7 +460,7 @@ export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNa
                   Wis API
                 </h3>
                 <p className="text-xs break-words" style={{ color: colors.textSecondary }}>
-                  Gerencie integracoes WhatsApp e parceiros externos
+                  Gerencie integracoes com parceiros externos
                 </p>
               </div>
               <div className="pt-1">
