@@ -114,6 +114,7 @@ export function AdminWisApiPage({
 
   const [logFilter, setLogFilter] = useState<'all' | 'success' | 'error'>('all');
   const [partnerFilter, setPartnerFilter] = useState<string>('all');
+  const [lastLogRefresh, setLastLogRefresh] = useState<Date | null>(null);
 
   useEffect(() => {
     loadData();
@@ -121,6 +122,13 @@ export function AdminWisApiPage({
 
   useEffect(() => {
     loadLogs();
+  }, [currentPage, logFilter, partnerFilter]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      loadLogs();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [currentPage, logFilter, partnerFilter]);
 
   async function loadData() {
@@ -189,6 +197,7 @@ export function AdminWisApiPage({
     if (data) {
       setLogs(data);
       setTotalLogs(count || 0);
+      setLastLogRefresh(new Date());
     }
   }
 
@@ -566,7 +575,7 @@ export function AdminWisApiPage({
 
       <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <FileText className="w-5 h-5" style={{ color: colors.textSecondary }} />
             <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
               Logs de Chamadas
@@ -574,11 +583,17 @@ export function AdminWisApiPage({
             <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: colors.bgPrimary, color: colors.textSecondary }}>
               {totalLogs} registros
             </span>
+            {lastLogRefresh && (
+              <span className="text-xs" style={{ color: colors.textSecondary }}>
+                (atualiza a cada 10s)
+              </span>
+            )}
           </div>
           <button
             onClick={loadLogs}
             className="p-2 rounded-lg transition-colors hover:opacity-80"
             style={{ backgroundColor: colors.bgPrimary }}
+            title="Atualizar agora"
           >
             <RefreshCw className="w-4 h-4" style={{ color: colors.textSecondary }} />
           </button>
