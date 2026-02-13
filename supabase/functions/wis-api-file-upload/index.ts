@@ -100,6 +100,13 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if (req.method === "GET") {
+    return new Response(JSON.stringify({ status: "ok", service: "wis-api-file-upload" }), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -173,43 +180,27 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const { data: userProfile } = await supabase
-      .from('user_profiles')
-      .select('id, first_name, last_name, email')
-      .eq('phone', cleanPhone)
-      .maybeSingle();
+    const { data: userProfiles } = await supabase.rpc('find_user_by_phone', { search_phone: cleanPhone });
 
-    if (!userProfile) {
-      const phonesWithCountry = [`55${cleanPhone}`, cleanPhone.replace(/^55/, '')];
-      let foundProfile = null;
+    let foundProfile = userProfiles?.[0] || null;
 
-      for (const phoneVariant of phonesWithCountry) {
-        const { data: profile } = await supabase
-          .from('user_profiles')
-          .select('id, first_name, last_name, email')
-          .eq('phone', phoneVariant)
-          .maybeSingle();
-
-        if (profile) {
-          foundProfile = profile;
-          break;
-        }
-      }
-
-      if (!foundProfile) {
-        const errorMessage = await getErrorMessage(supabase, 'user_not_found', { phone: cleanPhone });
-        const response = { success: false, error_key: 'user_not_found', message: errorMessage };
-        await logRequest(supabase, partnerId, cleanPhone, null, false, 'user_not_found', safeRequestPayload, response);
-        return new Response(JSON.stringify(response), {
-          status: 404,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      userId = foundProfile.id;
-    } else {
-      userId = userProfile.id;
+    if (!foundProfile) {
+      const phoneWithCountry = `55${cleanPhone}`;
+      const { data: profiles2 } = await supabase.rpc('find_user_by_phone', { search_phone: phoneWithCountry });
+      foundProfile = profiles2?.[0] || null;
     }
+
+    if (!foundProfile) {
+      const errorMessage = await getErrorMessage(supabase, 'user_not_found', { phone: cleanPhone });
+      const response = { success: false, error_key: 'user_not_found', message: errorMessage };
+      await logRequest(supabase, partnerId, cleanPhone, null, false, 'user_not_found', safeRequestPayload, response);
+      return new Response(JSON.stringify(response), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    userId = foundProfile.id;
 
     console.log(`[wis-api] User found: ${userId}`);
 
