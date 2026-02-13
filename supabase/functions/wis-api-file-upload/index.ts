@@ -7,13 +7,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
+interface ZApiDocument {
+  title?: string;
+  caption?: string;
+  fileName?: string;
+  mimeType?: string;
+  pageCount?: number;
+  documentUrl?: string;
+}
+
 interface RequestPayload {
-  phone: string;
-  fileName: string;
+  phone?: string;
+  fileName?: string;
   documentUrl?: string;
   base64?: string;
   mimeType?: string;
   instanceUrl?: string;
+  instanceId?: string;
+  document?: ZApiDocument;
+  type?: string;
 }
 
 interface ErrorMessage {
@@ -99,7 +111,13 @@ Deno.serve(async (req: Request) => {
 
   try {
     requestPayload = await req.json() as RequestPayload;
-    const { phone, fileName, documentUrl, base64, mimeType, instanceUrl } = requestPayload;
+
+    const phone = requestPayload.phone;
+    const fileName = requestPayload.document?.fileName || requestPayload.fileName;
+    const documentUrl = requestPayload.document?.documentUrl || requestPayload.documentUrl;
+    const base64 = requestPayload.base64;
+    const mimeType = requestPayload.document?.mimeType || requestPayload.mimeType;
+    const instanceId = requestPayload.instanceId || requestPayload.instanceUrl;
 
     const safeRequestPayload = {
       phone,
@@ -107,8 +125,11 @@ Deno.serve(async (req: Request) => {
       hasDocumentUrl: !!documentUrl,
       hasBase64: !!base64,
       mimeType,
-      instanceUrl: instanceUrl?.substring(0, 50) + '...',
+      instanceId: instanceId?.substring(0, 50),
+      type: requestPayload.type,
     };
+
+    console.log(`[wis-api] Received request:`, JSON.stringify(safeRequestPayload));
 
     if (!phone || !fileName || (!documentUrl && !base64)) {
       const errorMessage = await getErrorMessage(supabase, 'invalid_request');
@@ -123,7 +144,7 @@ Deno.serve(async (req: Request) => {
     cleanPhone = sanitizePhone(phone);
     console.log(`[wis-api] Processing request for phone: ${cleanPhone}`);
 
-    if (instanceUrl) {
+    if (instanceId) {
       const { data: partners } = await supabase
         .from('wis_api_partners')
         .select('id, partner_name, api_url_pattern')
@@ -133,7 +154,7 @@ Deno.serve(async (req: Request) => {
         for (const partner of partners) {
           const pattern = partner.api_url_pattern.replace(/%/g, '.*');
           const regex = new RegExp(pattern, 'i');
-          if (regex.test(instanceUrl)) {
+          if (regex.test(instanceId)) {
             partnerId = partner.id;
             console.log(`[wis-api] Partner identified: ${partner.partner_name}`);
             break;
