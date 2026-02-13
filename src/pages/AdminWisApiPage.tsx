@@ -353,7 +353,7 @@ export function AdminWisApiPage({
             <div className="max-w-6xl mx-auto space-y-8">
               <div className="flex flex-col items-center mb-6 sm:mb-8">
                 <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-                  <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#10B981' }} />
+                  <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textSecondary }} />
                 </div>
                 <div className="text-center">
                   <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
@@ -365,10 +365,10 @@ export function AdminWisApiPage({
                 </div>
               </div>
 
-      <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+      <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Building2 className="w-5 h-5" style={{ color: '#3B82F6' }} />
+            <Building2 className="w-5 h-5" style={{ color: colors.textSecondary }} />
             <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
               Parceiros Autorizados
             </h2>
@@ -378,8 +378,8 @@ export function AdminWisApiPage({
               window.history.pushState({}, '', '/admin-wis-api-docs');
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors hover:opacity-90"
-            style={{ backgroundColor: '#10B981' }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+            style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
           >
             <BookOpen className="w-4 h-4" />
             Wis API Docs
@@ -390,8 +390,8 @@ export function AdminWisApiPage({
           {partners.map((partner) => (
             <div
               key={partner.id}
-              className="flex items-center justify-between p-4 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500/50 transition-all"
-              style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}
+              className="flex items-center justify-between p-4 rounded-lg cursor-pointer transition-colors hover:opacity-80"
+              style={{ backgroundColor: colors.bgPrimary }}
               onClick={() => openEditPartner(partner)}
             >
               <div className="flex-1">
@@ -400,11 +400,11 @@ export function AdminWisApiPage({
                     {partner.partner_name}
                   </span>
                   <span
-                    className={`text-xs px-2 py-0.5 rounded-full ${
-                      partner.is_active
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}
+                    className="text-xs px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7',
+                      color: colors.textSecondary,
+                    }}
                   >
                     {partner.is_active ? 'Ativo' : 'Inativo'}
                   </span>
@@ -420,10 +420,10 @@ export function AdminWisApiPage({
                     openEditPartner(partner);
                   }}
                   className="p-2 rounded-lg transition-colors hover:opacity-80"
-                  style={{ backgroundColor: colors.bgPrimary }}
+                  style={{ backgroundColor: colors.bgSecondary }}
                   title="Editar"
                 >
-                  <Edit3 className="w-4 h-4" style={{ color: '#3B82F6' }} />
+                  <Edit3 className="w-4 h-4" style={{ color: colors.textSecondary }} />
                 </button>
                 <button
                   onClick={(e) => {
@@ -431,13 +431,13 @@ export function AdminWisApiPage({
                     togglePartner(partner.id, partner.is_active);
                   }}
                   className="p-2 rounded-lg transition-colors hover:opacity-80"
-                  style={{ backgroundColor: partner.is_active ? '#FEE2E2' : '#D1FAE5' }}
+                  style={{ backgroundColor: colors.bgSecondary }}
                   title={partner.is_active ? 'Desativar' : 'Ativar'}
                 >
                   {partner.is_active ? (
-                    <X className="w-4 h-4 text-red-600" />
+                    <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
                   ) : (
-                    <Check className="w-4 h-4 text-green-600" />
+                    <Check className="w-4 h-4" style={{ color: colors.textSecondary }} />
                   )}
                 </button>
                 <button
@@ -445,10 +445,11 @@ export function AdminWisApiPage({
                     e.stopPropagation();
                     deletePartner(partner.id);
                   }}
-                  className="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-colors"
+                  className="p-2 rounded-lg transition-colors hover:opacity-80"
+                  style={{ backgroundColor: colors.bgSecondary }}
                   title="Excluir"
                 >
-                  <Trash2 className="w-4 h-4 text-red-600" />
+                  <Trash2 className="w-4 h-4" style={{ color: colors.textSecondary }} />
                 </button>
               </div>
             </div>
@@ -456,7 +457,7 @@ export function AdminWisApiPage({
 
           <div
             className="p-4 rounded-lg"
-            style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}
+            style={{ backgroundColor: colors.bgPrimary }}
           >
             <p className="text-sm font-medium mb-3" style={{ color: colors.textPrimary }}>
               Adicionar novo parceiro
@@ -469,7 +470,7 @@ export function AdminWisApiPage({
                 placeholder="Nome do parceiro"
                 className="flex-1 px-3 py-2 rounded-lg text-sm"
                 style={{
-                  backgroundColor: colors.bgPrimary,
+                  backgroundColor: colors.bgSecondary,
                   color: colors.textPrimary,
                   border: `1px solid ${colors.borderColor}`,
                 }}
@@ -481,7 +482,7 @@ export function AdminWisApiPage({
                 placeholder="Padrao de URL (ex: api.z-api.io%)"
                 className="flex-1 px-3 py-2 rounded-lg text-sm"
                 style={{
-                  backgroundColor: colors.bgPrimary,
+                  backgroundColor: colors.bgSecondary,
                   color: colors.textPrimary,
                   border: `1px solid ${colors.borderColor}`,
                 }}
@@ -489,8 +490,8 @@ export function AdminWisApiPage({
               <button
                 onClick={addPartner}
                 disabled={savingPartner || !newPartnerName.trim() || !newPartnerUrl.trim()}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-                style={{ backgroundColor: '#10B981' }}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
               >
                 {savingPartner ? (
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -503,10 +504,10 @@ export function AdminWisApiPage({
         </div>
       </div>
 
-      <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+      <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" style={{ color: '#F59E0B' }} />
+            <AlertCircle className="w-5 h-5" style={{ color: colors.textSecondary }} />
             <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
               Mensagens de Erro
             </h2>
@@ -514,8 +515,8 @@ export function AdminWisApiPage({
           <button
             onClick={saveErrorMessages}
             disabled={savingMessages}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
-            style={{ backgroundColor: '#3B82F6' }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+            style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
           >
             {savingMessages ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
@@ -531,7 +532,7 @@ export function AdminWisApiPage({
             <div
               key={msg.id}
               className="p-4 rounded-lg"
-              style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}
+              style={{ backgroundColor: colors.bgPrimary }}
             >
               <label className="block text-xs font-mono mb-2" style={{ color: colors.textSecondary }}>
                 {msg.error_key}
@@ -547,7 +548,7 @@ export function AdminWisApiPage({
                 rows={2}
                 className="w-full px-3 py-2 rounded-lg text-sm resize-none"
                 style={{
-                  backgroundColor: colors.bgPrimary,
+                  backgroundColor: colors.bgSecondary,
                   color: colors.textPrimary,
                   border: `1px solid ${colors.borderColor}`,
                 }}
@@ -557,10 +558,10 @@ export function AdminWisApiPage({
         </div>
       </div>
 
-      <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+      <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5" style={{ color: '#8B5CF6' }} />
+            <FileText className="w-5 h-5" style={{ color: colors.textSecondary }} />
             <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
               Logs de Chamadas
             </h2>
@@ -653,11 +654,11 @@ export function AdminWisApiPage({
                   </td>
                   <td className="py-3 px-2">
                     <span
-                      className={`text-xs px-2 py-1 rounded-full ${
-                        log.success
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'
-                      }`}
+                      className="text-xs px-2 py-1 rounded-full"
+                      style={{
+                        backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7',
+                        color: colors.textSecondary,
+                      }}
                     >
                       {log.success ? 'Sucesso' : log.error_key || 'Erro'}
                     </span>
@@ -777,7 +778,7 @@ export function AdminWisApiPage({
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                  <Edit3 className="w-5 h-5" style={{ color: '#3B82F6' }} />
+                  <Edit3 className="w-5 h-5" style={{ color: colors.textSecondary }} />
                 </div>
                 <h3 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                   Editar Parceiro
@@ -840,16 +841,13 @@ export function AdminWisApiPage({
                   <button
                     type="button"
                     onClick={() => setEditPartnerActive(true)}
-                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                      editPartnerActive
-                        ? 'bg-green-100 text-green-700 ring-2 ring-green-500'
-                        : ''
-                    }`}
-                    style={
-                      !editPartnerActive
-                        ? { backgroundColor: colors.bgPrimary, color: colors.textSecondary }
-                        : {}
-                    }
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: editPartnerActive
+                        ? (theme === 'dark' ? '#52525b' : '#a1a1aa')
+                        : colors.bgPrimary,
+                      color: colors.textPrimary,
+                    }}
                   >
                     <Check className="w-4 h-4 inline mr-2" />
                     Ativo
@@ -857,16 +855,13 @@ export function AdminWisApiPage({
                   <button
                     type="button"
                     onClick={() => setEditPartnerActive(false)}
-                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
-                      !editPartnerActive
-                        ? 'bg-red-100 text-red-700 ring-2 ring-red-500'
-                        : ''
-                    }`}
-                    style={
-                      editPartnerActive
-                        ? { backgroundColor: colors.bgPrimary, color: colors.textSecondary }
-                        : {}
-                    }
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: !editPartnerActive
+                        ? (theme === 'dark' ? '#52525b' : '#a1a1aa')
+                        : colors.bgPrimary,
+                      color: colors.textPrimary,
+                    }}
                   >
                     <X className="w-4 h-4 inline mr-2" />
                     Inativo
@@ -889,8 +884,8 @@ export function AdminWisApiPage({
                   <button
                     onClick={updatePartner}
                     disabled={updatingPartner || !editPartnerName.trim() || !editPartnerUrl.trim()}
-                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                    style={{ backgroundColor: '#3B82F6' }}
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
                   >
                     {updatingPartner ? (
                       <RefreshCw className="w-4 h-4 animate-spin" />
