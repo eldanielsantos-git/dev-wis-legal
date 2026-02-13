@@ -8,7 +8,6 @@ import {
   BookOpen,
   ArrowLeft,
   Code2,
-  FileJson,
   AlertTriangle,
   CheckCircle2,
   XCircle,
@@ -44,7 +43,7 @@ interface CodeBlockProps {
   title?: string;
 }
 
-function CodeBlock({ code, language = 'json', title }: CodeBlockProps) {
+function CodeBlock({ code, title }: CodeBlockProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
   const [copied, setCopied] = useState(false);
@@ -56,21 +55,22 @@ function CodeBlock({ code, language = 'json', title }: CodeBlockProps) {
   };
 
   return (
-    <div className="rounded-lg overflow-hidden" style={{ backgroundColor: theme === 'dark' ? '#1a1a2e' : '#1e293b' }}>
+    <div className="rounded-lg overflow-hidden" style={{ backgroundColor: theme === 'dark' ? '#18181b' : '#f4f4f5' }}>
       {title && (
-        <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: theme === 'dark' ? '#2d2d44' : '#334155' }}>
-          <span className="text-xs font-mono text-gray-400">{title}</span>
+        <div className="flex items-center justify-between px-4 py-2 border-b" style={{ borderColor: theme === 'dark' ? '#27272a' : '#e4e4e7' }}>
+          <span className="text-xs font-mono" style={{ color: colors.textSecondary }}>{title}</span>
           <button
             onClick={handleCopy}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 text-xs transition-colors"
+            style={{ color: colors.textSecondary }}
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+            {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
             {copied ? 'Copiado!' : 'Copiar'}
           </button>
         </div>
       )}
       <pre className="p-4 overflow-x-auto text-sm">
-        <code className="text-gray-300 font-mono whitespace-pre">{code}</code>
+        <code className="font-mono whitespace-pre" style={{ color: theme === 'dark' ? '#a1a1aa' : '#52525b' }}>{code}</code>
       </pre>
     </div>
   );
@@ -150,7 +150,7 @@ export function AdminWisApiDocsPage({
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col items-center mb-8">
               <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-                <BookOpen className="w-8 h-8" style={{ color: '#10B981' }} />
+                <BookOpen className="w-8 h-8" style={{ color: colors.textSecondary }} />
               </div>
               <div className="text-center">
                 <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
@@ -169,14 +169,12 @@ export function AdminWisApiDocsPage({
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                      activeSection === section.id ? 'ring-2 ring-offset-2' : ''
-                    }`}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                     style={{
-                      backgroundColor: activeSection === section.id ? '#10B981' : colors.bgSecondary,
-                      color: activeSection === section.id ? '#FFFFFF' : colors.textPrimary,
-                      ringColor: '#10B981',
-                      ringOffsetColor: colors.bgPrimary,
+                      backgroundColor: activeSection === section.id
+                        ? (theme === 'dark' ? '#3f3f46' : '#d4d4d8')
+                        : colors.bgSecondary,
+                      color: colors.textPrimary,
                     }}
                   >
                     <Icon className="w-4 h-4" />
@@ -188,7 +186,7 @@ export function AdminWisApiDocsPage({
 
             {activeSection === 'overview' && (
               <div className="space-y-6">
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h2 className="text-xl font-semibold mb-4" style={{ color: colors.textPrimary }}>
                     O que e a Wis API?
                   </h2>
@@ -201,7 +199,7 @@ export function AdminWisApiDocsPage({
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-3 mb-2">
-                        <Zap className="w-5 h-5" style={{ color: '#F59E0B' }} />
+                        <Zap className="w-5 h-5" style={{ color: colors.textSecondary }} />
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Rapido</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -210,7 +208,7 @@ export function AdminWisApiDocsPage({
                     </div>
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-3 mb-2">
-                        <Shield className="w-5 h-5" style={{ color: '#3B82F6' }} />
+                        <Shield className="w-5 h-5" style={{ color: colors.textSecondary }} />
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Seguro</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -219,7 +217,7 @@ export function AdminWisApiDocsPage({
                     </div>
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-3 mb-2">
-                        <Globe className="w-5 h-5" style={{ color: '#10B981' }} />
+                        <Globe className="w-5 h-5" style={{ color: colors.textSecondary }} />
                         <span className="font-medium" style={{ color: colors.textPrimary }}>REST API</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -229,13 +227,13 @@ export function AdminWisApiDocsPage({
                   </div>
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h2 className="text-xl font-semibold mb-4" style={{ color: colors.textPrimary }}>
                     Fluxo de Integracao
                   </h2>
                   <div className="space-y-4">
                     <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#10B981' }}>1</div>
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>1</div>
                       <div>
                         <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Cadastro do Parceiro</h3>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -244,7 +242,7 @@ export function AdminWisApiDocsPage({
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#10B981' }}>2</div>
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>2</div>
                       <div>
                         <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Envio do Documento</h3>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -253,7 +251,7 @@ export function AdminWisApiDocsPage({
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#10B981' }}>3</div>
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>3</div>
                       <div>
                         <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Validacao</h3>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -262,7 +260,7 @@ export function AdminWisApiDocsPage({
                       </div>
                     </div>
                     <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: '#10B981' }}>4</div>
+                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>4</div>
                       <div>
                         <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Analise Automatica</h3>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -277,9 +275,9 @@ export function AdminWisApiDocsPage({
 
             {activeSection === 'authentication' && (
               <div className="space-y-6">
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <div className="flex items-center gap-3 mb-4">
-                    <Key className="w-6 h-6" style={{ color: '#F59E0B' }} />
+                    <Key className="w-6 h-6" style={{ color: colors.textSecondary }} />
                     <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                       Autenticacao
                     </h2>
@@ -291,9 +289,9 @@ export function AdminWisApiDocsPage({
                     valida se a URL de origem (instanceUrl) corresponde a um parceiro autorizado e ativo.
                   </p>
 
-                  <div className="p-4 rounded-lg border-l-4" style={{ backgroundColor: colors.bgPrimary, borderColor: '#F59E0B' }}>
+                  <div className="p-4 rounded-lg border-l-4" style={{ backgroundColor: colors.bgPrimary, borderColor: theme === 'dark' ? '#71717a' : '#a1a1aa' }}>
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
+                      <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
                         <h4 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Importante</h4>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -306,7 +304,7 @@ export function AdminWisApiDocsPage({
                   </div>
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
                     Como funciona a validacao?
                   </h3>
@@ -314,7 +312,7 @@ export function AdminWisApiDocsPage({
                   <div className="space-y-4">
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-2 mb-2">
-                        <Users className="w-4 h-4" style={{ color: '#3B82F6' }} />
+                        <Users className="w-4 h-4" style={{ color: colors.textSecondary }} />
                         <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>1. Validacao do Parceiro</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -324,7 +322,7 @@ export function AdminWisApiDocsPage({
 
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-2 mb-2">
-                        <Shield className="w-4 h-4" style={{ color: '#10B981' }} />
+                        <Shield className="w-4 h-4" style={{ color: colors.textSecondary }} />
                         <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>2. Validacao do Usuario</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -335,7 +333,7 @@ export function AdminWisApiDocsPage({
 
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-2 mb-2">
-                        <FileText className="w-4 h-4" style={{ color: '#8B5CF6' }} />
+                        <FileText className="w-4 h-4" style={{ color: colors.textSecondary }} />
                         <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>3. Validacao do Arquivo</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
@@ -349,16 +347,16 @@ export function AdminWisApiDocsPage({
 
             {activeSection === 'endpoints' && (
               <div className="space-y-6">
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <div className="flex items-center gap-3 mb-4">
-                    <Server className="w-6 h-6" style={{ color: '#3B82F6' }} />
+                    <Server className="w-6 h-6" style={{ color: colors.textSecondary }} />
                     <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                       Endpoint: Upload de Arquivo
                     </h2>
                   </div>
 
                   <div className="flex items-center gap-2 mb-4">
-                    <span className="px-3 py-1 rounded text-sm font-bold text-white" style={{ backgroundColor: '#10B981' }}>POST</span>
+                    <span className="px-3 py-1 rounded text-sm font-bold" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>POST</span>
                     <code className="text-sm font-mono" style={{ color: colors.textPrimary }}>/functions/v1/wis-api-file-upload</code>
                   </div>
 
@@ -386,40 +384,40 @@ export function AdminWisApiDocsPage({
                       </thead>
                       <tbody>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#10B981' }}>phone</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textPrimary }}>phone</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
-                          <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4 text-green-500" /></td>
+                          <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4" style={{ color: colors.textSecondary }} /></td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Telefone do usuario (apenas numeros, com DDD)</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#10B981' }}>fileName</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textPrimary }}>fileName</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
-                          <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4 text-green-500" /></td>
+                          <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4" style={{ color: colors.textSecondary }} /></td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nome do arquivo com extensao .pdf</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#10B981' }}>instanceUrl</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textPrimary }}>instanceUrl</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
-                          <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4 text-green-500" /></td>
+                          <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4" style={{ color: colors.textSecondary }} /></td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>URL da instancia do parceiro (usada para autenticacao)</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#F59E0B' }}>documentUrl</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>documentUrl</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
-                          <td className="py-3 px-4"><span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">Condicional</span></td>
+                          <td className="py-3 px-4"><span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7', color: colors.textSecondary }}>Condicional</span></td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>URL publica para download do documento (obrigatorio se base64 nao for enviado)</td>
                         </tr>
                         <tr>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#F59E0B' }}>base64</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>base64</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
-                          <td className="py-3 px-4"><span className="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-700">Condicional</span></td>
+                          <td className="py-3 px-4"><span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7', color: colors.textSecondary }}>Condicional</span></td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Conteudo do arquivo codificado em Base64 (obrigatorio se documentUrl nao for enviado)</td>
                         </tr>
                       </tbody>
                     </table>
                   </div>
 
-                  <div className="mt-6 p-4 rounded-lg border-l-4" style={{ backgroundColor: colors.bgPrimary, borderColor: '#3B82F6' }}>
+                  <div className="mt-6 p-4 rounded-lg border-l-4" style={{ backgroundColor: colors.bgPrimary, borderColor: theme === 'dark' ? '#71717a' : '#a1a1aa' }}>
                     <p className="text-sm" style={{ color: colors.textSecondary }}>
                       <strong style={{ color: colors.textPrimary }}>Nota:</strong> Voce deve enviar <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>documentUrl</code> OU <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>base64</code>,
                       mas nao ambos. Se ambos forem enviados, <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>documentUrl</code> tera prioridade.
@@ -427,13 +425,13 @@ export function AdminWisApiDocsPage({
                   </div>
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>Respostas</h3>
 
                   <div className="space-y-4">
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <CheckCircle2 className="w-5 h-5 text-green-500" />
+                        <CheckCircle2 className="w-5 h-5" style={{ color: colors.textSecondary }} />
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Sucesso (200 OK)</span>
                       </div>
                       <CodeBlock
@@ -448,7 +446,7 @@ export function AdminWisApiDocsPage({
 
                     <div>
                       <div className="flex items-center gap-2 mb-2">
-                        <XCircle className="w-5 h-5 text-red-500" />
+                        <XCircle className="w-5 h-5" style={{ color: colors.textSecondary }} />
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Erro (400/401/500)</span>
                       </div>
                       <CodeBlock
@@ -467,9 +465,9 @@ export function AdminWisApiDocsPage({
 
             {activeSection === 'errors' && (
               <div className="space-y-6">
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <div className="flex items-center gap-3 mb-4">
-                    <AlertTriangle className="w-6 h-6" style={{ color: '#EF4444' }} />
+                    <AlertTriangle className="w-6 h-6" style={{ color: colors.textSecondary }} />
                     <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                       Codigos de Erro
                     </h2>
@@ -491,47 +489,47 @@ export function AdminWisApiDocsPage({
                       </thead>
                       <tbody>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>partner_not_authorized</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>partner_not_authorized</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>401</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O parceiro nao esta autorizado ou a URL nao corresponde ao padrao cadastrado</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>user_not_found</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>user_not_found</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>404</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nenhum usuario encontrado com o telefone informado</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>no_active_subscription</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>no_active_subscription</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>403</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O usuario nao possui uma assinatura ativa</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>invalid_request</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>invalid_request</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Parametros obrigatorios ausentes ou invalidos</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>invalid_file_format</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>invalid_file_format</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo nao e um PDF valido</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>file_too_large</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>file_too_large</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo excede o tamanho maximo de 100MB</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>download_failed</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>download_failed</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nao foi possivel baixar o arquivo da URL fornecida</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>upload_failed</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>upload_failed</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>500</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Erro interno ao processar o upload do arquivo</td>
                         </tr>
                         <tr>
-                          <td className="py-3 px-4 font-mono text-sm" style={{ color: '#EF4444' }}>analysis_start_failed</td>
+                          <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>analysis_start_failed</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>500</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo foi recebido mas a analise nao pode ser iniciada</td>
                         </tr>
@@ -540,7 +538,7 @@ export function AdminWisApiDocsPage({
                   </div>
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>Tratamento de Erros</h3>
                   <p className="mb-4" style={{ color: colors.textSecondary }}>
                     Recomendamos implementar tratamento de erros baseado no <code className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgPrimary }}>error_key</code> para
@@ -586,9 +584,9 @@ export function AdminWisApiDocsPage({
 
             {activeSection === 'examples' && (
               <div className="space-y-6">
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <div className="flex items-center gap-3 mb-4">
-                    <Code2 className="w-6 h-6" style={{ color: '#8B5CF6' }} />
+                    <Code2 className="w-6 h-6" style={{ color: colors.textSecondary }} />
                     <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
                       Exemplos Praticos
                     </h2>
@@ -598,7 +596,7 @@ export function AdminWisApiDocsPage({
                   </p>
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
                     Exemplo 1: Envio via URL do documento
                   </h3>
@@ -645,11 +643,11 @@ if (data.success) {
 } else {
   console.error('Erro:', data.error_key, data.message);
 }`}
-                  />
+                    />
                   </div>
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
                     Exemplo 2: Envio via Base64
                   </h3>
@@ -686,7 +684,7 @@ console.log(data);`}
                   />
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
                     Exemplo 3: Python
                   </h3>
@@ -720,7 +718,7 @@ else:
                   />
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
                     Exemplo 4: PHP
                   </h3>
@@ -761,9 +759,9 @@ if ($result['success']) {
                   />
                 </div>
 
-                <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <div className="flex items-center gap-3 mb-4">
-                    <Clock className="w-5 h-5" style={{ color: '#F59E0B' }} />
+                    <Clock className="w-5 h-5" style={{ color: colors.textSecondary }} />
                     <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
                       Limites e Boas Praticas
                     </h3>
@@ -771,28 +769,28 @@ if ($result['success']) {
 
                   <div className="space-y-3">
                     <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-green-500 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Tamanho maximo do arquivo:</span>
                         <span className="ml-2" style={{ color: colors.textSecondary }}>100MB</span>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-green-500 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Formato aceito:</span>
                         <span className="ml-2" style={{ color: colors.textSecondary }}>Apenas PDF (.pdf)</span>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-green-500 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Timeout da requisicao:</span>
                         <span className="ml-2" style={{ color: colors.textSecondary }}>60 segundos (recomendado configurar no cliente)</span>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-green-500 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Formato do telefone:</span>
                         <span className="ml-2" style={{ color: colors.textSecondary }}>Apenas numeros com DDD (ex: 11987654321)</span>
