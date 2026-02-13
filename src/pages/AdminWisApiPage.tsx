@@ -16,6 +16,7 @@ import {
   Building2,
   AlertCircle,
   FileText,
+  Edit3,
 } from 'lucide-react';
 
 interface Partner {
@@ -70,6 +71,12 @@ export function AdminWisApiPage() {
 
   const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
   const [selectedLog, setSelectedLog] = useState<ApiLog | null>(null);
+
+  const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [editPartnerName, setEditPartnerName] = useState('');
+  const [editPartnerUrl, setEditPartnerUrl] = useState('');
+  const [editPartnerActive, setEditPartnerActive] = useState(true);
+  const [updatingPartner, setUpdatingPartner] = useState(false);
 
   const [logFilter, setLogFilter] = useState<'all' | 'success' | 'error'>('all');
   const [partnerFilter, setPartnerFilter] = useState<string>('all');
@@ -191,6 +198,43 @@ export function AdminWisApiPage() {
     }
   }
 
+  function openEditPartner(partner: Partner) {
+    setEditingPartner(partner);
+    setEditPartnerName(partner.partner_name);
+    setEditPartnerUrl(partner.api_url_pattern);
+    setEditPartnerActive(partner.is_active);
+  }
+
+  function closeEditPartner() {
+    setEditingPartner(null);
+    setEditPartnerName('');
+    setEditPartnerUrl('');
+    setEditPartnerActive(true);
+  }
+
+  async function updatePartner() {
+    if (!editingPartner || !editPartnerName.trim() || !editPartnerUrl.trim()) return;
+
+    setUpdatingPartner(true);
+    try {
+      const { error } = await supabase
+        .from('wis_api_partners')
+        .update({
+          partner_name: editPartnerName.trim(),
+          api_url_pattern: editPartnerUrl.trim(),
+          is_active: editPartnerActive,
+        })
+        .eq('id', editingPartner.id);
+
+      if (!error) {
+        closeEditPartner();
+        await loadPartners();
+      }
+    } finally {
+      setUpdatingPartner(false);
+    }
+  }
+
   async function saveErrorMessages() {
     setSavingMessages(true);
     try {
@@ -258,8 +302,9 @@ export function AdminWisApiPage() {
           {partners.map((partner) => (
             <div
               key={partner.id}
-              className="flex items-center justify-between p-4 rounded-lg"
+              className="flex items-center justify-between p-4 rounded-lg cursor-pointer hover:ring-2 hover:ring-blue-500/50 transition-all"
               style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}
+              onClick={() => openEditPartner(partner)}
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -282,7 +327,21 @@ export function AdminWisApiPage() {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => togglePartner(partner.id, partner.is_active)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openEditPartner(partner);
+                  }}
+                  className="p-2 rounded-lg transition-colors hover:opacity-80"
+                  style={{ backgroundColor: colors.bgPrimary }}
+                  title="Editar"
+                >
+                  <Edit3 className="w-4 h-4" style={{ color: '#3B82F6' }} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    togglePartner(partner.id, partner.is_active);
+                  }}
                   className="p-2 rounded-lg transition-colors hover:opacity-80"
                   style={{ backgroundColor: partner.is_active ? '#FEE2E2' : '#D1FAE5' }}
                   title={partner.is_active ? 'Desativar' : 'Ativar'}
@@ -294,7 +353,10 @@ export function AdminWisApiPage() {
                   )}
                 </button>
                 <button
-                  onClick={() => deletePartner(partner.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deletePartner(partner.id);
+                  }}
                   className="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-colors"
                   title="Excluir"
                 >
@@ -602,6 +664,144 @@ export function AdminWisApiPage() {
                 >
                   {JSON.stringify(selectedLog.response_sent, null, 2)}
                 </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingPartner && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            className="rounded-xl p-8 w-full max-w-xl"
+            style={{ backgroundColor: colors.bgSecondary }}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                  <Edit3 className="w-5 h-5" style={{ color: '#3B82F6' }} />
+                </div>
+                <h3 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
+                  Editar Parceiro
+                </h3>
+              </div>
+              <button
+                onClick={closeEditPartner}
+                className="p-2 rounded-lg transition-colors hover:opacity-80"
+                style={{ backgroundColor: colors.bgPrimary }}
+              >
+                <X className="w-5 h-5" style={{ color: colors.textSecondary }} />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Nome do Parceiro
+                </label>
+                <input
+                  type="text"
+                  value={editPartnerName}
+                  onChange={(e) => setEditPartnerName(e.target.value)}
+                  placeholder="Ex: Z-API"
+                  className="w-full px-4 py-3 rounded-lg text-sm"
+                  style={{
+                    backgroundColor: colors.bgPrimary,
+                    color: colors.textPrimary,
+                    border: `1px solid ${colors.borderColor}`,
+                  }}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Padrao de URL
+                </label>
+                <input
+                  type="text"
+                  value={editPartnerUrl}
+                  onChange={(e) => setEditPartnerUrl(e.target.value)}
+                  placeholder="Ex: api.z-api.io%"
+                  className="w-full px-4 py-3 rounded-lg text-sm"
+                  style={{
+                    backgroundColor: colors.bgPrimary,
+                    color: colors.textPrimary,
+                    border: `1px solid ${colors.borderColor}`,
+                  }}
+                />
+                <p className="text-xs mt-2" style={{ color: colors.textSecondary }}>
+                  Use % como curinga para corresponder a qualquer parte da URL
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                  Status
+                </label>
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setEditPartnerActive(true)}
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                      editPartnerActive
+                        ? 'bg-green-100 text-green-700 ring-2 ring-green-500'
+                        : ''
+                    }`}
+                    style={
+                      !editPartnerActive
+                        ? { backgroundColor: colors.bgPrimary, color: colors.textSecondary }
+                        : {}
+                    }
+                  >
+                    <Check className="w-4 h-4 inline mr-2" />
+                    Ativo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditPartnerActive(false)}
+                    className={`flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                      !editPartnerActive
+                        ? 'bg-red-100 text-red-700 ring-2 ring-red-500'
+                        : ''
+                    }`}
+                    style={
+                      editPartnerActive
+                        ? { backgroundColor: colors.bgPrimary, color: colors.textSecondary }
+                        : {}
+                    }
+                  >
+                    <X className="w-4 h-4 inline mr-2" />
+                    Inativo
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t" style={{ borderColor: colors.borderColor }}>
+                <div className="flex gap-3">
+                  <button
+                    onClick={closeEditPartner}
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                    style={{
+                      backgroundColor: colors.bgPrimary,
+                      color: colors.textPrimary,
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={updatePartner}
+                    disabled={updatingPartner || !editPartnerName.trim() || !editPartnerUrl.trim()}
+                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: '#3B82F6' }}
+                  >
+                    {updatingPartner ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Save className="w-4 h-4" />
+                    )}
+                    Salvar Alteracoes
+                  </button>
+                </div>
               </div>
             </div>
           </div>
