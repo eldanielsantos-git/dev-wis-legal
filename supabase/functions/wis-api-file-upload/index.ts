@@ -350,6 +350,31 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[wis-api] File uploaded successfully`);
 
+    const { data: existingProcesso } = await supabase
+      .from('processos')
+      .select('id, file_name, created_at')
+      .eq('user_id', userId)
+      .eq('file_name', fileName)
+      .eq('file_size', fileBlob.size)
+      .gte('created_at', new Date(Date.now() - 60000).toISOString())
+      .maybeSingle();
+
+    if (existingProcesso) {
+      console.log(`[wis-api] Duplicate upload detected, returning existing processo: ${existingProcesso.id}`);
+      const duplicateResponse = {
+        success: true,
+        processo_id: existingProcesso.id,
+        message: 'Arquivo já foi recebido e está sendo processado',
+        analysis_started: true,
+        duplicate_detected: true,
+      };
+      await logRequest(supabase, partnerId, cleanPhone, userId, true, null, safeRequestPayload, duplicateResponse);
+      return new Response(JSON.stringify(duplicateResponse), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const processoId = crypto.randomUUID();
     const { data: processo, error: processoError } = await supabase
       .from('processos')
