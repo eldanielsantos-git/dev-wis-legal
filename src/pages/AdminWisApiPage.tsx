@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { SidebarWis } from '../components/SidebarWis';
+import { FooterWis } from '../components/FooterWis';
+import { IntelligentSearch } from '../components/IntelligentSearch';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { supabase } from '../lib/supabase';
@@ -17,6 +20,7 @@ import {
   AlertCircle,
   FileText,
   Edit3,
+  ArrowLeft,
 } from 'lucide-react';
 
 interface Partner {
@@ -52,9 +56,37 @@ interface ApiLog {
 
 const LOGS_PER_PAGE = 50;
 
-export function AdminWisApiPage() {
+interface AdminWisApiPageProps {
+  onNavigateToApp: () => void;
+  onNavigateToMyProcess: () => void;
+  onNavigateToChat?: () => void;
+  onNavigateToWorkspace?: () => void;
+  onNavigateToSchedule?: () => void;
+  onNavigateToAdmin: () => void;
+  onNavigateToSettings?: () => void;
+  onNavigateToProfile?: () => void;
+  onNavigateToTerms?: () => void;
+  onNavigateToPrivacy?: () => void;
+  onNavigateToCookies?: () => void;
+}
+
+export function AdminWisApiPage({
+  onNavigateToApp,
+  onNavigateToMyProcess,
+  onNavigateToChat,
+  onNavigateToWorkspace,
+  onNavigateToSchedule,
+  onNavigateToAdmin,
+  onNavigateToSettings,
+  onNavigateToProfile,
+  onNavigateToTerms,
+  onNavigateToPrivacy,
+  onNavigateToCookies,
+}: AdminWisApiPageProps) {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const [partners, setPartners] = useState<Partner[]>([]);
   const [errorMessages, setErrorMessages] = useState<ErrorMessage[]>([]);
@@ -268,27 +300,69 @@ export function AdminWisApiPage() {
 
   const totalPages = Math.ceil(totalLogs / LOGS_PER_PAGE);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <RefreshCw className="w-8 h-8 animate-spin" style={{ color: colors.textSecondary }} />
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8">
-      <div className="flex flex-col items-center mb-6">
-        <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-          <MessageSquare className="w-8 h-8" style={{ color: '#10B981' }} />
-        </div>
-        <h1 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
-          Wis API
-        </h1>
-        <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-          Gerencie integrações com parceiros externos
-        </p>
-      </div>
+    <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
+      <SidebarWis
+        onNavigateToApp={onNavigateToApp}
+        onNavigateToMyProcess={onNavigateToMyProcess}
+        onNavigateToChat={onNavigateToChat}
+        onNavigateToWorkspace={onNavigateToWorkspace}
+        onNavigateToSchedule={onNavigateToSchedule}
+        onNavigateToAdmin={onNavigateToAdmin}
+        onNavigateToSettings={onNavigateToSettings}
+        onNavigateToProfile={onNavigateToProfile}
+        onNavigateToNotifications={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToTokens={() => {
+          window.history.pushState({}, '', '/tokens');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToSubscription={() => {
+          window.history.pushState({}, '', '/signature');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onCollapsedChange={setIsSidebarCollapsed}
+        onSearchClick={() => setIsSearchOpen(true)}
+      />
+
+      <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+          <button
+            onClick={() => {
+              window.history.pushState({}, '', '/profile#admin');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-6xl"
+            style={{
+              backgroundColor: colors.bgSecondary,
+              color: colors.textPrimary
+            }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Voltar ao Painel</span>
+          </button>
+
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <RefreshCw className="w-8 h-8 animate-spin" style={{ color: colors.textSecondary }} />
+            </div>
+          ) : (
+            <div className="max-w-6xl mx-auto space-y-8">
+              <div className="flex flex-col items-center mb-6 sm:mb-8">
+                <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
+                  <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: '#10B981' }} />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
+                    Wis API
+                  </h1>
+                  <p className="text-xs sm:text-sm mt-1 px-4" style={{ color: colors.textSecondary }}>
+                    Gerencie integracoes com parceiros externos
+                  </p>
+                </div>
+              </div>
 
       <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
         <div className="flex items-center gap-2 mb-4">
@@ -614,6 +688,16 @@ export function AdminWisApiPage() {
           </div>
         )}
       </div>
+            </div>
+          )}
+        </div>
+
+        <FooterWis
+          onNavigateToTerms={onNavigateToTerms}
+          onNavigateToPrivacy={onNavigateToPrivacy}
+          onNavigateToCookies={onNavigateToCookies}
+        />
+      </main>
 
       {selectedLog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -806,6 +890,17 @@ export function AdminWisApiPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {isSearchOpen && (
+        <IntelligentSearch
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+          onSelectProcess={(processoId) => {
+            window.history.pushState({}, '', `/lawsuits-detail/${processoId}`);
+            window.dispatchEvent(new PopStateEvent('popstate'));
+          }}
+        />
       )}
     </div>
   );

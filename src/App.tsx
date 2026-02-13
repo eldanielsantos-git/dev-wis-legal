@@ -596,7 +596,21 @@ function AppContent() {
   }
 
   if (currentPath === '/admin-wis-api') {
-    return <AdminWisApiPage />;
+    return (
+      <AdminWisApiPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
+        onNavigateToAdmin={() => navigate('/profile#admin')}
+        onNavigateToSettings={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
   }
 
   if (currentPath === '/admin-feature-flags') {
