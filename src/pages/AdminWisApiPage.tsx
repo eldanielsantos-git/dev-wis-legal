@@ -286,7 +286,7 @@ export function AdminWisApiPage() {
           Wis API
         </h1>
         <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
-          Gerencie integracoes WhatsApp e parceiros externos
+          Gerencie integrações com parceiros externos
         </p>
       </div>
 
