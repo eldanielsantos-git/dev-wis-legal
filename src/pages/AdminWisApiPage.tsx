@@ -21,7 +21,7 @@ import {
   FileText,
   Edit3,
   ArrowLeft,
-  BookOpen,
+  BookText,
 } from 'lucide-react';
 
 interface Partner {
@@ -381,7 +381,7 @@ export function AdminWisApiPage({
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
             style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
           >
-            <BookOpen className="w-4 h-4" />
+            <BookText className="w-4 h-4" />
             Wis API Docs
           </button>
         </div>
