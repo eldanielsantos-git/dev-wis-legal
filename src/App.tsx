@@ -35,6 +35,7 @@ import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
 import { AdminProcessHistoryPage } from './pages/AdminProcessHistoryPage';
 import { AdminProcessReviewPage } from './pages/AdminProcessReviewPage';
 import { AdminWisApiPage } from './pages/AdminWisApiPage';
+import { AdminWisApiDocsPage } from './pages/AdminWisApiDocsPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import { AdminTokenLimitsPage } from './pages/AdminTokenLimitsPage';
@@ -598,6 +599,24 @@ function AppContent() {
   if (currentPath === '/admin-wis-api') {
     return (
       <AdminWisApiPage
+        onNavigateToApp={() => navigate('/app')}
+        onNavigateToMyProcess={() => navigate('/lawsuits')}
+        onNavigateToChat={() => navigate('/chat')}
+        onNavigateToWorkspace={() => navigate('/workspace')}
+        onNavigateToSchedule={() => navigate('/schedule')}
+        onNavigateToAdmin={() => navigate('/profile#admin')}
+        onNavigateToSettings={() => navigate('/admin-settings')}
+        onNavigateToProfile={() => navigate('/profile')}
+        onNavigateToTerms={() => navigate('/terms')}
+        onNavigateToPrivacy={() => navigate('/privacy')}
+        onNavigateToCookies={() => navigate('/cookies')}
+      />
+    );
+  }
+
+  if (currentPath === '/admin-wis-api-docs') {
+    return (
+      <AdminWisApiDocsPage
         onNavigateToApp={() => navigate('/app')}
         onNavigateToMyProcess={() => navigate('/lawsuits')}
         onNavigateToChat={() => navigate('/chat')}

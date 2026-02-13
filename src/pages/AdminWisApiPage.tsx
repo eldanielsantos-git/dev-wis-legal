@@ -21,6 +21,7 @@ import {
   FileText,
   Edit3,
   ArrowLeft,
+  BookOpen,
 } from 'lucide-react';
 
 interface Partner {
@@ -365,11 +366,24 @@ export function AdminWisApiPage({
               </div>
 
       <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
-        <div className="flex items-center gap-2 mb-4">
-          <Building2 className="w-5 h-5" style={{ color: '#3B82F6' }} />
-          <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-            Parceiros Autorizados
-          </h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5" style={{ color: '#3B82F6' }} />
+            <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+              Parceiros Autorizados
+            </h2>
+          </div>
+          <button
+            onClick={() => {
+              window.history.pushState({}, '', '/admin-wis-api-docs');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors hover:opacity-90"
+            style={{ backgroundColor: '#10B981' }}
+          >
+            <BookOpen className="w-4 h-4" />
+            Wis API Docs
+          </button>
         </div>
 
         <div className="space-y-4">
