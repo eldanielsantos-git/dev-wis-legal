@@ -17,6 +17,7 @@ interface CustomSelectProps {
   options: Option[];
   optionGroups?: OptionGroup[];
   placeholder?: string;
+  showEmptyOption?: boolean;
   colors: {
     card: string;
     text: string;
@@ -32,6 +33,7 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
   options,
   optionGroups,
   placeholder = '-- Selecione --',
+  showEmptyOption = true,
   colors,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -79,15 +81,16 @@ export const CustomSelect: React.FC<CustomSelectProps> = ({
           className="absolute z-50 w-full mt-1 rounded-lg border shadow-lg max-h-80 overflow-y-auto"
           style={{ backgroundColor: colors.card, borderColor: colors.border }}
         >
-          {/* Empty option */}
-          <div
-            onClick={() => handleSelect('')}
-            className="px-3 py-2 text-xs cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
-            style={{ color: colors.textSecondary }}
-          >
-            <span>{placeholder}</span>
-            {!value && <Check className="w-3.5 h-3.5" style={{ color: colors.primary }} />}
-          </div>
+          {showEmptyOption && (
+            <div
+              onClick={() => handleSelect('')}
+              className="px-3 py-2 text-xs cursor-pointer hover:bg-opacity-10 hover:bg-gray-500 transition-colors flex items-center justify-between"
+              style={{ color: colors.textSecondary }}
+            >
+              <span>{placeholder}</span>
+              {!value && <Check className="w-3.5 h-3.5" style={{ color: colors.primary }} />}
+            </div>
+          )}
 
           {/* Option groups */}
           {optionGroups && optionGroups.map((group, groupIndex) => (

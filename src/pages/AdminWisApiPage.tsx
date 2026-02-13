@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SidebarWis } from '../components/SidebarWis';
 import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
+import { CustomSelect } from '../components/CustomSelect';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { supabase } from '../lib/supabase';
@@ -579,44 +580,55 @@ export function AdminWisApiPage({
         </div>
 
         <div className="flex flex-wrap gap-3 mb-4">
-          <select
-            value={logFilter}
-            onChange={(e) => {
-              setLogFilter(e.target.value as 'all' | 'success' | 'error');
-              setCurrentPage(1);
-            }}
-            className="px-3 py-2 rounded-lg text-sm"
-            style={{
-              backgroundColor: colors.bgPrimary,
-              color: colors.textPrimary,
-              border: `1px solid ${colors.borderColor}`,
-            }}
-          >
-            <option value="all">Todos</option>
-            <option value="success">Sucesso</option>
-            <option value="error">Erro</option>
-          </select>
+          <div className="w-32 sm:w-36">
+            <CustomSelect
+              value={logFilter}
+              onChange={(value) => {
+                setLogFilter((value || 'all') as 'all' | 'success' | 'error');
+                setCurrentPage(1);
+              }}
+              options={[
+                { value: 'all', label: 'Todos' },
+                { value: 'success', label: 'Sucesso' },
+                { value: 'error', label: 'Erro' },
+              ]}
+              placeholder="Todos"
+              showEmptyOption={false}
+              colors={{
+                card: colors.bgPrimary,
+                text: colors.textPrimary,
+                textSecondary: colors.textSecondary,
+                border: colors.borderColor,
+                primary: theme === 'dark' ? '#71717a' : '#52525b',
+              }}
+            />
+          </div>
 
-          <select
-            value={partnerFilter}
-            onChange={(e) => {
-              setPartnerFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="px-3 py-2 rounded-lg text-sm"
-            style={{
-              backgroundColor: colors.bgPrimary,
-              color: colors.textPrimary,
-              border: `1px solid ${colors.borderColor}`,
-            }}
-          >
-            <option value="all">Todos os parceiros</option>
-            {partners.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.partner_name}
-              </option>
-            ))}
-          </select>
+          <div className="w-44 sm:w-52">
+            <CustomSelect
+              value={partnerFilter}
+              onChange={(value) => {
+                setPartnerFilter(value || 'all');
+                setCurrentPage(1);
+              }}
+              options={[
+                { value: 'all', label: 'Todos os parceiros' },
+                ...partners.map((p) => ({
+                  value: p.id,
+                  label: p.partner_name,
+                })),
+              ]}
+              placeholder="Todos os parceiros"
+              showEmptyOption={false}
+              colors={{
+                card: colors.bgPrimary,
+                text: colors.textPrimary,
+                textSecondary: colors.textSecondary,
+                border: colors.borderColor,
+                primary: theme === 'dark' ? '#71717a' : '#52525b',
+              }}
+            />
+          </div>
         </div>
 
         <div className="hidden md:block overflow-x-auto">
