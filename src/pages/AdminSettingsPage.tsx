@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
-import { Settings, Cpu, Scale, AlertTriangle, ArrowRight, Info, Users, Activity, FileText, CreditCard, Tag, Flag, Bell, History, RefreshCcw } from 'lucide-react';
+import { Settings, Cpu, Scale, AlertTriangle, ArrowRight, Info, Users, Activity, FileText, CreditCard, Tag, Flag, Bell, History, RefreshCcw, MessageSquare } from 'lucide-react';
 
 interface AdminSettingsPageProps {
   onNavigateToApp: () => void;
@@ -82,6 +82,11 @@ export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNa
 
   const handleNavigateToProcessReview = () => {
     window.history.pushState({}, '', '/admin-process-review');
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
+  const handleNavigateToWisApi = () => {
+    window.history.pushState({}, '', '/admin-wis-api');
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
@@ -435,6 +440,32 @@ export function AdminSettingsPage({ onNavigateToApp, onNavigateToMyProcess, onNa
               <div className="pt-1">
                 <span className="inline-flex items-center text-xs font-medium" style={{ color: '#F59E0B' }}>
                   Revisar Processos
+                  <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                </span>
+              </div>
+            </div>
+          </button>
+
+          <button
+            onClick={handleNavigateToWisApi}
+            className="group rounded-lg p-4 shadow-lg transition-all hover:scale-105 hover:shadow-2xl h-full"
+            style={{ backgroundColor: colors.bgSecondary }}
+          >
+            <div className="flex flex-col items-center text-center space-y-3 h-full">
+              <div className="p-3 rounded-lg transition-transform group-hover:scale-110" style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F3F4F6' }}>
+                <MessageSquare className="w-8 h-8" style={{ color: '#10B981' }} />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold mb-1" style={{ color: colors.textPrimary }}>
+                  Wis API
+                </h3>
+                <p className="text-xs break-words" style={{ color: colors.textSecondary }}>
+                  Gerencie integracoes WhatsApp e parceiros externos
+                </p>
+              </div>
+              <div className="pt-1">
+                <span className="inline-flex items-center text-xs font-medium" style={{ color: '#10B981' }}>
+                  Gerenciar API
                   <ArrowRight className="ml-1 w-3 h-3 group-hover:translate-x-1 transition-transform" />
                 </span>
               </div>

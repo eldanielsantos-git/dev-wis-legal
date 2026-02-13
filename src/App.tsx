@@ -34,6 +34,7 @@ import { AdminStripeDiagnosticPage } from './pages/AdminStripeDiagnosticPage';
 import { AdminTokenCreditsAuditPage } from './pages/AdminTokenCreditsAuditPage';
 import { AdminProcessHistoryPage } from './pages/AdminProcessHistoryPage';
 import { AdminProcessReviewPage } from './pages/AdminProcessReviewPage';
+import { AdminWisApiPage } from './pages/AdminWisApiPage';
 import { AdminSubscriptionManagementPage } from './pages/AdminSubscriptionManagementPage';
 import { AdminTagsManagementPage } from './pages/AdminTagsManagementPage';
 import { AdminTokenLimitsPage } from './pages/AdminTokenLimitsPage';
@@ -592,6 +593,10 @@ function AppContent() {
         onNavigateToCookies={() => navigate('/cookies')}
       />
     );
+  }
+
+  if (currentPath === '/admin-wis-api') {
+    return <AdminWisApiPage />;
   }
 
   if (currentPath === '/admin-feature-flags') {

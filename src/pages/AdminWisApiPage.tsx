@@ -1,0 +1,612 @@
+import React, { useState, useEffect } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { getThemeColors } from '../utils/themeUtils';
+import { supabase } from '../lib/supabase';
+import {
+  MessageSquare,
+  Plus,
+  Trash2,
+  Save,
+  Check,
+  X,
+  RefreshCw,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Building2,
+  AlertCircle,
+  FileText,
+} from 'lucide-react';
+
+interface Partner {
+  id: string;
+  partner_name: string;
+  api_url_pattern: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ErrorMessage {
+  id: string;
+  error_key: string;
+  message_text: string;
+  created_at: string;
+  updated_at: string;
+}
+
+interface ApiLog {
+  id: string;
+  partner_id: string | null;
+  phone_number: string;
+  user_id: string | null;
+  success: boolean;
+  error_key: string | null;
+  request_payload: Record<string, unknown>;
+  response_sent: Record<string, unknown>;
+  created_at: string;
+  partner?: Partner;
+  user_profile?: { first_name: string; last_name: string; email: string };
+}
+
+const LOGS_PER_PAGE = 50;
+
+export function AdminWisApiPage() {
+  const { theme } = useTheme();
+  const colors = getThemeColors(theme);
+
+  const [partners, setPartners] = useState<Partner[]>([]);
+  const [errorMessages, setErrorMessages] = useState<ErrorMessage[]>([]);
+  const [logs, setLogs] = useState<ApiLog[]>([]);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const [loading, setLoading] = useState(true);
+  const [savingPartner, setSavingPartner] = useState(false);
+  const [savingMessages, setSavingMessages] = useState(false);
+
+  const [newPartnerName, setNewPartnerName] = useState('');
+  const [newPartnerUrl, setNewPartnerUrl] = useState('');
+
+  const [editedMessages, setEditedMessages] = useState<Record<string, string>>({});
+  const [selectedLog, setSelectedLog] = useState<ApiLog | null>(null);
+
+  const [logFilter, setLogFilter] = useState<'all' | 'success' | 'error'>('all');
+  const [partnerFilter, setPartnerFilter] = useState<string>('all');
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    loadLogs();
+  }, [currentPage, logFilter, partnerFilter]);
+
+  async function loadData() {
+    setLoading(true);
+    try {
+      await Promise.all([loadPartners(), loadErrorMessages(), loadLogs()]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadPartners() {
+    const { data, error } = await supabase
+      .from('wis_api_partners')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setPartners(data);
+    }
+  }
+
+  async function loadErrorMessages() {
+    const { data, error } = await supabase
+      .from('wis_api_error_messages')
+      .select('*')
+      .order('error_key', { ascending: true });
+
+    if (!error && data) {
+      setErrorMessages(data);
+      const initialEdits: Record<string, string> = {};
+      data.forEach((msg) => {
+        initialEdits[msg.id] = msg.message_text;
+      });
+      setEditedMessages(initialEdits);
+    }
+  }
+
+  async function loadLogs() {
+    let query = supabase
+      .from('wis_api_logs')
+      .select('*, partner:wis_api_partners(partner_name), user_profile:user_profiles(first_name, last_name, email)', { count: 'exact' });
+
+    if (logFilter === 'success') {
+      query = query.eq('success', true);
+    } else if (logFilter === 'error') {
+      query = query.eq('success', false);
+    }
+
+    if (partnerFilter !== 'all') {
+      query = query.eq('partner_id', partnerFilter);
+    }
+
+    const from = (currentPage - 1) * LOGS_PER_PAGE;
+    const to = from + LOGS_PER_PAGE - 1;
+
+    const { data, error, count } = await query
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    if (!error && data) {
+      setLogs(data);
+      setTotalLogs(count || 0);
+    }
+  }
+
+  async function addPartner() {
+    if (!newPartnerName.trim() || !newPartnerUrl.trim()) return;
+
+    setSavingPartner(true);
+    try {
+      const { error } = await supabase.from('wis_api_partners').insert({
+        partner_name: newPartnerName.trim(),
+        api_url_pattern: newPartnerUrl.trim(),
+        is_active: true,
+      });
+
+      if (!error) {
+        setNewPartnerName('');
+        setNewPartnerUrl('');
+        await loadPartners();
+      }
+    } finally {
+      setSavingPartner(false);
+    }
+  }
+
+  async function togglePartner(partnerId: string, currentStatus: boolean) {
+    const { error } = await supabase
+      .from('wis_api_partners')
+      .update({ is_active: !currentStatus })
+      .eq('id', partnerId);
+
+    if (!error) {
+      await loadPartners();
+    }
+  }
+
+  async function deletePartner(partnerId: string) {
+    if (!confirm('Tem certeza que deseja excluir este parceiro?')) return;
+
+    const { error } = await supabase
+      .from('wis_api_partners')
+      .delete()
+      .eq('id', partnerId);
+
+    if (!error) {
+      await loadPartners();
+    }
+  }
+
+  async function saveErrorMessages() {
+    setSavingMessages(true);
+    try {
+      const updates = errorMessages.map((msg) => ({
+        id: msg.id,
+        message_text: editedMessages[msg.id] || msg.message_text,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('wis_api_error_messages')
+          .update({ message_text: update.message_text })
+          .eq('id', update.id);
+      }
+
+      await loadErrorMessages();
+    } finally {
+      setSavingMessages(false);
+    }
+  }
+
+  function formatDate(dateStr: string) {
+    return new Date(dateStr).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  const totalPages = Math.ceil(totalLogs / LOGS_PER_PAGE);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="w-8 h-8 animate-spin" style={{ color: colors.textSecondary }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-6xl mx-auto space-y-8">
+      <div className="flex flex-col items-center mb-6">
+        <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: colors.bgSecondary }}>
+          <MessageSquare className="w-8 h-8" style={{ color: '#10B981' }} />
+        </div>
+        <h1 className="text-2xl font-bold" style={{ color: colors.textPrimary }}>
+          Wis API
+        </h1>
+        <p className="text-sm mt-1" style={{ color: colors.textSecondary }}>
+          Gerencie integracoes WhatsApp e parceiros externos
+        </p>
+      </div>
+
+      <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+        <div className="flex items-center gap-2 mb-4">
+          <Building2 className="w-5 h-5" style={{ color: '#3B82F6' }} />
+          <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+            Parceiros Autorizados
+          </h2>
+        </div>
+
+        <div className="space-y-4">
+          {partners.map((partner) => (
+            <div
+              key={partner.id}
+              className="flex items-center justify-between p-4 rounded-lg"
+              style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}
+            >
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium" style={{ color: colors.textPrimary }}>
+                    {partner.partner_name}
+                  </span>
+                  <span
+                    className={`text-xs px-2 py-0.5 rounded-full ${
+                      partner.is_active
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {partner.is_active ? 'Ativo' : 'Inativo'}
+                  </span>
+                </div>
+                <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
+                  Padrao: {partner.api_url_pattern}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => togglePartner(partner.id, partner.is_active)}
+                  className="p-2 rounded-lg transition-colors hover:opacity-80"
+                  style={{ backgroundColor: partner.is_active ? '#FEE2E2' : '#D1FAE5' }}
+                  title={partner.is_active ? 'Desativar' : 'Ativar'}
+                >
+                  {partner.is_active ? (
+                    <X className="w-4 h-4 text-red-600" />
+                  ) : (
+                    <Check className="w-4 h-4 text-green-600" />
+                  )}
+                </button>
+                <button
+                  onClick={() => deletePartner(partner.id)}
+                  className="p-2 rounded-lg bg-red-100 hover:bg-red-200 transition-colors"
+                  title="Excluir"
+                >
+                  <Trash2 className="w-4 h-4 text-red-600" />
+                </button>
+              </div>
+            </div>
+          ))}
+
+          <div
+            className="p-4 rounded-lg"
+            style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}
+          >
+            <p className="text-sm font-medium mb-3" style={{ color: colors.textPrimary }}>
+              Adicionar novo parceiro
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="text"
+                value={newPartnerName}
+                onChange={(e) => setNewPartnerName(e.target.value)}
+                placeholder="Nome do parceiro"
+                className="flex-1 px-3 py-2 rounded-lg text-sm"
+                style={{
+                  backgroundColor: colors.bgPrimary,
+                  color: colors.textPrimary,
+                  border: `1px solid ${colors.borderColor}`,
+                }}
+              />
+              <input
+                type="text"
+                value={newPartnerUrl}
+                onChange={(e) => setNewPartnerUrl(e.target.value)}
+                placeholder="Padrao de URL (ex: api.z-api.io%)"
+                className="flex-1 px-3 py-2 rounded-lg text-sm"
+                style={{
+                  backgroundColor: colors.bgPrimary,
+                  color: colors.textPrimary,
+                  border: `1px solid ${colors.borderColor}`,
+                }}
+              />
+              <button
+                onClick={addPartner}
+                disabled={savingPartner || !newPartnerName.trim() || !newPartnerUrl.trim()}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+                style={{ backgroundColor: '#10B981' }}
+              >
+                {savingPartner ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" style={{ color: '#F59E0B' }} />
+            <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+              Mensagens de Erro
+            </h2>
+          </div>
+          <button
+            onClick={saveErrorMessages}
+            disabled={savingMessages}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50"
+            style={{ backgroundColor: '#3B82F6' }}
+          >
+            {savingMessages ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            Salvar
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          {errorMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className="p-4 rounded-lg"
+              style={{ backgroundColor: theme === 'dark' ? '#1F2229' : '#F9FAFB' }}
+            >
+              <label className="block text-xs font-mono mb-2" style={{ color: colors.textSecondary }}>
+                {msg.error_key}
+              </label>
+              <textarea
+                value={editedMessages[msg.id] || ''}
+                onChange={(e) =>
+                  setEditedMessages((prev) => ({
+                    ...prev,
+                    [msg.id]: e.target.value,
+                  }))
+                }
+                rows={2}
+                className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+                style={{
+                  backgroundColor: colors.bgPrimary,
+                  color: colors.textPrimary,
+                  border: `1px solid ${colors.borderColor}`,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-xl p-6 shadow-lg" style={{ backgroundColor: colors.bgSecondary }}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5" style={{ color: '#8B5CF6' }} />
+            <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+              Logs de Chamadas
+            </h2>
+            <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: colors.bgPrimary, color: colors.textSecondary }}>
+              {totalLogs} registros
+            </span>
+          </div>
+          <button
+            onClick={loadLogs}
+            className="p-2 rounded-lg transition-colors hover:opacity-80"
+            style={{ backgroundColor: colors.bgPrimary }}
+          >
+            <RefreshCw className="w-4 h-4" style={{ color: colors.textSecondary }} />
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-3 mb-4">
+          <select
+            value={logFilter}
+            onChange={(e) => {
+              setLogFilter(e.target.value as 'all' | 'success' | 'error');
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 rounded-lg text-sm"
+            style={{
+              backgroundColor: colors.bgPrimary,
+              color: colors.textPrimary,
+              border: `1px solid ${colors.borderColor}`,
+            }}
+          >
+            <option value="all">Todos</option>
+            <option value="success">Sucesso</option>
+            <option value="error">Erro</option>
+          </select>
+
+          <select
+            value={partnerFilter}
+            onChange={(e) => {
+              setPartnerFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="px-3 py-2 rounded-lg text-sm"
+            style={{
+              backgroundColor: colors.bgPrimary,
+              color: colors.textPrimary,
+              border: `1px solid ${colors.borderColor}`,
+            }}
+          >
+            <option value="all">Todos os parceiros</option>
+            {partners.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.partner_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Data/Hora</th>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Parceiro</th>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Telefone</th>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Usuario</th>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Status</th>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              {logs.map((log) => (
+                <tr
+                  key={log.id}
+                  className="hover:opacity-80 transition-opacity"
+                  style={{ borderBottom: `1px solid ${colors.borderColor}` }}
+                >
+                  <td className="py-3 px-2" style={{ color: colors.textPrimary }}>
+                    {formatDate(log.created_at)}
+                  </td>
+                  <td className="py-3 px-2" style={{ color: colors.textPrimary }}>
+                    {(log.partner as any)?.partner_name || '-'}
+                  </td>
+                  <td className="py-3 px-2 font-mono text-xs" style={{ color: colors.textPrimary }}>
+                    {log.phone_number}
+                  </td>
+                  <td className="py-3 px-2" style={{ color: colors.textPrimary }}>
+                    {log.user_profile
+                      ? `${(log.user_profile as any).first_name || ''} ${(log.user_profile as any).last_name || ''}`.trim() || (log.user_profile as any).email
+                      : '-'}
+                  </td>
+                  <td className="py-3 px-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${
+                        log.success
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'
+                      }`}
+                    >
+                      {log.success ? 'Sucesso' : log.error_key || 'Erro'}
+                    </span>
+                  </td>
+                  <td className="py-3 px-2">
+                    <button
+                      onClick={() => setSelectedLog(log)}
+                      className="p-1.5 rounded-lg transition-colors hover:opacity-80"
+                      style={{ backgroundColor: colors.bgPrimary }}
+                      title="Ver detalhes"
+                    >
+                      <Eye className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-lg transition-colors disabled:opacity-50"
+              style={{ backgroundColor: colors.bgPrimary }}
+            >
+              <ChevronLeft className="w-4 h-4" style={{ color: colors.textSecondary }} />
+            </button>
+            <span className="text-sm" style={{ color: colors.textSecondary }}>
+              Pagina {currentPage} de {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-lg transition-colors disabled:opacity-50"
+              style={{ backgroundColor: colors.bgPrimary }}
+            >
+              <ChevronRight className="w-4 h-4" style={{ color: colors.textSecondary }} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {selectedLog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div
+            className="rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-auto"
+            style={{ backgroundColor: colors.bgSecondary }}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                Detalhes do Log
+              </h3>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="p-2 rounded-lg transition-colors hover:opacity-80"
+                style={{ backgroundColor: colors.bgPrimary }}
+              >
+                <X className="w-4 h-4" style={{ color: colors.textSecondary }} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                  Data/Hora
+                </label>
+                <p style={{ color: colors.textPrimary }}>{formatDate(selectedLog.created_at)}</p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                  Request Payload
+                </label>
+                <pre
+                  className="p-3 rounded-lg text-xs overflow-auto"
+                  style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary }}
+                >
+                  {JSON.stringify(selectedLog.request_payload, null, 2)}
+                </pre>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                  Response Enviada
+                </label>
+                <pre
+                  className="p-3 rounded-lg text-xs overflow-auto"
+                  style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary }}
+                >
+                  {JSON.stringify(selectedLog.response_sent, null, 2)}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
