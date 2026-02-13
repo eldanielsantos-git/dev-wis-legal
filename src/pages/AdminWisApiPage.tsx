@@ -652,7 +652,8 @@ export function AdminWisApiPage({
               {logs.map((log) => (
                 <tr
                   key={log.id}
-                  className="hover:opacity-80 transition-opacity"
+                  onClick={() => setSelectedLog(log)}
+                  className="hover:opacity-80 transition-opacity cursor-pointer"
                   style={{ borderBottom: `1px solid ${colors.borderColor}` }}
                 >
                   <td className="py-3 px-2" style={{ color: colors.textPrimary }}>
@@ -673,22 +674,19 @@ export function AdminWisApiPage({
                     <span
                       className="text-xs px-2 py-1 rounded-full"
                       style={{
-                        backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7',
-                        color: colors.textSecondary,
+                        backgroundColor: log.success
+                          ? (theme === 'dark' ? '#166534' : '#dcfce7')
+                          : (theme === 'dark' ? '#991b1b' : '#fee2e2'),
+                        color: log.success
+                          ? (theme === 'dark' ? '#86efac' : '#166534')
+                          : (theme === 'dark' ? '#fca5a5' : '#991b1b'),
                       }}
                     >
                       {log.success ? 'Sucesso' : log.error_key || 'Erro'}
                     </span>
                   </td>
                   <td className="py-3 px-2">
-                    <button
-                      onClick={() => setSelectedLog(log)}
-                      className="p-1.5 rounded-lg transition-colors hover:opacity-80"
-                      style={{ backgroundColor: colors.bgPrimary }}
-                      title="Ver detalhes"
-                    >
-                      <Eye className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                    </button>
+                    <Eye className="w-4 h-4" style={{ color: colors.textSecondary }} />
                   </td>
                 </tr>
               ))}
@@ -700,7 +698,8 @@ export function AdminWisApiPage({
           {logs.map((log) => (
             <div
               key={log.id}
-              className="p-4 rounded-lg space-y-2"
+              onClick={() => setSelectedLog(log)}
+              className="p-4 rounded-lg space-y-2 cursor-pointer hover:opacity-80 transition-opacity"
               style={{ backgroundColor: colors.bgPrimary }}
             >
               <div className="flex items-start justify-between gap-2">
@@ -712,14 +711,7 @@ export function AdminWisApiPage({
                     {(log.partner as any)?.partner_name || 'Sem parceiro'}
                   </p>
                 </div>
-                <button
-                  onClick={() => setSelectedLog(log)}
-                  className="p-2 rounded-lg transition-colors hover:opacity-80 flex-shrink-0"
-                  style={{ backgroundColor: colors.bgSecondary }}
-                  title="Ver detalhes"
-                >
-                  <Eye className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                </button>
+                <Eye className="w-4 h-4 flex-shrink-0" style={{ color: colors.textSecondary }} />
               </div>
               <div className="flex items-center justify-between gap-2">
                 <p className="text-xs font-mono" style={{ color: colors.textSecondary }}>
@@ -728,8 +720,12 @@ export function AdminWisApiPage({
                 <span
                   className="text-xs px-2 py-1 rounded-full whitespace-nowrap"
                   style={{
-                    backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7',
-                    color: colors.textSecondary,
+                    backgroundColor: log.success
+                      ? (theme === 'dark' ? '#166534' : '#dcfce7')
+                      : (theme === 'dark' ? '#991b1b' : '#fee2e2'),
+                    color: log.success
+                      ? (theme === 'dark' ? '#86efac' : '#166534')
+                      : (theme === 'dark' ? '#fca5a5' : '#991b1b'),
                   }}
                 >
                   {log.success ? 'Sucesso' : log.error_key || 'Erro'}
@@ -786,9 +782,24 @@ export function AdminWisApiPage({
             style={{ backgroundColor: colors.bgSecondary }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                Detalhes do Log
-              </h3>
+              <div className="flex items-center gap-3">
+                <h3 className="text-base sm:text-lg font-semibold" style={{ color: colors.textPrimary }}>
+                  Detalhes do Log
+                </h3>
+                <span
+                  className="text-xs px-2 py-1 rounded-full"
+                  style={{
+                    backgroundColor: selectedLog.success
+                      ? (theme === 'dark' ? '#166534' : '#dcfce7')
+                      : (theme === 'dark' ? '#991b1b' : '#fee2e2'),
+                    color: selectedLog.success
+                      ? (theme === 'dark' ? '#86efac' : '#166534')
+                      : (theme === 'dark' ? '#fca5a5' : '#991b1b'),
+                  }}
+                >
+                  {selectedLog.success ? 'Sucesso' : 'Erro'}
+                </span>
+              </div>
               <button
                 onClick={() => setSelectedLog(null)}
                 className="p-2 rounded-lg transition-colors hover:opacity-80"
@@ -799,19 +810,56 @@ export function AdminWisApiPage({
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
-                  Data/Hora
-                </label>
-                <p className="text-sm sm:text-base" style={{ color: colors.textPrimary }}>{formatDate(selectedLog.created_at)}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                    Data/Hora
+                  </label>
+                  <p className="text-sm" style={{ color: colors.textPrimary }}>{formatDate(selectedLog.created_at)}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                    Parceiro
+                  </label>
+                  <p className="text-sm" style={{ color: colors.textPrimary }}>
+                    {(selectedLog.partner as any)?.partner_name || '-'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                    Telefone
+                  </label>
+                  <p className="text-sm font-mono" style={{ color: colors.textPrimary }}>{selectedLog.phone_number}</p>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                    Usuário
+                  </label>
+                  <p className="text-sm" style={{ color: colors.textPrimary }}>
+                    {selectedLog.user_profile
+                      ? `${(selectedLog.user_profile as any).first_name || ''} ${(selectedLog.user_profile as any).last_name || ''}`.trim() || (selectedLog.user_profile as any).email
+                      : '-'}
+                  </p>
+                </div>
               </div>
+
+              {selectedLog.error_key && (
+                <div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
+                    Código do Erro
+                  </label>
+                  <p className="text-sm font-mono px-2 py-1 rounded inline-block" style={{ backgroundColor: colors.bgPrimary, color: theme === 'dark' ? '#fca5a5' : '#991b1b' }}>
+                    {selectedLog.error_key}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
                   Request Payload
                 </label>
                 <pre
-                  className="p-3 rounded-lg text-[10px] sm:text-xs overflow-auto"
+                  className="p-3 rounded-lg text-[10px] sm:text-xs overflow-auto max-h-48"
                   style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary }}
                 >
                   {JSON.stringify(selectedLog.request_payload, null, 2)}
@@ -823,7 +871,7 @@ export function AdminWisApiPage({
                   Response Enviada
                 </label>
                 <pre
-                  className="p-3 rounded-lg text-[10px] sm:text-xs overflow-auto"
+                  className="p-3 rounded-lg text-[10px] sm:text-xs overflow-auto max-h-48"
                   style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary }}
                 >
                   {JSON.stringify(selectedLog.response_sent, null, 2)}
