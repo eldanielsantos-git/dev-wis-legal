@@ -96,8 +96,8 @@ export function AdminWisApiDocsPage({
   const [activeSection, setActiveSection] = useState('overview');
 
   const sections = [
-    { id: 'overview', label: 'Visao Geral', icon: BookOpen },
-    { id: 'authentication', label: 'Autenticacao', icon: Key },
+    { id: 'overview', label: 'Visão Geral', icon: BookOpen },
+    { id: 'authentication', label: 'Autenticação', icon: Key },
     { id: 'endpoints', label: 'Endpoints', icon: Server },
     { id: 'errors', label: 'Erros', icon: AlertTriangle },
     { id: 'examples', label: 'Exemplos', icon: Code2 },
@@ -157,7 +157,7 @@ export function AdminWisApiDocsPage({
                   Wis API Documentation
                 </h1>
                 <p className="text-xs sm:text-sm mt-2 px-4" style={{ color: colors.textSecondary }}>
-                  Documentacao completa para integracao com a API Wis
+                  Documentação completa para integração com a API Wis
                 </p>
               </div>
             </div>
@@ -188,22 +188,22 @@ export function AdminWisApiDocsPage({
               <div className="space-y-4 sm:space-y-6">
                 <div className="rounded-xl p-4 sm:p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4" style={{ color: colors.textPrimary }}>
-                    O que e a Wis API?
+                    O que é a Wis API?
                   </h2>
                   <p className="text-sm sm:text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
-                    A Wis API permite que parceiros autorizados enviem documentos PDF para analise automatizada
-                    diretamente via integracao de sistemas. E ideal para automacoes de WhatsApp, sistemas de
-                    gestao juridica, ou qualquer plataforma que deseje integrar a analise de processos judiciais.
+                    A Wis API permite que parceiros autorizados enviem documentos PDF para análise automatizada
+                    diretamente via integração de sistemas. É ideal para automações de WhatsApp, sistemas de
+                    gestão jurídica, ou qualquer plataforma que deseje integrar a análise de processos judiciais.
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
                     <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-2 sm:gap-3 mb-2">
                         <Zap className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
-                        <span className="text-sm sm:text-base font-medium" style={{ color: colors.textPrimary }}>Rapido</span>
+                        <span className="text-sm sm:text-base font-medium" style={{ color: colors.textPrimary }}>Rápido</span>
                       </div>
                       <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                        Analise iniciada em segundos apos o envio do documento
+                        Análise iniciada em segundos após o envio do documento
                       </p>
                     </div>
                     <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
@@ -212,7 +212,7 @@ export function AdminWisApiDocsPage({
                         <span className="text-sm sm:text-base font-medium" style={{ color: colors.textPrimary }}>Seguro</span>
                       </div>
                       <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                        Autenticacao por parceiro autorizado e validacao de usuario
+                        Autenticação por parceiro autorizado e validação de usuário
                       </p>
                     </div>
                     <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
@@ -229,7 +229,7 @@ export function AdminWisApiDocsPage({
 
                 <div className="rounded-xl p-4 sm:p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4" style={{ color: colors.textPrimary }}>
-                    Fluxo de Integracao
+                    Fluxo de Integração
                   </h2>
                   <div className="space-y-3 sm:space-y-4">
                     <div className="flex items-start gap-3 sm:gap-4">
@@ -237,7 +237,7 @@ export function AdminWisApiDocsPage({
                       <div>
                         <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Cadastro do Parceiro</h3>
                         <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                          O parceiro e cadastrado no painel administrativo com um padrao de URL autorizado
+                          O parceiro é cadastrado no painel administrativo com um padrão de URL autorizado
                         </p>
                       </div>
                     </div>
@@ -246,25 +246,25 @@ export function AdminWisApiDocsPage({
                       <div>
                         <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Envio do Documento</h3>
                         <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                          O parceiro envia uma requisicao POST com os dados do documento e telefone do usuario
+                          O parceiro envia uma requisição POST com os dados do documento e telefone do usuário
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>3</div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Validacao</h3>
+                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Validação</h3>
                         <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                          A API valida o parceiro, o usuario e o formato do arquivo
+                          A API valida o parceiro, o usuário e o formato do arquivo
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3 sm:gap-4">
                       <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>4</div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Analise Automatica</h3>
+                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Análise Automática</h3>
                         <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
-                          O documento e processado e a analise e iniciada automaticamente
+                          O documento é processado e a análise é iniciada automaticamente
                         </p>
                       </div>
                     </div>
@@ -279,13 +279,13 @@ export function AdminWisApiDocsPage({
                   <div className="flex items-center gap-3 mb-4">
                     <Key className="w-6 h-6" style={{ color: colors.textSecondary }} />
                     <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
-                      Autenticacao
+                      Autenticação
                     </h2>
                   </div>
 
                   <p className="leading-relaxed mb-6" style={{ color: colors.textSecondary }}>
-                    A autenticacao da Wis API e baseada em <strong>parceiros autorizados</strong>. Cada parceiro
-                    possui um padrao de URL registrado no sistema. Quando uma requisicao e recebida, a API
+                    A autenticação da Wis API é baseada em <strong>parceiros autorizados</strong>. Cada parceiro
+                    possui um padrão de URL registrado no sistema. Quando uma requisição é recebida, a API
                     valida se a URL de origem (instanceUrl) corresponde a um parceiro autorizado e ativo.
                   </p>
 
@@ -296,8 +296,8 @@ export function AdminWisApiDocsPage({
                         <h4 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Importante</h4>
                         <p className="text-sm" style={{ color: colors.textSecondary }}>
                           O campo <code className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>instanceUrl</code> deve
-                          corresponder ao padrao cadastrado para seu parceiro. Requisicoes de URLs nao autorizadas
-                          serao rejeitadas.
+                          corresponder ao padrão cadastrado para seu parceiro. Requisições de URLs não autorizadas
+                          serão rejeitadas.
                         </p>
                       </div>
                     </div>
@@ -306,27 +306,27 @@ export function AdminWisApiDocsPage({
 
                 <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>
-                    Como funciona a validacao?
+                    Como funciona a validação?
                   </h3>
 
                   <div className="space-y-4">
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                        <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>1. Validacao do Parceiro</span>
+                        <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>1. Validação do Parceiro</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
-                        A API verifica se existe um parceiro ativo cujo padrao de URL corresponde ao <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>instanceUrl</code> enviado.
+                        A API verifica se existe um parceiro ativo cujo padrão de URL corresponde ao <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>instanceUrl</code> enviado.
                       </p>
                     </div>
 
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-2 mb-2">
                         <Shield className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                        <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>2. Validacao do Usuario</span>
+                        <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>2. Validação do Usuário</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
-                        O telefone informado e usado para identificar o usuario no sistema. O usuario deve estar
+                        O telefone informado é usado para identificar o usuário no sistema. O usuário deve estar
                         cadastrado e possuir uma assinatura ativa.
                       </p>
                     </div>
@@ -334,10 +334,10 @@ export function AdminWisApiDocsPage({
                     <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <div className="flex items-center gap-2 mb-2">
                         <FileText className="w-4 h-4" style={{ color: colors.textSecondary }} />
-                        <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>3. Validacao do Arquivo</span>
+                        <span className="font-medium text-sm" style={{ color: colors.textPrimary }}>3. Validação do Arquivo</span>
                       </div>
                       <p className="text-sm" style={{ color: colors.textSecondary }}>
-                        O arquivo deve ser um PDF valido com tamanho maximo de 100MB.
+                        O arquivo deve ser um PDF válido com tamanho máximo de 100MB.
                       </p>
                     </div>
                   </div>
@@ -361,26 +361,26 @@ export function AdminWisApiDocsPage({
                   </div>
 
                   <p className="mb-6" style={{ color: colors.textSecondary }}>
-                    Envia um documento PDF para analise. O documento pode ser enviado via URL publica ou
+                    Envia um documento PDF para análise. O documento pode ser enviado via URL pública ou
                     codificado em Base64.
                   </p>
 
                   <h3 className="text-lg font-semibold mb-3" style={{ color: colors.textPrimary }}>Headers</h3>
                   <CodeBlock
-                    title="Headers da Requisicao"
+                    title="Headers da Requisição"
                     code={`Content-Type: application/json`}
                   />
 
-                  <h3 className="text-lg font-semibold mb-3 mt-6" style={{ color: colors.textPrimary }}>Parametros do Body</h3>
+                  <h3 className="text-lg font-semibold mb-3 mt-6" style={{ color: colors.textPrimary }}>Parâmetros do Body</h3>
 
                   <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
-                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Parametro</th>
+                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Parâmetro</th>
                           <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Tipo</th>
-                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Obrigatorio</th>
-                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Descricao</th>
+                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Obrigatório</th>
+                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Descrição</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -388,31 +388,31 @@ export function AdminWisApiDocsPage({
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textPrimary }}>phone</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
                           <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4" style={{ color: colors.textSecondary }} /></td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Telefone do usuario (apenas numeros, com DDD)</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Telefone do usuário (apenas números, com DDD)</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textPrimary }}>fileName</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
                           <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4" style={{ color: colors.textSecondary }} /></td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nome do arquivo com extensao .pdf</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nome do arquivo com extensão .pdf</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textPrimary }}>instanceUrl</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
                           <td className="py-3 px-4"><CheckCircle2 className="w-4 h-4" style={{ color: colors.textSecondary }} /></td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>URL da instancia do parceiro (usada para autenticacao)</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>URL da instância do parceiro (usada para autenticação)</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>documentUrl</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
                           <td className="py-3 px-4"><span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7', color: colors.textSecondary }}>Condicional</span></td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>URL publica para download do documento (obrigatorio se base64 nao for enviado)</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>URL pública para download do documento (obrigatório se base64 não for enviado)</td>
                         </tr>
                         <tr>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>base64</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>string</td>
                           <td className="py-3 px-4"><span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7', color: colors.textSecondary }}>Condicional</span></td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Conteudo do arquivo codificado em Base64 (obrigatorio se documentUrl nao for enviado)</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Conteúdo do arquivo codificado em Base64 (obrigatório se documentUrl não for enviado)</td>
                         </tr>
                       </tbody>
                     </table>
@@ -420,11 +420,11 @@ export function AdminWisApiDocsPage({
 
                   <div className="md:hidden space-y-3">
                     {[
-                      { param: 'phone', type: 'string', required: true, desc: 'Telefone do usuario (apenas numeros, com DDD)' },
-                      { param: 'fileName', type: 'string', required: true, desc: 'Nome do arquivo com extensao .pdf' },
-                      { param: 'instanceUrl', type: 'string', required: true, desc: 'URL da instancia do parceiro (usada para autenticacao)' },
-                      { param: 'documentUrl', type: 'string', required: 'Condicional', desc: 'URL publica para download do documento (obrigatorio se base64 nao for enviado)' },
-                      { param: 'base64', type: 'string', required: 'Condicional', desc: 'Conteudo do arquivo codificado em Base64 (obrigatorio se documentUrl nao for enviado)' },
+                      { param: 'phone', type: 'string', required: true, desc: 'Telefone do usuário (apenas números, com DDD)' },
+                      { param: 'fileName', type: 'string', required: true, desc: 'Nome do arquivo com extensão .pdf' },
+                      { param: 'instanceUrl', type: 'string', required: true, desc: 'URL da instância do parceiro (usada para autenticação)' },
+                      { param: 'documentUrl', type: 'string', required: 'Condicional', desc: 'URL pública para download do documento (obrigatório se base64 não for enviado)' },
+                      { param: 'base64', type: 'string', required: 'Condicional', desc: 'Conteúdo do arquivo codificado em Base64 (obrigatório se documentUrl não for enviado)' },
                     ].map((item) => (
                       <div key={item.param} className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                         <div className="flex items-center justify-between mb-2">
@@ -445,8 +445,8 @@ export function AdminWisApiDocsPage({
 
                   <div className="mt-6 p-4 rounded-lg border-l-4" style={{ backgroundColor: colors.bgPrimary, borderColor: theme === 'dark' ? '#71717a' : '#a1a1aa' }}>
                     <p className="text-sm" style={{ color: colors.textSecondary }}>
-                      <strong style={{ color: colors.textPrimary }}>Nota:</strong> Voce deve enviar <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>documentUrl</code> OU <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>base64</code>,
-                      mas nao ambos. Se ambos forem enviados, <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>documentUrl</code> tera prioridade.
+                      <strong style={{ color: colors.textPrimary }}>Nota:</strong> Você deve enviar <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>documentUrl</code> OU <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>base64</code>,
+                      mas não ambos. Se ambos forem enviados, <code className="px-1 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgSecondary }}>documentUrl</code> terá prioridade.
                     </p>
                   </div>
                 </div>
@@ -465,7 +465,7 @@ export function AdminWisApiDocsPage({
                         code={`{
   "success": true,
   "processo_id": "550e8400-e29b-41d4-a716-446655440000",
-  "message": "Arquivo recebido e analise iniciada"
+  "message": "Arquivo recebido e análise iniciada"
 }`}
                       />
                     </div>
@@ -480,7 +480,7 @@ export function AdminWisApiDocsPage({
                         code={`{
   "success": false,
   "error_key": "user_not_found",
-  "message": "Usuario nao encontrado. Certifique-se de que o telefone esta cadastrado."
+  "message": "Usuário não encontrado. Certifique-se de que o telefone está cadastrado."
 }`}
                       />
                     </div>
@@ -495,7 +495,7 @@ export function AdminWisApiDocsPage({
                   <div className="flex items-center gap-3 mb-4">
                     <AlertTriangle className="w-6 h-6" style={{ color: colors.textSecondary }} />
                     <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
-                      Codigos de Erro
+                      Códigos de Erro
                     </h2>
                   </div>
 
@@ -510,44 +510,44 @@ export function AdminWisApiDocsPage({
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>error_key</th>
                           <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>HTTP Status</th>
-                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Descricao</th>
+                          <th className="text-left py-3 px-4 font-semibold" style={{ color: colors.textPrimary }}>Descrição</th>
                         </tr>
                       </thead>
                       <tbody>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>partner_not_authorized</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>401</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O parceiro nao esta autorizado ou a URL nao corresponde ao padrao cadastrado</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O parceiro não está autorizado ou a URL não corresponde ao padrão cadastrado</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>user_not_found</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>404</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nenhum usuario encontrado com o telefone informado</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nenhum usuário encontrado com o telefone informado</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>no_active_subscription</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>403</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O usuario nao possui uma assinatura ativa</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O usuário não possui uma assinatura ativa</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>invalid_request</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Parametros obrigatorios ausentes ou invalidos</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Parâmetros obrigatórios ausentes ou inválidos</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>invalid_file_format</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo nao e um PDF valido</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo não é um PDF válido</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>file_too_large</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo excede o tamanho maximo de 100MB</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo excede o tamanho máximo de 100MB</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>download_failed</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>400</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Nao foi possivel baixar o arquivo da URL fornecida</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>Não foi possível baixar o arquivo da URL fornecida</td>
                         </tr>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>upload_failed</td>
@@ -557,7 +557,7 @@ export function AdminWisApiDocsPage({
                         <tr>
                           <td className="py-3 px-4 font-mono text-sm" style={{ color: colors.textSecondary }}>analysis_start_failed</td>
                           <td className="py-3 px-4" style={{ color: colors.textSecondary }}>500</td>
-                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo foi recebido mas a analise nao pode ser iniciada</td>
+                          <td className="py-3 px-4" style={{ color: colors.textSecondary }}>O arquivo foi recebido mas a análise não pode ser iniciada</td>
                         </tr>
                       </tbody>
                     </table>
@@ -565,15 +565,15 @@ export function AdminWisApiDocsPage({
 
                   <div className="md:hidden space-y-3">
                     {[
-                      { key: 'partner_not_authorized', status: '401', desc: 'O parceiro nao esta autorizado ou a URL nao corresponde ao padrao cadastrado' },
-                      { key: 'user_not_found', status: '404', desc: 'Nenhum usuario encontrado com o telefone informado' },
-                      { key: 'no_active_subscription', status: '403', desc: 'O usuario nao possui uma assinatura ativa' },
-                      { key: 'invalid_request', status: '400', desc: 'Parametros obrigatorios ausentes ou invalidos' },
-                      { key: 'invalid_file_format', status: '400', desc: 'O arquivo nao e um PDF valido' },
-                      { key: 'file_too_large', status: '400', desc: 'O arquivo excede o tamanho maximo de 100MB' },
-                      { key: 'download_failed', status: '400', desc: 'Nao foi possivel baixar o arquivo da URL fornecida' },
+                      { key: 'partner_not_authorized', status: '401', desc: 'O parceiro não está autorizado ou a URL não corresponde ao padrão cadastrado' },
+                      { key: 'user_not_found', status: '404', desc: 'Nenhum usuário encontrado com o telefone informado' },
+                      { key: 'no_active_subscription', status: '403', desc: 'O usuário não possui uma assinatura ativa' },
+                      { key: 'invalid_request', status: '400', desc: 'Parâmetros obrigatórios ausentes ou inválidos' },
+                      { key: 'invalid_file_format', status: '400', desc: 'O arquivo não é um PDF válido' },
+                      { key: 'file_too_large', status: '400', desc: 'O arquivo excede o tamanho máximo de 100MB' },
+                      { key: 'download_failed', status: '400', desc: 'Não foi possível baixar o arquivo da URL fornecida' },
                       { key: 'upload_failed', status: '500', desc: 'Erro interno ao processar o upload do arquivo' },
-                      { key: 'analysis_start_failed', status: '500', desc: 'O arquivo foi recebido mas a analise nao pode ser iniciada' },
+                      { key: 'analysis_start_failed', status: '500', desc: 'O arquivo foi recebido mas a análise não pode ser iniciada' },
                     ].map((error) => (
                       <div key={error.key} className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                         <div className="flex items-center justify-between mb-2">
@@ -592,7 +592,7 @@ export function AdminWisApiDocsPage({
                   <h3 className="text-lg font-semibold mb-4" style={{ color: colors.textPrimary }}>Tratamento de Erros</h3>
                   <p className="mb-4" style={{ color: colors.textSecondary }}>
                     Recomendamos implementar tratamento de erros baseado no <code className="px-1.5 py-0.5 rounded text-xs" style={{ backgroundColor: colors.bgPrimary }}>error_key</code> para
-                    fornecer mensagens adequadas aos seus usuarios:
+                    fornecer mensagens adequadas aos seus usuários:
                   </p>
                   <CodeBlock
                     title="Exemplo de tratamento de erro"
@@ -609,13 +609,13 @@ export function AdminWisApiDocsPage({
     if (!result.success) {
       switch (result.error_key) {
         case 'user_not_found':
-          console.log('Usuario nao cadastrado no sistema');
+          console.log('Usuário não cadastrado no sistema');
           break;
         case 'no_active_subscription':
-          console.log('Usuario sem assinatura ativa');
+          console.log('Usuário sem assinatura ativa');
           break;
         case 'partner_not_authorized':
-          console.log('Parceiro nao autorizado');
+          console.log('Parceiro não autorizado');
           break;
         default:
           console.log(result.message);
@@ -624,7 +624,7 @@ export function AdminWisApiDocsPage({
 
     return result;
   } catch (error) {
-    console.error('Erro de conexao:', error);
+    console.error('Erro de conexão:', error);
   }
 }`}
                   />
@@ -638,11 +638,11 @@ export function AdminWisApiDocsPage({
                   <div className="flex items-center gap-3 mb-4">
                     <Code2 className="w-6 h-6" style={{ color: colors.textSecondary }} />
                     <h2 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
-                      Exemplos Praticos
+                      Exemplos Práticos
                     </h2>
                   </div>
                   <p className="mb-6" style={{ color: colors.textSecondary }}>
-                    Abaixo estao exemplos completos de como fazer requisicoes para a Wis API.
+                    Abaixo estão exemplos completos de como fazer requisições para a Wis API.
                   </p>
                 </div>
 
@@ -651,7 +651,7 @@ export function AdminWisApiDocsPage({
                     Exemplo 1: Envio via URL do documento
                   </h3>
                   <p className="mb-4 text-sm" style={{ color: colors.textSecondary }}>
-                    Este e o metodo mais comum, onde voce fornece uma URL publica para download do PDF.
+                    Este é o método mais comum, onde você fornece uma URL pública para download do PDF.
                   </p>
 
                   <CodeBlock
@@ -702,7 +702,7 @@ if (data.success) {
                     Exemplo 2: Envio via Base64
                   </h3>
                   <p className="mb-4 text-sm" style={{ color: colors.textSecondary }}>
-                    Use este metodo quando voce ja possui o conteudo do arquivo em memoria.
+                    Use este método quando você já possui o conteúdo do arquivo em memória.
                   </p>
 
                   <CodeBlock
@@ -813,7 +813,7 @@ if ($result['success']) {
                   <div className="flex items-center gap-3 mb-4">
                     <Clock className="w-5 h-5" style={{ color: colors.textSecondary }} />
                     <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
-                      Limites e Boas Praticas
+                      Limites e Boas Práticas
                     </h3>
                   </div>
 
@@ -821,7 +821,7 @@ if ($result['success']) {
                     <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
-                        <span className="font-medium" style={{ color: colors.textPrimary }}>Tamanho maximo do arquivo:</span>
+                        <span className="font-medium" style={{ color: colors.textPrimary }}>Tamanho máximo do arquivo:</span>
                         <span className="ml-2" style={{ color: colors.textSecondary }}>100MB</span>
                       </div>
                     </div>
@@ -835,7 +835,7 @@ if ($result['success']) {
                     <div className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
                       <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
-                        <span className="font-medium" style={{ color: colors.textPrimary }}>Timeout da requisicao:</span>
+                        <span className="font-medium" style={{ color: colors.textPrimary }}>Timeout da requisição:</span>
                         <span className="ml-2" style={{ color: colors.textSecondary }}>60 segundos (recomendado configurar no cliente)</span>
                       </div>
                     </div>
@@ -843,7 +843,7 @@ if ($result['success']) {
                       <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.textSecondary }} />
                       <div>
                         <span className="font-medium" style={{ color: colors.textPrimary }}>Formato do telefone:</span>
-                        <span className="ml-2" style={{ color: colors.textSecondary }}>Apenas numeros com DDD (ex: 11987654321)</span>
+                        <span className="ml-2" style={{ color: colors.textSecondary }}>Apenas números com DDD (ex: 11987654321)</span>
                       </div>
                     </div>
                   </div>

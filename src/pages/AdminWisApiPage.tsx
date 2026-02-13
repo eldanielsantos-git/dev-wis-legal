@@ -181,7 +181,12 @@ export function AdminWisApiPage({
       .order('created_at', { ascending: false })
       .range(from, to);
 
-    if (!error && data) {
+    if (error) {
+      console.error('Erro ao carregar logs:', error);
+      return;
+    }
+
+    if (data) {
       setLogs(data);
       setTotalLogs(count || 0);
     }
@@ -411,7 +416,7 @@ export function AdminWisApiPage({
                   </span>
                 </div>
                 <p className="text-xs mt-1" style={{ color: colors.textSecondary }}>
-                  Padrao: {partner.api_url_pattern}
+                  Padrão: {partner.api_url_pattern}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -480,7 +485,7 @@ export function AdminWisApiPage({
                 type="text"
                 value={newPartnerUrl}
                 onChange={(e) => setNewPartnerUrl(e.target.value)}
-                placeholder="Padrao de URL (ex: api.z-api.io%)"
+                placeholder="Padrão de URL (ex: api.z-api.io%)"
                 className="flex-1 px-3 py-2 rounded-lg text-sm"
                 style={{
                   backgroundColor: colors.bgSecondary,
@@ -638,9 +643,9 @@ export function AdminWisApiPage({
                 <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Data/Hora</th>
                 <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Parceiro</th>
                 <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Telefone</th>
-                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Usuario</th>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Usuário</th>
                 <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Status</th>
-                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Acoes</th>
+                <th className="text-left py-3 px-2" style={{ color: colors.textSecondary }}>Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -874,7 +879,7 @@ export function AdminWisApiPage({
 
               <div>
                 <label className="block text-xs sm:text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
-                  Padrao de URL
+                  Padrão de URL
                 </label>
                 <input
                   type="text"
