@@ -170,7 +170,7 @@ export function AdminWisApiPage({
   async function loadLogs() {
     let query = supabase
       .from('wis_api_logs')
-      .select('*, partner:wis_api_partners(partner_name), user_profile:user_profiles(first_name, last_name, email)', { count: 'exact' });
+      .select('*', { count: 'exact' });
 
     if (logFilter === 'success') {
       query = query.eq('success', true);
@@ -194,8 +194,44 @@ export function AdminWisApiPage({
       return;
     }
 
-    if (data) {
-      setLogs(data);
+    if (data && data.length > 0) {
+      const partnerIds = [...new Set(data.filter(l => l.partner_id).map(l => l.partner_id))];
+      const userIds = [...new Set(data.filter(l => l.user_id).map(l => l.user_id))];
+
+      let partnersMap: Record<string, { partner_name: string }> = {};
+      let usersMap: Record<string, { first_name: string; last_name: string; email: string }> = {};
+
+      if (partnerIds.length > 0) {
+        const { data: partnersData } = await supabase
+          .from('wis_api_partners')
+          .select('id, partner_name')
+          .in('id', partnerIds);
+        if (partnersData) {
+          partnersMap = Object.fromEntries(partnersData.map(p => [p.id, { partner_name: p.partner_name }]));
+        }
+      }
+
+      if (userIds.length > 0) {
+        const { data: usersData } = await supabase
+          .from('user_profiles')
+          .select('id, first_name, last_name, email')
+          .in('id', userIds);
+        if (usersData) {
+          usersMap = Object.fromEntries(usersData.map(u => [u.id, { first_name: u.first_name, last_name: u.last_name, email: u.email }]));
+        }
+      }
+
+      const enrichedLogs = data.map(log => ({
+        ...log,
+        partner: log.partner_id ? partnersMap[log.partner_id] : null,
+        user_profile: log.user_id ? usersMap[log.user_id] : null,
+      }));
+
+      setLogs(enrichedLogs);
+      setTotalLogs(count || 0);
+      setLastLogRefresh(new Date());
+    } else {
+      setLogs(data || []);
       setTotalLogs(count || 0);
       setLastLogRefresh(new Date());
     }
