@@ -148,28 +148,28 @@ export function AdminWisApiDocsPage({
           </button>
 
           <div className="max-w-6xl mx-auto">
-            <div className="flex flex-col items-center mb-8">
-              <div className="p-3 rounded-lg mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-                <BookOpen className="w-8 h-8" style={{ color: colors.textSecondary }} />
+            <div className="flex flex-col items-center mb-6 sm:mb-8">
+              <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
+                <BookOpen className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textSecondary }} />
               </div>
               <div className="text-center">
-                <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
                   Wis API Documentation
                 </h1>
-                <p className="text-sm mt-2 px-4" style={{ color: colors.textSecondary }}>
+                <p className="text-xs sm:text-sm mt-2 px-4" style={{ color: colors.textSecondary }}>
                   Documentacao completa para integracao com a API Wis
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 mb-8 justify-center">
+            <div className="flex flex-wrap gap-2 mb-6 sm:mb-8 justify-center px-2">
               {sections.map((section) => {
                 const Icon = section.icon;
                 return (
                   <button
                     key={section.id}
                     onClick={() => setActiveSection(section.id)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                     style={{
                       backgroundColor: activeSection === section.id
                         ? (theme === 'dark' ? '#3f3f46' : '#d4d4d8')
@@ -177,93 +177,93 @@ export function AdminWisApiDocsPage({
                       color: colors.textPrimary,
                     }}
                   >
-                    <Icon className="w-4 h-4" />
-                    {section.label}
+                    <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="whitespace-nowrap">{section.label}</span>
                   </button>
                 );
               })}
             </div>
 
             {activeSection === 'overview' && (
-              <div className="space-y-6">
-                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
-                  <h2 className="text-xl font-semibold mb-4" style={{ color: colors.textPrimary }}>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="rounded-xl p-4 sm:p-6" style={{ backgroundColor: colors.bgSecondary }}>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4" style={{ color: colors.textPrimary }}>
                     O que e a Wis API?
                   </h2>
-                  <p className="leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
+                  <p className="text-sm sm:text-base leading-relaxed mb-4" style={{ color: colors.textSecondary }}>
                     A Wis API permite que parceiros autorizados enviem documentos PDF para analise automatizada
                     diretamente via integracao de sistemas. E ideal para automacoes de WhatsApp, sistemas de
                     gestao juridica, ou qualquer plataforma que deseje integrar a analise de processos judiciais.
                   </p>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <Zap className="w-5 h-5" style={{ color: colors.textSecondary }} />
-                        <span className="font-medium" style={{ color: colors.textPrimary }}>Rapido</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 mt-4 sm:mt-6">
+                    <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <Zap className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
+                        <span className="text-sm sm:text-base font-medium" style={{ color: colors.textPrimary }}>Rapido</span>
                       </div>
-                      <p className="text-sm" style={{ color: colors.textSecondary }}>
+                      <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
                         Analise iniciada em segundos apos o envio do documento
                       </p>
                     </div>
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <Shield className="w-5 h-5" style={{ color: colors.textSecondary }} />
-                        <span className="font-medium" style={{ color: colors.textPrimary }}>Seguro</span>
+                    <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <Shield className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
+                        <span className="text-sm sm:text-base font-medium" style={{ color: colors.textPrimary }}>Seguro</span>
                       </div>
-                      <p className="text-sm" style={{ color: colors.textSecondary }}>
+                      <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
                         Autenticacao por parceiro autorizado e validacao de usuario
                       </p>
                     </div>
-                    <div className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                      <div className="flex items-center gap-3 mb-2">
-                        <Globe className="w-5 h-5" style={{ color: colors.textSecondary }} />
-                        <span className="font-medium" style={{ color: colors.textPrimary }}>REST API</span>
+                    <div className="p-3 sm:p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                        <Globe className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
+                        <span className="text-sm sm:text-base font-medium" style={{ color: colors.textPrimary }}>REST API</span>
                       </div>
-                      <p className="text-sm" style={{ color: colors.textSecondary }}>
+                      <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
                         Endpoints simples e bem documentados em formato JSON
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
-                  <h2 className="text-xl font-semibold mb-4" style={{ color: colors.textPrimary }}>
+                <div className="rounded-xl p-4 sm:p-6" style={{ backgroundColor: colors.bgSecondary }}>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4" style={{ color: colors.textPrimary }}>
                     Fluxo de Integracao
                   </h2>
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>1</div>
+                  <div className="space-y-3 sm:space-y-4">
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>1</div>
                       <div>
-                        <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Cadastro do Parceiro</h3>
-                        <p className="text-sm" style={{ color: colors.textSecondary }}>
+                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Cadastro do Parceiro</h3>
+                        <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
                           O parceiro e cadastrado no painel administrativo com um padrao de URL autorizado
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>2</div>
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>2</div>
                       <div>
-                        <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Envio do Documento</h3>
-                        <p className="text-sm" style={{ color: colors.textSecondary }}>
+                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Envio do Documento</h3>
+                        <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
                           O parceiro envia uma requisicao POST com os dados do documento e telefone do usuario
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>3</div>
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>3</div>
                       <div>
-                        <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Validacao</h3>
-                        <p className="text-sm" style={{ color: colors.textSecondary }}>
+                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Validacao</h3>
+                        <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
                           A API valida o parceiro, o usuario e o formato do arquivo
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>4</div>
+                    <div className="flex items-start gap-3 sm:gap-4">
+                      <div className="flex-shrink-0 w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}>4</div>
                       <div>
-                        <h3 className="font-medium mb-1" style={{ color: colors.textPrimary }}>Analise Automatica</h3>
-                        <p className="text-sm" style={{ color: colors.textSecondary }}>
+                        <h3 className="text-sm sm:text-base font-medium mb-1" style={{ color: colors.textPrimary }}>Analise Automatica</h3>
+                        <p className="text-xs sm:text-sm" style={{ color: colors.textSecondary }}>
                           O documento e processado e a analise e iniciada automaticamente
                         </p>
                       </div>
@@ -372,7 +372,8 @@ export function AdminWisApiDocsPage({
                   />
 
                   <h3 className="text-lg font-semibold mb-3 mt-6" style={{ color: colors.textPrimary }}>Parametros do Body</h3>
-                  <div className="overflow-x-auto">
+
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
@@ -415,6 +416,31 @@ export function AdminWisApiDocsPage({
                         </tr>
                       </tbody>
                     </table>
+                  </div>
+
+                  <div className="md:hidden space-y-3">
+                    {[
+                      { param: 'phone', type: 'string', required: true, desc: 'Telefone do usuario (apenas numeros, com DDD)' },
+                      { param: 'fileName', type: 'string', required: true, desc: 'Nome do arquivo com extensao .pdf' },
+                      { param: 'instanceUrl', type: 'string', required: true, desc: 'URL da instancia do parceiro (usada para autenticacao)' },
+                      { param: 'documentUrl', type: 'string', required: 'Condicional', desc: 'URL publica para download do documento (obrigatorio se base64 nao for enviado)' },
+                      { param: 'base64', type: 'string', required: 'Condicional', desc: 'Conteudo do arquivo codificado em Base64 (obrigatorio se documentUrl nao for enviado)' },
+                    ].map((item) => (
+                      <div key={item.param} className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <code className="font-mono text-sm" style={{ color: colors.textPrimary }}>{item.param}</code>
+                          {item.required === true ? (
+                            <CheckCircle2 className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                          ) : (
+                            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7', color: colors.textSecondary }}>
+                              {item.required}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs mb-1" style={{ color: colors.textSecondary }}>{item.type}</p>
+                        <p className="text-xs" style={{ color: colors.textSecondary }}>{item.desc}</p>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="mt-6 p-4 rounded-lg border-l-4" style={{ backgroundColor: colors.bgPrimary, borderColor: theme === 'dark' ? '#71717a' : '#a1a1aa' }}>
@@ -478,7 +504,7 @@ export function AdminWisApiDocsPage({
                     identifica o tipo de erro e uma mensagem descritiva.
                   </p>
 
-                  <div className="overflow-x-auto">
+                  <div className="hidden md:block overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead>
                         <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
@@ -535,6 +561,30 @@ export function AdminWisApiDocsPage({
                         </tr>
                       </tbody>
                     </table>
+                  </div>
+
+                  <div className="md:hidden space-y-3">
+                    {[
+                      { key: 'partner_not_authorized', status: '401', desc: 'O parceiro nao esta autorizado ou a URL nao corresponde ao padrao cadastrado' },
+                      { key: 'user_not_found', status: '404', desc: 'Nenhum usuario encontrado com o telefone informado' },
+                      { key: 'no_active_subscription', status: '403', desc: 'O usuario nao possui uma assinatura ativa' },
+                      { key: 'invalid_request', status: '400', desc: 'Parametros obrigatorios ausentes ou invalidos' },
+                      { key: 'invalid_file_format', status: '400', desc: 'O arquivo nao e um PDF valido' },
+                      { key: 'file_too_large', status: '400', desc: 'O arquivo excede o tamanho maximo de 100MB' },
+                      { key: 'download_failed', status: '400', desc: 'Nao foi possivel baixar o arquivo da URL fornecida' },
+                      { key: 'upload_failed', status: '500', desc: 'Erro interno ao processar o upload do arquivo' },
+                      { key: 'analysis_start_failed', status: '500', desc: 'O arquivo foi recebido mas a analise nao pode ser iniciada' },
+                    ].map((error) => (
+                      <div key={error.key} className="p-3 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <code className="font-mono text-xs" style={{ color: colors.textSecondary }}>{error.key}</code>
+                          <span className="text-xs px-2 py-0.5 rounded font-medium" style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7', color: colors.textPrimary }}>
+                            {error.status}
+                          </span>
+                        </div>
+                        <p className="text-xs" style={{ color: colors.textSecondary }}>{error.desc}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
 

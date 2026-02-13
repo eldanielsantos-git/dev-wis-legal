@@ -365,11 +365,11 @@ export function AdminWisApiPage({
                 </div>
               </div>
 
-      <div className="rounded-xl p-6" style={{ backgroundColor: colors.bgSecondary }}>
-        <div className="flex items-center justify-between mb-4">
+      <div className="rounded-xl p-4 sm:p-6" style={{ backgroundColor: colors.bgSecondary }}>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5" style={{ color: colors.textSecondary }} />
-            <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+            <h2 className="text-base sm:text-lg font-semibold" style={{ color: colors.textPrimary }}>
               Parceiros Autorizados
             </h2>
           </div>
@@ -378,7 +378,7 @@ export function AdminWisApiPage({
               window.history.pushState({}, '', '/admin-wis-api-docs');
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:opacity-80"
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:opacity-80 w-full sm:w-auto"
             style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
           >
             <BookText className="w-4 h-4" />
@@ -619,7 +619,7 @@ export function AdminWisApiPage({
           </select>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: `1px solid ${colors.borderColor}` }}>
@@ -679,6 +679,54 @@ export function AdminWisApiPage({
           </table>
         </div>
 
+        <div className="md:hidden space-y-3">
+          {logs.map((log) => (
+            <div
+              key={log.id}
+              className="p-4 rounded-lg space-y-2"
+              style={{ backgroundColor: colors.bgPrimary }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs mb-1" style={{ color: colors.textSecondary }}>
+                    {formatDate(log.created_at)}
+                  </p>
+                  <p className="text-sm font-medium truncate" style={{ color: colors.textPrimary }}>
+                    {(log.partner as any)?.partner_name || 'Sem parceiro'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedLog(log)}
+                  className="p-2 rounded-lg transition-colors hover:opacity-80 flex-shrink-0"
+                  style={{ backgroundColor: colors.bgSecondary }}
+                  title="Ver detalhes"
+                >
+                  <Eye className="w-4 h-4" style={{ color: colors.textSecondary }} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs font-mono" style={{ color: colors.textSecondary }}>
+                  {log.phone_number}
+                </p>
+                <span
+                  className="text-xs px-2 py-1 rounded-full whitespace-nowrap"
+                  style={{
+                    backgroundColor: theme === 'dark' ? '#3f3f46' : '#e4e4e7',
+                    color: colors.textSecondary,
+                  }}
+                >
+                  {log.success ? 'Sucesso' : log.error_key || 'Erro'}
+                </span>
+              </div>
+              {log.user_profile && (
+                <p className="text-xs truncate" style={{ color: colors.textSecondary }}>
+                  {`${(log.user_profile as any).first_name || ''} ${(log.user_profile as any).last_name || ''}`.trim() || (log.user_profile as any).email}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 mt-4">
             <button
@@ -717,11 +765,11 @@ export function AdminWisApiPage({
       {selectedLog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
-            className="rounded-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-auto"
+            className="rounded-xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-auto"
             style={{ backgroundColor: colors.bgSecondary }}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold" style={{ color: colors.textPrimary }}>
+              <h3 className="text-base sm:text-lg font-semibold" style={{ color: colors.textPrimary }}>
                 Detalhes do Log
               </h3>
               <button
@@ -738,7 +786,7 @@ export function AdminWisApiPage({
                 <label className="block text-xs font-medium mb-1" style={{ color: colors.textSecondary }}>
                   Data/Hora
                 </label>
-                <p style={{ color: colors.textPrimary }}>{formatDate(selectedLog.created_at)}</p>
+                <p className="text-sm sm:text-base" style={{ color: colors.textPrimary }}>{formatDate(selectedLog.created_at)}</p>
               </div>
 
               <div>
@@ -746,7 +794,7 @@ export function AdminWisApiPage({
                   Request Payload
                 </label>
                 <pre
-                  className="p-3 rounded-lg text-xs overflow-auto"
+                  className="p-3 rounded-lg text-[10px] sm:text-xs overflow-auto"
                   style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary }}
                 >
                   {JSON.stringify(selectedLog.request_payload, null, 2)}
@@ -758,7 +806,7 @@ export function AdminWisApiPage({
                   Response Enviada
                 </label>
                 <pre
-                  className="p-3 rounded-lg text-xs overflow-auto"
+                  className="p-3 rounded-lg text-[10px] sm:text-xs overflow-auto"
                   style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary }}
                 >
                   {JSON.stringify(selectedLog.response_sent, null, 2)}
@@ -772,15 +820,15 @@ export function AdminWisApiPage({
       {editingPartner && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div
-            className="rounded-xl p-8 w-full max-w-xl"
+            className="rounded-xl p-4 sm:p-8 w-full max-w-xl max-h-[90vh] overflow-y-auto"
             style={{ backgroundColor: colors.bgSecondary }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <div className="p-2 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                  <Edit3 className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                  <Edit3 className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
                 </div>
-                <h3 className="text-xl font-semibold" style={{ color: colors.textPrimary }}>
+                <h3 className="text-base sm:text-xl font-semibold" style={{ color: colors.textPrimary }}>
                   Editar Parceiro
                 </h3>
               </div>
@@ -789,13 +837,13 @@ export function AdminWisApiPage({
                 className="p-2 rounded-lg transition-colors hover:opacity-80"
                 style={{ backgroundColor: colors.bgPrimary }}
               >
-                <X className="w-5 h-5" style={{ color: colors.textSecondary }} />
+                <X className="w-4 h-4 sm:w-5 sm:h-5" style={{ color: colors.textSecondary }} />
               </button>
             </div>
 
-            <div className="space-y-5">
+            <div className="space-y-4 sm:space-y-5">
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                <label className="block text-xs sm:text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
                   Nome do Parceiro
                 </label>
                 <input
@@ -803,7 +851,7 @@ export function AdminWisApiPage({
                   value={editPartnerName}
                   onChange={(e) => setEditPartnerName(e.target.value)}
                   placeholder="Ex: Z-API"
-                  className="w-full px-4 py-3 rounded-lg text-sm"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm"
                   style={{
                     backgroundColor: colors.bgPrimary,
                     color: colors.textPrimary,
@@ -813,7 +861,7 @@ export function AdminWisApiPage({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                <label className="block text-xs sm:text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
                   Padrao de URL
                 </label>
                 <input
@@ -821,7 +869,7 @@ export function AdminWisApiPage({
                   value={editPartnerUrl}
                   onChange={(e) => setEditPartnerUrl(e.target.value)}
                   placeholder="Ex: api.z-api.io%"
-                  className="w-full px-4 py-3 rounded-lg text-sm"
+                  className="w-full px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm"
                   style={{
                     backgroundColor: colors.bgPrimary,
                     color: colors.textPrimary,
@@ -834,14 +882,14 @@ export function AdminWisApiPage({
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
+                <label className="block text-xs sm:text-sm font-medium mb-2" style={{ color: colors.textPrimary }}>
                   Status
                 </label>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   <button
                     type="button"
                     onClick={() => setEditPartnerActive(true)}
-                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                    className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                     style={{
                       backgroundColor: editPartnerActive
                         ? (theme === 'dark' ? '#52525b' : '#a1a1aa')
@@ -849,13 +897,13 @@ export function AdminWisApiPage({
                       color: colors.textPrimary,
                     }}
                   >
-                    <Check className="w-4 h-4 inline mr-2" />
+                    <Check className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1.5" />
                     Ativo
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditPartnerActive(false)}
-                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                    className="flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-xs sm:text-sm font-medium transition-colors"
                     style={{
                       backgroundColor: !editPartnerActive
                         ? (theme === 'dark' ? '#52525b' : '#a1a1aa')
@@ -863,17 +911,17 @@ export function AdminWisApiPage({
                       color: colors.textPrimary,
                     }}
                   >
-                    <X className="w-4 h-4 inline mr-2" />
+                    <X className="w-3 h-3 sm:w-4 sm:h-4 inline mr-1.5" />
                     Inativo
                   </button>
                 </div>
               </div>
 
               <div className="pt-4 border-t" style={{ borderColor: colors.borderColor }}>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={closeEditPartner}
-                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors"
+                    className="w-full sm:flex-1 px-4 py-2.5 sm:py-3 rounded-lg text-sm font-medium transition-colors order-2 sm:order-1"
                     style={{
                       backgroundColor: colors.bgPrimary,
                       color: colors.textPrimary,
@@ -884,7 +932,7 @@ export function AdminWisApiPage({
                   <button
                     onClick={updatePartner}
                     disabled={updatingPartner || !editPartnerName.trim() || !editPartnerUrl.trim()}
-                    className="flex-1 px-4 py-3 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full sm:flex-1 px-4 py-2.5 sm:py-3 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 order-1 sm:order-2"
                     style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
                   >
                     {updatingPartner ? (
