@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
 
       const { data: processo, error: processoError } = await supabase
         .from('processos')
-        .select('file_path, file_name, file_size')
+        .select('file_path, file_name, file_size, upload_method')
         .eq('id', processo_id)
         .single();
 
@@ -231,16 +231,21 @@ Deno.serve(async (req: Request) => {
         }
         const pdfBase64 = `data:application/pdf;base64,${base64String}`;
 
+        const updateData: Record<string, unknown> = {
+          pdf_base64: pdfBase64,
+          use_file_api: false,
+        };
+
+        if (processo.upload_method !== 'wis-api') {
+          updateData.upload_method = 'base64';
+        }
+
         await supabase
           .from('processos')
-          .update({
-            pdf_base64: pdfBase64,
-            upload_method: 'base64',
-            use_file_api: false,
-          })
+          .update(updateData)
           .eq('id', processo_id);
 
-        console.log(`✅ Base64 salvo com sucesso - upload_method: base64`);
+        console.log(`✅ Base64 salvo com sucesso - upload_method preservado: ${processo.upload_method || 'base64'}`);
 
         return new Response(
           JSON.stringify({
@@ -278,18 +283,23 @@ Deno.serve(async (req: Request) => {
       const expiresAt = new Date(uploadResult.file.expirationTime!);
       const uploadedAt = new Date(uploadResult.file.createTime!);
 
+      const fileUriUpdateData: Record<string, unknown> = {
+        gemini_file_uri: uploadResult.file.uri,
+        gemini_file_name: uploadResult.file.name,
+        gemini_file_mime_type: uploadResult.file.mimeType,
+        gemini_file_state: uploadResult.file.state,
+        gemini_file_uploaded_at: uploadedAt.toISOString(),
+        gemini_file_expires_at: expiresAt.toISOString(),
+        use_file_api: true,
+      };
+
+      if (processo.upload_method !== 'wis-api') {
+        fileUriUpdateData.upload_method = 'file_uri';
+      }
+
       await supabase
         .from('processos')
-        .update({
-          gemini_file_uri: uploadResult.file.uri,
-          gemini_file_name: uploadResult.file.name,
-          gemini_file_mime_type: uploadResult.file.mimeType,
-          gemini_file_state: uploadResult.file.state,
-          gemini_file_uploaded_at: uploadedAt.toISOString(),
-          gemini_file_expires_at: expiresAt.toISOString(),
-          use_file_api: true,
-          upload_method: 'file_uri',
-        })
+        .update(fileUriUpdateData)
         .eq('id', processo_id);
 
       if (uploadResult.file.state === 'PROCESSING') {
@@ -307,7 +317,7 @@ Deno.serve(async (req: Request) => {
         console.log(`✅ Arquivo pronto: ${fileMetadata.state}`);
       }
 
-      console.log(`✅ File API configurado - upload_method: file_uri`);
+      console.log(`✅ File API configurado - upload_method preservado: ${processo.upload_method || 'file_uri'}`);
 
       return new Response(
         JSON.stringify({

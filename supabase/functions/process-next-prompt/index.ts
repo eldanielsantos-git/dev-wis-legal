@@ -524,6 +524,9 @@ Deno.serve(async (req: Request) => {
     } else if (processoData.upload_method === 'file_uri') {
       useFileApi = processoData.gemini_file_uri !== null && processoData.gemini_file_state === 'ACTIVE';
       console.log(`[${callId}] 📂 upload_method=file_uri detectado - usando File API`);
+    } else if (processoData.upload_method === 'wis-api') {
+      useFileApi = processoData.gemini_file_uri !== null && processoData.gemini_file_state === 'ACTIVE';
+      console.log(`[${callId}] 📱 upload_method=wis-api detectado - usando ${useFileApi ? 'File API' : 'Base64'}`);
     } else {
       useFileApi = processoData.gemini_file_uri !== null && processoData.gemini_file_state === 'ACTIVE';
       console.log(`[${callId}] ⚠️ upload_method não definido (registro legado) - fallback para lógica anterior`);
