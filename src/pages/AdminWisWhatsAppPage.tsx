@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { SidebarWis } from '../components/SidebarWis';
-import { FooterWis } from '../components/FooterWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
@@ -299,55 +298,68 @@ export function AdminWisWhatsAppPage({
   const errorMessages = messages.filter(m => m.message_type === 'error');
 
   return (
-    <div className="flex h-screen" style={{ backgroundColor: colors.bgPrimary }}>
+    <div className="flex min-h-screen font-body" style={{ backgroundColor: colors.bgPrimary }}>
       <SidebarWis
         onNavigateToApp={onNavigateToApp}
         onNavigateToMyProcess={onNavigateToMyProcess}
         onNavigateToChat={onNavigateToChat}
         onNavigateToWorkspace={onNavigateToWorkspace}
         onNavigateToSchedule={onNavigateToSchedule}
-        isCollapsed={isSidebarCollapsed}
-        onCollapsedChange={setIsSidebarCollapsed}
-        onOpenSearch={() => setIsSearchOpen(true)}
         onNavigateToAdmin={onNavigateToAdmin}
         onNavigateToSettings={onNavigateToSettings}
         onNavigateToProfile={onNavigateToProfile}
+        onNavigateToNotifications={() => {
+          window.history.pushState({}, '', '/notifications');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToTokens={() => {
+          window.history.pushState({}, '', '/tokens');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onNavigateToSubscription={() => {
+          window.history.pushState({}, '', '/signature');
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        onCollapsedChange={setIsSidebarCollapsed}
+        onSearchClick={() => setIsSearchOpen(true)}
       />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-y-auto">
-          <div className="px-4 sm:px-6 py-6">
-            {loading ? (
-              <div className="flex items-center justify-center h-64">
-                <RefreshCw className="w-8 h-8 animate-spin" style={{ color: colors.textSecondary }} />
-              </div>
-            ) : (
-              <div className="max-w-6xl mx-auto space-y-8">
-                <div className="flex flex-col items-center mb-6 sm:mb-8">
-                  <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-                    <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textSecondary }} />
-                  </div>
-                  <div className="text-center">
-                    <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
-                      Wis WhatsApp Connect
-                    </h1>
-                    <p className="text-xs sm:text-sm mt-1 px-4" style={{ color: colors.textSecondary }}>
-                      Gerencie notificacoes WhatsApp para usuarios da API
-                    </p>
-                  </div>
-                </div>
+      <main className={`flex-1 flex flex-col transition-all duration-300 pt-16 lg:pt-0 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+        <div className="flex-1 px-4 sm:px-6 py-6 sm:py-8">
+          <button
+            onClick={() => {
+              window.history.pushState({}, '', '/admin-wis-api');
+              window.dispatchEvent(new PopStateEvent('popstate'));
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors mb-6 hover:opacity-80 max-w-6xl"
+            style={{
+              backgroundColor: colors.bgSecondary,
+              color: colors.textPrimary
+            }}
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span className="text-sm font-medium">Voltar para Wis API</span>
+          </button>
 
-                <button
-                  onClick={() => {
-                    window.history.pushState({}, '', '/admin-wis-api');
-                    window.dispatchEvent(new PopStateEvent('popstate'));
-                  }}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-colors hover:opacity-80"
-                  style={{ backgroundColor: colors.bgSecondary, color: colors.textSecondary }}
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Voltar para Wis API
-                </button>
+          {loading ? (
+            <div className="flex items-center justify-center h-64">
+              <RefreshCw className="w-8 h-8 animate-spin" style={{ color: colors.textSecondary }} />
+            </div>
+          ) : (
+            <div className="max-w-6xl mx-auto space-y-8">
+              <div className="flex flex-col items-center mb-6 sm:mb-8">
+                <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
+                  <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textSecondary }} />
+                </div>
+                <div className="text-center">
+                  <h1 className="text-2xl sm:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
+                    Wis WhatsApp Connect
+                  </h1>
+                  <p className="text-xs sm:text-sm mt-1 px-4" style={{ color: colors.textSecondary }}>
+                    Gerencie notificacoes WhatsApp para usuarios da API
+                  </p>
+                </div>
+              </div>
 
                 <div className="rounded-xl p-4 sm:p-6" style={{ backgroundColor: colors.bgSecondary }}>
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -642,16 +654,10 @@ export function AdminWisWhatsAppPage({
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-          </div>
-        </main>
-        <FooterWis
-          onNavigateToTerms={onNavigateToTerms}
-          onNavigateToPrivacy={onNavigateToPrivacy}
-          onNavigateToCookies={onNavigateToCookies}
-        />
-      </div>
+            </div>
+          )}
+        </div>
+      </main>
 
       {selectedLog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
