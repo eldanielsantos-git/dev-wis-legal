@@ -464,6 +464,17 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[wis-api] Processo created: ${processoId}`);
 
+    console.log(`[wis-api] Sending file_received notification first...`);
+    await sendWhatsAppNotification(
+      supabaseUrl,
+      supabaseServiceKey,
+      'file_received',
+      userId,
+      cleanPhone,
+      processoId,
+      { nome: foundProfile.first_name || 'Usuario' }
+    );
+
     console.log(`[wis-api] Starting analysis...`);
     const analysisResponse = await fetch(`${supabaseUrl}/functions/v1/start-analysis`, {
       method: 'POST',
@@ -503,18 +514,6 @@ Deno.serve(async (req: Request) => {
     };
 
     await logRequest(supabase, partnerId, cleanPhone, userId, true, null, safeRequestPayload, successResponse, processoId);
-
-    EdgeRuntime.waitUntil(
-      sendWhatsAppNotification(
-        supabaseUrl,
-        supabaseServiceKey,
-        'file_received',
-        userId,
-        cleanPhone,
-        processoId,
-        { nome: foundProfile.first_name || 'Usuario' }
-      )
-    );
 
     return new Response(JSON.stringify(successResponse), {
       status: 200,

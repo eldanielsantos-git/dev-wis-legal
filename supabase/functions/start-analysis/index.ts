@@ -96,7 +96,7 @@ Deno.serve(async (req: Request) => {
     console.log(`[${callId}] ✅ Lock adquirido com sucesso`);
 
     if (updatedProcesso.upload_method === 'wis-api' && updatedProcesso.user_id) {
-      console.log(`[${callId}] 📱 Processo via WIS API - enviando notificação WhatsApp...`);
+      console.log(`[${callId}] 📱 Processo via WIS API - enviando notificação WhatsApp com delay de 5s...`);
 
       const { data: userProfile } = await supabase
         .from('user_profiles')
@@ -107,15 +107,18 @@ Deno.serve(async (req: Request) => {
       if (userProfile?.phone) {
         const fullPhone = `${(userProfile.phone_country_code || '+55').replace('+', '')}${userProfile.phone}`;
         EdgeRuntime.waitUntil(
-          sendWhatsAppNotification(
-            supabaseUrl,
-            supabaseServiceKey,
-            'analysis_started',
-            updatedProcesso.user_id,
-            fullPhone,
-            processo_id,
-            { nome: userProfile.first_name || 'Usuario' }
-          )
+          (async () => {
+            await new Promise(resolve => setTimeout(resolve, 5000));
+            await sendWhatsAppNotification(
+              supabaseUrl,
+              supabaseServiceKey,
+              'analysis_started',
+              updatedProcesso.user_id,
+              fullPhone,
+              processo_id,
+              { nome: userProfile.first_name || 'Usuario' }
+            );
+          })()
         );
       }
     }
