@@ -75,8 +75,7 @@ async function logRequest(
   success: boolean,
   errorKey: string | null,
   requestPayload: Record<string, unknown>,
-  responseSent: Record<string, unknown>,
-  processoId?: string | null
+  responseSent: Record<string, unknown>
 ): Promise<void> {
   try {
     await supabase.from('wis_api_logs').insert({
@@ -87,50 +86,9 @@ async function logRequest(
       error_key: errorKey,
       request_payload: requestPayload,
       response_sent: responseSent,
-      processo_id: processoId || null,
     });
   } catch (error) {
     console.error('Error logging request:', error);
-  }
-}
-
-async function sendWhatsAppNotification(
-  supabaseUrl: string,
-  supabaseServiceKey: string,
-  messageKey: string,
-  userId: string,
-  phone: string,
-  processoId?: string,
-  replacements?: Record<string, string>,
-  documentBase64?: string,
-  documentFilename?: string,
-  linkUrl?: string,
-  linkTitle?: string,
-  linkDescription?: string
-): Promise<void> {
-  try {
-    console.log(`[wis-api] Sending WhatsApp notification: ${messageKey}`);
-    await fetch(`${supabaseUrl}/functions/v1/send-whatsapp-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({
-        message_key: messageKey,
-        user_id: userId,
-        processo_id: processoId,
-        phone,
-        replacements,
-        document_base64: documentBase64,
-        document_filename: documentFilename,
-        link_url: linkUrl,
-        link_title: linkTitle,
-        link_description: linkDescription,
-      }),
-    });
-  } catch (error) {
-    console.error(`[wis-api] Error sending WhatsApp notification:`, error);
   }
 }
 
@@ -273,9 +231,6 @@ Deno.serve(async (req: Request) => {
       const errorMessage = await getErrorMessage(supabase, 'no_active_subscription');
       const response = { success: false, error_key: 'no_active_subscription', message: errorMessage };
       await logRequest(supabase, partnerId, cleanPhone, userId, false, 'no_active_subscription', safeRequestPayload, response);
-      EdgeRuntime.waitUntil(
-        sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'no_active_subscription', userId, cleanPhone)
-      );
       return new Response(JSON.stringify(response), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -305,9 +260,6 @@ Deno.serve(async (req: Request) => {
         const errorMessage = await getErrorMessage(supabase, 'download_failed');
         const response = { success: false, error_key: 'download_failed', message: errorMessage };
         await logRequest(supabase, partnerId, cleanPhone, userId, false, 'download_failed', safeRequestPayload, response);
-        EdgeRuntime.waitUntil(
-          sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'download_failed', userId, cleanPhone)
-        );
         return new Response(JSON.stringify(response), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -348,9 +300,6 @@ Deno.serve(async (req: Request) => {
       const errorMessage = await getErrorMessage(supabase, 'invalid_file_format');
       const response = { success: false, error_key: 'invalid_file_format', message: errorMessage };
       await logRequest(supabase, partnerId, cleanPhone, userId, false, 'invalid_file_format', safeRequestPayload, response);
-      EdgeRuntime.waitUntil(
-        sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'invalid_file_format', userId, cleanPhone)
-      );
       return new Response(JSON.stringify(response), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -362,9 +311,6 @@ Deno.serve(async (req: Request) => {
       const errorMessage = await getErrorMessage(supabase, 'file_too_large');
       const response = { success: false, error_key: 'file_too_large', message: errorMessage };
       await logRequest(supabase, partnerId, cleanPhone, userId, false, 'file_too_large', safeRequestPayload, response);
-      EdgeRuntime.waitUntil(
-        sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'file_too_large', userId, cleanPhone)
-      );
       return new Response(JSON.stringify(response), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -392,9 +338,6 @@ Deno.serve(async (req: Request) => {
       const errorMessage = await getErrorMessage(supabase, 'upload_failed');
       const response = { success: false, error_key: 'upload_failed', message: errorMessage };
       await logRequest(supabase, partnerId, cleanPhone, userId, false, 'upload_failed', safeRequestPayload, response);
-      EdgeRuntime.waitUntil(
-        sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'upload_failed', userId, cleanPhone)
-      );
       return new Response(JSON.stringify(response), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -453,9 +396,6 @@ Deno.serve(async (req: Request) => {
       const errorMessage = await getErrorMessage(supabase, 'upload_failed');
       const response = { success: false, error_key: 'upload_failed', message: errorMessage };
       await logRequest(supabase, partnerId, cleanPhone, userId, false, 'upload_failed', safeRequestPayload, response);
-      EdgeRuntime.waitUntil(
-        sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'upload_failed', userId, cleanPhone)
-      );
       return new Response(JSON.stringify(response), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -483,10 +423,7 @@ Deno.serve(async (req: Request) => {
         message: errorMessage,
         analysis_started: false,
       };
-      await logRequest(supabase, partnerId, cleanPhone, userId, true, 'analysis_start_failed', safeRequestPayload, response, processoId);
-      EdgeRuntime.waitUntil(
-        sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'analysis_start_failed', userId, cleanPhone, processoId)
-      );
+      await logRequest(supabase, partnerId, cleanPhone, userId, true, 'analysis_start_failed', safeRequestPayload, response);
       return new Response(JSON.stringify(response), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -502,19 +439,7 @@ Deno.serve(async (req: Request) => {
       analysis_started: true,
     };
 
-    await logRequest(supabase, partnerId, cleanPhone, userId, true, null, safeRequestPayload, successResponse, processoId);
-
-    EdgeRuntime.waitUntil(
-      sendWhatsAppNotification(
-        supabaseUrl,
-        supabaseServiceKey,
-        'file_received',
-        userId,
-        cleanPhone,
-        processoId,
-        { nome: foundProfile.first_name || 'Usuario' }
-      )
-    );
+    await logRequest(supabase, partnerId, cleanPhone, userId, true, null, safeRequestPayload, successResponse);
 
     return new Response(JSON.stringify(successResponse), {
       status: 200,

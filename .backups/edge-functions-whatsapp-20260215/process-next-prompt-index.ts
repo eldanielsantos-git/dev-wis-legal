@@ -32,8 +32,7 @@ interface ProcessoData {
   gemini_file_uri: string | null;
   gemini_file_state: string | null;
   gemini_file_mime_type: string | null;
-  upload_method: 'base64' | 'file_uri' | 'wis-api' | null;
-  pdf_base64?: string | null;
+  upload_method: 'base64' | 'file_uri' | null;
 }
 
 interface ProcessChunk {
@@ -52,45 +51,6 @@ interface ModelConfig {
   temperature: number;
   max_tokens: number;
   priority: number;
-}
-
-async function sendWhatsAppNotification(
-  supabaseUrl: string,
-  supabaseServiceKey: string,
-  messageKey: string,
-  userId: string,
-  phone: string,
-  processoId?: string,
-  replacements?: Record<string, string>,
-  documentBase64?: string,
-  documentFilename?: string,
-  linkUrl?: string,
-  linkTitle?: string,
-  linkDescription?: string
-): Promise<void> {
-  try {
-    await fetch(`${supabaseUrl}/functions/v1/send-whatsapp-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({
-        message_key: messageKey,
-        user_id: userId,
-        processo_id: processoId,
-        phone,
-        replacements,
-        document_base64: documentBase64,
-        document_filename: documentFilename,
-        link_url: linkUrl,
-        link_title: linkTitle,
-        link_description: linkDescription,
-      }),
-    });
-  } catch (error) {
-    console.error(`[process-next-prompt] Error sending WhatsApp notification:`, error);
-  }
 }
 
 async function getActiveModels(supabase: any): Promise<ModelConfig[]> {
@@ -1004,81 +964,6 @@ Deno.serve(async (req: Request) => {
             userId: processoData.user_id,
             processoId: processo_id,
           });
-
-          if (processoData.upload_method === 'wis-api') {
-            console.log(`[${callId}] 📱 Processo via WIS API - enviando notificações WhatsApp...`);
-
-            const { data: userProfileForWhatsApp } = await supabase
-              .from('user_profiles')
-              .select('first_name, phone, phone_country_code')
-              .eq('id', processoData.user_id)
-              .maybeSingle();
-
-            if (userProfileForWhatsApp?.phone) {
-              const fullPhone = `${(userProfileForWhatsApp.phone_country_code || '+55').replace('+', '')}${userProfileForWhatsApp.phone}`;
-              const userFirstName = userProfileForWhatsApp.first_name || 'Usuario';
-
-              const { data: pdfData } = await supabase
-                .from('processos')
-                .select('pdf_base64')
-                .eq('id', processo_id)
-                .maybeSingle();
-
-              if (pdfData?.pdf_base64) {
-                EdgeRuntime.waitUntil(
-                  sendWhatsAppNotification(
-                    supabaseUrl,
-                    supabaseServiceKey,
-                    'analysis_completed',
-                    processoData.user_id,
-                    fullPhone,
-                    processo_id,
-                    { nome: userFirstName },
-                    pdfData.pdf_base64,
-                    `analise-${processoData.file_name || 'processo'}.pdf`
-                  )
-                );
-              }
-
-              const chatUrl = `https://app.wislegal.io/chat/${processo_id}`;
-              EdgeRuntime.waitUntil(
-                sendWhatsAppNotification(
-                  supabaseUrl,
-                  supabaseServiceKey,
-                  'chat_link',
-                  processoData.user_id,
-                  fullPhone,
-                  processo_id,
-                  { nome: userFirstName, chat_url: chatUrl },
-                  undefined,
-                  undefined,
-                  chatUrl,
-                  'Wis Legal Chat',
-                  'Converse sobre seu processo e tire duvidas'
-                )
-              );
-
-              const detailUrl = `https://app.wislegal.io/lawsuits-detail/${processo_id}`;
-              EdgeRuntime.waitUntil(
-                sendWhatsAppNotification(
-                  supabaseUrl,
-                  supabaseServiceKey,
-                  'detail_link',
-                  processoData.user_id,
-                  fullPhone,
-                  processo_id,
-                  { nome: userFirstName, detail_url: detailUrl },
-                  undefined,
-                  undefined,
-                  detailUrl,
-                  'Detalhes da Analise',
-                  'Veja todos os detalhes e gerencie compartilhamento'
-                )
-              );
-
-              console.log(`[${callId}] ✅ Notificações WhatsApp enviadas`);
-            }
-          }
 
           console.log(`[${callId}] ✅ Processo finalizado com sucesso!`);
         }

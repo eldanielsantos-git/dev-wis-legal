@@ -424,17 +424,30 @@ export function AdminWisApiPage({
               Parceiros Autorizados
             </h2>
           </div>
-          <button
-            onClick={() => {
-              window.history.pushState({}, '', '/admin-wis-api-docs');
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:opacity-80 w-full sm:w-auto"
-            style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
-          >
-            <BookText className="w-4 h-4" />
-            Wis API Docs
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/admin-wis-api-docs');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:opacity-80 w-full sm:w-auto"
+              style={{ backgroundColor: theme === 'dark' ? '#3f3f46' : '#d4d4d8', color: colors.textPrimary }}
+            >
+              <BookText className="w-4 h-4" />
+              Wis API Docs
+            </button>
+            <button
+              onClick={() => {
+                window.history.pushState({}, '', '/admin-wis-whatsapp');
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors hover:opacity-80 w-full sm:w-auto"
+              style={{ backgroundColor: '#25D366', color: '#ffffff' }}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Wis WhatsApp Connect
+            </button>
+          </div>
         </div>
 
         <div className="space-y-4">

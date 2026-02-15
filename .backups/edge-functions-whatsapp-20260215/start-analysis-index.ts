@@ -6,35 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-async function sendWhatsAppNotification(
-  supabaseUrl: string,
-  supabaseServiceKey: string,
-  messageKey: string,
-  userId: string,
-  phone: string,
-  processoId?: string,
-  replacements?: Record<string, string>
-): Promise<void> {
-  try {
-    await fetch(`${supabaseUrl}/functions/v1/send-whatsapp-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({
-        message_key: messageKey,
-        user_id: userId,
-        processo_id: processoId,
-        phone,
-        replacements,
-      }),
-    });
-  } catch (error) {
-    console.error(`[start-analysis] Error sending WhatsApp notification:`, error);
-  }
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, {
@@ -71,7 +42,7 @@ Deno.serve(async (req: Request) => {
       })
       .eq('id', processo_id)
       .eq('status', 'created')
-      .select('id, is_chunked, total_chunks_count, gemini_file_uri, file_path, file_name, upload_method, user_id')
+      .select('id, is_chunked, total_chunks_count, gemini_file_uri, file_path, file_name')
       .maybeSingle();
 
     if (updateError) {
@@ -94,31 +65,6 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`[${callId}] ✅ Lock adquirido com sucesso`);
-
-    if (updatedProcesso.upload_method === 'wis-api' && updatedProcesso.user_id) {
-      console.log(`[${callId}] 📱 Processo via WIS API - enviando notificação WhatsApp...`);
-
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('first_name, phone, phone_country_code')
-        .eq('id', updatedProcesso.user_id)
-        .maybeSingle();
-
-      if (userProfile?.phone) {
-        const fullPhone = `${(userProfile.phone_country_code || '+55').replace('+', '')}${userProfile.phone}`;
-        EdgeRuntime.waitUntil(
-          sendWhatsAppNotification(
-            supabaseUrl,
-            supabaseServiceKey,
-            'analysis_started',
-            updatedProcesso.user_id,
-            fullPhone,
-            processo_id,
-            { nome: userProfile.first_name || 'Usuario' }
-          )
-        );
-      }
-    }
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
