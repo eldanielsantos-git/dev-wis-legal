@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
-      .select('numero_processo, file_name, created_at')
+      .select('file_name, created_at')
       .eq('id', processo_id)
       .single();
 
@@ -119,7 +119,7 @@ Deno.serve(async (req: Request) => {
 
     drawText('Analise Juridica Completa', { size: 20, bold: true });
     y -= 10;
-    drawText(`Processo: ${processo.numero_processo || processo.file_name || 'N/A'}`, { size: 12 });
+    drawText(`Processo: ${processo.file_name || 'N/A'}`, { size: 12 });
     drawText(`Data: ${new Date().toLocaleDateString('pt-BR')}`, { size: 10 });
     y -= 20;
 
