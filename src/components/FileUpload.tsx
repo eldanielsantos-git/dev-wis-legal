@@ -43,7 +43,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const [showProcessingModal, setShowProcessingModal] = useState(false);
   const [availableTokensInfo, setAvailableTokensInfo] = useState({ available: 0, reserved: 0 });
 
-  const MAX_FILE_SIZE = 3 * 1024 * 1024 * 1024; // 3 GB
+  const MAX_FILE_SIZE = 150 * 1024 * 1024; // 150 MB - limite de memoria para processamento
 
   useEffect(() => {
     const loadAvailableTokens = async () => {
@@ -359,7 +359,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
               <span className="hidden sm:inline">clique para </span>selecionar
             </p>
             <p className="text-[10px] sm:text-xs text-gray-500 mt-1 sm:mt-2">
-              Limite: 200MB • Apenas arquivos PDF
+              Limite: 150MB • Apenas arquivos PDF
             </p>
             {totalAvailableTokens > 0 && (
               <div className="mt-2">
@@ -399,7 +399,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
                       {formatFileSize(file.size)}
                     </p>
                   </div>
-                  {file.size > 200 * 1024 * 1024 && (
+                  {file.size > MAX_FILE_SIZE && (
                     <AlertCircle className="w-4 h-4 sm:w-5 sm:h-5 text-red-500 flex-shrink-0" />
                   )}
                 </div>
