@@ -194,6 +194,45 @@ Deno.serve(async (req: Request) => {
     cleanPhone = sanitizePhone(phone);
     console.log(`[wis-api] Processing request for phone: ${cleanPhone}`);
 
+    const { data: recentLog } = await supabase
+      .from('wis_api_logs')
+      .select('id, created_at')
+      .eq('phone_number', cleanPhone)
+      .gte('created_at', new Date(Date.now() - 30000).toISOString())
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (recentLog) {
+      const logPayload = {
+        phone: cleanPhone,
+        fileName,
+        hasDocumentUrl: !!documentUrl,
+        hasBase64: !!base64,
+        mimeType,
+      };
+
+      const { data: sameFileLog } = await supabase
+        .from('wis_api_logs')
+        .select('id, processo_id, response_sent')
+        .eq('phone_number', cleanPhone)
+        .gte('created_at', new Date(Date.now() - 30000).toISOString())
+        .neq('success', false)
+        .maybeSingle();
+
+      if (sameFileLog) {
+        console.log(`[wis-api] Duplicate webhook detected within 30s, ignoring...`);
+        return new Response(JSON.stringify({
+          success: true,
+          message: 'Request already being processed',
+          duplicate_detected: true,
+        }), {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     if (instanceId) {
       const { data: partners } = await supabase
         .from('wis_api_partners')
@@ -290,7 +329,7 @@ Deno.serve(async (req: Request) => {
     if (documentUrl) {
       console.log(`[wis-api] Downloading file from URL...`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutId = setTimeout(() => controller.abort(), 120000);
 
       try {
         const fileResponse = await fetch(documentUrl, { signal: controller.signal });
@@ -376,16 +415,23 @@ Deno.serve(async (req: Request) => {
     const MAX_FILE_SIZE_FOR_COMPLEX = 60 * 1024 * 1024;
 
     let actualPageCount = 0;
-    try {
-      console.log(`[wis-api] Counting PDF pages...`);
-      const arrayBuffer = await fileBlob.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-      actualPageCount = pdfDoc.getPageCount();
-      console.log(`[wis-api] PDF has ${actualPageCount} pages`);
-    } catch (pdfError) {
-      console.error(`[wis-api] Error counting PDF pages:`, pdfError);
-      actualPageCount = Math.ceil(fileBlob.size / (80 * 1024));
-      console.log(`[wis-api] Using estimated page count: ${actualPageCount}`);
+    const fileSizeMB = fileBlob.size / (1024 * 1024);
+
+    if (fileSizeMB > 50) {
+      actualPageCount = Math.ceil(fileBlob.size / (18 * 1024));
+      console.log(`[wis-api] Large file (${fileSizeMB.toFixed(1)}MB) - using estimated page count: ${actualPageCount}`);
+    } else {
+      try {
+        console.log(`[wis-api] Counting PDF pages...`);
+        const arrayBuffer = await fileBlob.arrayBuffer();
+        const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+        actualPageCount = pdfDoc.getPageCount();
+        console.log(`[wis-api] PDF has ${actualPageCount} pages`);
+      } catch (pdfError) {
+        console.error(`[wis-api] Error counting PDF pages:`, pdfError);
+        actualPageCount = Math.ceil(fileBlob.size / (18 * 1024));
+        console.log(`[wis-api] Using estimated page count: ${actualPageCount}`);
+      }
     }
 
     const isComplexFile = actualPageCount >= COMPLEX_PAGE_THRESHOLD;
