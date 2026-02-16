@@ -933,6 +933,28 @@ Deno.serve(async (req: Request) => {
             console.log(`[${callId}] ✅ Processo marcado como completed`);
           }
 
+          console.log(`[${callId}] 📄 Gerando PDF da análise completa...`);
+          try {
+            const pdfResponse = await fetch(`${supabaseUrl}/functions/v1/generate-analysis-pdf`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({ processo_id }),
+            });
+
+            if (pdfResponse.ok) {
+              const pdfResult = await pdfResponse.json();
+              console.log(`[${callId}] ✅ PDF gerado com sucesso:`, pdfResult.file_path);
+            } else {
+              const errorText = await pdfResponse.text();
+              console.error(`[${callId}] ❌ Falha ao gerar PDF:`, errorText);
+            }
+          } catch (pdfError) {
+            console.error(`[${callId}] ❌ Erro ao gerar PDF:`, pdfError);
+          }
+
           const { error: notificationError } = await supabase.from('notifications').insert({
             user_id: processoData.user_id,
             type: 'analysis_completed',
@@ -1021,26 +1043,36 @@ Deno.serve(async (req: Request) => {
               const fullPhone = `${(userProfileForWhatsApp.phone_country_code || '+55').replace('+', '')}${userProfileForWhatsApp.phone}`;
               const userFirstName = userProfileForWhatsApp.first_name || 'Usuario';
 
-              const { data: pdfData } = await supabase
-                .from('processos')
-                .select('pdf_base64')
-                .eq('id', processo_id)
-                .maybeSingle();
+              try {
+                const pdfPath = `${processo_id}/analysis.pdf`;
+                const { data: pdfBlob, error: downloadError } = await supabase.storage
+                  .from('processos')
+                  .download(pdfPath);
 
-              if (pdfData?.pdf_base64) {
-                EdgeRuntime.waitUntil(
-                  sendWhatsAppNotification(
-                    supabaseUrl,
-                    supabaseServiceKey,
-                    'analysis_completed',
-                    processoData.user_id,
-                    fullPhone,
-                    processo_id,
-                    { nome: userFirstName },
-                    pdfData.pdf_base64,
-                    `analise-${processoData.file_name || 'processo'}.pdf`
-                  )
-                );
+                if (downloadError) {
+                  console.error(`[${callId}] ❌ Erro ao baixar PDF do storage:`, downloadError);
+                } else if (pdfBlob) {
+                  const arrayBuffer = await pdfBlob.arrayBuffer();
+                  const bytes = new Uint8Array(arrayBuffer);
+                  const binaryString = String.fromCharCode(...bytes);
+                  const pdfBase64 = btoa(binaryString);
+
+                  EdgeRuntime.waitUntil(
+                    sendWhatsAppNotification(
+                      supabaseUrl,
+                      supabaseServiceKey,
+                      'analysis_completed',
+                      processoData.user_id,
+                      fullPhone,
+                      processo_id,
+                      { nome: userFirstName },
+                      pdfBase64,
+                      `analise-${processoData.file_name || 'processo'}.pdf`
+                    )
+                  );
+                }
+              } catch (pdfError) {
+                console.error(`[${callId}] ❌ Erro ao processar PDF para WhatsApp:`, pdfError);
               }
 
               const chatUrl = `https://app.wislegal.io/chat/${processo_id}`;
