@@ -609,46 +609,24 @@ Deno.serve(async (req: Request) => {
       { nome: foundProfile.first_name || 'Usuario' }
     );
 
+    const analysisEndpoint = isComplexFile ? 'start-analysis-complex' : 'start-analysis';
+    console.log(`[wis-api] Starting ${isComplexFile ? 'complex' : 'simple'} analysis (${actualPageCount} pages)...`);
+
     if (isComplexFile) {
-      console.log(`[wis-api] Complex file detected (${actualPageCount} pages) - requires web interface for chunked processing`);
-
-      await supabase
-        .from('processos')
-        .update({
-          status: 'error',
-          last_error_type: `Arquivo com ${actualPageCount} paginas requer processamento via interface web.`,
-        })
-        .eq('id', processoId);
-
-      const errorMessage = await getErrorMessage(supabase, 'file_requires_web_upload');
-      const response = {
-        success: false,
-        processo_id: processoId,
-        error_key: 'file_requires_web_upload',
-        message: errorMessage || `Arquivo com ${actualPageCount} paginas. Arquivos com mais de 1000 paginas devem ser enviados pela interface web em app.wislegal.io`,
-        analysis_started: false,
-        total_pages: actualPageCount,
-      };
-      await logRequest(supabase, partnerId, cleanPhone, userId, false, 'file_requires_web_upload', safeRequestPayload, response, processoId);
       EdgeRuntime.waitUntil(
         sendWhatsAppNotification(
           supabaseUrl,
           supabaseServiceKey,
-          'file_requires_web_upload',
+          'complex_analysis_started',
           userId,
           cleanPhone,
           processoId,
           { nome: foundProfile.first_name || 'Usuario', pages: String(actualPageCount) }
         )
       );
-      return new Response(JSON.stringify(response), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
     }
 
-    console.log(`[wis-api] Starting analysis...`);
-    const analysisResponse = await fetch(`${supabaseUrl}/functions/v1/start-analysis`, {
+    const analysisResponse = await fetch(`${supabaseUrl}/functions/v1/${analysisEndpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
