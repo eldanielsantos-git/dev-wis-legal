@@ -359,11 +359,27 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
         let processoId: string;
 
-        const MAX_SIMPLE_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-        const needsComplexProcessing = pageCount >= 1000 || file.size > MAX_SIMPLE_FILE_SIZE;
+        const SMALL_FILE_THRESHOLD = 18 * 1024 * 1024; // 18MB
+        const LARGE_FILE_THRESHOLD = 100 * 1024 * 1024; // 100MB - limite para upload via URL simples
+        const COMPLEX_PAGE_THRESHOLD = 1000;
+
+        const needsComplexProcessing = pageCount >= COMPLEX_PAGE_THRESHOLD ||
+          (pageCount < COMPLEX_PAGE_THRESHOLD && file.size > LARGE_FILE_THRESHOLD);
+
+        const needsUrlUpload = file.size > SMALL_FILE_THRESHOLD;
 
         if (needsComplexProcessing) {
           processoId = await ProcessosService.uploadAndStartComplexProcessing(
+            file,
+            pageCount,
+            (id) => {
+              setUploadingProcessoId(id);
+              setLastProcessedId(id);
+              loadProcessos();
+            }
+          );
+        } else if (needsUrlUpload) {
+          processoId = await ProcessosService.uploadAndStartSimpleProcessingViaUrl(
             file,
             pageCount,
             (id) => {

@@ -132,24 +132,17 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     const LARGE_PAGES_THRESHOLD = 1000;
-    const MAX_SIMPLE_FILE_SIZE = 50 * 1024 * 1024; // 50MB
     const fileSizeBytes = processoDetails?.file_size || 0;
     const estimatedPages = processoDetails?.total_pages || Math.ceil(fileSizeBytes / (200 * 1024));
 
-    const needsChunkedProcessing = estimatedPages >= LARGE_PAGES_THRESHOLD || fileSizeBytes > MAX_SIMPLE_FILE_SIZE;
-
-    if (!updatedProcesso.is_chunked && needsChunkedProcessing) {
-      const reason = fileSizeBytes > MAX_SIMPLE_FILE_SIZE
-        ? `Arquivo muito grande (${(fileSizeBytes / 1024 / 1024).toFixed(0)}MB)`
-        : `Arquivo com muitas paginas (~${estimatedPages})`;
-
-      console.error(`[${callId}] ❌ ${reason} - requer processamento chunked`);
+    if (!updatedProcesso.is_chunked && estimatedPages >= LARGE_PAGES_THRESHOLD) {
+      console.error(`[${callId}] ❌ Arquivo com muitas paginas (~${estimatedPages}) - requer processamento chunked`);
 
       await supabase
         .from('processos')
         .update({
           status: 'error',
-          last_error_type: `${reason}. Por favor, faça upload novamente - o sistema irá dividir automaticamente.`,
+          last_error_type: `Arquivo com muitas paginas (~${estimatedPages}). Por favor, faça upload novamente - o sistema irá dividir automaticamente.`,
         })
         .eq('id', processo_id);
 
@@ -157,7 +150,7 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           success: false,
           error: 'Arquivo muito grande para processamento direto',
-          message: `${reason}. Por favor, faça upload novamente.`,
+          message: `Arquivo com ~${estimatedPages} paginas requer processamento chunked. Por favor, faça upload novamente.`,
           needs_rechunk: true,
         }),
         {
@@ -166,6 +159,8 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    console.log(`[${callId}] 📋 Processo: ${estimatedPages} páginas, ${(fileSizeBytes / 1024 / 1024).toFixed(1)}MB, chunked: ${updatedProcesso.is_chunked}`);
 
     if (updatedProcesso.is_chunked) {
       console.log(`[${callId}] 📦 Processo chunkeado detectado (${updatedProcesso.total_chunks_count} chunks)`);

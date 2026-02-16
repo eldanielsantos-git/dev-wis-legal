@@ -337,6 +337,71 @@ export class ProcessosService {
     }
   }
 
+  static async uploadAndStartSimpleProcessingViaUrl(
+    file: File,
+    totalPages: number,
+    onProcessoCreated?: (processoId: string) => void
+  ): Promise<string> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const processoId = crypto.randomUUID();
+
+    const { data: processo, error: processoError } = await supabase
+      .from('processos')
+      .insert({
+        id: processoId,
+        file_name: file.name,
+        file_size: file.size,
+        status: 'uploading',
+        user_id: user.id,
+        is_chunked: false,
+        total_pages: totalPages,
+      })
+      .select()
+      .single();
+
+    if (processoError) {
+      throw new Error('Não foi possível criar o processo');
+    }
+
+    if (onProcessoCreated) {
+      onProcessoCreated(processoId);
+    }
+
+    try {
+      const { filePath, fileUrl } = await this.uploadFileToStorage(file);
+
+      await supabase
+        .from('processos')
+        .update({
+          file_path: filePath,
+          file_url: fileUrl,
+          status: 'created',
+          transcricao: { totalPages },
+        })
+        .eq('id', processoId);
+
+      await this.startAnalysis(processoId);
+
+      return processoId;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro no upload';
+
+      await supabase
+        .from('processos')
+        .update({
+          status: 'error',
+          last_error_type: errorMessage
+        })
+        .eq('id', processoId);
+
+      throw error;
+    }
+  }
+
   static async startAnalysis(processoId: string): Promise<void> {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;

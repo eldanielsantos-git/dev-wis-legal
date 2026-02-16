@@ -160,11 +160,11 @@ export function isComplexProcessing(pageCount: number): boolean {
   return pageCount >= LARGE_FILE_THRESHOLD;
 }
 
-const MAX_SIMPLE_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_SIMPLE_FILE_SIZE = 100 * 1024 * 1024; // 100MB - limite para upload via URL simples
 
 export function getChunkConfiguration(totalPages: number, fileSize?: number) {
   const needsSplitByPages = totalPages >= LARGE_FILE_THRESHOLD;
-  const needsSplitBySize = fileSize ? fileSize > MAX_SIMPLE_FILE_SIZE : false;
+  const needsSplitBySize = fileSize ? (totalPages < LARGE_FILE_THRESHOLD && fileSize > MAX_SIMPLE_FILE_SIZE) : false;
 
   if (!needsSplitByPages && !needsSplitBySize) {
     return {
