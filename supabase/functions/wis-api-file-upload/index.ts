@@ -638,7 +638,7 @@ Deno.serve(async (req: Request) => {
           userId,
           cleanPhone,
           processoId,
-          { pages: String(actualPageCount) }
+          { nome: foundProfile.first_name || 'Usuario', pages: String(actualPageCount) }
         )
       );
       return new Response(JSON.stringify(response), {
