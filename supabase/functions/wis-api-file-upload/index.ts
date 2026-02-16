@@ -434,18 +434,54 @@ Deno.serve(async (req: Request) => {
     const timestamp = Date.now();
     const storagePath = `${userId}/${timestamp}-${sanitizedFileName}`;
 
-    console.log(`[wis-api] Uploading to storage: ${storagePath}`);
+    console.log(`[wis-api] Uploading to storage: ${storagePath} (${(fileBlob.size / 1024 / 1024).toFixed(2)}MB)`);
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('processos')
-      .upload(storagePath, fileBlob, {
-        cacheControl: '3600',
-        upsert: false,
-        contentType: 'application/pdf',
-      });
+    let uploadData: { path: string } | null = null;
+    let uploadError: Error | null = null;
+    const maxRetries = 3;
 
-    if (uploadError) {
-      console.error(`[wis-api] Upload error:`, uploadError);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[wis-api] Upload attempt ${attempt}/${maxRetries}...`);
+
+        const { data, error } = await supabase.storage
+          .from('processos')
+          .upload(storagePath, fileBlob, {
+            cacheControl: '3600',
+            upsert: attempt > 1,
+            contentType: 'application/pdf',
+          });
+
+        if (error) {
+          console.error(`[wis-api] Upload attempt ${attempt} error:`, error);
+          uploadError = error as Error;
+
+          if (attempt < maxRetries) {
+            const delay = attempt * 2000;
+            console.log(`[wis-api] Retrying in ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+        } else {
+          uploadData = data;
+          uploadError = null;
+          console.log(`[wis-api] Upload succeeded on attempt ${attempt}`);
+          break;
+        }
+      } catch (e) {
+        console.error(`[wis-api] Upload attempt ${attempt} exception:`, e);
+        uploadError = e as Error;
+
+        if (attempt < maxRetries) {
+          const delay = attempt * 2000;
+          console.log(`[wis-api] Retrying after exception in ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    if (uploadError || !uploadData) {
+      console.error(`[wis-api] Upload failed after ${maxRetries} attempts:`, uploadError);
       const errorMessage = await getErrorMessage(supabase, 'upload_failed');
       const response = { success: false, error_key: 'upload_failed', message: errorMessage };
       await logRequest(supabase, partnerId, cleanPhone, userId, false, 'upload_failed', safeRequestPayload, response);
