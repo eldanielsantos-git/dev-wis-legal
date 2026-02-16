@@ -1,5 +1,5 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import PDFDocument from 'npm:pdfkit@0.15.0';
+import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,10 +7,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Info, Apikey',
 };
 
-interface AnalysisSection {
-  title: string;
-  content: any;
-}
+const PAGE_WIDTH = 595.28;
+const PAGE_HEIGHT = 841.89;
+const MARGIN = 50;
+const LINE_HEIGHT = 14;
+const MAX_CHARS_PER_LINE = 85;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -28,25 +29,23 @@ Deno.serve(async (req: Request) => {
     console.log('[generate-analysis-pdf] Recebido request para processo_id:', processo_id);
 
     if (!processo_id) {
-      console.error('[generate-analysis-pdf] processo_id não fornecido no body:', body);
+      console.error('[generate-analysis-pdf] processo_id nao fornecido no body:', body);
       return new Response(
-        JSON.stringify({ error: 'processo_id é obrigatório' }),
+        JSON.stringify({ error: 'processo_id e obrigatorio' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const { data: processo, error: processoError } = await supabase
       .from('processos')
-      .select('numero_processo, created_at')
+      .select('numero_processo, file_name, created_at')
       .eq('id', processo_id)
       .single();
 
-    console.log('[generate-analysis-pdf] Query resultado - processo:', processo, 'error:', processoError);
-
     if (processoError || !processo) {
-      console.error('[generate-analysis-pdf] Processo não encontrado:', processo_id, 'error:', processoError);
+      console.error('[generate-analysis-pdf] Processo nao encontrado:', processo_id);
       return new Response(
-        JSON.stringify({ error: 'Processo não encontrado', processo_id, db_error: processoError?.message }),
+        JSON.stringify({ error: 'Processo nao encontrado', processo_id }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -58,89 +57,158 @@ Deno.serve(async (req: Request) => {
       .eq('status', 'completed')
       .order('execution_order');
 
-    if (resultsError) {
+    if (resultsError || !results || results.length === 0) {
+      console.error('[generate-analysis-pdf] Nenhum resultado encontrado');
       return new Response(
-        JSON.stringify({ error: 'Erro ao buscar análise' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: 'Nenhum resultado de analise encontrado' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
-    const chunks: Uint8Array[] = [];
+    console.log(`[generate-analysis-pdf] Gerando PDF com ${results.length} secoes`);
 
-    doc.on('data', (chunk: Uint8Array) => chunks.push(chunk));
+    const pdfDoc = await PDFDocument.create();
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
-    const pdfGenerated = new Promise<Uint8Array>((resolve, reject) => {
-      doc.on('end', () => {
-        const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
-        const result = new Uint8Array(totalLength);
-        let offset = 0;
-        for (const chunk of chunks) {
-          result.set(chunk, offset);
-          offset += chunk.length;
-        }
-        resolve(result);
-      });
-      doc.on('error', reject);
-    });
-
-    doc.fontSize(20).text('Análise Jurídica Completa', { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(12).text(`Processo: ${processo.numero_processo || 'N/A'}`, { align: 'center' });
-    doc.fontSize(10).text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, { align: 'center' });
-    doc.moveDown(2);
-
-    const viewTitles: Record<string, string> = {
-      'visao-geral-processo': 'Visão Geral do Processo',
-      'estrategias-juridicas': 'Estratégias Jurídicas',
-      'riscos-alertas': 'Riscos e Alertas',
-      'balanco-financeiro': 'Balanço Financeiro',
-      'comunicacoes-prazos': 'Comunicações e Prazos',
-      'mapa-preclusoes': 'Mapa de Preclusões',
-      'admissibilidade-recursal': 'Admissibilidade Recursal',
-      'conclusoes-perspectivas': 'Conclusões e Perspectivas',
-      'resumo-estrategico': 'Resumo Estratégico'
+    const addPage = () => {
+      const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      return { page, y: PAGE_HEIGHT - MARGIN };
     };
 
-    for (const result of results) {
-      const title = result.prompt_title || 'Seção';
+    let { page, y } = addPage();
 
-      doc.addPage();
-      doc.fontSize(16).fillColor('#1e40af').text(title, { underline: true });
-      doc.moveDown();
-      doc.fontSize(10).fillColor('#000000');
+    const drawText = (text: string, options: { size?: number; bold?: boolean; color?: [number, number, number]; indent?: number } = {}) => {
+      const { size = 10, bold = false, color = [0, 0, 0], indent = 0 } = options;
+      const selectedFont = bold ? fontBold : font;
+      const x = MARGIN + indent;
+
+      if (y < MARGIN + LINE_HEIGHT * 2) {
+        const newPage = addPage();
+        page = newPage.page;
+        y = newPage.y;
+      }
+
+      const lines = wrapText(text, MAX_CHARS_PER_LINE - Math.floor(indent / 7));
+      for (const line of lines) {
+        if (y < MARGIN + LINE_HEIGHT) {
+          const newPage = addPage();
+          page = newPage.page;
+          y = newPage.y;
+        }
+        page.drawText(line, {
+          x,
+          y,
+          size,
+          font: selectedFont,
+          color: rgb(color[0], color[1], color[2]),
+        });
+        y -= LINE_HEIGHT;
+      }
+    };
+
+    const drawTitle = (text: string) => {
+      y -= 10;
+      drawText(text, { size: 14, bold: true, color: [0.12, 0.25, 0.69] });
+      y -= 5;
+    };
+
+    const drawSubtitle = (text: string) => {
+      drawText(text, { size: 11, bold: true, color: [0.22, 0.26, 0.32] });
+    };
+
+    drawText('Analise Juridica Completa', { size: 20, bold: true });
+    y -= 10;
+    drawText(`Processo: ${processo.numero_processo || processo.file_name || 'N/A'}`, { size: 12 });
+    drawText(`Data: ${new Date().toLocaleDateString('pt-BR')}`, { size: 10 });
+    y -= 20;
+
+    for (const result of results) {
+      const title = result.prompt_title || 'Secao';
+
+      const newPage = addPage();
+      page = newPage.page;
+      y = newPage.y;
+
+      drawTitle(title);
+      y -= 10;
 
       try {
         const content = typeof result.result_content === 'string'
           ? JSON.parse(result.result_content)
           : result.result_content;
 
-        addContentToDoc(doc, content);
-      } catch (e) {
+        renderContent(content, 0);
+      } catch {
         if (result.result_content) {
-          doc.text(String(result.result_content).substring(0, 5000));
+          const textContent = typeof result.result_content === 'string'
+            ? result.result_content
+            : JSON.stringify(result.result_content);
+          drawText(textContent.substring(0, 3000));
         } else {
-          doc.text('Conteudo nao disponivel');
+          drawText('Conteudo nao disponivel');
         }
       }
     }
 
-    doc.end();
+    function renderContent(content: unknown, depth: number) {
+      if (!content) return;
+      const indent = depth * 15;
 
-    const pdfBuffer = await pdfGenerated;
+      if (Array.isArray(content)) {
+        for (const item of content) {
+          if (typeof item === 'string') {
+            drawText(`- ${item}`, { indent });
+          } else if (typeof item === 'object' && item !== null) {
+            renderContent(item, depth);
+          }
+        }
+      } else if (typeof content === 'object' && content !== null) {
+        const obj = content as Record<string, unknown>;
+        for (const [key, value] of Object.entries(obj)) {
+          if (key === 'content' || key === 'texto' || key === 'descricao' || key === 'description') {
+            if (typeof value === 'string') {
+              drawText(value, { indent });
+              y -= 5;
+            } else if (Array.isArray(value)) {
+              renderContent(value, depth);
+            }
+          } else if (key === 'titulo' || key === 'title' || key === 'nome' || key === 'name') {
+            if (typeof value === 'string') {
+              drawSubtitle(value);
+              y -= 3;
+            }
+          } else if (key === 'items' || key === 'itens' || key === 'list' || key === 'lista') {
+            renderContent(value, depth + 1);
+          } else if (typeof value === 'object' && value !== null) {
+            drawText(`${formatKey(key)}:`, { bold: true, indent });
+            renderContent(value, depth + 1);
+            y -= 5;
+          } else if (value !== null && value !== undefined && value !== '') {
+            drawText(`${formatKey(key)}: ${String(value)}`, { indent });
+          }
+        }
+      } else if (typeof content === 'string') {
+        drawText(content, { indent });
+      }
+    }
+
+    const pdfBytes = await pdfDoc.save();
+
+    console.log(`[generate-analysis-pdf] PDF gerado: ${pdfBytes.length} bytes`);
 
     const fileName = `${processo_id}/analysis.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('processos')
-      .upload(fileName, pdfBuffer, {
+      .upload(fileName, pdfBytes, {
         contentType: 'application/pdf',
         upsert: true
       });
 
     if (uploadError) {
-      console.error('Erro ao fazer upload do PDF:', uploadError);
+      console.error('[generate-analysis-pdf] Erro ao fazer upload:', uploadError);
       return new Response(
-        JSON.stringify({ error: 'Erro ao salvar PDF no storage' }),
+        JSON.stringify({ error: 'Erro ao salvar PDF no storage', details: uploadError.message }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -160,62 +228,43 @@ Deno.serve(async (req: Request) => {
       console.error('[generate-analysis-pdf] Erro ao salvar URL no banco:', updateError);
     }
 
+    console.log(`[generate-analysis-pdf] PDF salvo com sucesso: ${pdfUrl}`);
+
     return new Response(
       JSON.stringify({
         success: true,
         pdf_url: pdfUrl,
-        file_path: fileName
+        file_path: fileName,
+        size_bytes: pdfBytes.length
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
+    console.error('[generate-analysis-pdf] Erro:', error);
     return new Response(
-      JSON.stringify({ error: error.message || 'Erro interno' }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Erro interno' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
 
-function addContentToDoc(doc: any, content: any, indent = 0) {
-  if (!content) return;
+function wrapText(text: string, maxChars: number): string[] {
+  const lines: string[] = [];
+  const cleanText = text.replace(/[\n\r]+/g, ' ').trim();
+  const words = cleanText.split(' ');
+  let currentLine = '';
 
-  const indentStr = '  '.repeat(indent);
-
-  if (Array.isArray(content)) {
-    content.forEach((item, index) => {
-      if (typeof item === 'string') {
-        doc.text(`${indentStr}• ${item}`, { indent: indent * 20 });
-      } else if (typeof item === 'object') {
-        addContentToDoc(doc, item, indent);
-      }
-    });
-  } else if (typeof content === 'object') {
-    for (const [key, value] of Object.entries(content)) {
-      if (key === 'content' || key === 'texto' || key === 'descricao') {
-        if (typeof value === 'string') {
-          doc.text(`${indentStr}${value}`, { indent: indent * 20 });
-          doc.moveDown(0.5);
-        } else if (Array.isArray(value)) {
-          addContentToDoc(doc, value, indent);
-        }
-      } else if (key === 'titulo' || key === 'title' || key === 'nome') {
-        doc.fontSize(12).fillColor('#1e40af').text(`${indentStr}${value}`, { indent: indent * 20 });
-        doc.fontSize(10).fillColor('#000000');
-        doc.moveDown(0.3);
-      } else if (typeof value === 'object') {
-        doc.fontSize(11).fillColor('#374151').text(`${indentStr}${formatKey(key)}:`, { indent: indent * 20 });
-        doc.fontSize(10).fillColor('#000000');
-        addContentToDoc(doc, value, indent + 1);
-        doc.moveDown(0.3);
-      } else if (value !== null && value !== undefined) {
-        doc.text(`${indentStr}${formatKey(key)}: ${value}`, { indent: indent * 20 });
-      }
+  for (const word of words) {
+    if (currentLine.length + word.length + 1 <= maxChars) {
+      currentLine += (currentLine ? ' ' : '') + word;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word.length > maxChars ? word.substring(0, maxChars) : word;
     }
-  } else if (typeof content === 'string') {
-    doc.text(`${indentStr}${content}`, { indent: indent * 20 });
   }
+  if (currentLine) lines.push(currentLine);
+  return lines.length ? lines : [''];
 }
 
 function formatKey(key: string): string {
