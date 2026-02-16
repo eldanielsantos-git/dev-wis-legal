@@ -262,8 +262,10 @@ Deno.serve(async (req: Request) => {
       );
     } else if (link_url) {
       messageType = "link";
-      const finalLinkTitle = link_title || whatsappMessage.link_title || message_key;
-      const finalLinkDescription = link_description || whatsappMessage.link_description || "";
+      const rawLinkTitle = link_title || whatsappMessage.link_title || message_key;
+      const rawLinkDescription = link_description || whatsappMessage.link_description || "";
+      const finalLinkTitle = applyReplacements(rawLinkTitle, replacements);
+      const finalLinkDescription = applyReplacements(rawLinkDescription, replacements);
       sendResult = await sendLinkMessage(
         supabaseUrl,
         supabaseServiceKey,

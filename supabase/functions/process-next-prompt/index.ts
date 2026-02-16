@@ -1128,39 +1128,45 @@ Deno.serve(async (req: Request) => {
                 }
               }
 
+              const fileName = processoData.file_name?.replace('.pdf', '') || 'processo';
               const chatUrl = `https://app.wislegal.io/chat/${processo_id}`;
-              EdgeRuntime.waitUntil(
-                sendWhatsAppNotification(
-                  supabaseUrl,
-                  supabaseServiceKey,
-                  'chat_link',
-                  processoData.user_id,
-                  fullPhone,
-                  processo_id,
-                  { nome: userFirstName, chat_url: chatUrl },
-                  undefined,
-                  undefined,
-                  chatUrl
-                )
-              );
-
               const detailUrl = `https://app.wislegal.io/lawsuits-detail/${processo_id}`;
+
               EdgeRuntime.waitUntil(
-                sendWhatsAppNotification(
-                  supabaseUrl,
-                  supabaseServiceKey,
-                  'detail_link',
-                  processoData.user_id,
-                  fullPhone,
-                  processo_id,
-                  { nome: userFirstName, detail_url: detailUrl },
-                  undefined,
-                  undefined,
-                  detailUrl
-                )
+                (async () => {
+                  await new Promise(resolve => setTimeout(resolve, 10000));
+                  console.log(`[${callId}] 📤 Enviando link de detalhes via WhatsApp (após 10s)`);
+                  await sendWhatsAppNotification(
+                    supabaseUrl,
+                    supabaseServiceKey,
+                    'detail_link',
+                    processoData.user_id,
+                    fullPhone,
+                    processo_id,
+                    { nome: userFirstName, detail_url: detailUrl, filename: fileName },
+                    undefined,
+                    undefined,
+                    detailUrl
+                  );
+
+                  await new Promise(resolve => setTimeout(resolve, 10000));
+                  console.log(`[${callId}] 📤 Enviando link de chat via WhatsApp (após 20s)`);
+                  await sendWhatsAppNotification(
+                    supabaseUrl,
+                    supabaseServiceKey,
+                    'chat_link',
+                    processoData.user_id,
+                    fullPhone,
+                    processo_id,
+                    { nome: userFirstName, chat_url: chatUrl, filename: fileName },
+                    undefined,
+                    undefined,
+                    chatUrl
+                  );
+                })()
               );
 
-              console.log(`[${callId}] ✅ Notificações WhatsApp enviadas`);
+              console.log(`[${callId}] ✅ Notificação PDF enviada, links agendados com delay`);
             }
           }
 
