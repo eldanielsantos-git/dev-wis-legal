@@ -2,19 +2,25 @@ import { supabase } from '../lib/supabase';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { Processo, Pagina } from '../lib/supabase';
 import { executeWithRetry } from '../utils/supabaseWithRetry';
+import { isLargeFile, estimatePageCountFromSize } from '../utils/pdfSplitter';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
   import.meta.url
 ).toString();
 
+const LARGE_FILE_SIZE_THRESHOLD = 100 * 1024 * 1024; // 100MB
+
 async function countPdfPages(file: File): Promise<number> {
+  if (file.size >= LARGE_FILE_SIZE_THRESHOLD) {
+    return estimatePageCountFromSize(file.size);
+  }
   try {
     const arrayBuffer = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     return pdf.numPages;
-  } catch (error) {
-    throw new Error('Erro ao contar páginas do PDF');
+  } catch {
+    return estimatePageCountFromSize(file.size);
   }
 }
 

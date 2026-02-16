@@ -12,6 +12,8 @@ export interface PDFChunk {
 }
 
 const LARGE_FILE_THRESHOLD = 1000;
+const LARGE_FILE_SIZE_THRESHOLD = 100 * 1024 * 1024; // 100MB
+const AVG_BYTES_PER_PAGE = 200 * 1024; // ~200KB per page estimate for legal PDFs
 
 // Token-safe chunk sizes (assuming ~1500 tokens/page with context)
 // Max Gemini: 1.048.576 tokens (using 850k as safe limit)
@@ -29,10 +31,34 @@ function determineChunkSize(totalPages: number): number {
   return CHUNK_SIZE_MEDIUM;
 }
 
+export function estimatePageCountFromSize(fileSize: number): number {
+  return Math.max(1, Math.ceil(fileSize / AVG_BYTES_PER_PAGE));
+}
+
+export function isLargeFile(fileSize: number): boolean {
+  return fileSize >= LARGE_FILE_SIZE_THRESHOLD;
+}
+
 export async function getPDFPageCount(file: File): Promise<number> {
+  if (file.size >= LARGE_FILE_SIZE_THRESHOLD) {
+    return estimatePageCountFromSize(file.size);
+  }
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer);
   return pdfDoc.getPageCount();
+}
+
+export async function getPDFPageCountSafe(file: File): Promise<{ pageCount: number; isEstimate: boolean }> {
+  if (file.size >= LARGE_FILE_SIZE_THRESHOLD) {
+    return { pageCount: estimatePageCountFromSize(file.size), isEstimate: true };
+  }
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(arrayBuffer);
+    return { pageCount: pdfDoc.getPageCount(), isEstimate: false };
+  } catch {
+    return { pageCount: estimatePageCountFromSize(file.size), isEstimate: true };
+  }
 }
 
 export async function splitPDFIntoChunks(file: File, withOverlap: boolean = false): Promise<PDFChunk[]> {
