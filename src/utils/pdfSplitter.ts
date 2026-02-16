@@ -19,6 +19,7 @@ export interface PDFChunk {
 
 const LARGE_FILE_THRESHOLD = 1000;
 const LARGE_FILE_SIZE_THRESHOLD = 18 * 1024 * 1024; // 18MB
+const MAX_CHUNK_SIZE_BYTES = 15 * 1024 * 1024; // 15MB - max chunk size for Gemini
 const AVG_BYTES_PER_PAGE = 80 * 1024; // ~80KB per page estimate for legal PDFs (conservative)
 
 // Token-safe chunk sizes (assuming ~1500 tokens/page with context)
@@ -72,7 +73,10 @@ export async function splitPDFIntoChunks(file: File, withOverlap: boolean = fals
   const pdfDoc = await PDFDocument.load(arrayBuffer);
   const totalPages = pdfDoc.getPageCount();
 
-  if (totalPages < LARGE_FILE_THRESHOLD) {
+  const needsSplitBySize = file.size > MAX_CHUNK_SIZE_BYTES;
+  const needsSplitByPages = totalPages >= LARGE_FILE_THRESHOLD;
+
+  if (!needsSplitBySize && !needsSplitByPages) {
     return [{
       file,
       startPage: 1,
@@ -85,7 +89,20 @@ export async function splitPDFIntoChunks(file: File, withOverlap: boolean = fals
     }];
   }
 
-  const chunkSize = determineChunkSize(totalPages);
+  let chunkSize: number;
+  if (needsSplitBySize) {
+    const avgBytesPerPage = file.size / totalPages;
+    const pagesPerMaxChunk = Math.floor(MAX_CHUNK_SIZE_BYTES / avgBytesPerPage);
+    const sizeBasedChunkSize = Math.max(10, pagesPerMaxChunk);
+
+    if (needsSplitByPages) {
+      chunkSize = Math.min(sizeBasedChunkSize, determineChunkSize(totalPages));
+    } else {
+      chunkSize = sizeBasedChunkSize;
+    }
+  } else {
+    chunkSize = determineChunkSize(totalPages);
+  }
   const effectiveChunkSize = withOverlap ? chunkSize : chunkSize;
   const chunks: PDFChunk[] = [];
 
