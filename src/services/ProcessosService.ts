@@ -9,7 +9,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-const LARGE_FILE_SIZE_THRESHOLD = 100 * 1024 * 1024; // 100MB
+const LARGE_FILE_SIZE_THRESHOLD = 18 * 1024 * 1024; // 18MB
 
 async function countPdfPages(file: File): Promise<number> {
   if (file.size >= LARGE_FILE_SIZE_THRESHOLD) {

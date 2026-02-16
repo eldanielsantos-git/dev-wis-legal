@@ -12,7 +12,7 @@ export interface PDFChunk {
 }
 
 const LARGE_FILE_THRESHOLD = 1000;
-const LARGE_FILE_SIZE_THRESHOLD = 100 * 1024 * 1024; // 100MB
+const LARGE_FILE_SIZE_THRESHOLD = 18 * 1024 * 1024; // 18MB
 const AVG_BYTES_PER_PAGE = 200 * 1024; // ~200KB per page estimate for legal PDFs
 
 // Token-safe chunk sizes (assuming ~1500 tokens/page with context)
