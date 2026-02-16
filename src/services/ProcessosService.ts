@@ -25,6 +25,51 @@ async function countPdfPages(file: File): Promise<number> {
   }
 }
 
+async function notifyUploadStarted(
+  userId: string,
+  userName: string,
+  fileName: string,
+  fileSize: number,
+  totalPages: number,
+  processoId: string,
+  isComplex: boolean = false
+): Promise<void> {
+  try {
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return;
+
+    const sizeInMB = (fileSize / (1024 * 1024)).toFixed(1);
+    const complexTag = isComplex ? ' | Analise Complexa' : '';
+    const message = `${userName} | ${fileName} | ${totalPages} pags | ${sizeInMB}MB${complexTag}`;
+
+    fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        type_slug: 'upload_started',
+        title: 'Upload Iniciado',
+        message,
+        severity: 'success',
+        metadata: {
+          user_id: userId,
+          user_name: userName,
+          file_name: fileName,
+          file_size: fileSize,
+          total_pages: totalPages,
+          is_complex: isComplex,
+        },
+        user_id: userId,
+        processo_id: processoId,
+      }),
+    }).catch(() => {});
+  } catch {
+  }
+}
+
 export class ProcessosService {
 
   static async resumeInterruptedUpload(processoId: string, onProgress?: (current: number, total: number) => void): Promise<void> {
@@ -306,6 +351,17 @@ export class ProcessosService {
     try {
       const totalPages = await countPdfPages(file);
 
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      const userName = userProfile?.first_name
+        ? `${userProfile.first_name}${userProfile.last_name ? ' ' + userProfile.last_name : ''}`
+        : user.email || 'Usuario';
+
+      notifyUploadStarted(user.id, userName, file.name, file.size, totalPages, tempProcessoId, false);
+
       const { filePath, fileUrl } = await this.uploadFileToStorage(file);
 
       await supabase
@@ -372,6 +428,17 @@ export class ProcessosService {
     }
 
     try {
+      const { data: userProfile } = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .maybeSingle();
+      const userName = userProfile?.first_name
+        ? `${userProfile.first_name}${userProfile.last_name ? ' ' + userProfile.last_name : ''}`
+        : user.email || 'Usuario';
+
+      notifyUploadStarted(user.id, userName, file.name, file.size, totalPages, processoId, false);
+
       const { filePath, fileUrl } = await this.uploadFileToStorage(file);
 
       await supabase
@@ -913,6 +980,17 @@ export class ProcessosService {
     if (onProcessoCreated) {
       onProcessoCreated(processoId);
     }
+
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('first_name, last_name')
+      .eq('id', user.id)
+      .maybeSingle();
+    const userName = userProfile?.first_name
+      ? `${userProfile.first_name}${userProfile.last_name ? ' ' + userProfile.last_name : ''}`
+      : user.email || 'Usuario';
+
+    notifyUploadStarted(user.id, userName, file.name, file.size, totalPages, processoId, true);
 
     const useFrontendSplit = shouldSplitInFrontend(file.size);
 

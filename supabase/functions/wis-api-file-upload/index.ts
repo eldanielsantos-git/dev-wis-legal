@@ -517,6 +517,37 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[wis-api] Processo created: ${processoId}`);
 
+    const sizeInMB = (fileBlob.size / (1024 * 1024)).toFixed(1);
+    const complexTag = isComplexFile ? ' | Analise Complexa' : '';
+    const uploadNotificationMessage = `${foundProfile.first_name || 'Usuario'} | ${fileName} | ${actualPageCount} pags | ${sizeInMB}MB${complexTag} | Via Wis API WhatsApp`;
+
+    EdgeRuntime.waitUntil(
+      fetch(`${supabaseUrl}/functions/v1/send-admin-notification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          type_slug: 'upload_started',
+          title: 'Upload Iniciado',
+          message: uploadNotificationMessage,
+          severity: 'success',
+          metadata: {
+            user_id: userId,
+            user_name: foundProfile.first_name || 'Usuario',
+            file_name: fileName,
+            file_size: fileBlob.size,
+            total_pages: actualPageCount,
+            is_complex: isComplexFile,
+            upload_method: 'wis-api',
+          },
+          user_id: userId,
+          processo_id: processoId,
+        }),
+      }).catch((err) => console.error('[wis-api] Error sending admin notification:', err))
+    );
+
     console.log(`[wis-api] Sending file_received notification first...`);
     await sendWhatsAppNotification(
       supabaseUrl,
