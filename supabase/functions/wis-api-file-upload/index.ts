@@ -409,8 +409,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const COMPLEX_PAGE_THRESHOLD = 300;
-    const MAX_FILE_SIZE_FOR_COMPLEX = 60 * 1024 * 1024;
+    const COMPLEX_PAGE_THRESHOLD = 1000;
 
     let actualPageCount = 0;
     const fileSizeMB = fileBlob.size / (1024 * 1024);
@@ -543,12 +542,11 @@ Deno.serve(async (req: Request) => {
         file_path: uploadData.path,
         file_url: publicUrlData.publicUrl,
         file_size: fileBlob.size,
-        status: isComplexFile ? 'pending_chunking' : 'created',
+        status: 'created',
         user_id: userId,
         upload_method: 'wis-api',
         total_pages: actualPageCount,
-        is_chunked: isComplexFile,
-        original_file_path: isComplexFile ? uploadData.path : null,
+        is_chunked: false,
       })
       .select()
       .single();
@@ -612,147 +610,39 @@ Deno.serve(async (req: Request) => {
     );
 
     if (isComplexFile) {
-      console.log(`[wis-api] Complex file detected (${actualPageCount} pages) - starting chunked processing`);
+      console.log(`[wis-api] Complex file detected (${actualPageCount} pages) - requires web interface for chunked processing`);
 
-      if (fileBlob.size > MAX_FILE_SIZE_FOR_COMPLEX) {
-        console.log(`[wis-api] File too large for complex processing: ${(fileBlob.size / 1024 / 1024).toFixed(2)}MB`);
+      await supabase
+        .from('processos')
+        .update({
+          status: 'error',
+          last_error_type: `Arquivo com ${actualPageCount} paginas requer processamento via interface web.`,
+        })
+        .eq('id', processoId);
 
-        await supabase
-          .from('processos')
-          .update({
-            status: 'error',
-            last_error_type: `Arquivo muito grande para processamento via API (${(fileBlob.size / 1024 / 1024).toFixed(0)}MB). Maximo: 60MB.`,
-          })
-          .eq('id', processoId);
-
-        const errorMessage = await getErrorMessage(supabase, 'file_too_large_whatsapp');
-        const response = {
-          success: false,
-          processo_id: processoId,
-          error_key: 'file_too_large_whatsapp',
-          message: errorMessage || `Arquivo muito grande (${(fileBlob.size / 1024 / 1024).toFixed(0)}MB). Arquivos acima de 60MB devem ser enviados pela interface web.`,
-          analysis_started: false,
-        };
-        await logRequest(supabase, partnerId, cleanPhone, userId, false, 'file_too_large_whatsapp', safeRequestPayload, response, processoId);
-        EdgeRuntime.waitUntil(
-          sendWhatsAppNotification(
-            supabaseUrl,
-            supabaseServiceKey,
-            'file_too_large_whatsapp',
-            userId,
-            cleanPhone,
-            processoId,
-            { size_mb: (fileBlob.size / 1024 / 1024).toFixed(0) }
-          )
-        );
-        return new Response(JSON.stringify(response), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      console.log(`[wis-api] Calling split-pdf-chunks...`);
-      const splitResponse = await fetch(`${supabaseUrl}/functions/v1/split-pdf-chunks`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({ processo_id: processoId }),
-      });
-
-      if (!splitResponse.ok) {
-        const splitError = await splitResponse.text();
-        console.error(`[wis-api] Error splitting PDF:`, splitError);
-
-        await supabase
-          .from('processos')
-          .update({
-            status: 'error',
-            last_error_type: `Erro ao dividir PDF em partes: ${splitError}`,
-          })
-          .eq('id', processoId);
-
-        const errorMessage = await getErrorMessage(supabase, 'analysis_start_failed');
-        const response = {
-          success: false,
-          processo_id: processoId,
-          error_key: 'analysis_start_failed',
-          message: errorMessage,
-          analysis_started: false,
-        };
-        await logRequest(supabase, partnerId, cleanPhone, userId, false, 'analysis_start_failed', safeRequestPayload, response, processoId);
-        EdgeRuntime.waitUntil(
-          sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'analysis_start_failed', userId, cleanPhone, processoId)
-        );
-        return new Response(JSON.stringify(response), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      const splitResult = await splitResponse.json();
-      console.log(`[wis-api] PDF split into ${splitResult.totalChunks} chunks`);
-
-      console.log(`[wis-api] Starting complex analysis...`);
-      const analysisResponse = await fetch(`${supabaseUrl}/functions/v1/start-analysis-complex`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({ processo_id: processoId }),
-      });
-
-      if (!analysisResponse.ok) {
-        console.error(`[wis-api] Error starting complex analysis`);
-        const errorMessage = await getErrorMessage(supabase, 'analysis_start_failed');
-        const response = {
-          success: true,
-          processo_id: processoId,
-          message: errorMessage,
-          analysis_started: false,
-          is_complex: true,
-          total_chunks: splitResult.totalChunks,
-        };
-        await logRequest(supabase, partnerId, cleanPhone, userId, true, 'analysis_start_failed', safeRequestPayload, response, processoId);
-        EdgeRuntime.waitUntil(
-          sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'analysis_start_failed', userId, cleanPhone, processoId)
-        );
-        return new Response(JSON.stringify(response), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-
-      console.log(`[wis-api] Complex analysis started successfully`);
-
+      const errorMessage = await getErrorMessage(supabase, 'file_requires_web_upload');
+      const response = {
+        success: false,
+        processo_id: processoId,
+        error_key: 'file_requires_web_upload',
+        message: errorMessage || `Arquivo com ${actualPageCount} paginas. Arquivos com mais de 1000 paginas devem ser enviados pela interface web em app.wislegal.io`,
+        analysis_started: false,
+        total_pages: actualPageCount,
+      };
+      await logRequest(supabase, partnerId, cleanPhone, userId, false, 'file_requires_web_upload', safeRequestPayload, response, processoId);
       EdgeRuntime.waitUntil(
         sendWhatsAppNotification(
           supabaseUrl,
           supabaseServiceKey,
-          'analysis_started',
+          'file_requires_web_upload',
           userId,
           cleanPhone,
           processoId,
-          { nome: foundProfile.first_name || 'Usuario' }
+          { pages: String(actualPageCount) }
         )
       );
-
-      const successResponse = {
-        success: true,
-        processo_id: processoId,
-        message: `Arquivo com ${actualPageCount} paginas recebido. Analise complexa iniciada com ${splitResult.totalChunks} partes.`,
-        analysis_started: true,
-        is_complex: true,
-        total_pages: actualPageCount,
-        total_chunks: splitResult.totalChunks,
-      };
-
-      await logRequest(supabase, partnerId, cleanPhone, userId, true, null, safeRequestPayload, successResponse, processoId);
-
-      return new Response(JSON.stringify(successResponse), {
-        status: 200,
+      return new Response(JSON.stringify(response), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
