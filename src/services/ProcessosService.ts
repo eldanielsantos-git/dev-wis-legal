@@ -876,7 +876,7 @@ export class ProcessosService {
     file: File,
     totalPages: number,
     onProcessoCreated?: (processoId: string) => void,
-    onProgress?: (uploaded: number, total: number) => void
+    _onProgress?: (uploaded: number, total: number) => void
   ): Promise<string> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -884,11 +884,10 @@ export class ProcessosService {
     }
 
     const { getChunkConfiguration } = await import('../utils/pdfSplitter');
-
     const config = getChunkConfiguration(totalPages, file.size);
 
     const processoId = crypto.randomUUID();
-    const { data: processo, error: processoError } = await supabase
+    const { error: processoError } = await supabase
       .from('processos')
       .insert({
         id: processoId,
@@ -915,8 +914,7 @@ export class ProcessosService {
       onProcessoCreated(processoId);
     }
 
-
-    const uploadChunksInBackground = async () => {
+    const processInBackground = async () => {
       try {
         const sanitizedFileName = this.sanitizeFileName(file.name);
         const originalPath = `${user.id}/${Date.now()}-original-${sanitizedFileName}`;
@@ -937,128 +935,23 @@ export class ProcessosService {
           .update({ original_file_path: originalPath })
           .eq('id', processoId);
 
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/split-pdf-chunks`;
+        const splitResponse = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ processo_id: processoId }),
+        });
 
-        const { splitPDFIntoChunksWithOverlap } = await import('../utils/pdfSplitter');
-
-        const chunks = await splitPDFIntoChunksWithOverlap(file);
-
-        for (let i = 0; i < chunks.length; i++) {
-          const chunk = chunks[i];
-    
-          if (onProgress) {
-            onProgress(i, chunks.length);
-          }
-
-          const sanitizedFileName = this.sanitizeFileName(file.name);
-          const timestamp = Date.now();
-          const chunkPath = `${user.id}/${timestamp}-${sanitizedFileName.replace('.pdf', '')}_chunk${i + 1}.pdf`;
-
-          const MAX_RETRIES = 30;
-          let uploadData = null;
-          let uploadError = null;
-          let retryCount = 0;
-
-          while (retryCount < MAX_RETRIES) {
-            const result = await supabase.storage
-              .from('processos')
-              .upload(chunkPath, chunk.file, {
-                cacheControl: '3600',
-                upsert: true
-              });
-
-            uploadData = result.data;
-            uploadError = result.error;
-
-            if (!uploadError) {
-              if (retryCount > 0) {
-                  }
-              break;
-            }
-
-            retryCount++;
-
-            if (retryCount < MAX_RETRIES) {
-              const backoffSeconds = Math.min(Math.pow(2, retryCount), 300);
-
-              await supabase
-                .from('processos')
-                .update({
-                  chunk_retry_count: retryCount,
-                  current_failed_chunk: i,
-                  last_chunk_error: `Tentativa ${retryCount}/${MAX_RETRIES}: ${uploadError.message}`,
-                  upload_interrupted: true
-                })
-                .eq('id', processoId);
-
-              await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
-            }
-          }
-
-          if (uploadError) {
-                await supabase
-              .from('processos')
-              .update({
-                status: 'error',
-                upload_interrupted: true,
-                last_chunk_error: `Falha após ${MAX_RETRIES} tentativas: ${uploadError.message}`
-              })
-              .eq('id', processoId);
-            throw new Error(`Erro no upload da parte ${i + 1}: ${uploadError.message}`);
-          }
-
-          const { error: chunkError } = await supabase.from('process_chunks').insert({
-            processo_id: processoId,
-            chunk_index: i + 1,
-            total_chunks: chunks.length,
-            start_page: chunk.startPage,
-            end_page: chunk.endPage,
-            pages_count: chunk.endPage - chunk.startPage + 1,
-            overlap_start_page: chunk.overlapStartPage,
-            overlap_end_page: chunk.overlapEndPage,
-            file_path: uploadData.path,
-            file_size: chunk.file.size,
-            status: 'ready',
-          });
-
-          if (chunkError) {
-                await supabase
-              .from('processos')
-              .update({ upload_interrupted: true })
-              .eq('id', processoId);
-            throw new Error(`Erro ao salvar parte ${i + 1}: ${chunkError.message}`);
-          }
-
-          await supabase
-            .from('processos')
-            .update({
-              chunks_uploaded_count: i + 1,
-              last_chunk_uploaded_at: new Date().toISOString(),
-              chunk_retry_count: 0,
-              current_failed_chunk: null,
-              last_chunk_error: null,
-              upload_interrupted: false
-            })
-            .eq('id', processoId);
-
-            }
-
-        if (onProgress) {
-          onProgress(chunks.length, chunks.length);
+        if (!splitResponse.ok) {
+          const errorData = await splitResponse.json();
+          throw new Error(errorData.error || 'Falha ao dividir PDF no servidor');
         }
 
-        await supabase
-          .from('processos')
-          .update({
-            status: 'created',
-            transcricao: { totalPages, totalChunks: chunks.length, chunkSize: config.chunkSize },
-            total_pages: totalPages,
-            upload_interrupted: false
-          })
-          .eq('id', processoId);
-
-
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-analysis-complex`;
-        const response = await fetch(apiUrl, {
+        const startApiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-analysis-complex`;
+        const startResponse = await fetch(startApiUrl, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
@@ -1067,26 +960,25 @@ export class ProcessosService {
           body: JSON.stringify({ processo_id: processoId }),
         });
 
-        if (!response.ok) {
-          const error = await response.json();
+        if (!startResponse.ok) {
+          const error = await startResponse.json();
           throw new Error(error.error || 'Falha ao iniciar análise complexa');
         }
-
 
       } catch (error) {
         await supabase
           .from('processos')
           .update({
             status: 'error',
-            upload_interrupted: true
+            upload_interrupted: true,
+            last_error_type: error instanceof Error ? error.message : 'Erro no processamento'
           })
           .eq('id', processoId);
         throw error;
       }
     };
 
-    uploadChunksInBackground().catch(error => {
-    });
+    processInBackground().catch(() => {});
 
     return processoId;
   }

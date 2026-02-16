@@ -160,7 +160,7 @@ export function isComplexProcessing(pageCount: number): boolean {
   return pageCount >= LARGE_FILE_THRESHOLD;
 }
 
-const MAX_SIMPLE_FILE_SIZE = 100 * 1024 * 1024; // 100MB - limite memoria edge function
+const MAX_SIMPLE_FILE_SIZE = 80 * 1024 * 1024; // 80MB - limite memoria edge function
 
 export function getChunkConfiguration(totalPages: number, fileSize?: number) {
   const needsSplitByPages = totalPages >= LARGE_FILE_THRESHOLD;

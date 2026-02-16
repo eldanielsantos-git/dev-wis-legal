@@ -360,7 +360,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         let processoId: string;
 
         const SMALL_FILE_THRESHOLD = 18 * 1024 * 1024; // 18MB - abaixo usa base64
-        const LARGE_FILE_THRESHOLD = 100 * 1024 * 1024; // 100MB - acima usa chunks (limite memoria edge function)
+        const LARGE_FILE_THRESHOLD = 80 * 1024 * 1024; // 80MB - acima usa chunks (limite memoria edge function)
         const COMPLEX_PAGE_THRESHOLD = 1000;
 
         const needsComplexProcessing = pageCount >= COMPLEX_PAGE_THRESHOLD ||
