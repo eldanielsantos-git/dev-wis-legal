@@ -67,9 +67,13 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[send-whatsapp-document] Sending document "${filename}" to ${phoneWithCountry}`);
 
-    const zapiUrl = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-document/base64`;
+    const zapiUrl = `https://api.z-api.io/instances/${zapiInstanceId}/token/${zapiToken}/send-document/pdf`;
 
-    const cleanBase64 = document_base64.replace(/^data:application\/pdf;base64,/, "");
+    const base64WithPrefix = document_base64.startsWith("data:application/pdf;base64,")
+      ? document_base64
+      : `data:application/pdf;base64,${document_base64}`;
+
+    console.log(`[send-whatsapp-document] Base64 length: ${base64WithPrefix.length}, has prefix: ${base64WithPrefix.startsWith("data:")}`);
 
     const response = await fetch(zapiUrl, {
       method: "POST",
@@ -79,7 +83,7 @@ Deno.serve(async (req: Request) => {
       },
       body: JSON.stringify({
         phone: phoneWithCountry,
-        document: cleanBase64,
+        document: base64WithPrefix,
         fileName: filename.endsWith(".pdf") ? filename : `${filename}.pdf`,
         caption: caption || "",
       }),

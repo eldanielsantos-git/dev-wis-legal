@@ -53,9 +53,10 @@ Deno.serve(async (req: Request) => {
 
     const { data: results, error: resultsError } = await supabase
       .from('analysis_results')
-      .select('view_name, result_json')
+      .select('prompt_title, result_content')
       .eq('processo_id', processo_id)
-      .order('view_name');
+      .eq('status', 'completed')
+      .order('execution_order');
 
     if (resultsError) {
       return new Response(
@@ -102,7 +103,7 @@ Deno.serve(async (req: Request) => {
     };
 
     for (const result of results) {
-      const title = viewTitles[result.view_name] || result.view_name;
+      const title = result.prompt_title || 'Seção';
 
       doc.addPage();
       doc.fontSize(16).fillColor('#1e40af').text(title, { underline: true });
@@ -110,13 +111,17 @@ Deno.serve(async (req: Request) => {
       doc.fontSize(10).fillColor('#000000');
 
       try {
-        const content = typeof result.result_json === 'string'
-          ? JSON.parse(result.result_json)
-          : result.result_json;
+        const content = typeof result.result_content === 'string'
+          ? JSON.parse(result.result_content)
+          : result.result_content;
 
         addContentToDoc(doc, content);
       } catch (e) {
-        doc.text(`Erro ao processar conteúdo desta seção: ${e.message}`);
+        if (result.result_content) {
+          doc.text(String(result.result_content).substring(0, 5000));
+        } else {
+          doc.text('Conteudo nao disponivel');
+        }
       }
     }
 
