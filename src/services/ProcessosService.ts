@@ -8,9 +8,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url
 ).toString();
 
-const MAX_PDF_SIZE_FOR_INLINE = 50 * 1024 * 1024;
-const CHUNK_SIZE = 40 * 1024 * 1024;
-
 async function countPdfPages(file: File): Promise<number> {
   try {
     const arrayBuffer = await file.arrayBuffer();
@@ -199,18 +196,6 @@ export class ProcessosService {
       .toLowerCase();
   }
 
-  private static async convertFileToBase64(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64 = (reader.result as string).split(',')[1];
-        resolve(base64);
-      };
-      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
-      reader.readAsDataURL(file);
-    });
-  }
-
   private static async uploadFileToStorage(file: File): Promise<{
     filePath: string;
     fileUrl: string;
@@ -244,61 +229,6 @@ export class ProcessosService {
       filePath: data.path,
       fileUrl: publicUrlData.publicUrl
     };
-  }
-
-  private static async storeBase64InDatabase(
-    processoId: string,
-    base64Data: string,
-    fileSize: number
-  ): Promise<void> {
-
-    if (fileSize <= MAX_PDF_SIZE_FOR_INLINE) {
-      await supabase
-        .from('processos')
-        .update({
-          pdf_base64: base64Data,
-          pdf_size_bytes: fileSize,
-          is_chunked: false,
-          total_chunks: 0
-        })
-        .eq('id', processoId);
-
-    } else {
-      const totalChunks = Math.ceil(base64Data.length / CHUNK_SIZE);
-
-      const chunks = [];
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, base64Data.length);
-        const chunkData = base64Data.substring(start, end);
-
-        chunks.push({
-          processo_id: processoId,
-          chunk_number: i + 1,
-          chunk_data: chunkData,
-          chunk_size_bytes: chunkData.length
-        });
-      }
-
-      const { error: chunksError } = await supabase
-        .from('pdf_chunks')
-        .insert(chunks);
-
-      if (chunksError) {
-        throw new Error(`Erro ao salvar chunks: ${chunksError.message}`);
-      }
-
-      await supabase
-        .from('processos')
-        .update({
-          pdf_base64: null,
-          pdf_size_bytes: fileSize,
-          is_chunked: true,
-          total_chunks: totalChunks
-        })
-        .eq('id', processoId);
-
-    }
   }
 
   static async createProcesso(
@@ -367,13 +297,9 @@ export class ProcessosService {
     }
 
     try {
-
       const totalPages = await countPdfPages(file);
 
       const { filePath, fileUrl } = await this.uploadFileToStorage(file);
-
-      const base64Data = await this.convertFileToBase64(file);
-      await this.storeBase64InDatabase(tempProcessoId, base64Data, file.size);
 
       await supabase
         .from('processos')
@@ -389,13 +315,14 @@ export class ProcessosService {
       await this.startAnalysis(tempProcessoId);
 
       return tempProcessoId;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Erro no upload';
 
       await supabase
         .from('processos')
         .update({
           status: 'error',
-          last_error_type: error.message || 'Erro no upload'
+          last_error_type: errorMessage
         })
         .eq('id', tempProcessoId);
 
