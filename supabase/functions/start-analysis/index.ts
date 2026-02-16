@@ -170,10 +170,34 @@ Deno.serve(async (req: Request) => {
             }
           } else {
             const errorText = await uploadResponse.text();
-            console.error(`[${callId}] ⚠️ Falha no processamento: ${errorText}`);
+            console.error(`[${callId}] ❌ Falha no upload para Gemini: ${errorText}`);
+
+            await supabase
+              .from('processos')
+              .update({
+                status: 'error',
+                last_error_type: `Falha no upload para Gemini: ${errorText.substring(0, 200)}`,
+              })
+              .eq('id', processo_id);
+
+            throw new Error(`Falha no upload para Gemini: ${errorText}`);
           }
         } catch (uploadError) {
-          console.error(`[${callId}] ⚠️ Erro ao chamar upload-to-gemini:`, uploadError);
+          console.error(`[${callId}] ❌ Erro ao chamar upload-to-gemini:`, uploadError);
+
+          const errorMessage = uploadError instanceof Error ? uploadError.message : 'Erro desconhecido';
+
+          if (!errorMessage.includes('Falha no upload para Gemini')) {
+            await supabase
+              .from('processos')
+              .update({
+                status: 'error',
+                last_error_type: `Erro no upload: ${errorMessage.substring(0, 200)}`,
+              })
+              .eq('id', processo_id);
+          }
+
+          throw uploadError;
         }
       } else if (updatedProcesso.gemini_file_uri) {
         console.log(`[${callId}] ✅ Arquivo já possui gemini_file_uri: ${updatedProcesso.gemini_file_uri}`);
