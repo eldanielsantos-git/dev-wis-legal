@@ -6,7 +6,6 @@ import { ConfirmDeleteModal } from '../components/ConfirmDeleteModal';
 import { IntelligentSearch } from '../components/IntelligentSearch';
 import { UpgradeModal } from '../components/UpgradeModal';
 import { InterruptedUploadsModal } from '../components/InterruptedUploadsModal';
-import { UploadPreparationModal } from '../components/UploadPreparationModal';
 import { ProcessoCard } from '../components/ProcessoCard';
 import { ProcessoListItem } from '../components/ProcessoListItem';
 import { StatusCard } from '../components/StatusCard';
@@ -83,7 +82,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
   const [shareCountByProcesso, setShareCountByProcesso] = useState<Map<string, number>>(new Map());
   const [interruptedUploads, setInterruptedUploads] = useState<Array<{ id: string; file_name: string; uploaded: number; total: number }>>([]);
   const [showInterruptedModal, setShowInterruptedModal] = useState(false);
-  const [preparingUpload, setPreparingUpload] = useState<{ isOpen: boolean; fileName: string; step: string }>({ isOpen: false, fileName: '', step: '' });
 
   useEffectOnce(() => {
     const syncAndLoadData = async () => {
@@ -356,8 +354,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
       try {
         if (file.type !== 'application/pdf') throw new Error('Apenas PDF');
 
-        setPreparingUpload({ isOpen: true, fileName: file.name, step: 'Analisando documento...' });
-
         const pageCount = await ProcessosService.countPdfPages(file);
 
         const tokenCheck = await TokenValidationService.checkTokensBeforeUpload(user.id, pageCount);
@@ -365,7 +361,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         // Apenas verificar se tem tokens suficientes, independente de ter assinatura
         if (!tokenCheck.hasSufficientTokens) {
           setLoading(false);
-          setPreparingUpload({ isOpen: false, fileName: '', step: '' });
           setUpgradeModal({
             isOpen: true,
             tokensRequired: tokenCheck.tokensRequired,
@@ -379,7 +374,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         }
 
         setProcessingStatus('uploading');
-        setPreparingUpload(prev => ({ ...prev, step: 'Preparando chunks do documento...' }));
 
         let processoId: string;
 
@@ -393,7 +387,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         const needsUrlUpload = file.size > SMALL_FILE_THRESHOLD;
 
         if (needsComplexProcessing) {
-          setPreparingUpload(prev => ({ ...prev, step: 'Dividindo documento em partes...' }));
           processoId = await ProcessosService.uploadAndStartComplexProcessing(
             file,
             pageCount,
@@ -404,11 +397,9 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
             }
           );
 
-          setPreparingUpload({ isOpen: false, fileName: '', step: '' });
           showSuccess('Documento enviado! Preparando para análise...');
           setPendingRedirectId(processoId);
         } else if (needsUrlUpload) {
-          setPreparingUpload(prev => ({ ...prev, step: 'Enviando arquivo para o servidor...' }));
           processoId = await ProcessosService.uploadAndStartSimpleProcessingViaUrl(
             file,
             pageCount,
@@ -420,7 +411,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
           );
 
           setProcessingStatus('analyzing');
-          setPreparingUpload({ isOpen: false, fileName: '', step: '' });
 
           if (processoId) {
             showSuccess('Upload concluído! Redirecionando...');
@@ -429,7 +419,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
             }, 1000);
           }
         } else {
-          setPreparingUpload(prev => ({ ...prev, step: 'Processando documento...' }));
           processoId = await ProcessosService.uploadAndStartProcessing(
             file,
             (id) => {
@@ -440,7 +429,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
           );
 
           setProcessingStatus('analyzing');
-          setPreparingUpload({ isOpen: false, fileName: '', step: '' });
 
           if (processoId) {
             showSuccess('Upload concluído! Redirecionando...');
@@ -454,7 +442,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         setProcessingStatus(null);
         setUploadingProcessoId(null);
         setPendingRedirectId(null);
-        setPreparingUpload({ isOpen: false, fileName: '', step: '' });
         setErrorModal({
           isOpen: true,
           title: 'Erro ao processar arquivo',
@@ -794,11 +781,6 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         onClose={() => setShowInterruptedModal(false)}
         uploads={interruptedUploads}
         onDelete={handleDeleteInterruptedUpload}
-      />
-      <UploadPreparationModal
-        isOpen={preparingUpload.isOpen}
-        fileName={preparingUpload.fileName}
-        currentStep={preparingUpload.step}
       />
       <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>

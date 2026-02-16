@@ -178,7 +178,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   const getStatusMessage = (status?: string) => {
     switch (status) {
       case 'uploading':
-        return 'Preparando upload do arquivo...';
+        return 'Não feche a página durante este processo de upload...';
       case 'analyzing':
         return 'Analisando documento...';
       case 'completed':
