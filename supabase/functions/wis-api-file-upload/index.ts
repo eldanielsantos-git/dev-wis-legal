@@ -357,7 +357,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const MAX_FILE_SIZE = 100 * 1024 * 1024;
+    const MAX_FILE_SIZE = 200 * 1024 * 1024;
     if (fileBlob.size > MAX_FILE_SIZE) {
       const errorMessage = await getErrorMessage(supabase, 'file_too_large');
       const response = { success: false, error_key: 'file_too_large', message: errorMessage };
@@ -370,6 +370,12 @@ Deno.serve(async (req: Request) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const COMPLEX_FILE_SIZE_THRESHOLD = 50 * 1024 * 1024;
+    const isLargeFile = fileBlob.size > COMPLEX_FILE_SIZE_THRESHOLD;
+    const estimatedPages = Math.ceil(fileBlob.size / (200 * 1024));
+
+    console.log(`[wis-api] File size: ${(fileBlob.size / 1024 / 1024).toFixed(2)}MB, estimated pages: ${estimatedPages}, isLargeFile: ${isLargeFile}`);
 
     console.log(`[wis-api] File validated: ${fileBlob.size} bytes`);
 
@@ -433,6 +439,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const processoId = crypto.randomUUID();
+    const needsComplexProcessing = isLargeFile || estimatedPages > 1000;
+
     const { data: processo, error: processoError } = await supabase
       .from('processos')
       .insert({
@@ -441,9 +449,10 @@ Deno.serve(async (req: Request) => {
         file_path: uploadData.path,
         file_url: publicUrlData.publicUrl,
         file_size: fileBlob.size,
-        status: 'created',
+        status: needsComplexProcessing ? 'pending_chunking' : 'created',
         user_id: userId,
         upload_method: 'wis-api',
+        total_pages: estimatedPages,
       })
       .select()
       .single();
@@ -474,6 +483,43 @@ Deno.serve(async (req: Request) => {
       processoId,
       { nome: foundProfile.first_name || 'Usuario' }
     );
+
+    if (needsComplexProcessing) {
+      console.log(`[wis-api] Large file detected (${(fileBlob.size / 1024 / 1024).toFixed(2)}MB, ~${estimatedPages} pages) - requires chunking`);
+
+      await supabase
+        .from('processos')
+        .update({
+          status: 'error',
+          last_error_type: `Arquivo muito grande para processamento via WhatsApp (${(fileBlob.size / 1024 / 1024).toFixed(0)}MB). Use a interface web para arquivos acima de 50MB.`,
+        })
+        .eq('id', processoId);
+
+      const errorMessage = await getErrorMessage(supabase, 'file_too_large_whatsapp');
+      const response = {
+        success: false,
+        processo_id: processoId,
+        error_key: 'file_too_large_whatsapp',
+        message: errorMessage || `Arquivo muito grande (${(fileBlob.size / 1024 / 1024).toFixed(0)}MB). Arquivos acima de 50MB devem ser enviados pela interface web em wis.adv.br`,
+        analysis_started: false,
+      };
+      await logRequest(supabase, partnerId, cleanPhone, userId, false, 'file_too_large_whatsapp', safeRequestPayload, response, processoId);
+      EdgeRuntime.waitUntil(
+        sendWhatsAppNotification(
+          supabaseUrl,
+          supabaseServiceKey,
+          'file_too_large_whatsapp',
+          userId,
+          cleanPhone,
+          processoId,
+          { size_mb: (fileBlob.size / 1024 / 1024).toFixed(0) }
+        )
+      );
+      return new Response(JSON.stringify(response), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     console.log(`[wis-api] Starting analysis...`);
     const analysisResponse = await fetch(`${supabaseUrl}/functions/v1/start-analysis`, {
