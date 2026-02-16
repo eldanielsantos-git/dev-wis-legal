@@ -54,12 +54,13 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
   const [isTagFilterPanelOpen, setIsTagFilterPanelOpen] = useState(false);
   const [availableTags, setAvailableTags] = useState<ProcessoTag[]>([]);
   const [tagCounts, setTagCounts] = useState<Map<string, number>>(new Map());
+  const [showAllUsers, setShowAllUsers] = useState(false);
 
   const loadProcessos = useCallback(async (isInitialLoad = false) => {
     try {
       setError(null);
 
-      const allProcessos = await ProcessosService.getProcessos();
+      const allProcessos = await ProcessosService.getProcessos(showAllUsers);
 
       // Load tags for each processo
       const processosWithTags = await Promise.all(
@@ -82,13 +83,13 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
         setInitialLoading(false);
       }
     }
-  }, []);
+  }, [showAllUsers]);
 
   useEffect(() => {
     loadProcessos(true);
     loadSharedProcessIds();
     loadAvailableTags();
-  }, [loadProcessos]);
+  }, [loadProcessos, showAllUsers]);
 
   const loadSharedProcessIds = async () => {
     try {
@@ -307,6 +308,20 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                         </span>
                       )}
                     </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setShowAllUsers(!showAllUsers)}
+                        className="px-2.5 sm:px-6 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all flex items-center space-x-1 sm:space-x-2"
+                        style={{
+                          backgroundColor: showAllUsers ? colors.bgPrimary : 'transparent',
+                          color: showAllUsers ? colors.textPrimary : colors.textSecondary
+                        }}
+                      >
+                        <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <span className="hidden sm:inline">Todos Usuarios</span>
+                        <span className="sm:hidden">Todos</span>
+                      </button>
+                    )}
                   </div>
                 </div>
                 {filterMode === 'tags' && selectedTagIds.length > 0 && (
@@ -336,10 +351,12 @@ export function MyProcessesPage({ onNavigateToDetail: _onNavigateToDetail, onNav
                   </div>
                 )}
                 <p className="text-sm sm:text-base font-body mt-2 text-center" style={{ color: colors.textTertiary }}>
-                  {filterMode === 'all'
-                    ? `Você tem ${processos.length} ${processos.length === 1 ? 'processo' : 'processos'}`
+                  {showAllUsers
+                    ? `Exibindo ${processos.length} ${processos.length === 1 ? 'processo' : 'processos'} de todos os usuarios`
+                    : filterMode === 'all'
+                    ? `Voce tem ${processos.length} ${processos.length === 1 ? 'processo' : 'processos'}`
                     : filterMode === 'shared'
-                    ? `Você compartilhou ${sharedProcessIds.size} ${sharedProcessIds.size === 1 ? 'processo' : 'processos'}`
+                    ? `Voce compartilhou ${sharedProcessIds.size} ${sharedProcessIds.size === 1 ? 'processo' : 'processos'}`
                     : `Filtrando por ${selectedTagIds.length} ${selectedTagIds.length === 1 ? 'tag' : 'tags'}`
                   }
                 </p>
