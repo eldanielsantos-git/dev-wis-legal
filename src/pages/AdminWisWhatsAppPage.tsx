@@ -35,6 +35,8 @@ interface WhatsAppMessage {
   message_type: 'success' | 'error';
   message_text: string;
   send_via_whatsapp: boolean;
+  link_title: string;
+  link_description: string;
   created_at: string;
   updated_at: string;
 }
@@ -99,7 +101,7 @@ export function AdminWisWhatsAppPage({
   const [savingConfig, setSavingConfig] = useState(false);
   const [savingMessages, setSavingMessages] = useState(false);
 
-  const [editedMessages, setEditedMessages] = useState<Record<string, { text: string; enabled: boolean }>>({});
+  const [editedMessages, setEditedMessages] = useState<Record<string, { text: string; enabled: boolean; linkTitle: string; linkDescription: string }>>({});
   const [selectedLog, setSelectedLog] = useState<WhatsAppLog | null>(null);
 
   const [logFilter, setLogFilter] = useState<'all' | 'success' | 'error'>('all');
@@ -151,9 +153,14 @@ export function AdminWisWhatsAppPage({
 
     if (!error && data) {
       setMessages(data);
-      const initialEdits: Record<string, { text: string; enabled: boolean }> = {};
+      const initialEdits: Record<string, { text: string; enabled: boolean; linkTitle: string; linkDescription: string }> = {};
       data.forEach((msg) => {
-        initialEdits[msg.id] = { text: msg.message_text, enabled: msg.send_via_whatsapp };
+        initialEdits[msg.id] = {
+          text: msg.message_text,
+          enabled: msg.send_via_whatsapp,
+          linkTitle: msg.link_title || '',
+          linkDescription: msg.link_description || '',
+        };
       });
       setEditedMessages(initialEdits);
     }
@@ -241,12 +248,19 @@ export function AdminWisWhatsAppPage({
         id,
         message_text: values.text,
         send_via_whatsapp: values.enabled,
+        link_title: values.linkTitle,
+        link_description: values.linkDescription,
       }));
 
       for (const update of updates) {
         await supabase
           .from('wis_whatsapp_messages')
-          .update({ message_text: update.message_text, send_via_whatsapp: update.send_via_whatsapp })
+          .update({
+            message_text: update.message_text,
+            send_via_whatsapp: update.send_via_whatsapp,
+            link_title: update.link_title,
+            link_description: update.link_description,
+          })
           .eq('id', update.id);
       }
 
@@ -406,41 +420,102 @@ export function AdminWisWhatsAppPage({
                     </div>
                   </div>
                   <div className="space-y-4">
-                    {successMessages.map((msg) => (
-                      <div key={msg.id} className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ backgroundColor: '#22c55e20', color: '#22c55e' }}>
-                            {msg.message_key}
-                          </span>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <span className="text-xs" style={{ color: colors.textSecondary }}>WhatsApp</span>
-                            <input
-                              type="checkbox"
-                              checked={editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp}
-                              onChange={(e) => setEditedMessages({
-                                ...editedMessages,
-                                [msg.id]: { ...editedMessages[msg.id], enabled: e.target.checked }
-                              })}
-                              className="w-4 h-4 rounded"
-                            />
-                          </label>
+                    {successMessages.map((msg) => {
+                      const isLinkMessage = msg.message_key.includes('link') || msg.message_key === 'analysis_completed';
+                      return (
+                        <div key={msg.id} className="p-4 rounded-lg" style={{ backgroundColor: colors.bgPrimary }}>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ backgroundColor: '#22c55e20', color: '#22c55e' }}>
+                                {msg.message_key}
+                              </span>
+                              {isLinkMessage && (
+                                <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: '#3b82f620', color: '#3b82f6' }}>
+                                  Link Preview
+                                </span>
+                              )}
+                            </div>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <span className="text-xs" style={{ color: colors.textSecondary }}>WhatsApp</span>
+                              <input
+                                type="checkbox"
+                                checked={editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp}
+                                onChange={(e) => setEditedMessages({
+                                  ...editedMessages,
+                                  [msg.id]: { ...editedMessages[msg.id], enabled: e.target.checked }
+                                })}
+                                className="w-4 h-4 rounded"
+                              />
+                            </label>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <label className="text-xs font-medium mb-1 block" style={{ color: colors.textSecondary }}>
+                                Mensagem de texto
+                              </label>
+                              <textarea
+                                value={editedMessages[msg.id]?.text ?? msg.message_text}
+                                onChange={(e) => setEditedMessages({
+                                  ...editedMessages,
+                                  [msg.id]: { ...editedMessages[msg.id], text: e.target.value }
+                                })}
+                                rows={2}
+                                className="w-full px-3 py-2 rounded-lg text-sm resize-none"
+                                style={{
+                                  backgroundColor: colors.bgSecondary,
+                                  color: colors.textPrimary,
+                                  border: `1px solid ${colors.border}`,
+                                }}
+                              />
+                            </div>
+                            {isLinkMessage && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg" style={{ backgroundColor: colors.bgSecondary }}>
+                                <div>
+                                  <label className="text-xs font-medium mb-1 block" style={{ color: colors.textSecondary }}>
+                                    Titulo do Link Preview
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editedMessages[msg.id]?.linkTitle ?? msg.link_title ?? ''}
+                                    onChange={(e) => setEditedMessages({
+                                      ...editedMessages,
+                                      [msg.id]: { ...editedMessages[msg.id], linkTitle: e.target.value }
+                                    })}
+                                    className="w-full px-3 py-2 rounded-lg text-sm"
+                                    style={{
+                                      backgroundColor: colors.bgPrimary,
+                                      color: colors.textPrimary,
+                                      border: `1px solid ${colors.border}`,
+                                    }}
+                                    placeholder="Ex: Detalhes da Analise"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="text-xs font-medium mb-1 block" style={{ color: colors.textSecondary }}>
+                                    Descricao do Link Preview
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={editedMessages[msg.id]?.linkDescription ?? msg.link_description ?? ''}
+                                    onChange={(e) => setEditedMessages({
+                                      ...editedMessages,
+                                      [msg.id]: { ...editedMessages[msg.id], linkDescription: e.target.value }
+                                    })}
+                                    className="w-full px-3 py-2 rounded-lg text-sm"
+                                    style={{
+                                      backgroundColor: colors.bgPrimary,
+                                      color: colors.textPrimary,
+                                      border: `1px solid ${colors.border}`,
+                                    }}
+                                    placeholder="Ex: Veja todos os detalhes"
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <textarea
-                          value={editedMessages[msg.id]?.text ?? msg.message_text}
-                          onChange={(e) => setEditedMessages({
-                            ...editedMessages,
-                            [msg.id]: { ...editedMessages[msg.id], text: e.target.value }
-                          })}
-                          rows={2}
-                          className="w-full px-3 py-2 rounded-lg text-sm resize-none"
-                          style={{
-                            backgroundColor: colors.bgSecondary,
-                            color: colors.textPrimary,
-                            border: `1px solid ${colors.border}`,
-                          }}
-                        />
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
 

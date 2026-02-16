@@ -27,6 +27,8 @@ interface WhatsAppMessage {
   message_type: string;
   message_text: string;
   send_via_whatsapp: boolean;
+  link_title: string | null;
+  link_description: string | null;
 }
 
 const MAX_RETRIES = 3;
@@ -258,16 +260,18 @@ Deno.serve(async (req: Request) => {
         document_filename,
         messageText
       );
-    } else if (link_url && link_title) {
+    } else if (link_url) {
       messageType = "link";
+      const finalLinkTitle = link_title || whatsappMessage.link_title || message_key;
+      const finalLinkDescription = link_description || whatsappMessage.link_description || "";
       sendResult = await sendLinkMessage(
         supabaseUrl,
         supabaseServiceKey,
         phone,
         messageText,
         link_url,
-        link_title,
-        link_description
+        finalLinkTitle,
+        finalLinkDescription
       );
     } else {
       messageType = "text";
