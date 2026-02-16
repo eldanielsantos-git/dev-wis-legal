@@ -1,7 +1,19 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
 import { GoogleAIFileManager } from 'npm:@google/generative-ai@0.24.1/server';
+import { PDFDocument } from 'npm:pdf-lib@1.17.1';
 
 const FILE_SIZE_THRESHOLD_BYTES = 18874368; // 18MB - files <= this use base64, > this use File API
+const AVG_BYTES_PER_PAGE = 80 * 1024; // 80KB per page estimate
+
+async function countPdfPages(arrayBuffer: ArrayBuffer): Promise<number> {
+  try {
+    const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    return pdfDoc.getPageCount();
+  } catch (error) {
+    console.warn('Failed to count PDF pages, using estimate:', error);
+    return Math.max(1, Math.ceil(arrayBuffer.byteLength / AVG_BYTES_PER_PAGE));
+  }
+}
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -218,6 +230,21 @@ Deno.serve(async (req: Request) => {
 
       const arrayBuffer = await fileData.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
+
+      const pageCount = await countPdfPages(arrayBuffer);
+      console.log(`📄 Páginas contadas: ${pageCount}`);
+
+      const tokensEstimate = pageCount * 5500;
+      await supabase
+        .from('processos')
+        .update({
+          total_pages: pageCount,
+          transcricao: { totalPages: pageCount },
+          pages_processed_successfully: pageCount,
+          tokens_consumed: tokensEstimate,
+        })
+        .eq('id', processo_id);
+      console.log(`✅ total_pages atualizado: ${pageCount}, tokens_consumed: ${tokensEstimate}`);
 
       if (fileSizeBytes <= FILE_SIZE_THRESHOLD_BYTES) {
         console.log(`📦 Arquivo <= 18MB (${fileSizeMB}MB) - Usando método BASE64 (mais rápido)`);

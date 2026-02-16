@@ -373,7 +373,7 @@ Deno.serve(async (req: Request) => {
 
     const COMPLEX_FILE_SIZE_THRESHOLD = 50 * 1024 * 1024;
     const isLargeFile = fileBlob.size > COMPLEX_FILE_SIZE_THRESHOLD;
-    const estimatedPages = Math.ceil(fileBlob.size / (200 * 1024));
+    const estimatedPages = Math.ceil(fileBlob.size / (80 * 1024));
 
     console.log(`[wis-api] File size: ${(fileBlob.size / 1024 / 1024).toFixed(2)}MB, estimated pages: ${estimatedPages}, isLargeFile: ${isLargeFile}`);
 
