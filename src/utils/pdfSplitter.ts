@@ -1,4 +1,10 @@
 import { PDFDocument } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).toString();
 
 export interface PDFChunk {
   file: File;
@@ -13,7 +19,6 @@ export interface PDFChunk {
 
 const LARGE_FILE_THRESHOLD = 1000;
 const LARGE_FILE_SIZE_THRESHOLD = 18 * 1024 * 1024; // 18MB
-const PAGE_COUNT_READ_THRESHOLD = 500 * 1024 * 1024; // 500MB - threshold for reading actual page count
 const AVG_BYTES_PER_PAGE = 80 * 1024; // ~80KB per page estimate for legal PDFs (conservative)
 
 // Token-safe chunk sizes (assuming ~1500 tokens/page with context)
@@ -41,27 +46,23 @@ export function isLargeFile(fileSize: number): boolean {
 }
 
 export async function getPDFPageCount(file: File): Promise<number> {
-  if (file.size >= PAGE_COUNT_READ_THRESHOLD) {
-    return estimatePageCountFromSize(file.size);
-  }
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-    return pdfDoc.getPageCount();
-  } catch {
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    return pdf.numPages;
+  } catch (error) {
+    console.warn('[pdfSplitter] Failed to read PDF pages, using estimate:', error);
     return estimatePageCountFromSize(file.size);
   }
 }
 
 export async function getPDFPageCountSafe(file: File): Promise<{ pageCount: number; isEstimate: boolean }> {
-  if (file.size >= PAGE_COUNT_READ_THRESHOLD) {
-    return { pageCount: estimatePageCountFromSize(file.size), isEstimate: true };
-  }
   try {
     const arrayBuffer = await file.arrayBuffer();
-    const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-    return { pageCount: pdfDoc.getPageCount(), isEstimate: false };
-  } catch {
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    return { pageCount: pdf.numPages, isEstimate: false };
+  } catch (error) {
+    console.warn('[pdfSplitter] Failed to read PDF pages, using estimate:', error);
     return { pageCount: estimatePageCountFromSize(file.size), isEstimate: true };
   }
 }

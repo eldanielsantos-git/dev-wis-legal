@@ -96,6 +96,44 @@ Deno.serve(async (req: Request) => {
       })
       .eq('processo_id', processo_id);
 
+    const { data: integrityCheck, error: integrityError } = await supabase
+      .rpc('validate_chunks_integrity', { p_processo_id: processo_id })
+      .maybeSingle();
+
+    if (integrityError) {
+      console.error(`[${workerId}] ❌ Erro ao validar integridade:`, integrityError);
+    }
+
+    if (integrityCheck && !integrityCheck.is_valid) {
+      console.error(`[${workerId}] ❌ Integridade dos chunks falhou:`, {
+        total: integrityCheck.total_chunks,
+        valid: integrityCheck.valid_chunks,
+        invalid: integrityCheck.invalid_chunk_count,
+      });
+
+      if (integrityCheck.invalid_chunks && integrityCheck.invalid_chunks.length > 0) {
+        console.log(`[${workerId}] 🔄 Tentando recuperar ${integrityCheck.invalid_chunk_count} chunks inválidos...`);
+
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+        fetch(`${supabaseUrl}/functions/v1/retry-chunk-uploads`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({ processo_id }),
+        }).catch(err => {
+          console.error(`[${workerId}] ❌ Erro ao disparar retry de chunks:`, err);
+        });
+
+        throw new Error(`Chunks inválidos detectados: ${integrityCheck.invalid_chunk_count} de ${integrityCheck.total_chunks}. Retry disparado automaticamente.`);
+      }
+    }
+
+    console.log(`[${workerId}] ✅ Integridade dos chunks validada: ${integrityCheck?.valid_chunks}/${integrityCheck?.total_chunks}`);
+
     const { data: chunks, error: chunksError } = await supabase
       .from('process_chunks')
       .select('chunk_index, context_summary, processing_result')
@@ -284,6 +322,11 @@ Deno.serve(async (req: Request) => {
           completed_at: new Date().toISOString(),
         })
         .eq('id', analysisResult.id);
+
+      await supabase
+        .from('processos')
+        .update({ current_prompt_number: analysisResult.execution_order })
+        .eq('id', processo_id);
 
       console.log(`[${workerId}] ✅ Consolidado: ${analysisResult.prompt_title} (${tokensUsed} tokens)`);
 
