@@ -125,6 +125,43 @@ Deno.serve(async (req: Request) => {
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
+    const { data: processoDetails } = await supabase
+      .from('processos')
+      .select('file_size, total_pages')
+      .eq('id', processo_id)
+      .maybeSingle();
+
+    const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024;
+    const LARGE_PAGES_THRESHOLD = 1000;
+    const fileSizeBytes = processoDetails?.file_size || 0;
+    const estimatedPages = processoDetails?.total_pages || Math.ceil(fileSizeBytes / (200 * 1024));
+
+    if (!updatedProcesso.is_chunked && (fileSizeBytes > LARGE_FILE_THRESHOLD || estimatedPages >= LARGE_PAGES_THRESHOLD)) {
+      console.error(`[${callId}] ❌ Arquivo muito grande para processamento direto: ${(fileSizeBytes / 1024 / 1024).toFixed(2)}MB, ~${estimatedPages} páginas`);
+      console.error(`[${callId}] ❌ Este arquivo deveria ter sido processado como chunked`);
+
+      await supabase
+        .from('processos')
+        .update({
+          status: 'error',
+          last_error_type: `Arquivo muito grande (${(fileSizeBytes / 1024 / 1024).toFixed(0)}MB, ~${estimatedPages} páginas). Por favor, faça upload novamente - o sistema irá dividir automaticamente.`,
+        })
+        .eq('id', processo_id);
+
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Arquivo muito grande para processamento direto',
+          message: `Arquivo com ${(fileSizeBytes / 1024 / 1024).toFixed(0)}MB e ~${estimatedPages} páginas requer processamento chunked. Por favor, faça upload novamente.`,
+          needs_rechunk: true,
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
     if (updatedProcesso.is_chunked) {
       console.log(`[${callId}] 📦 Processo chunkeado detectado (${updatedProcesso.total_chunks_count} chunks)`);
 
