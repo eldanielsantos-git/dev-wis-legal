@@ -820,7 +820,7 @@ export class ProcessosService {
 
     const { getChunkConfiguration } = await import('../utils/pdfSplitter');
 
-    const config = getChunkConfiguration(totalPages);
+    const config = getChunkConfiguration(totalPages, file.size);
 
     const processoId = crypto.randomUUID();
     const { data: processo, error: processoError } = await supabase

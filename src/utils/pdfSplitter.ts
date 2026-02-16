@@ -160,8 +160,25 @@ export function isComplexProcessing(pageCount: number): boolean {
   return pageCount >= LARGE_FILE_THRESHOLD;
 }
 
-export function getChunkConfiguration(totalPages: number) {
-  const chunkSize = determineChunkSize(totalPages);
+export function getChunkConfiguration(totalPages: number, fileSize?: number) {
+  const needsSplitBySize = fileSize ? fileSize > MAX_CHUNK_SIZE_BYTES : false;
+  const needsSplitByPages = totalPages >= LARGE_FILE_THRESHOLD;
+
+  let chunkSize: number;
+  if (needsSplitBySize) {
+    const avgBytesPerPage = fileSize! / totalPages;
+    const pagesPerMaxChunk = Math.floor(MAX_CHUNK_SIZE_BYTES / avgBytesPerPage);
+    const sizeBasedChunkSize = Math.max(10, pagesPerMaxChunk);
+
+    if (needsSplitByPages) {
+      chunkSize = Math.min(sizeBasedChunkSize, determineChunkSize(totalPages));
+    } else {
+      chunkSize = sizeBasedChunkSize;
+    }
+  } else {
+    chunkSize = determineChunkSize(totalPages);
+  }
+
   const totalChunks = Math.ceil(totalPages / chunkSize);
   const overlap = OVERLAP_PAGES;
 
@@ -169,7 +186,7 @@ export function getChunkConfiguration(totalPages: number) {
     chunkSize,
     totalChunks,
     overlap,
-    isComplex: isComplexProcessing(totalPages),
+    isComplex: needsSplitByPages || needsSplitBySize,
     estimatedProcessingTimeMinutes: Math.ceil((totalChunks * 5) / 5 + 5),
   };
 }
