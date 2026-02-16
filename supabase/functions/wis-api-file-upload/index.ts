@@ -309,24 +309,32 @@ Deno.serve(async (req: Request) => {
     let fileBlob: Blob;
 
     if (documentUrl) {
-      console.log(`[wis-api] Downloading file from URL...`);
+      console.log(`[wis-api] Downloading file from URL: ${documentUrl.substring(0, 100)}...`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 120000);
+      const timeoutId = setTimeout(() => controller.abort(), 180000);
 
       try {
         const fileResponse = await fetch(documentUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
 
+        console.log(`[wis-api] Download response status: ${fileResponse.status}`);
+
         if (!fileResponse.ok) {
           throw new Error(`HTTP ${fileResponse.status}`);
         }
 
+        const contentLength = fileResponse.headers.get('content-length');
+        console.log(`[wis-api] Content-Length: ${contentLength || 'unknown'}`);
+
         fileBlob = await fileResponse.blob();
+        console.log(`[wis-api] File downloaded successfully: ${fileBlob.size} bytes`);
       } catch (fetchError) {
         clearTimeout(timeoutId);
+        const fetchErrorMsg = fetchError instanceof Error ? fetchError.message : String(fetchError);
+        console.error(`[wis-api] Download failed:`, fetchErrorMsg);
         const errorMessage = await getErrorMessage(supabase, 'download_failed');
-        const response = { success: false, error_key: 'download_failed', message: errorMessage };
-        await logRequest(supabase, partnerId, cleanPhone, userId, false, 'download_failed', safeRequestPayload, response);
+        const response = { success: false, error_key: 'download_failed', message: errorMessage, debug_error: fetchErrorMsg };
+        await logRequest(supabase, partnerId, cleanPhone, userId, false, 'download_failed', { ...safeRequestPayload, debug_error: fetchErrorMsg }, response);
         EdgeRuntime.waitUntil(
           sendWhatsAppNotification(supabaseUrl, supabaseServiceKey, 'download_failed', userId, cleanPhone)
         );
@@ -753,13 +761,16 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     const errorStack = error instanceof Error ? error.stack : '';
-    console.error('[wis-api] Unexpected error:', errorMessage);
+    console.error('[wis-api] CRITICAL Unexpected error:', errorMessage);
     console.error('[wis-api] Error stack:', errorStack);
+    console.error('[wis-api] Error type:', error?.constructor?.name);
+    console.error('[wis-api] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error || {})));
 
     const errorResponse = {
       success: false,
       error_key: 'upload_failed',
       message: 'Erro ao processar upload do arquivo. Tente novamente em alguns instantes.',
+      debug_error: errorMessage,
     };
 
     if (requestPayload) {
@@ -770,7 +781,7 @@ Deno.serve(async (req: Request) => {
         userId,
         false,
         'upload_failed',
-        { phone: requestPayload.phone, fileName: requestPayload.fileName },
+        { phone: requestPayload.phone, fileName: requestPayload.fileName, debug_error: errorMessage, debug_stack: errorStack?.substring(0, 500) },
         errorResponse
       );
     }
