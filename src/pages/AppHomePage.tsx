@@ -359,8 +359,8 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
 
         let processoId: string;
 
-        const LARGE_FILE_SIZE_THRESHOLD = 18 * 1024 * 1024; // 18MB
-        const needsComplexProcessing = pageCount >= 1000 || file.size > LARGE_FILE_SIZE_THRESHOLD;
+        const MAX_SIMPLE_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+        const needsComplexProcessing = pageCount >= 1000 || file.size > MAX_SIMPLE_FILE_SIZE;
 
         if (needsComplexProcessing) {
           processoId = await ProcessosService.uploadAndStartComplexProcessing(
