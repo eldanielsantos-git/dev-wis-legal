@@ -249,9 +249,60 @@ Deno.serve(async (req: Request) => {
   }
 });
 
+function sanitizeForPdf(text: string): string {
+  let normalized = text.normalize('NFC');
+
+  const replacements: Record<string, string> = {
+    '\u0301': '',
+    '\u0300': '',
+    '\u0302': '',
+    '\u0303': '',
+    '\u0308': '',
+    '\u0327': '',
+    '\u2018': "'",
+    '\u2019': "'",
+    '\u201C': '"',
+    '\u201D': '"',
+    '\u2013': '-',
+    '\u2014': '-',
+    '\u2026': '...',
+    '\u00A0': ' ',
+    '\u200B': '',
+    '\u200C': '',
+    '\u200D': '',
+    '\uFEFF': '',
+    '\u00AD': '',
+    '\u2022': '-',
+    '\u2023': '-',
+    '\u2043': '-',
+    '\u00B7': '-',
+  };
+
+  for (const [char, replacement] of Object.entries(replacements)) {
+    normalized = normalized.split(char).join(replacement);
+  }
+
+  normalized = normalized.replace(/[\u0300-\u036f]/g, '');
+
+  let result = '';
+  for (let i = 0; i < normalized.length; i++) {
+    const code = normalized.charCodeAt(i);
+    if (code < 256) {
+      result += normalized[i];
+    } else if (code >= 0x1F00 && code <= 0x1FFF) {
+      result += '';
+    } else {
+      result += ' ';
+    }
+  }
+
+  return result.replace(/\s+/g, ' ').trim();
+}
+
 function wrapText(text: string, maxChars: number): string[] {
   const lines: string[] = [];
-  const cleanText = text.replace(/[\n\r]+/g, ' ').trim();
+  const sanitized = sanitizeForPdf(text);
+  const cleanText = sanitized.replace(/[\n\r]+/g, ' ').trim();
   const words = cleanText.split(' ');
   let currentLine = '';
 
