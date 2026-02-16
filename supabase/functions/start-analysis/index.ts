@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
       .eq('id', processo_id)
       .maybeSingle();
 
-    const LARGE_FILE_THRESHOLD = 50 * 1024 * 1024;
+    const LARGE_FILE_THRESHOLD = 18 * 1024 * 1024;
     const LARGE_PAGES_THRESHOLD = 1000;
     const fileSizeBytes = processoDetails?.file_size || 0;
     const estimatedPages = processoDetails?.total_pages || Math.ceil(fileSizeBytes / (200 * 1024));
