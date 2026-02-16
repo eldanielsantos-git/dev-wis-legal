@@ -54,6 +54,23 @@ Deno.serve(async (req: Request) => {
       throw new Error('Arquivo original nao encontrado');
     }
 
+    const { data: existingChunks } = await supabase
+      .from('process_chunks')
+      .select('id')
+      .eq('processo_id', processo_id);
+
+    if (existingChunks && existingChunks.length > 0) {
+      console.log(`[split-pdf-chunks] Removendo ${existingChunks.length} chunks existentes antes de recriar`);
+      const { error: deleteError } = await supabase
+        .from('process_chunks')
+        .delete()
+        .eq('processo_id', processo_id);
+
+      if (deleteError) {
+        console.error(`[split-pdf-chunks] Erro ao remover chunks existentes:`, deleteError);
+      }
+    }
+
     const fileSize = processo.file_size || 0;
 
     if (fileSize > MAX_FILE_SIZE_FOR_FULL_LOAD) {
