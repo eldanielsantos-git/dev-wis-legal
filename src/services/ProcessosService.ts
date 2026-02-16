@@ -1032,34 +1032,109 @@ export class ProcessosService {
             .eq('id', processoId);
 
           const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/split-pdf-chunks`;
-          const splitResponse = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ processo_id: processoId }),
-          });
+          const SPLIT_MAX_RETRIES = 3;
+          let splitRetryCount = 0;
+          let splitSuccess = false;
+          let lastSplitError: string | null = null;
 
-          if (!splitResponse.ok) {
-            const errorData = await splitResponse.json();
-            throw new Error(errorData.error || 'Falha ao dividir PDF no servidor');
+          while (splitRetryCount < SPLIT_MAX_RETRIES && !splitSuccess) {
+            try {
+              await supabase
+                .from('processos')
+                .update({
+                  upload_retry_count: splitRetryCount,
+                  last_error_type: splitRetryCount > 0 ? `Tentativa ${splitRetryCount + 1} de dividir PDF...` : null
+                })
+                .eq('id', processoId);
+
+              const splitResponse = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ processo_id: processoId }),
+              });
+
+              if (splitResponse.ok) {
+                splitSuccess = true;
+                await supabase
+                  .from('processos')
+                  .update({ upload_retry_count: 0, last_error_type: null })
+                  .eq('id', processoId);
+              } else {
+                const errorData = await splitResponse.json();
+                lastSplitError = errorData.error || 'Falha ao dividir PDF no servidor';
+
+                if (errorData.error === 'file_too_large') {
+                  throw new Error(errorData.message || 'Arquivo muito grande para processamento');
+                }
+
+                splitRetryCount++;
+
+                if (splitRetryCount < SPLIT_MAX_RETRIES) {
+                  const backoffSeconds = Math.min(Math.pow(2, splitRetryCount) * 5, 30);
+                  await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
+                }
+              }
+            } catch (fetchError) {
+              lastSplitError = fetchError instanceof Error ? fetchError.message : 'Erro de conexao';
+              splitRetryCount++;
+
+              if (splitRetryCount < SPLIT_MAX_RETRIES) {
+                const backoffSeconds = Math.min(Math.pow(2, splitRetryCount) * 5, 30);
+                await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
+              }
+            }
+          }
+
+          if (!splitSuccess) {
+            throw new Error(lastSplitError || 'Falha ao dividir PDF no servidor');
           }
         }
 
         const startApiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-analysis-complex`;
-        const startResponse = await fetch(startApiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ processo_id: processoId }),
-        });
+        const START_MAX_RETRIES = 3;
+        let startRetryCount = 0;
+        let startSuccess = false;
+        let lastStartError: string | null = null;
 
-        if (!startResponse.ok) {
-          const error = await startResponse.json();
-          throw new Error(error.error || 'Falha ao iniciar análise complexa');
+        while (startRetryCount < START_MAX_RETRIES && !startSuccess) {
+          try {
+            const startResponse = await fetch(startApiUrl, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ processo_id: processoId }),
+            });
+
+            if (startResponse.ok) {
+              startSuccess = true;
+            } else {
+              const error = await startResponse.json();
+              lastStartError = error.error || 'Falha ao iniciar análise complexa';
+              startRetryCount++;
+
+              if (startRetryCount < START_MAX_RETRIES) {
+                const backoffSeconds = Math.min(Math.pow(2, startRetryCount) * 3, 15);
+                await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
+              }
+            }
+          } catch (fetchError) {
+            lastStartError = fetchError instanceof Error ? fetchError.message : 'Erro de conexao';
+            startRetryCount++;
+
+            if (startRetryCount < START_MAX_RETRIES) {
+              const backoffSeconds = Math.min(Math.pow(2, startRetryCount) * 3, 15);
+              await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
+            }
+          }
+        }
+
+        if (!startSuccess) {
+          throw new Error(lastStartError || 'Falha ao iniciar análise complexa');
         }
 
       } catch (error) {
