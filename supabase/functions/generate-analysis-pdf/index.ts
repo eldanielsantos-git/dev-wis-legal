@@ -144,10 +144,21 @@ Deno.serve(async (req: Request) => {
       .from('processos')
       .getPublicUrl(fileName);
 
+    const pdfUrl = urlData.publicUrl;
+
+    const { error: updateError } = await supabase
+      .from('processos')
+      .update({ analysis_pdf_url: pdfUrl })
+      .eq('id', processo_id);
+
+    if (updateError) {
+      console.error('[generate-analysis-pdf] Erro ao salvar URL no banco:', updateError);
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        pdf_url: urlData.publicUrl,
+        pdf_url: pdfUrl,
         file_path: fileName
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
