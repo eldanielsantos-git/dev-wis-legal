@@ -1121,9 +1121,7 @@ Deno.serve(async (req: Request) => {
                   { nome: userFirstName, chat_url: chatUrl },
                   undefined,
                   undefined,
-                  chatUrl,
-                  'Wis Legal Chat',
-                  'Converse sobre seu processo e tire duvidas'
+                  chatUrl
                 )
               );
 
@@ -1139,9 +1137,7 @@ Deno.serve(async (req: Request) => {
                   { nome: userFirstName, detail_url: detailUrl },
                   undefined,
                   undefined,
-                  detailUrl,
-                  'Detalhes da Analise',
-                  'Veja todos os detalhes e gerencie compartilhamento'
+                  detailUrl
                 )
               );
 
