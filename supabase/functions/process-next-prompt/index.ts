@@ -1015,10 +1015,11 @@ Deno.serve(async (req: Request) => {
             ? `${durationMinutes}m ${durationSeconds}s`
             : `${durationSeconds}s`;
 
+          const viaWhatsApp = processoData.upload_method === 'wis-api' ? ' | Via Wis API WhatsApp' : '';
           notifyAdminSafe({
             type: 'analysis_completed',
             title: 'Análise Concluída',
-            message: `${userName || userEmail} | ${fileName} | ${durationText}`,
+            message: `${userName || userEmail} | ${fileName} | ${durationText}${viaWhatsApp}`,
             severity: 'success',
             metadata: {
               processo_id,
@@ -1027,6 +1028,7 @@ Deno.serve(async (req: Request) => {
               user_name: userName || userEmail,
               duration: durationText,
               is_complex: processoData.is_chunked,
+              upload_method: processoData.upload_method,
             },
             userId: processoData.user_id,
             processoId: processo_id,
