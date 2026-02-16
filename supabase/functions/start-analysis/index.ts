@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { notifyAdminSafe } from './_shared/notify-admin-safe.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,32 +96,59 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[${callId}] ✅ Lock adquirido com sucesso`);
 
-    if (updatedProcesso.upload_method === 'wis-api' && updatedProcesso.user_id) {
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('first_name, last_name, email, phone, phone_country_code')
+      .eq('id', updatedProcesso.user_id)
+      .maybeSingle();
+
+    const userName = userProfile?.first_name
+      ? `${userProfile.first_name}${userProfile.last_name ? ' ' + userProfile.last_name : ''}`
+      : userProfile?.email || 'Usuario';
+    const fileName = updatedProcesso.file_name || 'arquivo.pdf';
+    const isComplex = updatedProcesso.is_chunked;
+    const isViaWhatsApp = updatedProcesso.upload_method === 'wis-api';
+
+    let suffix = '';
+    if (isViaWhatsApp) {
+      suffix = ' | Via Wis API WhatsApp';
+    } else if (isComplex) {
+      suffix = ' | Analise Complexa';
+    }
+
+    notifyAdminSafe({
+      type: 'analysis_started',
+      title: 'Analise Iniciada',
+      message: `${userName} | ${fileName}${suffix}`,
+      severity: 'info',
+      metadata: {
+        processo_id,
+        file_name: fileName,
+        user_name: userName,
+        is_complex: isComplex,
+        upload_method: updatedProcesso.upload_method,
+      },
+      userId: updatedProcesso.user_id,
+      processoId: processo_id,
+    });
+
+    if (isViaWhatsApp && updatedProcesso.user_id && userProfile?.phone) {
       console.log(`[${callId}] 📱 Processo via WIS API - enviando notificação WhatsApp com delay de 5s...`);
-
-      const { data: userProfile } = await supabase
-        .from('user_profiles')
-        .select('first_name, phone, phone_country_code')
-        .eq('id', updatedProcesso.user_id)
-        .maybeSingle();
-
-      if (userProfile?.phone) {
-        const fullPhone = `${(userProfile.phone_country_code || '+55').replace('+', '')}${userProfile.phone}`;
-        EdgeRuntime.waitUntil(
-          (async () => {
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            await sendWhatsAppNotification(
-              supabaseUrl,
-              supabaseServiceKey,
-              'analysis_started',
-              updatedProcesso.user_id,
-              fullPhone,
-              processo_id,
-              { nome: userProfile.first_name || 'Usuario' }
-            );
-          })()
-        );
-      }
+      const fullPhone = `${(userProfile.phone_country_code || '+55').replace('+', '')}${userProfile.phone}`;
+      EdgeRuntime.waitUntil(
+        (async () => {
+          await new Promise(resolve => setTimeout(resolve, 5000));
+          await sendWhatsAppNotification(
+            supabaseUrl,
+            supabaseServiceKey,
+            'analysis_started',
+            updatedProcesso.user_id,
+            fullPhone,
+            processo_id,
+            { nome: userProfile.first_name || 'Usuario' }
+          );
+        })()
+      );
     }
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');

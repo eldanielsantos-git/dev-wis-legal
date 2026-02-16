@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.57.4';
+import { notifyAdminSafe } from './_shared/notify-admin-safe.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -84,6 +85,37 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log(`[${callId}] ✅ Status atualizado para 'queued'`);
+
+    const { data: userProfile } = await supabase
+      .from('user_profiles')
+      .select('first_name, last_name, email')
+      .eq('id', processo.user_id)
+      .maybeSingle();
+
+    const userName = userProfile?.first_name
+      ? `${userProfile.first_name}${userProfile.last_name ? ' ' + userProfile.last_name : ''}`
+      : userProfile?.email || 'Usuario';
+    const fileName = processo.file_name || 'arquivo.pdf';
+    const isViaWhatsApp = processo.upload_method === 'wis-api';
+
+    const suffix = isViaWhatsApp ? ' | Via Wis API WhatsApp' : ' | Analise Complexa';
+
+    notifyAdminSafe({
+      type: 'analysis_started',
+      title: 'Analise Iniciada',
+      message: `${userName} | ${fileName}${suffix}`,
+      severity: 'info',
+      metadata: {
+        processo_id,
+        file_name: fileName,
+        user_name: userName,
+        is_complex: true,
+        total_chunks: processo.total_chunks_count,
+        upload_method: processo.upload_method,
+      },
+      userId: processo.user_id,
+      processoId: processo_id,
+    });
 
     const { data: complexStatus, error: statusError } = await supabase
       .from('complex_processing_status')
