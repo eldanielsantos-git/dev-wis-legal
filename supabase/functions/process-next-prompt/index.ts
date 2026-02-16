@@ -1045,17 +1045,40 @@ Deno.serve(async (req: Request) => {
 
               try {
                 const pdfPath = `${processo_id}/analysis.pdf`;
+                console.log(`[${callId}] 📥 Tentando baixar PDF: ${pdfPath}`);
+
                 const { data: pdfBlob, error: downloadError } = await supabase.storage
                   .from('processos')
                   .download(pdfPath);
 
                 if (downloadError) {
                   console.error(`[${callId}] ❌ Erro ao baixar PDF do storage:`, downloadError);
+                  EdgeRuntime.waitUntil(
+                    sendWhatsAppNotification(
+                      supabaseUrl,
+                      supabaseServiceKey,
+                      'analysis_completed',
+                      processoData.user_id,
+                      fullPhone,
+                      processo_id,
+                      { nome: userFirstName }
+                    )
+                  );
                 } else if (pdfBlob) {
+                  console.log(`[${callId}] ✅ PDF baixado: ${pdfBlob.size} bytes`);
+
                   const arrayBuffer = await pdfBlob.arrayBuffer();
                   const bytes = new Uint8Array(arrayBuffer);
-                  const binaryString = String.fromCharCode(...bytes);
-                  const pdfBase64 = btoa(binaryString);
+
+                  let pdfBase64 = '';
+                  const CHUNK_SIZE = 32768;
+                  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
+                    const chunk = bytes.subarray(i, Math.min(i + CHUNK_SIZE, bytes.length));
+                    pdfBase64 += String.fromCharCode.apply(null, Array.from(chunk));
+                  }
+                  pdfBase64 = btoa(pdfBase64);
+
+                  console.log(`[${callId}] 📤 Enviando PDF via WhatsApp (${(pdfBase64.length / 1024).toFixed(1)}KB base64)`);
 
                   EdgeRuntime.waitUntil(
                     sendWhatsAppNotification(
@@ -1067,12 +1090,23 @@ Deno.serve(async (req: Request) => {
                       processo_id,
                       { nome: userFirstName },
                       pdfBase64,
-                      `analise-${processoData.file_name || 'processo'}.pdf`
+                      `analise-${processoData.file_name?.replace('.pdf', '') || 'processo'}.pdf`
                     )
                   );
                 }
               } catch (pdfError) {
                 console.error(`[${callId}] ❌ Erro ao processar PDF para WhatsApp:`, pdfError);
+                EdgeRuntime.waitUntil(
+                  sendWhatsAppNotification(
+                    supabaseUrl,
+                    supabaseServiceKey,
+                    'analysis_completed',
+                    processoData.user_id,
+                    fullPhone,
+                    processo_id,
+                    { nome: userFirstName }
+                  )
+                );
               }
 
               const chatUrl = `https://app.wislegal.io/chat/${processo_id}`;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { SidebarWis } from '../components/SidebarWis';
 import { IntelligentSearch } from '../components/IntelligentSearch';
+import { CustomSelect } from '../components/CustomSelect';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import { supabase } from '../lib/supabase';
@@ -437,15 +438,24 @@ export function AdminWisWhatsAppPage({
                             </div>
                             <label className="flex items-center gap-2 cursor-pointer">
                               <span className="text-xs" style={{ color: colors.textSecondary }}>WhatsApp</span>
-                              <input
-                                type="checkbox"
-                                checked={editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp}
-                                onChange={(e) => setEditedMessages({
+                              <button
+                                type="button"
+                                onClick={() => setEditedMessages({
                                   ...editedMessages,
-                                  [msg.id]: { ...editedMessages[msg.id], enabled: e.target.checked }
+                                  [msg.id]: { ...editedMessages[msg.id], enabled: !(editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp) }
                                 })}
-                                className="w-4 h-4 rounded"
-                              />
+                                className="relative w-9 h-5 rounded-full transition-colors"
+                                style={{
+                                  backgroundColor: (editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp) ? '#22c55e' : (theme === 'dark' ? '#3f3f46' : '#d4d4d8'),
+                                }}
+                              >
+                                <span
+                                  className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform"
+                                  style={{
+                                    transform: (editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp) ? 'translateX(16px)' : 'translateX(0)',
+                                  }}
+                                />
+                              </button>
                             </label>
                           </div>
                           <div className="space-y-3">
@@ -537,15 +547,24 @@ export function AdminWisWhatsAppPage({
                           </span>
                           <label className="flex items-center gap-2 cursor-pointer">
                             <span className="text-xs" style={{ color: colors.textSecondary }}>WhatsApp</span>
-                            <input
-                              type="checkbox"
-                              checked={editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp}
-                              onChange={(e) => setEditedMessages({
+                            <button
+                              type="button"
+                              onClick={() => setEditedMessages({
                                 ...editedMessages,
-                                [msg.id]: { ...editedMessages[msg.id], enabled: e.target.checked }
+                                [msg.id]: { ...editedMessages[msg.id], enabled: !(editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp) }
                               })}
-                              className="w-4 h-4 rounded"
-                            />
+                              className="relative w-9 h-5 rounded-full transition-colors"
+                              style={{
+                                backgroundColor: (editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp) ? '#22c55e' : (theme === 'dark' ? '#3f3f46' : '#d4d4d8'),
+                              }}
+                            >
+                              <span
+                                className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform"
+                                style={{
+                                  transform: (editedMessages[msg.id]?.enabled ?? msg.send_via_whatsapp) ? 'translateX(16px)' : 'translateX(0)',
+                                }}
+                              />
+                            </button>
                           </label>
                         </div>
                         <textarea
@@ -591,41 +610,51 @@ export function AdminWisWhatsAppPage({
                       </h2>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <select
-                        value={logFilter}
-                        onChange={(e) => {
-                          setLogFilter(e.target.value as 'all' | 'success' | 'error');
-                          setCurrentPage(1);
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-xs"
-                        style={{
-                          backgroundColor: colors.bgPrimary,
-                          color: colors.textPrimary,
-                          border: `1px solid ${colors.border}`,
-                        }}
-                      >
-                        <option value="all">Todos</option>
-                        <option value="success">Sucesso</option>
-                        <option value="error">Erro</option>
-                      </select>
-                      <select
-                        value={messageTypeFilter}
-                        onChange={(e) => {
-                          setMessageTypeFilter(e.target.value as 'all' | 'text' | 'document' | 'link');
-                          setCurrentPage(1);
-                        }}
-                        className="px-3 py-1.5 rounded-lg text-xs"
-                        style={{
-                          backgroundColor: colors.bgPrimary,
-                          color: colors.textPrimary,
-                          border: `1px solid ${colors.border}`,
-                        }}
-                      >
-                        <option value="all">Todos Tipos</option>
-                        <option value="text">Texto</option>
-                        <option value="document">Documento</option>
-                        <option value="link">Link</option>
-                      </select>
+                      <div className="w-28">
+                        <CustomSelect
+                          value={logFilter}
+                          onChange={(value) => {
+                            setLogFilter(value as 'all' | 'success' | 'error');
+                            setCurrentPage(1);
+                          }}
+                          options={[
+                            { value: 'all', label: 'Todos' },
+                            { value: 'success', label: 'Sucesso' },
+                            { value: 'error', label: 'Erro' },
+                          ]}
+                          showEmptyOption={false}
+                          colors={{
+                            card: colors.bgPrimary,
+                            text: colors.textPrimary,
+                            textSecondary: colors.textSecondary,
+                            border: colors.border,
+                            primary: theme === 'dark' ? '#a1a1aa' : '#71717a',
+                          }}
+                        />
+                      </div>
+                      <div className="w-32">
+                        <CustomSelect
+                          value={messageTypeFilter}
+                          onChange={(value) => {
+                            setMessageTypeFilter(value as 'all' | 'text' | 'document' | 'link');
+                            setCurrentPage(1);
+                          }}
+                          options={[
+                            { value: 'all', label: 'Todos Tipos' },
+                            { value: 'text', label: 'Texto' },
+                            { value: 'document', label: 'Documento' },
+                            { value: 'link', label: 'Link' },
+                          ]}
+                          showEmptyOption={false}
+                          colors={{
+                            card: colors.bgPrimary,
+                            text: colors.textPrimary,
+                            textSecondary: colors.textSecondary,
+                            border: colors.border,
+                            primary: theme === 'dark' ? '#a1a1aa' : '#71717a',
+                          }}
+                        />
+                      </div>
                       {lastLogRefresh && (
                         <span className="text-xs" style={{ color: colors.textSecondary }}>
                           Atualizado: {lastLogRefresh.toLocaleTimeString('pt-BR')}

@@ -5,7 +5,7 @@ import { IntelligentSearch } from '../components/IntelligentSearch';
 import { useTheme } from '../contexts/ThemeContext';
 import { getThemeColors } from '../utils/themeUtils';
 import {
-  BookOpen,
+  BookText,
   ArrowLeft,
   Code2,
   AlertTriangle,
@@ -96,7 +96,7 @@ export function AdminWisApiDocsPage({
   const [activeSection, setActiveSection] = useState('overview');
 
   const sections = [
-    { id: 'overview', label: 'Visão Geral', icon: BookOpen },
+    { id: 'overview', label: 'Visão Geral', icon: BookText },
     { id: 'authentication', label: 'Autenticação', icon: Key },
     { id: 'endpoints', label: 'Endpoints', icon: Server },
     { id: 'errors', label: 'Erros', icon: AlertTriangle },
@@ -150,7 +150,7 @@ export function AdminWisApiDocsPage({
           <div className="max-w-6xl mx-auto">
             <div className="flex flex-col items-center mb-6 sm:mb-8">
               <div className="p-2.5 sm:p-3 rounded-lg mb-3 sm:mb-4" style={{ backgroundColor: colors.bgSecondary }}>
-                <BookOpen className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textSecondary }} />
+                <BookText className="w-6 h-6 sm:w-8 sm:h-8" style={{ color: colors.textSecondary }} />
               </div>
               <div className="text-center">
                 <h1 className="text-xl sm:text-2xl md:text-3xl font-title font-bold" style={{ color: colors.textPrimary }}>
