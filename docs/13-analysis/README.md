@@ -32,6 +32,20 @@ Documentacao completa do fluxo de processamento para arquivos com mais de 1.000 
 - Recuperacao de erros
 - Metricas e performance
 
+### 3. [Arquitetura Completa de Processamento Complexo](./complex-files-architecture.md)
+
+Referencia tecnica completa da arquitetura de processamento de arquivos complexos, incluindo todos os detalhes de implementacao.
+
+**Conteudo:**
+- Arquitetura de alto nivel e diagramas de fluxo
+- Referencia completa de todas as Edge Functions
+- Schema detalhado do banco de dados (tabelas e RPCs)
+- Sistema de recuperacao automatica em 5 camadas
+- Configuracao de GitHub Actions Crons
+- Maquinas de estado para processos, fases e itens da fila
+- Tratamento de erros e dead letter queue
+- Consideracoes de performance e escalabilidade
+
 ## Visao Geral da Arquitetura
 
 ```
