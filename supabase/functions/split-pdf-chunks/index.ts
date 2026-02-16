@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const MAX_CHUNK_SIZE_BYTES = 15 * 1024 * 1024;
 const OVERLAP_PAGES = 75;
-const MAX_FILE_SIZE_FOR_FULL_LOAD = 80 * 1024 * 1024;
+const MAX_FILE_SIZE_FOR_FULL_LOAD = 120 * 1024 * 1024;
 
 function calculateChunkSizeByFileSize(totalPages: number, fileSize: number): number {
   const avgBytesPerPage = fileSize / totalPages;
