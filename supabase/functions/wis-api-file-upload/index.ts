@@ -609,10 +609,9 @@ Deno.serve(async (req: Request) => {
       { nome: foundProfile.first_name || 'Usuario' }
     );
 
-    const analysisEndpoint = isComplexFile ? 'start-analysis-complex' : 'start-analysis';
-    console.log(`[wis-api] Starting ${isComplexFile ? 'complex' : 'simple'} analysis (${actualPageCount} pages)...`);
-
     if (isComplexFile) {
+      console.log(`[wis-api] Complex file detected (${actualPageCount} pages) - starting chunking process...`);
+
       EdgeRuntime.waitUntil(
         sendWhatsAppNotification(
           supabaseUrl,
@@ -624,7 +623,33 @@ Deno.serve(async (req: Request) => {
           { nome: foundProfile.first_name || 'Usuario', pages: String(actualPageCount) }
         )
       );
+
+      const chunkResponse = await fetch(`${supabaseUrl}/functions/v1/split-pdf-chunks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({ processo_id: processoId }),
+      });
+
+      if (!chunkResponse.ok) {
+        const chunkError = await chunkResponse.text();
+        console.error(`[wis-api] Error splitting PDF into chunks:`, chunkError);
+        throw new Error(`Falha ao dividir PDF em chunks: ${chunkError}`);
+      }
+
+      const chunkResult = await chunkResponse.json();
+      console.log(`[wis-api] PDF split into ${chunkResult.totalChunks} chunks successfully`);
+
+      await supabase
+        .from('processos')
+        .update({ is_chunked: true })
+        .eq('id', processoId);
     }
+
+    const analysisEndpoint = isComplexFile ? 'start-analysis-complex' : 'start-analysis';
+    console.log(`[wis-api] Starting ${isComplexFile ? 'complex' : 'simple'} analysis (${actualPageCount} pages)...`);
 
     const analysisResponse = await fetch(`${supabaseUrl}/functions/v1/${analysisEndpoint}`, {
       method: 'POST',
