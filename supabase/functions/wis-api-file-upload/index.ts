@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method === "GET") {
-    return new Response(JSON.stringify({ status: "ok", service: "wis-api-file-upload" }), {
+    return new Response(JSON.stringify({ status: "ok", service: "wis-api-file-upload", version: "2026-02-16-v3" }), {
       status: 200,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
