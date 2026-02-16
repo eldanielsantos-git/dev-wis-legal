@@ -192,28 +192,36 @@ Deno.serve(async (req: Request) => {
     }
 
     cleanPhone = sanitizePhone(phone);
-    console.log(`[wis-api] Processing request for phone: ${cleanPhone}`);
+    console.log(`[wis-api] Processing request for phone: ${cleanPhone}, file: ${fileName}`);
+
+    const fileIdentifier = documentUrl || `${fileName}_${cleanPhone}`;
+    const fileHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(fileIdentifier))
+      .then(buf => Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 32));
 
     const { data: recentLog } = await supabase
       .from('wis_api_logs')
       .select('id, created_at, success, error_key')
       .eq('phone_number', cleanPhone)
+      .contains('request_payload', { fileHash })
       .gte('created_at', new Date(Date.now() - 60000).toISOString())
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (recentLog) {
-      console.log(`[wis-api] Duplicate webhook detected within 60s (previous: ${recentLog.success ? 'success' : recentLog.error_key}), ignoring...`);
+      console.log(`[wis-api] Duplicate webhook for SAME FILE detected within 60s, ignoring...`);
       return new Response(JSON.stringify({
         success: true,
-        message: 'Request already being processed',
+        message: 'Este arquivo já está sendo processado',
         duplicate_detected: true,
       }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    console.log(`[wis-api] New file upload, proceeding... (hash: ${fileHash})`);
+    (safeRequestPayload as any).fileHash = fileHash;
 
     if (instanceId) {
       const { data: partners } = await supabase
