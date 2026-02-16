@@ -160,11 +160,15 @@ export function isComplexProcessing(pageCount: number): boolean {
   return pageCount >= LARGE_FILE_THRESHOLD;
 }
 
-const MAX_SIMPLE_FILE_SIZE = 80 * 1024 * 1024; // 80MB - limite memoria edge function
+const MAX_BACKEND_SPLIT_SIZE = 60 * 1024 * 1024; // 60MB - limite memoria edge function para split-pdf-chunks
+
+export function shouldSplitInFrontend(fileSize: number): boolean {
+  return fileSize > MAX_BACKEND_SPLIT_SIZE;
+}
 
 export function getChunkConfiguration(totalPages: number, fileSize?: number) {
   const needsSplitByPages = totalPages >= LARGE_FILE_THRESHOLD;
-  const needsSplitBySize = fileSize ? (totalPages < LARGE_FILE_THRESHOLD && fileSize > MAX_SIMPLE_FILE_SIZE) : false;
+  const needsSplitBySize = fileSize ? (totalPages < LARGE_FILE_THRESHOLD && fileSize > MAX_BACKEND_SPLIT_SIZE) : false;
 
   if (!needsSplitByPages && !needsSplitBySize) {
     return {

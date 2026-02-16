@@ -2,7 +2,7 @@ import { supabase } from '../lib/supabase';
 import * as pdfjsLib from 'pdfjs-dist';
 import type { Processo, Pagina } from '../lib/supabase';
 import { executeWithRetry } from '../utils/supabaseWithRetry';
-import { isLargeFile, estimatePageCountFromSize } from '../utils/pdfSplitter';
+import { isLargeFile, estimatePageCountFromSize, shouldSplitInFrontend, splitPDFIntoChunksWithOverlap } from '../utils/pdfSplitter';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   'pdfjs-dist/build/pdf.worker.min.mjs',
@@ -914,40 +914,137 @@ export class ProcessosService {
       onProcessoCreated(processoId);
     }
 
+    const useFrontendSplit = shouldSplitInFrontend(file.size);
+
     const processInBackground = async () => {
       try {
         const sanitizedFileName = this.sanitizeFileName(file.name);
-        const originalPath = `${user.id}/${Date.now()}-original-${sanitizedFileName}`;
 
-        const { error: originalUploadError } = await supabase.storage
-          .from('processos')
-          .upload(originalPath, file, {
-            cacheControl: '3600',
-            upsert: false
+        if (useFrontendSplit) {
+          const chunks = await splitPDFIntoChunksWithOverlap(file);
+          const actualTotalChunks = chunks.length;
+
+          await supabase
+            .from('processos')
+            .update({
+              total_chunks_count: actualTotalChunks,
+              total_pages: totalPages,
+              transcricao: { totalPages, totalChunks: actualTotalChunks, chunkSize: config.chunkSize }
+            })
+            .eq('id', processoId);
+
+          for (let i = 0; i < chunks.length; i++) {
+            const chunk = chunks[i];
+            const timestamp = Date.now();
+            const chunkPath = `${user.id}/${timestamp}-${sanitizedFileName.replace('.pdf', '')}_chunk${i + 1}.pdf`;
+
+            const MAX_RETRIES = 30;
+            let uploadData = null;
+            let uploadError = null;
+            let retryCount = 0;
+
+            while (retryCount < MAX_RETRIES) {
+              const result = await supabase.storage
+                .from('processos')
+                .upload(chunkPath, chunk.file, {
+                  cacheControl: '3600',
+                  upsert: true
+                });
+
+              uploadData = result.data;
+              uploadError = result.error;
+
+              if (!uploadError) break;
+
+              retryCount++;
+              if (retryCount < MAX_RETRIES) {
+                const backoffSeconds = Math.min(Math.pow(2, retryCount), 300);
+                await supabase
+                  .from('processos')
+                  .update({
+                    chunk_retry_count: retryCount,
+                    current_failed_chunk: i,
+                    last_chunk_error: uploadError.message,
+                    upload_interrupted: true
+                  })
+                  .eq('id', processoId);
+                await new Promise(resolve => setTimeout(resolve, backoffSeconds * 1000));
+              }
+            }
+
+            if (uploadError) {
+              throw new Error(`Erro no upload da parte ${i + 1}: ${uploadError.message}`);
+            }
+
+            await supabase.from('process_chunks').insert({
+              processo_id: processoId,
+              chunk_index: i + 1,
+              total_chunks: actualTotalChunks,
+              start_page: chunk.startPage,
+              end_page: chunk.endPage,
+              pages_count: chunk.endPage - chunk.startPage + 1,
+              overlap_start_page: chunk.overlapStartPage,
+              overlap_end_page: chunk.overlapEndPage,
+              file_path: uploadData!.path,
+              file_size: chunk.file.size,
+              status: 'ready',
+            });
+
+            await supabase
+              .from('processos')
+              .update({
+                chunks_uploaded_count: i + 1,
+                last_chunk_uploaded_at: new Date().toISOString(),
+                chunk_retry_count: 0,
+                current_failed_chunk: null,
+                last_chunk_error: null,
+                upload_interrupted: false
+              })
+              .eq('id', processoId);
+          }
+
+          await supabase
+            .from('processos')
+            .update({
+              status: 'created',
+              upload_interrupted: false,
+              total_chunks: actualTotalChunks
+            })
+            .eq('id', processoId);
+
+        } else {
+          const originalPath = `${user.id}/${Date.now()}-original-${sanitizedFileName}`;
+
+          const { error: originalUploadError } = await supabase.storage
+            .from('processos')
+            .upload(originalPath, file, {
+              cacheControl: '3600',
+              upsert: false
+            });
+
+          if (originalUploadError) {
+            throw new Error(`Falha ao salvar arquivo original: ${originalUploadError.message}`);
+          }
+
+          await supabase
+            .from('processos')
+            .update({ original_file_path: originalPath })
+            .eq('id', processoId);
+
+          const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/split-pdf-chunks`;
+          const splitResponse = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ processo_id: processoId }),
           });
 
-        if (originalUploadError) {
-          throw new Error(`Falha ao salvar arquivo original: ${originalUploadError.message}`);
-        }
-
-        await supabase
-          .from('processos')
-          .update({ original_file_path: originalPath })
-          .eq('id', processoId);
-
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/split-pdf-chunks`;
-        const splitResponse = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ processo_id: processoId }),
-        });
-
-        if (!splitResponse.ok) {
-          const errorData = await splitResponse.json();
-          throw new Error(errorData.error || 'Falha ao dividir PDF no servidor');
+          if (!splitResponse.ok) {
+            const errorData = await splitResponse.json();
+            throw new Error(errorData.error || 'Falha ao dividir PDF no servidor');
+          }
         }
 
         const startApiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/start-analysis-complex`;
