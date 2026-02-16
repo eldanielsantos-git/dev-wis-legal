@@ -58,6 +58,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
   const [uploadingProcessoId, setUploadingProcessoId] = useState<string | null>(null);
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [lastProcessedId, setLastProcessedId] = useState<string | null>(null);
+  const [pendingRedirectId, setPendingRedirectId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<{
     isOpen: boolean;
@@ -160,6 +161,23 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
                 audio.play().catch(err => logger.error('AppHomePage', 'Erro ao tocar beep:', err));
                 setLastProcessedId(processo.id);
               }
+
+              if (processo.status === 'error') {
+                setPendingRedirectId(null);
+              }
+            }
+          }
+
+          if (pendingRedirectId) {
+            const processo = updatedProcessos.find(p => p.id === pendingRedirectId);
+            if (processo && (processo.status === 'created' || processo.status === 'analyzing')) {
+              showSuccess('Documento preparado! Redirecionando...');
+              setPendingRedirectId(null);
+              setTimeout(() => {
+                onNavigateToDetail(pendingRedirectId);
+              }, 500);
+            } else if (processo && processo.status === 'error') {
+              setPendingRedirectId(null);
             }
           }
         });
@@ -177,7 +195,7 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
         logger.error('AppHomePage', 'Erro ao cancelar subscrição:', err);
       }
     };
-  }, [user?.id, uploadingProcessoId, processingStatus]);
+  }, [user?.id, uploadingProcessoId, processingStatus, pendingRedirectId, onNavigateToDetail]);
 
   useEffect(() => {
     if (pollingIntervalRef.current) {
@@ -385,6 +403,10 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
               loadProcessos();
             }
           );
+
+          setPreparingUpload({ isOpen: false, fileName: '', step: '' });
+          showSuccess('Documento enviado! Preparando para análise...');
+          setPendingRedirectId(processoId);
         } else if (needsUrlUpload) {
           setPreparingUpload(prev => ({ ...prev, step: 'Enviando arquivo para o servidor...' }));
           processoId = await ProcessosService.uploadAndStartSimpleProcessingViaUrl(
@@ -396,6 +418,16 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
               loadProcessos();
             }
           );
+
+          setProcessingStatus('analyzing');
+          setPreparingUpload({ isOpen: false, fileName: '', step: '' });
+
+          if (processoId) {
+            showSuccess('Upload concluído! Redirecionando...');
+            setTimeout(() => {
+              onNavigateToDetail(processoId);
+            }, 1000);
+          }
         } else {
           setPreparingUpload(prev => ({ ...prev, step: 'Processando documento...' }));
           processoId = await ProcessosService.uploadAndStartProcessing(
@@ -406,21 +438,22 @@ export function AppHomePage({ onNavigateToDetail, onNavigateToAdmin, onNavigateT
               loadProcessos();
             }
           );
-        }
 
-        setProcessingStatus('analyzing');
-        setPreparingUpload({ isOpen: false, fileName: '', step: '' });
+          setProcessingStatus('analyzing');
+          setPreparingUpload({ isOpen: false, fileName: '', step: '' });
 
-        if (processoId) {
-          showSuccess('Upload concluído! Redirecionando...');
-          setTimeout(() => {
-            onNavigateToDetail(processoId);
-          }, 1000);
+          if (processoId) {
+            showSuccess('Upload concluído! Redirecionando...');
+            setTimeout(() => {
+              onNavigateToDetail(processoId);
+            }, 1000);
+          }
         }
       } catch (err: any) {
         setLoading(false);
         setProcessingStatus(null);
         setUploadingProcessoId(null);
+        setPendingRedirectId(null);
         setPreparingUpload({ isOpen: false, fileName: '', step: '' });
         setErrorModal({
           isOpen: true,
