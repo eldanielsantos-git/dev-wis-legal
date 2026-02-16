@@ -22,9 +22,13 @@ Deno.serve(async (req: Request) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { processo_id } = await req.json();
+    const body = await req.json();
+    const { processo_id } = body;
+
+    console.log('[generate-analysis-pdf] Recebido request para processo_id:', processo_id);
 
     if (!processo_id) {
+      console.error('[generate-analysis-pdf] processo_id não fornecido no body:', body);
       return new Response(
         JSON.stringify({ error: 'processo_id é obrigatório' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -37,9 +41,12 @@ Deno.serve(async (req: Request) => {
       .eq('id', processo_id)
       .single();
 
+    console.log('[generate-analysis-pdf] Query resultado - processo:', processo, 'error:', processoError);
+
     if (processoError || !processo) {
+      console.error('[generate-analysis-pdf] Processo não encontrado:', processo_id, 'error:', processoError);
       return new Response(
-        JSON.stringify({ error: 'Processo não encontrado' }),
+        JSON.stringify({ error: 'Processo não encontrado', processo_id, db_error: processoError?.message }),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
