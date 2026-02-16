@@ -196,41 +196,23 @@ Deno.serve(async (req: Request) => {
 
     const { data: recentLog } = await supabase
       .from('wis_api_logs')
-      .select('id, created_at')
+      .select('id, created_at, success, error_key')
       .eq('phone_number', cleanPhone)
-      .gte('created_at', new Date(Date.now() - 30000).toISOString())
+      .gte('created_at', new Date(Date.now() - 60000).toISOString())
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
 
     if (recentLog) {
-      const logPayload = {
-        phone: cleanPhone,
-        fileName,
-        hasDocumentUrl: !!documentUrl,
-        hasBase64: !!base64,
-        mimeType,
-      };
-
-      const { data: sameFileLog } = await supabase
-        .from('wis_api_logs')
-        .select('id, processo_id, response_sent')
-        .eq('phone_number', cleanPhone)
-        .gte('created_at', new Date(Date.now() - 30000).toISOString())
-        .neq('success', false)
-        .maybeSingle();
-
-      if (sameFileLog) {
-        console.log(`[wis-api] Duplicate webhook detected within 30s, ignoring...`);
-        return new Response(JSON.stringify({
-          success: true,
-          message: 'Request already being processed',
-          duplicate_detected: true,
-        }), {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+      console.log(`[wis-api] Duplicate webhook detected within 60s (previous: ${recentLog.success ? 'success' : recentLog.error_key}), ignoring...`);
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'Request already being processed',
+        duplicate_detected: true,
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (instanceId) {
@@ -417,7 +399,7 @@ Deno.serve(async (req: Request) => {
     let actualPageCount = 0;
     const fileSizeMB = fileBlob.size / (1024 * 1024);
 
-    if (fileSizeMB > 50) {
+    if (fileSizeMB > 25) {
       actualPageCount = Math.ceil(fileBlob.size / (18 * 1024));
       console.log(`[wis-api] Large file (${fileSizeMB.toFixed(1)}MB) - using estimated page count: ${actualPageCount}`);
     } else {
@@ -738,7 +720,10 @@ Deno.serve(async (req: Request) => {
     });
 
   } catch (error) {
-    console.error('[wis-api] Unexpected error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error('[wis-api] Unexpected error:', errorMessage);
+    console.error('[wis-api] Error stack:', errorStack);
 
     const errorResponse = {
       success: false,
